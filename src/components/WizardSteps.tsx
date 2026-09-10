@@ -47,9 +47,9 @@ function StepLayout({ children, step, onNext, onBack, canNext, nextLabel = 'Cont
 }
 
 const laws = [
-  { numeral: 'I', text: 'Pague-se primeiro' },
-  { numeral: 'II', text: 'Controle os gastos' },
-  { numeral: 'III', text: 'Proteja-se de perdas' },
+  { numeral: 'I', text: 'Pague-se primeiro', accent: 'gold' as const },
+  { numeral: 'II', text: 'Controle os gastos', accent: 'lapis' as const },
+  { numeral: 'III', text: 'Proteja-se de perdas', accent: 'gold' as const },
 ];
 
 export function IntroStep({ onStart }: { onStart: () => void }) {
@@ -57,6 +57,9 @@ export function IntroStep({ onStart }: { onStart: () => void }) {
     <div className="w-full">
       <div className="fixed inset-0 -z-10">
         <Scene3D />
+        {/* Brilho azul lápis-lazúli sutil atrás da moeda, referência ao Portão de Ishtar */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_50%,rgba(28,79,114,0.35),transparent_60%)]" />
+        <div className="absolute inset-0 pattern-lapis" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink-900 via-ink-900/75 to-ink-900/10" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink-900 via-transparent to-ink-900/30" />
       </div>
@@ -64,7 +67,7 @@ export function IntroStep({ onStart }: { onStart: () => void }) {
       <div className="relative z-10 min-h-screen flex items-center">
         <div className="w-full max-w-2xl px-6 sm:px-10 lg:px-16 py-16 animate-fade-up">
           <div className="flex items-center gap-3 mb-6">
-            <span className="h-px w-10 bg-gold/70" />
+            <span className="divider-babylon" />
             <span className="text-gold-light text-xs font-semibold uppercase tracking-[0.22em]">Um diagnóstico para a vida real</span>
           </div>
 
@@ -83,8 +86,8 @@ export function IntroStep({ onStart }: { onStart: () => void }) {
 
           <div className="grid grid-cols-3 gap-3 max-w-md mb-10">
             {laws.map((law) => (
-              <div key={law.numeral} className="law-card">
-                <span className="law-numeral">{law.numeral}</span>
+              <div key={law.numeral} className={law.accent === 'lapis' ? 'card-lapis' : 'law-card'}>
+                <span className={law.accent === 'lapis' ? 'font-serif text-lapis-light text-xl' : 'law-numeral'}>{law.numeral}</span>
                 <span className="text-ink-100 text-xs sm:text-sm font-medium leading-tight">{law.text}</span>
               </div>
             ))}
