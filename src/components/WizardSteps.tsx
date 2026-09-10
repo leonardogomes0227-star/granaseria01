@@ -106,55 +106,156 @@ function Coin3D() {
   );
 }
 
+/* Raios dourados atrás da moeda, girando bem lentamente */
+function SunRays() {
+  const rays = Array.from({ length: 16 });
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      className="sun-rays absolute top-1 left-1/2 -translate-x-1/2 w-60 h-60 sm:w-72 sm:h-72 pointer-events-none"
+    >
+      {rays.map((_, i) => {
+        const angle = (360 / rays.length) * i;
+        return (
+          <line
+            key={i}
+            x1="100"
+            y1="100"
+            x2="100"
+            y2="10"
+            stroke="#C9A227"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            opacity="0.16"
+            transform={`rotate(${angle} 100 100)`}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+/* Poeira dourada flutuando pela cena */
+function DustMotes() {
+  const motes = [
+    { top: '8%', left: '12%', delay: '0s', size: 3 },
+    { top: '22%', left: '88%', delay: '1.2s', size: 2 },
+    { top: '55%', left: '6%', delay: '2.4s', size: 2 },
+    { top: '70%', left: '92%', delay: '0.6s', size: 3 },
+    { top: '38%', left: '50%', delay: '1.8s', size: 2 },
+    { top: '85%', left: '30%', delay: '3s', size: 2 },
+  ];
+  return (
+    <>
+      {motes.map((m, i) => (
+        <span
+          key={i}
+          className="dust-mote absolute rounded-full bg-gold pointer-events-none"
+          style={{ top: m.top, left: m.left, width: m.size, height: m.size, animationDelay: m.delay }}
+        />
+      ))}
+    </>
+  );
+}
+
+/* Divisor ornamental com losango central */
+function OrnamentDivider() {
+  return (
+    <div className="flex items-center justify-center gap-3 relative z-10">
+      <span className="h-px w-10 bg-gradient-to-r from-transparent to-gold/60" />
+      <svg width="7" height="7" viewBox="0 0 8 8" className="text-gold shrink-0">
+        <rect x="0" y="0" width="8" height="8" transform="rotate(45 4 4)" fill="currentColor" />
+      </svg>
+      <span className="h-px w-10 bg-gradient-to-l from-transparent to-gold/60" />
+    </div>
+  );
+}
+
+/* Preview das leis do livro, como selos dourados */
+function LawPreview() {
+  const laws = ['Pague-se primeiro', 'Controle os gastos', 'Proteja-se de perdas'];
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-2 mb-9 relative z-10">
+      {laws.map((law) => (
+        <span key={law} className="law-pill">
+          <Coins size={12} /> {law}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function BabylonSkyline() {
   return (
     <svg
-      className="absolute bottom-0 left-0 w-full h-40 sm:h-56 opacity-[0.07] pointer-events-none"
-      viewBox="0 0 800 200"
+      className="absolute bottom-0 left-0 w-full h-48 sm:h-64 opacity-[0.09] pointer-events-none"
+      viewBox="0 0 800 220"
       preserveAspectRatio="xMidYMax slice"
       fill="none"
     >
-      {/* Zigurate central */}
-      <path d="M340 200 L340 170 L360 170 L360 150 L380 150 L380 130 L420 130 L420 150 L440 150 L440 170 L460 170 L460 200 Z" fill="#C9A227" />
+      {/* Disco solar atrás do zigurate */}
+      <circle cx="400" cy="90" r="55" fill="#C9A227" opacity="0.5" />
+      {/* Zigurate central, em camadas */}
+      <path d="M330 220 L330 185 L350 185 L350 165 L370 165 L370 145 L430 145 L430 165 L450 165 L450 185 L470 185 L470 220 Z" fill="#C9A227" />
+      <path d="M355 145 L355 125 L445 125 L445 145 Z" fill="#8A7220" />
       {/* Construções laterais menores */}
-      <path d="M150 200 L150 160 L170 160 L170 140 L210 140 L210 160 L230 160 L230 200 Z" fill="#C9A227" />
-      <path d="M560 200 L560 165 L580 165 L580 145 L610 145 L610 165 L630 165 L630 200 Z" fill="#C9A227" />
+      <path d="M130 220 L130 175 L150 175 L150 155 L190 155 L190 175 L210 175 L210 220 Z" fill="#C9A227" />
+      <path d="M580 220 L580 180 L600 180 L600 160 L630 160 L630 180 L650 180 L650 220 Z" fill="#C9A227" />
+      {/* Jardins suspensos (pontos verdes) */}
+      <g opacity="0.6">
+        <circle cx="120" cy="200" r="3" fill="#6E9A78" />
+        <circle cx="135" cy="195" r="3" fill="#6E9A78" />
+        <circle cx="660" cy="205" r="3" fill="#6E9A78" />
+        <circle cx="675" cy="198" r="3" fill="#6E9A78" />
+      </g>
       {/* Muralhas/base contínua */}
-      <path d="M0 200 L0 185 L60 185 L60 195 L120 195 L120 180 L150 180 L150 200 Z" fill="#C9A227" />
-      <path d="M650 200 L650 185 L700 185 L700 192 L760 192 L760 178 L800 178 L800 200 Z" fill="#C9A227" />
+      <path d="M0 220 L0 200 L80 200 L80 210 L130 210 L130 195 L160 195 L160 220 Z" fill="#C9A227" />
+      <path d="M640 220 L640 200 L700 200 L700 208 L760 208 L760 190 L800 190 L800 220 Z" fill="#C9A227" />
+      {/* Estrelas */}
+      <g fill="#E0BE4A" opacity="0.7">
+        <circle cx="60" cy="40" r="1.5" />
+        <circle cx="740" cy="55" r="1.5" />
+        <circle cx="250" cy="30" r="1.2" />
+        <circle cx="560" cy="35" r="1.2" />
+      </g>
     </svg>
   );
 }
 
 export function IntroStep({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative w-full max-w-wizard text-center animate-fade-up overflow-hidden">
+    <div className="bg-grain relative w-full max-w-wizard text-center animate-fade-up overflow-hidden">
+      <DustMotes />
+      <SunRays />
+
       {/* Brilho radial atrás da moeda */}
       <div
-        className="absolute top-6 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0) 70%)' }}
+        className="absolute top-6 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.2) 0%, rgba(201,162,39,0) 70%)' }}
       />
 
       <Coin3D />
 
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="h-px w-8 bg-gold" />
-        <span className="text-gold text-xs font-semibold uppercase tracking-[0.2em]">Um diagnóstico para a vida real</span>
-        <span className="h-px w-8 bg-gold" />
-      </div>
+      <OrnamentDivider />
+      <span className="block relative z-10 text-gold text-xs font-semibold uppercase tracking-[0.2em] mt-3 mb-6">
+        Um diagnóstico para a vida real
+      </span>
 
-      <p className="text-ink-300 text-sm italic max-w-sm mx-auto mb-6">
+      <p className="text-ink-300 text-sm italic max-w-sm mx-auto mb-6 relative z-10">
         "A riqueza começa como uma semente pequena — um punhado de moedas guardadas com disciplina."
       </p>
 
-      <h1 className="font-serif text-5xl sm:text-7xl leading-[0.98] text-ink-100 mb-7">
+      <h1 className="font-serif text-5xl sm:text-7xl leading-[0.98] text-ink-100 mb-7 relative z-10">
         Grana<br /><span className="text-gold">Séria.</span>
       </h1>
-      <p className="text-ink-200 text-lg leading-relaxed max-w-md mx-auto mb-10">
+      <p className="text-ink-200 text-lg leading-relaxed max-w-md mx-auto mb-8 relative z-10">
         Clareza sobre seu dinheiro. Um plano que cabe na sua realidade.
       </p>
-      <button type="button" onClick={onStart} className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-base relative z-10">
-        Começar <ChevronRight size={18} />
+
+      <LawPreview />
+
+      <button type="button" onClick={onStart} className="btn-hero inline-flex items-center gap-3 px-8 py-4 text-base relative z-10">
+        Começar minha jornada <ChevronRight size={18} />
       </button>
       <p className="text-ink-300 text-xs mt-8 relative z-10">Inspirado nos princípios de <em>O Homem Mais Rico da Babilônia</em></p>
 
