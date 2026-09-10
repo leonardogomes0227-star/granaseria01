@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   Coins,
+  Flame,
   Gamepad2,
   Home,
   Plus,
@@ -62,88 +63,32 @@ function StepLayout({ children, step, onNext, onBack, canNext, nextLabel = 'Cont
   );
 }
 
-function Coin3D() {
-  const wrapRef = useRef<HTMLDivElement>(null);
+/* ---------- Decoração da tela inicial (Babilônia) ---------- */
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-
-    function handleMove(e: MouseEvent) {
-      const rect = el!.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dx = (e.clientX - cx) / rect.width;
-      const dy = (e.clientY - cy) / rect.height;
-      el!.style.transform = `rotateX(${dy * -14}deg) rotateY(${dx * 14}deg)`;
-    }
-
-    function handleLeave() {
-      el!.style.transform = 'rotateX(0deg) rotateY(0deg)';
-    }
-
-    window.addEventListener('mousemove', handleMove);
-    el.addEventListener('mouseleave', handleLeave);
-    return () => {
-      window.removeEventListener('mousemove', handleMove);
-      el.removeEventListener('mouseleave', handleLeave);
-    };
-  }, []);
-
+function StarField() {
+  const stars = [
+    { top: '9%', left: '14%' }, { top: '16%', left: '82%' }, { top: '28%', left: '48%' },
+    { top: '52%', left: '8%' }, { top: '62%', left: '92%' }, { top: '78%', left: '32%' },
+    { top: '6%', left: '58%' }, { top: '42%', left: '24%' }, { top: '88%', left: '68%' },
+  ];
   return (
-    <div className="coin-scene mx-auto mb-8 w-28 h-28 sm:w-32 sm:h-32">
-      <div ref={wrapRef} className="coin-tilt w-full h-full">
-        <div className="coin-spin relative w-full h-full">
-          <div className="coin-face absolute inset-0 rounded-full flex items-center justify-center">
-            <Coins size={40} className="text-ink-900/70" strokeWidth={1.5} />
-          </div>
-          <div className="coin-face coin-back absolute inset-0 rounded-full flex items-center justify-center">
-            <span className="font-serif text-2xl text-ink-900/70">10%</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      {stars.map((s, i) => (
+        <span
+          key={i}
+          className="star-twinkle absolute rounded-full bg-gold"
+          style={{ top: s.top, left: s.left, width: 2, height: 2, animationDelay: `${i * 0.35}s` }}
+        />
+      ))}
+    </>
   );
 }
 
-/* Raios dourados atrás da moeda, girando bem lentamente */
-function SunRays() {
-  const rays = Array.from({ length: 16 });
-  return (
-    <svg
-      viewBox="0 0 200 200"
-      className="sun-rays absolute top-1 left-1/2 -translate-x-1/2 w-60 h-60 sm:w-72 sm:h-72 pointer-events-none"
-    >
-      {rays.map((_, i) => {
-        const angle = (360 / rays.length) * i;
-        return (
-          <line
-            key={i}
-            x1="100"
-            y1="100"
-            x2="100"
-            y2="10"
-            stroke="#C9A227"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            opacity="0.16"
-            transform={`rotate(${angle} 100 100)`}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
-/* Poeira dourada flutuando pela cena */
 function DustMotes() {
   const motes = [
-    { top: '8%', left: '12%', delay: '0s', size: 3 },
-    { top: '22%', left: '88%', delay: '1.2s', size: 2 },
-    { top: '55%', left: '6%', delay: '2.4s', size: 2 },
-    { top: '70%', left: '92%', delay: '0.6s', size: 3 },
-    { top: '38%', left: '50%', delay: '1.8s', size: 2 },
-    { top: '85%', left: '30%', delay: '3s', size: 2 },
+    { top: '10%', left: '18%', delay: '0s' }, { top: '25%', left: '85%', delay: '1.2s' },
+    { top: '58%', left: '6%', delay: '2.4s' }, { top: '72%', left: '90%', delay: '0.6s' },
+    { top: '40%', left: '50%', delay: '1.8s' }, { top: '85%', left: '35%', delay: '3s' },
   ];
   return (
     <>
@@ -151,115 +96,153 @@ function DustMotes() {
         <span
           key={i}
           className="dust-mote absolute rounded-full bg-gold pointer-events-none"
-          style={{ top: m.top, left: m.left, width: m.size, height: m.size, animationDelay: m.delay }}
+          style={{ top: m.top, left: m.left, width: 3, height: 3, animationDelay: m.delay }}
         />
       ))}
     </>
   );
 }
 
-/* Divisor ornamental com losango central */
-function OrnamentDivider() {
+function SunRays() {
+  const rays = Array.from({ length: 16 });
   return (
-    <div className="flex items-center justify-center gap-3 relative z-10">
-      <span className="h-px w-10 bg-gradient-to-r from-transparent to-gold/60" />
-      <svg width="7" height="7" viewBox="0 0 8 8" className="text-gold shrink-0">
-        <rect x="0" y="0" width="8" height="8" transform="rotate(45 4 4)" fill="currentColor" />
-      </svg>
-      <span className="h-px w-10 bg-gradient-to-l from-transparent to-gold/60" />
-    </div>
+    <svg viewBox="0 0 200 200" className="sun-rays absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] pointer-events-none">
+      {rays.map((_, i) => {
+        const angle = (360 / rays.length) * i;
+        return (
+          <line key={i} x1="100" y1="100" x2="100" y2="6" stroke="#C9A227" strokeWidth="1.4" strokeLinecap="round" opacity="0.14" transform={`rotate(${angle} 100 100)`} />
+        );
+      })}
+    </svg>
   );
 }
 
-/* Preview das leis do livro, como selos dourados */
-function LawPreview() {
-  const laws = ['Pague-se primeiro', 'Controle os gastos', 'Proteja-se de perdas'];
+function TempleColumns() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2 mb-9 relative z-10">
-      {laws.map((law) => (
-        <span key={law} className="law-pill">
-          <Coins size={12} /> {law}
-        </span>
-      ))}
-    </div>
+    <>
+      <div className="absolute bottom-8 left-6 sm:left-10 flex flex-col items-center opacity-80 z-10">
+        <Flame size={13} className="text-terracota-light flame-flicker mb-1" />
+        <div className="w-2 h-16 sm:h-20 bg-gradient-to-b from-gold/50 to-gold/5 rounded-sm" />
+      </div>
+      <div className="absolute bottom-8 right-6 sm:right-10 flex flex-col items-center opacity-80 z-10">
+        <Flame size={13} className="text-terracota-light flame-flicker mb-1" style={{ animationDelay: '0.7s' }} />
+        <div className="w-2 h-16 sm:h-20 bg-gradient-to-b from-gold/50 to-gold/5 rounded-sm" />
+      </div>
+    </>
   );
 }
 
 function BabylonSkyline() {
   return (
-    <svg
-      className="absolute bottom-0 left-0 w-full h-48 sm:h-64 opacity-[0.09] pointer-events-none"
-      viewBox="0 0 800 220"
-      preserveAspectRatio="xMidYMax slice"
-      fill="none"
-    >
-      {/* Disco solar atrás do zigurate */}
-      <circle cx="400" cy="90" r="55" fill="#C9A227" opacity="0.5" />
-      {/* Zigurate central, em camadas */}
+    <svg className="absolute bottom-0 left-0 w-full h-40 sm:h-48 opacity-[0.16] pointer-events-none" viewBox="0 0 800 220" preserveAspectRatio="xMidYMax slice" fill="none">
+      <circle cx="400" cy="90" r="50" fill="#C9A227" opacity="0.5" />
       <path d="M330 220 L330 185 L350 185 L350 165 L370 165 L370 145 L430 145 L430 165 L450 165 L450 185 L470 185 L470 220 Z" fill="#C9A227" />
       <path d="M355 145 L355 125 L445 125 L445 145 Z" fill="#8A7220" />
-      {/* Construções laterais menores */}
       <path d="M130 220 L130 175 L150 175 L150 155 L190 155 L190 175 L210 175 L210 220 Z" fill="#C9A227" />
       <path d="M580 220 L580 180 L600 180 L600 160 L630 160 L630 180 L650 180 L650 220 Z" fill="#C9A227" />
-      {/* Jardins suspensos (pontos verdes) */}
-      <g opacity="0.6">
-        <circle cx="120" cy="200" r="3" fill="#6E9A78" />
-        <circle cx="135" cy="195" r="3" fill="#6E9A78" />
-        <circle cx="660" cy="205" r="3" fill="#6E9A78" />
-        <circle cx="675" cy="198" r="3" fill="#6E9A78" />
-      </g>
-      {/* Muralhas/base contínua */}
       <path d="M0 220 L0 200 L80 200 L80 210 L130 210 L130 195 L160 195 L160 220 Z" fill="#C9A227" />
       <path d="M640 220 L640 200 L700 200 L700 208 L760 208 L760 190 L800 190 L800 220 Z" fill="#C9A227" />
-      {/* Estrelas */}
-      <g fill="#E0BE4A" opacity="0.7">
-        <circle cx="60" cy="40" r="1.5" />
-        <circle cx="740" cy="55" r="1.5" />
-        <circle cx="250" cy="30" r="1.2" />
-        <circle cx="560" cy="35" r="1.2" />
-      </g>
     </svg>
   );
 }
 
+function Medallion() {
+  return (
+    <div className="medallion-wrap relative w-32 h-32 sm:w-36 sm:h-36 mx-auto z-10">
+      <svg viewBox="0 0 140 140" className="w-full h-full">
+        <defs>
+          <radialGradient id="coinGradient" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#F0DA8E" />
+            <stop offset="45%" stopColor="#C9A227" />
+            <stop offset="100%" stopColor="#8A6B1A" />
+          </radialGradient>
+        </defs>
+        <circle cx="70" cy="70" r="66" fill="none" stroke="#C9A227" strokeWidth="1" strokeDasharray="2 4" opacity="0.55" />
+        <circle cx="70" cy="70" r="57" fill="url(#coinGradient)" stroke="#5F4A12" strokeWidth="1.5" />
+        <path d="M50 92 L50 82 L58 82 L58 74 L66 74 L66 66 L74 66 L74 74 L82 74 L82 82 L90 82 L90 92 Z" fill="#3A2A0A" opacity="0.5" />
+        <text x="70" y="107" textAnchor="middle" fontFamily="Fraunces, serif" fontSize="12" fill="#3A2A0A" opacity="0.6">10%</text>
+      </svg>
+      <div className="medallion-shine" />
+    </div>
+  );
+}
+
+function ScenePanel() {
+  return (
+    <div className="scene-panel relative rounded-2xl border border-gold/20 bg-ink-700/30 px-8 py-10 sm:py-14 overflow-hidden max-w-sm mx-auto lg:max-w-none">
+      <SunRays />
+      <TempleColumns />
+      <Medallion />
+      <p className="relative z-10 text-center text-gold text-[11px] font-semibold uppercase tracking-[0.22em] mt-8">As leis da riqueza</p>
+      <p className="relative z-10 text-center text-ink-300 text-xs mt-2 max-w-[220px] mx-auto">
+        Ensinamentos que atravessaram séculos, aplicados à sua vida financeira.
+      </p>
+      <BabylonSkyline />
+    </div>
+  );
+}
+
+const laws = [
+  { numeral: 'I', text: 'Pague-se primeiro' },
+  { numeral: 'II', text: 'Controle os gastos' },
+  { numeral: 'III', text: 'Proteja-se de perdas' },
+];
+
 export function IntroStep({ onStart }: { onStart: () => void }) {
   return (
-    <div className="bg-grain relative w-full max-w-wizard text-center animate-fade-up overflow-hidden">
-      <DustMotes />
-      <SunRays />
+    <div className="w-full">
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 bg-ink-800" />
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[900px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.09) 0%, rgba(201,162,39,0) 70%)' }}
+        />
+        <StarField />
+        <DustMotes />
+      </div>
 
-      {/* Brilho radial atrás da moeda */}
-      <div
-        className="absolute top-6 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.2) 0%, rgba(201,162,39,0) 70%)' }}
-      />
+      <div className="relative z-10 w-full max-w-6xl mx-auto grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center py-6 lg:py-16 animate-fade-up">
+        <div className="order-2 lg:order-1 text-center lg:text-left">
+          <div className="flex items-center gap-3 justify-center lg:justify-start mb-6">
+            <span className="h-px w-10 bg-gold/70" />
+            <span className="text-gold text-xs font-semibold uppercase tracking-[0.22em]">Um diagnóstico para a vida real</span>
+          </div>
 
-      <Coin3D />
+          <p className="text-ink-300 text-sm italic max-w-md mx-auto lg:mx-0 mb-6">
+            "A riqueza começa como uma semente pequena — um punhado de moedas guardadas com disciplina."
+          </p>
 
-      <OrnamentDivider />
-      <span className="block relative z-10 text-gold text-xs font-semibold uppercase tracking-[0.2em] mt-3 mb-6">
-        Um diagnóstico para a vida real
-      </span>
+          <h1 className="font-serif text-6xl sm:text-7xl lg:text-8xl leading-[0.95] text-ink-100 mb-6">
+            Grana<br /><span className="text-gold">Séria.</span>
+          </h1>
 
-      <p className="text-ink-300 text-sm italic max-w-sm mx-auto mb-6 relative z-10">
-        "A riqueza começa como uma semente pequena — um punhado de moedas guardadas com disciplina."
-      </p>
+          <p className="text-ink-200 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 mb-9">
+            Clareza sobre seu dinheiro. Um plano de ação construído com os princípios de{' '}
+            <em className="text-ink-100">O Homem Mais Rico da Babilônia</em>.
+          </p>
 
-      <h1 className="font-serif text-5xl sm:text-7xl leading-[0.98] text-ink-100 mb-7 relative z-10">
-        Grana<br /><span className="text-gold">Séria.</span>
-      </h1>
-      <p className="text-ink-200 text-lg leading-relaxed max-w-md mx-auto mb-8 relative z-10">
-        Clareza sobre seu dinheiro. Um plano que cabe na sua realidade.
-      </p>
+          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto lg:mx-0 mb-10">
+            {laws.map((law) => (
+              <div key={law.numeral} className="law-card">
+                <span className="law-numeral">{law.numeral}</span>
+                <span className="text-ink-100 text-xs sm:text-sm font-medium leading-tight">{law.text}</span>
+              </div>
+            ))}
+          </div>
 
-      <LawPreview />
+          <button type="button" onClick={onStart} className="btn-hero inline-flex items-center gap-3 px-8 py-4 text-base">
+            Começar minha jornada <ChevronRight size={18} />
+          </button>
 
-      <button type="button" onClick={onStart} className="btn-hero inline-flex items-center gap-3 px-8 py-4 text-base relative z-10">
-        Começar minha jornada <ChevronRight size={18} />
-      </button>
-      <p className="text-ink-300 text-xs mt-8 relative z-10">Inspirado nos princípios de <em>O Homem Mais Rico da Babilônia</em></p>
+          <p className="text-ink-300 text-xs mt-8">
+            Baseado nos ensinamentos de <em>O Homem Mais Rico da Babilônia</em>, de George S. Clason
+          </p>
+        </div>
 
-      <BabylonSkyline />
+        <div className="order-1 lg:order-2">
+          <ScenePanel />
+        </div>
+      </div>
     </div>
   );
 }
