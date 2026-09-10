@@ -1,107 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  html {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  body {
-    @apply bg-ink-800 text-ink-100 font-sans antialiased;
-  }
-  input[type='number']::-webkit-outer-spin-button,
-  input[type='number']::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type='number'] {
-    -moz-appearance: textfield;
-  }
-}
-
-@layer components {
-  .field-label {
-    @apply text-sm font-medium text-ink-200 mb-1.5 block;
-  }
-  .field-input {
-    @apply w-full bg-ink-700 border border-ink-500 rounded-lg px-4 py-3 text-ink-100 text-lg font-sans
-      focus:outline-none focus:border-gold transition-colors duration-200 placeholder:text-ink-300/50;
-  }
-  .btn-primary {
-    @apply bg-gold text-ink-900 font-semibold px-6 py-3 rounded-lg
-      hover:bg-gold-light active:bg-gold-dark transition-colors duration-200
-      disabled:opacity-40 disabled:cursor-not-allowed;
-  }
-  .btn-ghost {
-    @apply text-ink-200 font-medium px-4 py-2 rounded-lg
-      hover:text-ink-100 hover:bg-ink-700 transition-colors duration-200;
-  }
-  .law-card {
-    @apply flex flex-col items-center justify-center gap-1.5 rounded-lg border border-gold/25 bg-ink-900/40 backdrop-blur-sm px-2 py-4 text-center;
-  }
-  .law-numeral {
-    @apply font-serif text-gold text-xl;
-  }
-}
-
-/* Entrada suave */
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.animate-fade-up {
-  animation: fade-up 0.4s ease-out;
-}
-
-@keyframes grow-width {
-  from {
-    width: 0;
-  }
-}
-.animate-grow {
-  animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Botão principal da tela de intro, com brilho de "ouro batido" */
-.btn-hero {
-  position: relative;
-  overflow: hidden;
-  background-color: #C9A227;
-  color: #0C1113;
-  font-weight: 600;
-  border-radius: 0.5rem;
-  transition: background-color 0.2s;
-  box-shadow: 0 0 0 1px rgba(201,162,39,0.4), 0 12px 30px -8px rgba(201,162,39,0.5);
-}
-.btn-hero:hover {
-  background-color: #E0BE4A;
-}
-.btn-hero:active {
-  background-color: #A8851D;
-}
-@keyframes shimmer-sweep {
-  0% {
-    transform: translateX(-140%) skewX(-15deg);
-  }
-  100% {
-    transform: translateX(240%) skewX(-15deg);
-  }
-}
-.btn-hero::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
-  animation: shimmer-sweep 3.2s ease-in-out infinite;
-  animation-delay: 1s;
-}
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Grana Séria</title>
+    <meta name="description" content="Diagnóstico financeiro inspirado em O Homem Mais Rico da Babilônia" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
