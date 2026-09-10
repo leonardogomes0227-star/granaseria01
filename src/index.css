@@ -43,6 +43,16 @@
   .law-numeral {
     @apply font-serif text-gold text-xl;
   }
+
+  /* Linha decorativa curta antes de rótulos, no estilo "inscrição antiga" */
+  .divider-babylon {
+    @apply inline-block w-8 h-px bg-gold align-middle mr-3;
+  }
+
+  /* Card com acento em lápis-lazúli, alternativa ao law-card dourado */
+  .card-lapis {
+    @apply flex flex-col items-center justify-center gap-1.5 rounded-lg border border-lapis-light/30 bg-lapis-dark/20 backdrop-blur-sm px-2 py-4 text-center;
+  }
 }
 
 /* Entrada suave */
@@ -104,4 +114,10 @@
   background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
   animation: shimmer-sweep 3.2s ease-in-out infinite;
   animation-delay: 1s;
+}
+
+/* Padrão geométrico sutil inspirado nos relevos do Portão de Ishtar */
+.pattern-lapis {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(28,79,114,0.08) 0px, rgba(28,79,114,0.08) 1px, transparent 1px, transparent 12px);
 }
