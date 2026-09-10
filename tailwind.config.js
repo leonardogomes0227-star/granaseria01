@@ -32,6 +32,12 @@ export default {
           light: '#E08E6F',
           dark: '#A85E44',
         },
+        lapis: {
+          DEFAULT: '#1C4F72',
+          light: '#2E6D94',
+          dark: '#123A56',
+          muted: '#173F5C',
+        },
       },
       fontFamily: {
         serif: ['Fraunces', 'Georgia', 'serif'],
