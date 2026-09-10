@@ -62,13 +62,54 @@ function StepLayout({ children, step, onNext, onBack, canNext, nextLabel = 'Cont
   );
 }
 
+function Coin3D() {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+
+    function handleMove(e: MouseEvent) {
+      const rect = el!.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / rect.width;
+      const dy = (e.clientY - cy) / rect.height;
+      el!.style.transform = `rotateX(${dy * -14}deg) rotateY(${dx * 14}deg)`;
+    }
+
+    function handleLeave() {
+      el!.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    }
+
+    window.addEventListener('mousemove', handleMove);
+    el.addEventListener('mouseleave', handleLeave);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      el.removeEventListener('mouseleave', handleLeave);
+    };
+  }, []);
+
+  return (
+    <div className="coin-scene mx-auto mb-8 w-28 h-28 sm:w-32 sm:h-32">
+      <div ref={wrapRef} className="coin-tilt w-full h-full">
+        <div className="coin-spin relative w-full h-full">
+          <div className="coin-face absolute inset-0 rounded-full flex items-center justify-center">
+            <Coins size={40} className="text-ink-900/70" strokeWidth={1.5} />
+          </div>
+          <div className="coin-face coin-back absolute inset-0 rounded-full flex items-center justify-center">
+            <span className="font-serif text-2xl text-ink-900/70">10%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function IntroStep({ onStart }: { onStart: () => void }) {
   return (
     <div className="w-full max-w-wizard text-center animate-fade-up">
-      <div className="mx-auto mb-9 w-16 h-16 border border-gold/60 rounded-full flex items-center justify-center relative">
-        <div className="absolute inset-1.5 border border-gold/20 rounded-full" />
-        <Coins size={25} className="text-gold" strokeWidth={1.5} />
-      </div>
+      <Coin3D />
       <div className="flex items-center justify-center gap-2 mb-5">
         <span className="h-px w-8 bg-gold" />
         <span className="text-gold text-xs font-semibold uppercase tracking-[0.2em]">Um diagnóstico para a vida real</span>
