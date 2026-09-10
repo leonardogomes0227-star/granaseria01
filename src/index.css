@@ -10,7 +10,6 @@
   body {
     @apply bg-ink-800 text-ink-100 font-sans antialiased;
   }
-  /* Remove number input spinners */
   input[type='number']::-webkit-outer-spin-button,
   input[type='number']::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -38,106 +37,91 @@
     @apply text-ink-200 font-medium px-4 py-2 rounded-lg
       hover:text-ink-100 hover:bg-ink-700 transition-colors duration-200;
   }
-  .law-pill {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/30 bg-gold/5 text-gold-light text-xs font-medium;
+  .law-card {
+    @apply flex flex-col items-center justify-center gap-1.5 rounded-lg border border-gold/20 bg-ink-700/50 px-2 py-4 text-center;
+  }
+  .law-numeral {
+    @apply font-serif text-gold text-xl;
+  }
+  .scene-panel {
+    box-shadow: inset 0 1px 0 rgba(201,162,39,0.08), 0 30px 60px -20px rgba(0,0,0,0.5);
   }
 }
 
-/* Subtle entrance animation */
+/* Entrada suave */
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-up {
   animation: fade-up 0.4s ease-out;
 }
 
 @keyframes grow-width {
-  from {
-    width: 0;
-  }
+  from { width: 0; }
 }
 .animate-grow {
   animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* 3D coin — tela inicial */
-@keyframes coin-spin {
-  0% { transform: rotateY(0deg); }
-  100% { transform: rotateY(360deg); }
+/* Estrelas */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.9; }
+}
+.star-twinkle {
+  animation: star-twinkle 3s ease-in-out infinite;
 }
 
-@keyframes coin-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-.coin-scene {
-  perspective: 900px;
-}
-
-.coin-tilt {
-  transition: transform 0.3s ease-out;
-  transform-style: preserve-3d;
-}
-
-.coin-spin {
-  animation: coin-spin 7s linear infinite, coin-float 4s ease-in-out infinite;
-  transform-style: preserve-3d;
-}
-
-.coin-face {
-  backface-visibility: hidden;
-  background: radial-gradient(circle at 35% 30%, #E8CD7A 0%, #C9A227 45%, #8A6B1A 100%);
-  box-shadow:
-    0 0 0 3px rgba(201,162,39,0.25),
-    inset 0 2px 6px rgba(255,255,255,0.35),
-    inset 0 -6px 10px rgba(0,0,0,0.35),
-    0 20px 40px -10px rgba(201,162,39,0.35);
-}
-
-.coin-face.coin-back {
-  transform: rotateY(180deg);
-}
-
-/* Raios de sol girando lentamente atrás da moeda (Intro) */
-@keyframes rays-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-.sun-rays {
-  animation: rays-spin 70s linear infinite;
-  transform-origin: center;
-}
-
-/* Poeira dourada flutuante (Intro) */
+/* Poeira dourada */
 @keyframes float-dust {
-  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.35; }
-  50% { transform: translateY(-14px) translateX(6px); opacity: 0.9; }
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+  50% { transform: translateY(-14px) translateX(6px); opacity: 0.85; }
 }
 .dust-mote {
   animation: float-dust 6s ease-in-out infinite;
 }
 
-/* Textura sutil de pergaminho, só na tela inicial */
-.bg-grain {
-  isolation: isolate;
+/* Raios de sol, giro bem lento */
+@keyframes rays-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-.bg-grain::before {
-  content: '';
+.sun-rays {
+  animation: rays-spin 90s linear infinite;
+  transform-origin: center;
+}
+
+/* Chamas das colunas */
+@keyframes flame-flicker {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.flame-flicker {
+  animation: flame-flicker 1.6s ease-in-out infinite;
+}
+
+/* Medalhão (substitui a moeda giratória antiga) */
+@keyframes medallion-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.medallion-wrap {
+  border-radius: 9999px;
+  overflow: hidden;
+  animation: medallion-float 4s ease-in-out infinite;
+  filter: drop-shadow(0 18px 30px rgba(201,162,39,0.35));
+}
+@keyframes shine-sweep {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+.medallion-shine {
   position: absolute;
-  inset: -40px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+  transform: translateX(-120%);
+  animation: shine-sweep 4.5s ease-in-out infinite;
 }
 
 /* Botão principal da tela de intro, com brilho de "ouro batido" */
