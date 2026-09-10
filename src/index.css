@@ -63,3 +63,42 @@
 .animate-grow {
   animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* 3D coin — tela inicial */
+@keyframes coin-spin {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+@keyframes coin-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.coin-scene {
+  perspective: 900px;
+}
+
+.coin-tilt {
+  transition: transform 0.3s ease-out;
+  transform-style: preserve-3d;
+}
+
+.coin-spin {
+  animation: coin-spin 7s linear infinite, coin-float 4s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.coin-face {
+  backface-visibility: hidden;
+  background: radial-gradient(circle at 35% 30%, #E8CD7A 0%, #C9A227 45%, #8A6B1A 100%);
+  box-shadow:
+    0 0 0 3px rgba(201,162,39,0.25),
+    inset 0 2px 6px rgba(255,255,255,0.35),
+    inset 0 -6px 10px rgba(0,0,0,0.35),
+    0 20px 40px -10px rgba(201,162,39,0.35);
+}
+
+.coin-face.coin-back {
+  transform: rotateY(180deg);
+}
