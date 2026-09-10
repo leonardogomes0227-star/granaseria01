@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-ink-800 text-ink-100 font-sans antialiased;
+  }
+  /* Remove number input spinners */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply text-sm font-medium text-ink-200 mb-1.5 block;
+  }
+  .field-input {
+    @apply w-full bg-ink-700 border border-ink-500 rounded-lg px-4 py-3 text-ink-100 text-lg font-sans
+      focus:outline-none focus:border-gold transition-colors duration-200 placeholder:text-ink-300/50;
+  }
+  .btn-primary {
+    @apply bg-gold text-ink-900 font-semibold px-6 py-3 rounded-lg
+      hover:bg-gold-light active:bg-gold-dark transition-colors duration-200
+      disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply text-ink-200 font-medium px-4 py-2 rounded-lg
+      hover:text-ink-100 hover:bg-ink-700 transition-colors duration-200;
+  }
+}
+
+/* Subtle entrance animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out;
+}
+
+@keyframes grow-width {
+  from {
+    width: 0;
+  }
+}
+.animate-grow {
+  animation: grow-width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
