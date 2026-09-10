@@ -38,6 +38,9 @@
     @apply text-ink-200 font-medium px-4 py-2 rounded-lg
       hover:text-ink-100 hover:bg-ink-700 transition-colors duration-200;
   }
+  .law-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gold/30 bg-gold/5 text-gold-light text-xs font-medium;
+  }
 }
 
 /* Subtle entrance animation */
@@ -101,4 +104,60 @@
 
 .coin-face.coin-back {
   transform: rotateY(180deg);
+}
+
+/* Raios de sol girando lentamente atrás da moeda (Intro) */
+@keyframes rays-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.sun-rays {
+  animation: rays-spin 70s linear infinite;
+  transform-origin: center;
+}
+
+/* Poeira dourada flutuante (Intro) */
+@keyframes float-dust {
+  0%, 100% { transform: translateY(0) translateX(0); opacity: 0.35; }
+  50% { transform: translateY(-14px) translateX(6px); opacity: 0.9; }
+}
+.dust-mote {
+  animation: float-dust 6s ease-in-out infinite;
+}
+
+/* Textura sutil de pergaminho, só na tela inicial */
+.bg-grain {
+  isolation: isolate;
+}
+.bg-grain::before {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* Botão principal da tela de intro, com brilho de "ouro batido" */
+.btn-hero {
+  @apply relative overflow-hidden bg-gold text-ink-900 font-semibold rounded-lg
+    hover:bg-gold-light active:bg-gold-dark transition-colors duration-200;
+  box-shadow: 0 0 0 1px rgba(201,162,39,0.4), 0 12px 30px -8px rgba(201,162,39,0.5);
+}
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-140%) skewX(-15deg); }
+  100% { transform: translateX(240%) skewX(-15deg); }
+}
+.btn-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+  animation: shimmer-sweep 3.2s ease-in-out infinite;
+  animation-delay: 1s;
 }
