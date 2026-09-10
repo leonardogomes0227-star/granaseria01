@@ -106,25 +106,59 @@ function Coin3D() {
   );
 }
 
+function BabylonSkyline() {
+  return (
+    <svg
+      className="absolute bottom-0 left-0 w-full h-40 sm:h-56 opacity-[0.07] pointer-events-none"
+      viewBox="0 0 800 200"
+      preserveAspectRatio="xMidYMax slice"
+      fill="none"
+    >
+      {/* Zigurate central */}
+      <path d="M340 200 L340 170 L360 170 L360 150 L380 150 L380 130 L420 130 L420 150 L440 150 L440 170 L460 170 L460 200 Z" fill="#C9A227" />
+      {/* Construções laterais menores */}
+      <path d="M150 200 L150 160 L170 160 L170 140 L210 140 L210 160 L230 160 L230 200 Z" fill="#C9A227" />
+      <path d="M560 200 L560 165 L580 165 L580 145 L610 145 L610 165 L630 165 L630 200 Z" fill="#C9A227" />
+      {/* Muralhas/base contínua */}
+      <path d="M0 200 L0 185 L60 185 L60 195 L120 195 L120 180 L150 180 L150 200 Z" fill="#C9A227" />
+      <path d="M650 200 L650 185 L700 185 L700 192 L760 192 L760 178 L800 178 L800 200 Z" fill="#C9A227" />
+    </svg>
+  );
+}
+
 export function IntroStep({ onStart }: { onStart: () => void }) {
   return (
-    <div className="w-full max-w-wizard text-center animate-fade-up">
+    <div className="relative w-full max-w-wizard text-center animate-fade-up overflow-hidden">
+      {/* Brilho radial atrás da moeda */}
+      <div
+        className="absolute top-6 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0) 70%)' }}
+      />
+
       <Coin3D />
-      <div className="flex items-center justify-center gap-2 mb-5">
+
+      <div className="flex items-center justify-center gap-2 mb-4">
         <span className="h-px w-8 bg-gold" />
         <span className="text-gold text-xs font-semibold uppercase tracking-[0.2em]">Um diagnóstico para a vida real</span>
         <span className="h-px w-8 bg-gold" />
       </div>
+
+      <p className="text-ink-300 text-sm italic max-w-sm mx-auto mb-6">
+        "A riqueza começa como uma semente pequena — um punhado de moedas guardadas com disciplina."
+      </p>
+
       <h1 className="font-serif text-5xl sm:text-7xl leading-[0.98] text-ink-100 mb-7">
         Grana<br /><span className="text-gold">Séria.</span>
       </h1>
       <p className="text-ink-200 text-lg leading-relaxed max-w-md mx-auto mb-10">
         Clareza sobre seu dinheiro. Um plano que cabe na sua realidade.
       </p>
-      <button type="button" onClick={onStart} className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-base">
+      <button type="button" onClick={onStart} className="btn-primary inline-flex items-center gap-3 px-8 py-4 text-base relative z-10">
         Começar <ChevronRight size={18} />
       </button>
-      <p className="text-ink-300 text-xs mt-8">Inspirado nos princípios de <em>O Homem Mais Rico da Babilônia</em></p>
+      <p className="text-ink-300 text-xs mt-8 relative z-10">Inspirado nos princípios de <em>O Homem Mais Rico da Babilônia</em></p>
+
+      <BabylonSkyline />
     </div>
   );
 }
