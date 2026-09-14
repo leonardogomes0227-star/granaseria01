@@ -92,7 +92,8 @@ function buildCoin(): THREE.Group {
 
 function buildZiggurat(): THREE.Group {
   const group = new THREE.Group();
-  const mat = new THREE.MeshStandardMaterial({ color: 0x5a4816, metalness: 0.05, roughness: 0.95 });
+  // Tom sienna/bronze: contra um fundo claro, o marrom-oliva antigo virava uma mancha escura.
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8a5a2e, metalness: 0.08, roughness: 0.88 });
   const levels = 5;
   let width = 3.6;
   let y = 0;
@@ -119,11 +120,13 @@ function buildParticles(): THREE.Points {
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  // Partículas mais escuras que o dourado claro anterior: em fundo claro,
+  // pontos dourados quase somem — aqui viram "poeira de bronze" visível.
   const material = new THREE.PointsMaterial({
-    color: 0xd9b34a,
+    color: 0x8a5a12,
     size: 0.03,
     transparent: true,
-    opacity: 0.55,
+    opacity: 0.4,
     depthWrite: false,
     sizeAttenuation: true,
   });
@@ -138,24 +141,27 @@ export default function Scene3D() {
     if (!container) return;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0c1113);
-    scene.fog = new THREE.FogExp2(0x0c1113, 0.09);
+    // Fundo transparente: deixa a textura clara (areia/pergaminho) do CSS aparecer atrás da cena.
+    scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
     camera.position.set(0, 0.3, 6.4);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
     container.appendChild(renderer.domElement);
 
-    const hemi = new THREE.HemisphereLight(0x33404a, 0x1a1206, 0.55);
+    // Luz recalibrada para fundo claro: menos "tocha no escuro", mais luz ambiente
+    // suave batendo no metal, pra moeda continuar com relevo sem escurecer o resto.
+    const hemi = new THREE.HemisphereLight(0xfff4d9, 0xcdb27a, 0.85);
     scene.add(hemi);
 
-    const key = new THREE.DirectionalLight(0xffd77a, 1.35);
+    const key = new THREE.DirectionalLight(0xfff0cf, 1.15);
     key.position.set(3.5, 4.5, 4);
     scene.add(key);
 
-    const torch = new THREE.PointLight(0xffb454, 1.1, 12, 2);
+    const torch = new THREE.PointLight(0xffb454, 0.55, 12, 2);
     torch.position.set(-2.5, 0.5, 3);
     scene.add(torch);
 
