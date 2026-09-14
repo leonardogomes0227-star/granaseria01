@@ -4,22 +4,30 @@ export default {
   theme: {
     extend: {
       colors: {
+        sand: {
+          DEFAULT: '#F7EFDC',
+          50: '#FDFAF1',
+          100: '#F7EFDC',
+          200: '#EFE3C4',
+          300: '#E4D5A8',
+        },
         ink: {
-          DEFAULT: '#12181B',
-          900: '#0C1113',
-          800: '#12181B',
-          700: '#1A2226',
-          600: '#222C31',
-          500: '#2B373D',
-          400: '#3A474E',
-          300: '#5A6A72',
-          200: '#8A9BA3',
-          100: '#B8C5CB',
+          DEFAULT: '#241A0F',
+          900: '#1B140C',
+          800: '#241A0F',
+          700: '#3A2C18',
+          600: '#584627',
+          500: '#6B5D42',
+          400: '#8A7C57',
+          300: '#A69572',
+          200: '#C9B98C',
+          100: '#E4D5B0',
         },
         gold: {
           DEFAULT: '#C9A227',
           light: '#E0BE4A',
           dark: '#A8851D',
+          deep: '#7A5311',
           muted: '#8A7220',
         },
         sage: {
@@ -40,7 +48,8 @@ export default {
         },
       },
       fontFamily: {
-        serif: ['Fraunces', 'Georgia', 'serif'],
+        display: ['Cinzel', 'Georgia', 'serif'],
+        serif: ['"EB Garamond"', 'Georgia', 'serif'],
         sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
       },
       maxWidth: {
