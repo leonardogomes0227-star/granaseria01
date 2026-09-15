@@ -2,6 +2,7 @@ export interface DebtItem {
   id: string;
   description: string;
   value: number;
+  interestRate?: number; // % ao mês, opcional — usado pelo simulador avalanche
 }
 
 export interface WizardData {
