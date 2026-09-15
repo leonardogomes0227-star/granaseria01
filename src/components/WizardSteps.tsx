@@ -240,11 +240,30 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
               updateDebt(debt.id, { value: clamped });
             }}
           />
+          <input
+            className="field-input"
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            placeholder="% juros a.m."
+            style={{ maxWidth: 110 }}
+            value={debt.interestRate || ''}
+            onChange={(e) => {
+              const raw = parseFloat(e.target.value);
+              const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 100);
+              updateDebt(debt.id, { interestRate: clamped });
+            }}
+          />
           <button className="debt-remove" type="button" onClick={() => removeDebt(debt.id)}>
             ×
           </button>
         </div>
       ))}
+
+      <p className="wizard-sub" style={{ fontSize: 12.5, marginTop: -8, marginBottom: 16 }}>
+        A taxa de juros é opcional, mas ajuda no simulador avalanche vs. bola de neve.
+      </p>
 
       <button className="add-debt" type="button" onClick={addDebt}>
         + Adicionar dívida
