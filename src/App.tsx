@@ -403,9 +403,15 @@ function App() {
         <div className="hero-copy">
           {savedProgress && (
             <div className="resume-banner">
-              <span>Encontramos um diagnóstico em andamento (etapa {savedProgress.step} de 6).</span>
+              <span>
+                {savedProgress.step >= 6
+                  ? 'Seu diagnóstico já está pronto.'
+                  : `Encontramos um diagnóstico em andamento (etapa ${savedProgress.step} de 6).`}
+              </span>
               <div className="resume-actions">
-                <button className="btn-primary" onClick={resumeWizard} type="button">Continuar</button>
+                <button className="btn-primary" onClick={resumeWizard} type="button">
+                  {savedProgress.step >= 6 ? 'Ver diagnóstico' : 'Continuar'}
+                </button>
                 <button className="btn-outline" onClick={startWizard} type="button">Começar do zero</button>
               </div>
             </div>
