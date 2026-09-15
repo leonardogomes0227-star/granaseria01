@@ -5,6 +5,14 @@ export interface DebtItem {
   interestRate?: number; // % ao mês, opcional — usado pelo simulador avalanche
 }
 
+export interface CheckinEntry {
+  date: string; // ISO
+  monthlyIncome: number;
+  currentSavings: number;
+  totalExpenses: number;
+  totalDebt: number;
+}
+
 export interface WizardData {
   monthlyIncome: number;
   currentSavings: number;
