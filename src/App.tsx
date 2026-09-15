@@ -7,6 +7,7 @@ import {
   EmergencyStep,
   DiagnosisStep,
 } from './components/WizardSteps';
+import { ImpulseTool, DebtSimulator } from './components/Tools';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
 
@@ -32,6 +33,7 @@ function loadSavedProgress(): SavedProgress | null {
 
 function App() {
   const [showWizard, setShowWizard] = useState(false);
+  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts'>(null);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
@@ -347,7 +349,7 @@ function App() {
         .action-num{font-family:'Cinzel',serif;color:var(--gold-deep);font-size:16px;flex-shrink:0;width:24px;}
       `}</style>
 
-      {!showWizard && (
+      {!showWizard && !activeTool && (
       <>
       <header>
         <nav>
@@ -361,6 +363,7 @@ function App() {
           </div>
           <div className="navlinks">
             <a href="#principios">Princípios</a>
+            <a href="#ferramentas">Ferramentas</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#">Sobre</a>
           </div>
@@ -513,6 +516,25 @@ function App() {
         </div>
       </section>
 
+      <section className="principles" id="ferramentas">
+        <div className="section-head">
+          <div className="kicker"><span className="wedge" />Ferramentas</div>
+          <h2>Além do diagnóstico, o que te ajuda no dia a dia.</h2>
+        </div>
+        <div className="frieze">
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('impulse')}>
+            <div className="numeral">$</div>
+            <h3>Vale a pena comprar isso?</h3>
+            <p>Antes de uma compra por impulso, veja o que ela custa em tempo de trabalho e na sua meta de poupança.</p>
+          </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('debts')}>
+            <div className="numeral">IV</div>
+            <h3>Avalanche vs. bola de neve</h3>
+            <p>Duas estratégias pra decidir qual dívida atacar primeiro, usando o que você já cadastrou no diagnóstico.</p>
+          </div>
+        </div>
+      </section>
+
       <section className="final-cta">
         <div className="cta-frame">
           <div className="corner tl"><svg viewBox="0 0 22 22"><path d="M1 21V1H21" fill="none" stroke="#BD7E1E" strokeWidth="2" /></svg></div>
@@ -566,6 +588,13 @@ function App() {
             <DiagnosisStep data={data} diagnosis={calculateDiagnosis(data)} onRestart={onRestart} />
           )}
         </div>
+      )}
+
+      {activeTool === 'impulse' && (
+        <ImpulseTool monthlyIncome={data.monthlyIncome} onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'debts' && (
+        <DebtSimulator debts={data.debts} onClose={() => setActiveTool(null)} />
       )}
     </>
   );
