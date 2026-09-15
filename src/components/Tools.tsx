@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { WizardData, DebtItem } from '../types';
-import { formatBRL } from '../calculations';
+import { formatBRL, computeProjection } from '../calculations';
 
 function ToolShell({
   title,
@@ -172,6 +172,79 @@ export function DebtSimulator({ debts, onClose }: { debts: DebtItem[]; onClose: 
           debts={sortSnowball(debts)}
         />
       </div>
+    </ToolShell>
+  );
+}
+
+/* ---------- Simulador de longo prazo / aposentadoria ---------- */
+
+export function LongTermSimulator({
+  monthlyIncome,
+  onClose,
+}: {
+  monthlyIncome: number;
+  onClose: () => void;
+}) {
+  const [contribution, setContribution] = useState(Math.round(monthlyIncome * 0.1));
+  const [rate, setRate] = useState(10);
+  const [years, setYears] = useState(20);
+
+  const total = computeProjection(contribution, rate, years);
+  const totalContributed = contribution * years * 12;
+  const totalInterest = total - totalContributed;
+
+  return (
+    <ToolShell title="Simulador de longo prazo" kicker="Aposentadoria e metas longas" onClose={onClose}>
+      <p className="wizard-sub">Ajuste o aporte, a taxa e o prazo pra ver aonde isso te leva.</p>
+
+      <div className="field-group">
+        <label className="field-label">Aporte mensal</label>
+        <input
+          className="field-input"
+          type="number"
+          min="0"
+          value={contribution || ''}
+          onChange={(e) => setContribution(Math.max(parseFloat(e.target.value) || 0, 0))}
+        />
+      </div>
+
+      <div className="field-group">
+        <label className="field-label">Taxa de juros (% ao ano)</label>
+        <input
+          className="field-input"
+          type="number"
+          min="0"
+          max="100"
+          step="0.5"
+          value={rate || ''}
+          onChange={(e) => setRate(Math.max(parseFloat(e.target.value) || 0, 0))}
+        />
+      </div>
+
+      <div className="field-group">
+        <label className="field-label">Prazo (anos)</label>
+        <input
+          className="field-input"
+          type="number"
+          min="1"
+          max="60"
+          value={years || ''}
+          onChange={(e) => setYears(Math.max(parseFloat(e.target.value) || 1, 1))}
+        />
+      </div>
+
+      {contribution > 0 && (
+        <div className="diag-section" style={{ marginTop: 28 }}>
+          <p className="diag-label">Em {years} anos, você teria</p>
+          <p className="diag-number">{formatBRL(total)}</p>
+
+          <p className="diag-label" style={{ marginTop: 20 }}>Do que você mesmo colocou</p>
+          <p className="diag-number">{formatBRL(totalContributed)}</p>
+
+          <p className="diag-label" style={{ marginTop: 20 }}>Rendido só de juros</p>
+          <p className="diag-number">{formatBRL(Math.max(totalInterest, 0))}</p>
+        </div>
+      )}
     </ToolShell>
   );
 }
