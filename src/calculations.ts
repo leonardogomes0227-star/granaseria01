@@ -113,6 +113,28 @@ export function computeProjection(monthlyContribution: number, annualRatePct: nu
   return monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
 }
 
+// Inverso da projeção: dado um valor-alvo, quanto precisa guardar por mês pra chegar lá.
+export function computeRequiredContribution(target: number, annualRatePct: number, years: number): number {
+  if (target <= 0 || years <= 0) return 0;
+  const monthlyRate = annualRatePct / 100 / 12;
+  const months = years * 12;
+  if (monthlyRate === 0) return target / months;
+  return (target * monthlyRate) / (Math.pow(1 + monthlyRate, months) - 1);
+}
+
+// Tabela Price (parcela fixa) — usada pra comparar propostas de empréstimo/financiamento.
+export function computeLoanInstallment(
+  principal: number,
+  monthlyRatePct: number,
+  installments: number
+): { installment: number; total: number; totalInterest: number } {
+  if (principal <= 0 || installments <= 0) return { installment: 0, total: 0, totalInterest: 0 };
+  const i = monthlyRatePct / 100;
+  const installment = i === 0 ? principal / installments : (principal * i) / (1 - Math.pow(1 + i, -installments));
+  const total = installment * installments;
+  return { installment, total, totalInterest: total - principal };
+}
+
 // Plano de ação simplificado pro check-in mensal (não tem a quebra por categoria
 // que o diagnóstico completo tem, só renda/poupança/gastos/dívida).
 export function checkinActionPlan(entry: { monthlyIncome: number; currentSavings: number; totalDebt: number }): string[] {
