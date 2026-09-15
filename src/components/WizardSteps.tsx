@@ -122,8 +122,8 @@ interface StepProps {
 export function IncomeStep({ data, update, onNext }: StepProps) {
   return (
     <div className="wizard-card">
-      <ProgressDots step={1} total={6} />
-      <div className="wizard-kicker"><span className="wedge" />Etapa 1 de 6</div>
+      <ProgressDots step={1} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 1 de 7</div>
       <h2 className="wizard-h2">Qual sua renda mensal?</h2>
       <p className="wizard-sub">Considere o que entra todo mês, depois dos impostos.</p>
       <CurrencyField
@@ -142,8 +142,8 @@ export function IncomeStep({ data, update, onNext }: StepProps) {
 export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
   return (
     <div className="wizard-card">
-      <ProgressDots step={2} total={6} />
-      <div className="wizard-kicker"><span className="wedge" />Etapa 2 de 6</div>
+      <ProgressDots step={2} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 2 de 7</div>
       <SeloBadge numeral="I" label="pague-se primeiro" />
       <h2 className="wizard-h2">Quanto você guarda hoje, por mês?</h2>
       <p className="wizard-sub">Antes de qualquer gasto — o que já vira poupança ou investimento.</p>
@@ -168,8 +168,8 @@ export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
 export function ExpensesStep({ data, updateExpenses, onNext, onBack }: StepProps) {
   return (
     <div className="wizard-card">
-      <ProgressDots step={3} total={6} />
-      <div className="wizard-kicker"><span className="wedge" />Etapa 3 de 6</div>
+      <ProgressDots step={3} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 3 de 7</div>
       <SeloBadge numeral="II" label="controle os gastos" />
       <h2 className="wizard-h2">Seus gastos mensais, por categoria</h2>
       <p className="wizard-sub">Vale a estimativa — dá pra ajustar depois.</p>
@@ -216,8 +216,8 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
 
   return (
     <div className="wizard-card">
-      <ProgressDots step={4} total={6} />
-      <div className="wizard-kicker"><span className="wedge" />Etapa 4 de 6</div>
+      <ProgressDots step={4} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 4 de 7</div>
       <SeloBadge numeral="IV" label="proteja-se de perdas" />
       <h2 className="wizard-h2">Você tem alguma dívida?</h2>
       <p className="wizard-sub">Cadastre cada uma — cartão, empréstimo, financiamento.</p>
@@ -290,8 +290,8 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
 export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
   return (
     <div className="wizard-card">
-      <ProgressDots step={5} total={6} />
-      <div className="wizard-kicker"><span className="wedge" />Etapa 5 de 6</div>
+      <ProgressDots step={5} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 5 de 7</div>
       <SeloBadge numeral="III" label="construa sua reserva" />
       <h2 className="wizard-h2">Quanto você já tem de reserva de emergência?</h2>
       <p className="wizard-sub">Dinheiro guardado, líquido, pra imprevistos.</p>
@@ -301,12 +301,73 @@ export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
         onChange={(v) => update({ emergencyFund: v })}
         autoFocus
       />
+      <WizardNav onBack={onBack} onNext={onNext} nextLabel="Revisar respostas" />
+    </div>
+  );
+}
+
+/* ---------- step 6: revisar respostas ---------- */
+
+export function ReviewStep({
+  data,
+  onNext,
+  onBack,
+  goToStep,
+}: StepProps & { goToStep: (step: number) => void }) {
+  const debtsTotal = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
+  return (
+    <div className="wizard-card" style={{ maxWidth: 600 }}>
+      <ProgressDots step={6} total={7} />
+      <div className="wizard-kicker"><span className="wedge" />Etapa 6 de 7</div>
+      <h2 className="wizard-h2">Revisa antes de ver o diagnóstico</h2>
+      <p className="wizard-sub">Confere se os números batem — dá pra editar qualquer etapa daqui.</p>
+
+      <div className="review-list">
+        <div className="review-row">
+          <div>
+            <p className="review-label">Renda mensal</p>
+            <p className="review-value">{formatBRL(data.monthlyIncome)}</p>
+          </div>
+          <button className="btn-outline" type="button" onClick={() => goToStep(1)}>Editar</button>
+        </div>
+        <div className="review-row">
+          <div>
+            <p className="review-label">Guardado por mês</p>
+            <p className="review-value">{formatBRL(data.currentSavings)}</p>
+          </div>
+          <button className="btn-outline" type="button" onClick={() => goToStep(2)}>Editar</button>
+        </div>
+        <div className="review-row">
+          <div>
+            <p className="review-label">Gastos mensais</p>
+            <p className="review-value">
+              {formatBRL(data.expenses.moradia + data.expenses.alimentacao + data.expenses.transporte + data.expenses.lazer)}
+            </p>
+          </div>
+          <button className="btn-outline" type="button" onClick={() => goToStep(3)}>Editar</button>
+        </div>
+        <div className="review-row">
+          <div>
+            <p className="review-label">Dívidas ({data.debts.length})</p>
+            <p className="review-value">{formatBRL(debtsTotal)}</p>
+          </div>
+          <button className="btn-outline" type="button" onClick={() => goToStep(4)}>Editar</button>
+        </div>
+        <div className="review-row">
+          <div>
+            <p className="review-label">Reserva de emergência</p>
+            <p className="review-value">{formatBRL(data.emergencyFund)}</p>
+          </div>
+          <button className="btn-outline" type="button" onClick={() => goToStep(5)}>Editar</button>
+        </div>
+      </div>
+
       <WizardNav onBack={onBack} onNext={onNext} nextLabel="Ver diagnóstico" />
     </div>
   );
 }
 
-/* ---------- step 6: diagnóstico ---------- */
+/* ---------- step 7: diagnóstico ---------- */
 
 export function DiagnosisStep({
   data,
