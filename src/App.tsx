@@ -6,9 +6,10 @@ import {
   ExpensesStep,
   DebtsStep,
   EmergencyStep,
+  ReviewStep,
   DiagnosisStep,
 } from './components/WizardSteps';
-import { ImpulseTool, DebtSimulator } from './components/Tools';
+import { ImpulseTool, DebtSimulator, LongTermSimulator } from './components/Tools';
 import { SelosPanel } from './components/SelosAndShare';
 import { CheckInTool } from './components/CheckIn';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
@@ -37,7 +38,7 @@ function loadSavedProgress(): SavedProgress | null {
 
 function App() {
   const [showWizard, setShowWizard] = useState(false);
-  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos' | 'checkin'>(null);
+  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm'>(null);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
@@ -55,6 +56,7 @@ function App() {
 
   const onNext = () => setStep((s) => s + 1);
   const onBack = () => setStep((s) => Math.max(s - 1, 1));
+  const goToStep = (s: number) => setStep(s);
   const startWizard = () => {
     setData(INITIAL_DATA);
     setStep(1);
@@ -366,6 +368,12 @@ function App() {
         .selo-tile-label{font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;}
         .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
         .tools-grid .panel{border:1px solid var(--hairline);border-radius:8px;}
+        .review-list{display:flex;flex-direction:column;gap:2px;margin-bottom:8px;}
+        .review-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--hairline-soft);}
+        .review-row:first-child{border-top:none;}
+        .review-label{font-size:12.5px;color:var(--ink-faint);font-family:'IBM Plex Sans',sans-serif;margin-bottom:3px;}
+        .review-value{font-family:'Cinzel',serif;font-size:16px;color:var(--ink);}
+        .review-row .btn-outline{padding:8px 16px;font-size:13px;}
         .page-body p{margin-bottom:18px;color:var(--ink-soft);font-size:15.5px;}
         .page-body h3{font-size:18px;margin:32px 0 10px;color:var(--ink);}
         .page-body i{font-style:italic;}
@@ -407,13 +415,13 @@ function App() {
           {savedProgress && (
             <div className="resume-banner">
               <span>
-                {savedProgress.step >= 6
+                {savedProgress.step >= 7
                   ? 'Seu diagnóstico já está pronto.'
-                  : `Encontramos um diagnóstico em andamento (etapa ${savedProgress.step} de 6).`}
+                  : `Encontramos um diagnóstico em andamento (etapa ${savedProgress.step} de 7).`}
               </span>
               <div className="resume-actions">
                 <button className="btn-primary" onClick={resumeWizard} type="button">
-                  {savedProgress.step >= 6 ? 'Ver diagnóstico' : 'Continuar'}
+                  {savedProgress.step >= 7 ? 'Ver diagnóstico' : 'Continuar'}
                 </button>
                 <button className="btn-outline" onClick={startWizard} type="button">Começar do zero</button>
               </div>
@@ -579,6 +587,11 @@ function App() {
             <h3>Check-in mensal</h3>
             <p>Registre seus números todo mês e acompanhe se a sua taxa de poupança está subindo.</p>
           </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('longterm')}>
+            <div className="numeral">∞</div>
+            <h3>Simulador de longo prazo</h3>
+            <p>Ajuste aporte, taxa e prazo pra ver aonde sua poupança chega em 10, 20 ou 30 anos.</p>
+          </div>
         </div>
       </section>
 
@@ -639,7 +652,8 @@ function App() {
           {step === 3 && <ExpensesStep {...stepProps} />}
           {step === 4 && <DebtsStep {...stepProps} />}
           {step === 5 && <EmergencyStep {...stepProps} />}
-          {step === 6 && (
+          {step === 6 && <ReviewStep {...stepProps} goToStep={goToStep} />}
+          {step === 7 && (
             <DiagnosisStep data={data} diagnosis={calculateDiagnosis(data)} onRestart={onRestart} />
           )}
         </div>
@@ -656,6 +670,9 @@ function App() {
       )}
       {activeTool === 'checkin' && (
         <CheckInTool onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'longterm' && (
+        <LongTermSimulator monthlyIncome={data.monthlyIncome} onClose={() => setActiveTool(null)} />
       )}
       </>
         } />
