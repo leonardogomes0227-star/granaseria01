@@ -43,23 +43,26 @@ function WizardNav({
   onNext,
   canNext = true,
   nextLabel = 'Continuar',
+  loading = false,
 }: {
   onBack?: () => void;
   onNext: () => void;
   canNext?: boolean;
   nextLabel?: string;
+  loading?: boolean;
 }) {
   return (
     <div className="wizard-nav">
       {onBack ? (
-        <button className="btn-outline" onClick={onBack} type="button">
+        <button className="btn-outline" onClick={onBack} type="button" disabled={loading}>
           Voltar
         </button>
       ) : (
         <span />
       )}
-      <button className="btn-primary" onClick={onNext} disabled={!canNext} type="button">
-        {nextLabel}
+      <button className="btn-primary" onClick={onNext} disabled={!canNext || loading} type="button">
+        {loading && <span className="btn-spinner" />}
+        {loading ? 'Aguarde...' : nextLabel}
       </button>
     </div>
   );
