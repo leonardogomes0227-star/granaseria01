@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckinEntry } from '../types';
-import { formatBRL } from '../calculations';
+import { formatBRL, checkinActionPlan } from '../calculations';
 import { getCheckins, addCheckin } from '../config';
 
 function savingsRateOf(e: CheckinEntry): number {
@@ -34,6 +34,8 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
   const rateNow = last ? savingsRateOf(last) : 0;
   const ratePrev = prev ? savingsRateOf(prev) : null;
   const maxRate = Math.max(10, ...entries.map(savingsRateOf));
+  const maxDebt = Math.max(1, ...entries.map((e) => e.totalDebt));
+  const actionPlan = last ? checkinActionPlan(last) : [];
 
   return (
     <div className="wizard-wrap">
@@ -72,6 +74,32 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
                 ))}
               </div>
             )}
+
+            {entries.length > 1 && entries.some((e) => e.totalDebt > 0) && (
+              <div className="diag-section">
+                <p className="diag-label">Histórico de dívida total</p>
+                {entries.map((e, i) => (
+                  <div className="bar-row" key={i}>
+                    <span className="bar-label">{new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ width: `${(e.totalDebt / maxDebt) * 100}%`, background: 'var(--clay)' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="diag-section">
+              <p className="diag-label">Seu plano de ação desse mês</p>
+              <div className="action-list">
+                {actionPlan.map((item, i) => (
+                  <div className="action-item" key={i}>
+                    <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
+                    <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <button className="btn-primary" type="button" onClick={() => setShowForm(true)} style={{ marginTop: 8 }}>
               Fazer novo check-in
