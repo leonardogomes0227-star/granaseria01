@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { WizardData, DebtItem } from '../types';
-import { formatBRL, computeProjection } from '../calculations';
+import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment } from '../calculations';
 
 function ToolShell({
   title,
@@ -243,6 +243,156 @@ export function LongTermSimulator({
 
           <p className="diag-label" style={{ marginTop: 20 }}>Rendido só de juros</p>
           <p className="diag-number">{formatBRL(Math.max(totalInterest, 0))}</p>
+        </div>
+      )}
+    </ToolShell>
+  );
+}
+
+/* ---------- Calculadora de meta ---------- */
+
+export function GoalCalculator({ onClose }: { onClose: () => void }) {
+  const [target, setTarget] = useState(0);
+  const [years, setYears] = useState(5);
+  const [rate, setRate] = useState(10);
+
+  const required = computeRequiredContribution(target, rate, years);
+  const totalContributed = required * years * 12;
+  const fromInterest = target - totalContributed;
+
+  return (
+    <ToolShell title="Calculadora de meta" kicker="Quanto guardar por mês" onClose={onClose}>
+      <p className="wizard-sub">Diz aonde você quer chegar, a gente calcula o aporte mensal necessário.</p>
+
+      <div className="field-group">
+        <label className="field-label">Valor da meta</label>
+        <input
+          className="field-input"
+          type="number"
+          min="0"
+          placeholder="R$ 0,00"
+          autoFocus
+          value={target || ''}
+          onChange={(e) => setTarget(Math.max(parseFloat(e.target.value) || 0, 0))}
+        />
+      </div>
+
+      <div className="field-group">
+        <label className="field-label">Prazo (anos)</label>
+        <input
+          className="field-input"
+          type="number"
+          min="1"
+          max="60"
+          value={years || ''}
+          onChange={(e) => setYears(Math.max(parseFloat(e.target.value) || 1, 1))}
+        />
+      </div>
+
+      <div className="field-group">
+        <label className="field-label">Taxa de juros (% ao ano)</label>
+        <input
+          className="field-input"
+          type="number"
+          min="0"
+          max="100"
+          step="0.5"
+          value={rate || ''}
+          onChange={(e) => setRate(Math.max(parseFloat(e.target.value) || 0, 0))}
+        />
+      </div>
+
+      {target > 0 && (
+        <div className="diag-section" style={{ marginTop: 28 }}>
+          <p className="diag-label">Você precisa guardar, por mês</p>
+          <p className="diag-number">{formatBRL(required)}</p>
+
+          <p className="diag-label" style={{ marginTop: 20 }}>Do total, vem de juros</p>
+          <p className="diag-number">{formatBRL(Math.max(fromInterest, 0))}</p>
+        </div>
+      )}
+    </ToolShell>
+  );
+}
+
+/* ---------- Comparador de empréstimo/financiamento ---------- */
+
+function LoanColumn({
+  label,
+  principal,
+  setPrincipal,
+  rate,
+  setRate,
+  installmentsCount,
+  setInstallmentsCount,
+}: {
+  label: string;
+  principal: number;
+  setPrincipal: (v: number) => void;
+  rate: number;
+  setRate: (v: number) => void;
+  installmentsCount: number;
+  setInstallmentsCount: (v: number) => void;
+}) {
+  return (
+    <div>
+      <p className="diag-label" style={{ marginBottom: 10 }}>{label}</p>
+      <div className="field-group">
+        <label className="field-label">Valor financiado</label>
+        <input className="field-input" type="number" min="0" value={principal || ''} onChange={(e) => setPrincipal(Math.max(parseFloat(e.target.value) || 0, 0))} />
+      </div>
+      <div className="field-group">
+        <label className="field-label">Taxa (% ao mês)</label>
+        <input className="field-input" type="number" min="0" step="0.1" value={rate || ''} onChange={(e) => setRate(Math.max(parseFloat(e.target.value) || 0, 0))} />
+      </div>
+      <div className="field-group">
+        <label className="field-label">Parcelas</label>
+        <input className="field-input" type="number" min="1" value={installmentsCount || ''} onChange={(e) => setInstallmentsCount(Math.max(parseFloat(e.target.value) || 1, 1))} />
+      </div>
+    </div>
+  );
+}
+
+export function LoanComparator({ onClose }: { onClose: () => void }) {
+  const [pA, setPA] = useState(0);
+  const [rA, setRA] = useState(0);
+  const [nA, setNA] = useState(12);
+
+  const [pB, setPB] = useState(0);
+  const [rB, setRB] = useState(0);
+  const [nB, setNB] = useState(12);
+
+  const resA = computeLoanInstallment(pA, rA, nA);
+  const resB = computeLoanInstallment(pB, rB, nB);
+  const bothFilled = pA > 0 && pB > 0;
+  const cheaper = resA.total <= resB.total ? 'A' : 'B';
+
+  return (
+    <ToolShell title="Comparador de empréstimo" kicker="Antes de contratar" onClose={onClose}>
+      <p className="wizard-sub">Compare duas propostas antes de assinar.</p>
+
+      <div className="loan-grid">
+        <LoanColumn label="Proposta A" principal={pA} setPrincipal={setPA} rate={rA} setRate={setRA} installmentsCount={nA} setInstallmentsCount={setNA} />
+        <LoanColumn label="Proposta B" principal={pB} setPrincipal={setPB} rate={rB} setRate={setRB} installmentsCount={nB} setInstallmentsCount={setNB} />
+      </div>
+
+      {bothFilled && (
+        <div className="diag-section" style={{ marginTop: 20 }}>
+          <div className="loan-grid">
+            <div>
+              <p className="diag-label">Parcela A</p>
+              <p className="diag-number" style={{ fontSize: 22 }}>{formatBRL(resA.installment)}</p>
+              <p className="wizard-sub" style={{ fontSize: 12.5, marginBottom: 0 }}>Total: {formatBRL(resA.total)}</p>
+            </div>
+            <div>
+              <p className="diag-label">Parcela B</p>
+              <p className="diag-number" style={{ fontSize: 22 }}>{formatBRL(resB.installment)}</p>
+              <p className="wizard-sub" style={{ fontSize: 12.5, marginBottom: 0 }}>Total: {formatBRL(resB.total)}</p>
+            </div>
+          </div>
+          <p className="wizard-sub" style={{ marginTop: 20, marginBottom: 0 }}>
+            <strong style={{ color: 'var(--ink)' }}>Proposta {cheaper} sai mais barata</strong> — diferença de {formatBRL(Math.abs(resA.total - resB.total))} no total pago.
+          </p>
         </div>
       )}
     </ToolShell>
