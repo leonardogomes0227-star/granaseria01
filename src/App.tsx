@@ -9,6 +9,7 @@ import {
   DiagnosisStep,
 } from './components/WizardSteps';
 import { ImpulseTool, DebtSimulator } from './components/Tools';
+import { SelosPanel } from './components/SelosAndShare';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
@@ -35,7 +36,7 @@ function loadSavedProgress(): SavedProgress | null {
 
 function App() {
   const [showWizard, setShowWizard] = useState(false);
-  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts'>(null);
+  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos'>(null);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
@@ -349,6 +350,19 @@ function App() {
         .action-item{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--hairline-soft);}
         .action-item:first-child{border-top:none;}
         .action-num{font-family:'Cinzel',serif;color:var(--gold-deep);font-size:16px;flex-shrink:0;width:24px;}
+        .paywall{position:relative;}
+        .paywall-teaser{position:relative;overflow:hidden;max-height:70px;margin-bottom:16px;}
+        .paywall-fade{
+          position:absolute;bottom:0;left:0;right:0;height:70px;
+          background:linear-gradient(180deg,rgba(255,253,247,0) 0%,#FFFDF7 90%);
+        }
+        .selos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:24px 0 8px;}
+        .selo-tile{
+          display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;
+          background:#FFFDF7;border:1px solid var(--hairline);border-radius:10px;padding:20px 12px;
+        }
+        .selo-tile.locked{opacity:0.55;}
+        .selo-tile-label{font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;}
         .page-body p{margin-bottom:18px;color:var(--ink-soft);font-size:15.5px;}
         .page-body h3{font-size:18px;margin:32px 0 10px;color:var(--ink);}
         .page-body i{font-style:italic;}
@@ -546,6 +560,11 @@ function App() {
             <h3>Avalanche vs. bola de neve</h3>
             <p>Duas estratégias pra decidir qual dívida atacar primeiro, usando o que você já cadastrou no diagnóstico.</p>
           </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('selos')}>
+            <div className="numeral">✦</div>
+            <h3>Meus selos</h3>
+            <p>Veja quais das quatro leis do livro você já desbloqueou ao completar o diagnóstico.</p>
+          </div>
         </div>
       </section>
 
@@ -617,6 +636,9 @@ function App() {
       )}
       {activeTool === 'debts' && (
         <DebtSimulator debts={data.debts} onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'selos' && (
+        <SelosPanel onClose={() => setActiveTool(null)} />
       )}
       </>
         } />
