@@ -1,0 +1,177 @@
+import { useState } from 'react';
+import { WizardData, DebtItem } from '../types';
+import { formatBRL } from '../calculations';
+
+function ToolShell({
+  title,
+  kicker,
+  onClose,
+  children,
+}: {
+  title: string;
+  kicker: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="wizard-wrap">
+      <div className="wizard-card" style={{ maxWidth: 560 }}>
+        <div className="wizard-kicker"><span className="wedge" />{kicker}</div>
+        <h2 className="wizard-h2">{title}</h2>
+        {children}
+        <div className="wizard-nav">
+          <button className="btn-outline" type="button" onClick={onClose}>
+            Voltar
+          </button>
+          <span />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Vale a pena comprar isso? ---------- */
+
+export function ImpulseTool({
+  monthlyIncome,
+  onClose,
+}: {
+  monthlyIncome: number;
+  onClose: () => void;
+}) {
+  const [income, setIncome] = useState(monthlyIncome);
+  const [price, setPrice] = useState(0);
+
+  const pctOfIncome = income > 0 ? (price / income) * 100 : 0;
+  const daysOfWork = income > 0 ? price / (income / 30) : 0;
+  const savingsGoal = income * 0.1;
+  const monthsDelay = savingsGoal > 0 ? price / savingsGoal : 0;
+
+  return (
+    <ToolShell title="Vale a pena comprar isso?" kicker="Freio de impulso" onClose={onClose}>
+      <p className="wizard-sub">Antes de decidir, veja o que essa compra realmente custa em tempo e em meta.</p>
+
+      {monthlyIncome <= 0 && (
+        <div className="field-group">
+          <label className="field-label">Sua renda mensal</label>
+          <input
+            className="field-input"
+            type="number"
+            min="0"
+            placeholder="R$ 0,00"
+            value={income || ''}
+            onChange={(e) => setIncome(Math.max(parseFloat(e.target.value) || 0, 0))}
+          />
+        </div>
+      )}
+
+      <div className="field-group">
+        <label className="field-label">Valor da compra</label>
+        <input
+          className="field-input"
+          type="number"
+          min="0"
+          placeholder="R$ 0,00"
+          autoFocus
+          value={price || ''}
+          onChange={(e) => setPrice(Math.max(parseFloat(e.target.value) || 0, 0))}
+        />
+      </div>
+
+      {income > 0 && price > 0 && (
+        <div className="diag-section" style={{ marginTop: 28 }}>
+          <p className="diag-label">Isso representa</p>
+          <p className="diag-number">{pctOfIncome.toFixed(1)}% da sua renda mensal</p>
+
+          <p className="diag-label">Em tempo de trabalho</p>
+          <p className="diag-number">
+            {daysOfWork < 1 ? 'menos de 1 dia' : `${daysOfWork.toFixed(1)} dias`}
+          </p>
+
+          {monthsDelay >= 0.3 && (
+            <>
+              <p className="diag-label">Atraso na sua meta de poupança (10% da renda)</p>
+              <p className="diag-number">
+                {monthsDelay < 1 ? 'menos de 1 mês' : `${monthsDelay.toFixed(1)} meses`}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </ToolShell>
+  );
+}
+
+/* ---------- Avalanche vs. bola de neve ---------- */
+
+function sortAvalanche(debts: DebtItem[]): DebtItem[] {
+  return [...debts].sort((a, b) => (b.interestRate || 0) - (a.interestRate || 0));
+}
+
+function sortSnowball(debts: DebtItem[]): DebtItem[] {
+  return [...debts].sort((a, b) => a.value - b.value);
+}
+
+function DebtOrderList({ title, note, debts }: { title: string; note: string; debts: DebtItem[] }) {
+  return (
+    <div>
+      <p className="diag-label" style={{ marginBottom: 4 }}>{title}</p>
+      <p className="wizard-sub" style={{ fontSize: 12.5, marginBottom: 14 }}>{note}</p>
+      <div className="action-list">
+        {debts.map((d, i) => (
+          <div className="action-item" key={d.id}>
+            <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
+            <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>
+              {d.description || 'Dívida sem nome'} — {formatBRL(d.value)}
+              {d.interestRate ? ` (${d.interestRate}% a.m.)` : ''}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function DebtSimulator({ debts, onClose }: { debts: DebtItem[]; onClose: () => void }) {
+  if (debts.length === 0) {
+    return (
+      <ToolShell title="Avalanche vs. bola de neve" kicker="Estratégia de quitação" onClose={onClose}>
+        <p className="wizard-sub">
+          Você ainda não cadastrou nenhuma dívida no diagnóstico. Faça o diagnóstico primeiro pra usar esse simulador.
+        </p>
+      </ToolShell>
+    );
+  }
+
+  const hasInterest = debts.some((d) => d.interestRate && d.interestRate > 0);
+
+  return (
+    <ToolShell title="Avalanche vs. bola de neve" kicker="Estratégia de quitação" onClose={onClose}>
+      <p className="wizard-sub">
+        Duas ordens pra decidir qual dívida atacar primeiro, mantendo o mínimo nas outras.
+      </p>
+
+      {!hasInterest && (
+        <p className="field-error" style={{ marginBottom: 20 }}>
+          Nenhuma dívida tem taxa de juros cadastrada — a ordem avalanche fica igual à ordem que você digitou. Volte no diagnóstico e adicione a taxa pra um resultado mais preciso.
+        </p>
+      )}
+
+      <div className="diag-section">
+        <DebtOrderList
+          title="Avalanche — maior juros primeiro"
+          note="Economiza mais dinheiro em juros no total."
+          debts={sortAvalanche(debts)}
+        />
+      </div>
+
+      <div className="diag-section">
+        <DebtOrderList
+          title="Bola de neve — menor saldo primeiro"
+          note="Quita dívidas mais rápido, o que ajuda a manter a motivação."
+          debts={sortSnowball(debts)}
+        />
+      </div>
+    </ToolShell>
+  );
+}
