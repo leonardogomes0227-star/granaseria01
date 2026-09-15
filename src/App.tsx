@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import {
   IncomeStep,
   SavingsStep,
@@ -8,6 +9,7 @@ import {
   DiagnosisStep,
 } from './components/WizardSteps';
 import { ImpulseTool, DebtSimulator } from './components/Tools';
+import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
 
@@ -301,7 +303,7 @@ function App() {
 
         footer{padding:0 40px 56px;max-width:1180px;margin:0 auto;}
         @media (max-width:640px){footer{padding:0 22px 40px;}}
-        .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-top:56px;border-top:1px solid var(--hairline-soft);}
+        .foot-grid{display:grid;grid-template-columns:1.3fr 0.8fr 0.8fr 0.8fr;gap:32px;padding-top:56px;border-top:1px solid var(--hairline-soft);}
         @media (max-width:760px){.foot-grid{grid-template-columns:1fr;gap:28px;}}
         .foot-brand p{font-size:14px;color:var(--ink-soft);max-width:280px;margin-top:14px;}
         .foot-col h4{font-size:13px;color:var(--ink-faint);font-weight:500;margin-bottom:14px;letter-spacing:0.2px;font-family:'IBM Plex Sans',sans-serif;}
@@ -347,8 +349,20 @@ function App() {
         .action-item{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--hairline-soft);}
         .action-item:first-child{border-top:none;}
         .action-num{font-family:'Cinzel',serif;color:var(--gold-deep);font-size:16px;flex-shrink:0;width:24px;}
+        .page-body p{margin-bottom:18px;color:var(--ink-soft);font-size:15.5px;}
+        .page-body h3{font-size:18px;margin:32px 0 10px;color:var(--ink);}
+        .page-body i{font-style:italic;}
+        .btn-spinner{
+          display:inline-block;width:14px;height:14px;border-radius:50%;
+          border:2px solid rgba(46,28,5,0.3);border-top-color:#2E1C05;
+          animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:-2px;
+        }
+        @keyframes spin{to{transform:rotate(360deg);}}
       `}</style>
 
+      <Routes>
+        <Route path="/" element={
+      <>
       {!showWizard && !activeTool && (
       <>
       <header>
@@ -571,8 +585,16 @@ function App() {
             <a href="#" onClick={(e) => { e.preventDefault(); startWizard(); }}>Fazer diagnóstico</a>
             <a href="#">Falar no WhatsApp</a>
           </div>
+          <div className="foot-col">
+            <h4>Legal</h4>
+            <Link to="/politica-de-privacidade">Política de privacidade</Link>
+            <Link to="/termos-de-uso">Termos de uso</Link>
+          </div>
         </div>
-        <p className="foot-bottom">Grana Séria — diagnóstico financeiro</p>
+        <p className="foot-bottom">
+          Grana Séria — diagnóstico financeiro. Não somos uma consultoria financeira registrada; o conteúdo é
+          educacional, baseado nos princípios do livro O Homem Mais Rico da Babilônia.
+        </p>
       </footer>
       </>
       )}
@@ -596,6 +618,12 @@ function App() {
       {activeTool === 'debts' && (
         <DebtSimulator debts={data.debts} onClose={() => setActiveTool(null)} />
       )}
+      </>
+        } />
+        <Route path="/politica-de-privacidade" element={<PrivacyPage />} />
+        <Route path="/termos-de-uso" element={<TermsPage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </>
   );
 }
