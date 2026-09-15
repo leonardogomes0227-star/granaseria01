@@ -9,7 +9,7 @@ import {
   ReviewStep,
   DiagnosisStep,
 } from './components/WizardSteps';
-import { ImpulseTool, DebtSimulator, LongTermSimulator } from './components/Tools';
+import { ImpulseTool, DebtSimulator, LongTermSimulator, GoalCalculator, LoanComparator } from './components/Tools';
 import { SelosPanel } from './components/SelosAndShare';
 import { CheckInTool } from './components/CheckIn';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
@@ -38,7 +38,7 @@ function loadSavedProgress(): SavedProgress | null {
 
 function App() {
   const [showWizard, setShowWizard] = useState(false);
-  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm'>(null);
+  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan'>(null);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
@@ -374,6 +374,8 @@ function App() {
         .review-label{font-size:12.5px;color:var(--ink-faint);font-family:'IBM Plex Sans',sans-serif;margin-bottom:3px;}
         .review-value{font-family:'Cinzel',serif;font-size:16px;color:var(--ink);}
         .review-row .btn-outline{padding:8px 16px;font-size:13px;}
+        .loan-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+        @media (max-width:520px){.loan-grid{grid-template-columns:1fr;}}
         .page-body p{margin-bottom:18px;color:var(--ink-soft);font-size:15.5px;}
         .page-body h3{font-size:18px;margin:32px 0 10px;color:var(--ink);}
         .page-body i{font-style:italic;}
@@ -592,6 +594,16 @@ function App() {
             <h3>Simulador de longo prazo</h3>
             <p>Ajuste aporte, taxa e prazo pra ver aonde sua poupança chega em 10, 20 ou 30 anos.</p>
           </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('goal')}>
+            <div className="numeral">◎</div>
+            <h3>Calculadora de meta</h3>
+            <p>Diz aonde você quer chegar (viagem, entrada de imóvel) e veja quanto guardar por mês.</p>
+          </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('loan')}>
+            <div className="numeral">⚖</div>
+            <h3>Comparador de empréstimo</h3>
+            <p>Antes de contratar, compare duas propostas de empréstimo ou financiamento lado a lado.</p>
+          </div>
         </div>
       </section>
 
@@ -673,6 +685,12 @@ function App() {
       )}
       {activeTool === 'longterm' && (
         <LongTermSimulator monthlyIncome={data.monthlyIncome} onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'goal' && (
+        <GoalCalculator onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'loan' && (
+        <LoanComparator onClose={() => setActiveTool(null)} />
       )}
       </>
         } />
