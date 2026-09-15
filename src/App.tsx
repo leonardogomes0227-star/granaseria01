@@ -10,6 +10,7 @@ import {
 } from './components/WizardSteps';
 import { ImpulseTool, DebtSimulator } from './components/Tools';
 import { SelosPanel } from './components/SelosAndShare';
+import { CheckInTool } from './components/CheckIn';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
@@ -36,7 +37,7 @@ function loadSavedProgress(): SavedProgress | null {
 
 function App() {
   const [showWizard, setShowWizard] = useState(false);
-  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos'>(null);
+  const [activeTool, setActiveTool] = useState<null | 'impulse' | 'debts' | 'selos' | 'checkin'>(null);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
@@ -363,6 +364,8 @@ function App() {
         }
         .selo-tile.locked{opacity:0.55;}
         .selo-tile-label{font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;}
+        .tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;}
+        .tools-grid .panel{border:1px solid var(--hairline);border-radius:8px;}
         .page-body p{margin-bottom:18px;color:var(--ink-soft);font-size:15.5px;}
         .page-body h3{font-size:18px;margin:32px 0 10px;color:var(--ink);}
         .page-body i{font-style:italic;}
@@ -555,7 +558,7 @@ function App() {
           <div className="kicker"><span className="wedge" />Ferramentas</div>
           <h2>Além do diagnóstico, o que te ajuda no dia a dia.</h2>
         </div>
-        <div className="frieze">
+        <div className="tools-grid">
           <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('impulse')}>
             <div className="numeral">$</div>
             <h3>Vale a pena comprar isso?</h3>
@@ -570,6 +573,11 @@ function App() {
             <div className="numeral">✦</div>
             <h3>Meus selos</h3>
             <p>Veja quais das quatro leis do livro você já desbloqueou ao completar o diagnóstico.</p>
+          </div>
+          <div className="panel" style={{ cursor: 'pointer' }} onClick={() => setActiveTool('checkin')}>
+            <div className="numeral">↻</div>
+            <h3>Check-in mensal</h3>
+            <p>Registre seus números todo mês e acompanhe se a sua taxa de poupança está subindo.</p>
           </div>
         </div>
       </section>
@@ -645,6 +653,9 @@ function App() {
       )}
       {activeTool === 'selos' && (
         <SelosPanel onClose={() => setActiveTool(null)} />
+      )}
+      {activeTool === 'checkin' && (
+        <CheckInTool onClose={() => setActiveTool(null)} />
       )}
       </>
         } />
