@@ -1,104 +1,142 @@
-import { WizardData } from './types';
+import { useState } from 'react';
+import { CheckinEntry } from '../types';
+import { formatBRL, checkinActionPlan } from '../calculations';
+import { getCheckins, addCheckin } from '../config';
 
-export interface Diagnosis {
-  savingsRate: number;
-  savingsGoalRate: number;
-  totalExpenses: number;
-  idealExpenses: {
-    moradia: number;
-    alimentacao: number;
-    transporte: number;
-    lazer: number;
-  };
-  totalDebt: number;
-  emergencyTarget: number;
-  emergencyProgress: number;
-  projection10y: number;
-  actionPlan: string[];
+function savingsRateOf(e: CheckinEntry): number {
+  return e.monthlyIncome > 0 ? (e.currentSavings / e.monthlyIncome) * 100 : 0;
 }
 
-const IDEAL_PCT = {
-  moradia: 0.3,
-  alimentacao: 0.15,
-  transporte: 0.1,
-  lazer: 0.1,
-};
+export function CheckInTool({ onClose }: { onClose: () => void }) {
+  const [entries, setEntries] = useState<CheckinEntry[]>(() => getCheckins());
+  const [showForm, setShowForm] = useState(entries.length === 0);
 
-const CATEGORY_LABELS: Record<keyof WizardData['expenses'], string> = {
-  moradia: 'moradia',
-  alimentacao: 'alimentação',
-  transporte: 'transporte',
-  lazer: 'lazer',
-};
+  const [income, setIncome] = useState(entries.at(-1)?.monthlyIncome || 0);
+  const [savings, setSavings] = useState(0);
+  const [expenses, setExpenses] = useState(0);
+  const [debt, setDebt] = useState(entries.at(-1)?.totalDebt || 0);
 
-export function calculateDiagnosis(data: WizardData): Diagnosis {
-  const income = data.monthlyIncome || 0;
-  const savingsRate = income > 0 ? (data.currentSavings / income) * 100 : 0;
-
-  const totalExpenses = Object.values(data.expenses).reduce((a, b) => a + b, 0);
-
-  const idealExpenses = {
-    moradia: income * IDEAL_PCT.moradia,
-    alimentacao: income * IDEAL_PCT.alimentacao,
-    transporte: income * IDEAL_PCT.transporte,
-    lazer: income * IDEAL_PCT.lazer,
+  const submit = () => {
+    const entry: CheckinEntry = {
+      date: new Date().toISOString(),
+      monthlyIncome: income,
+      currentSavings: savings,
+      totalExpenses: expenses,
+      totalDebt: debt,
+    };
+    addCheckin(entry);
+    setEntries((prev) => [...prev, entry]);
+    setShowForm(false);
   };
 
-  const totalDebt = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
+  const last = entries.at(-1);
+  const prev = entries.length > 1 ? entries[entries.length - 2] : null;
+  const rateNow = last ? savingsRateOf(last) : 0;
+  const ratePrev = prev ? savingsRateOf(prev) : null;
+  const maxRate = Math.max(10, ...entries.map(savingsRateOf));
+  const maxDebt = Math.max(1, ...entries.map((e) => e.totalDebt));
+  const actionPlan = last ? checkinActionPlan(last) : [];
 
-  const emergencyTarget = totalExpenses * 6;
-  const emergencyProgress =
-    emergencyTarget > 0 ? Math.min((data.emergencyFund / emergencyTarget) * 100, 100) : 0;
+  return (
+    <div className="wizard-wrap">
+      <div className="wizard-card" style={{ maxWidth: 600 }}>
+        <div className="wizard-kicker"><span className="wedge" />Check-in mensal</div>
+        <h2 className="wizard-h2">Como você está esse mês?</h2>
 
-  // Projeção de juros compostos: aporte mensal de 10% da renda, 10 anos, ~10% a.a. (0,8% a.m.)
-  const monthlyRate = 0.008;
-  const months = 120;
-  const monthlyContribution = income * 0.1;
-  const projection10y =
-    monthlyContribution > 0
-      ? monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
-      : 0;
+        {!showForm && last && (
+          <>
+            <p className="wizard-sub">
+              Último check-in em {new Date(last.date).toLocaleDateString('pt-BR')}.
+            </p>
 
-  const actionPlan: string[] = [];
+            <div className="diag-section">
+              <p className="diag-label">Taxa de poupança</p>
+              <p className="diag-number">
+                {rateNow.toFixed(0)}%
+                {ratePrev !== null && (
+                  <span style={{ fontSize: 14, color: rateNow >= ratePrev ? 'var(--gold-deep)' : 'var(--clay)', marginLeft: 10, fontFamily: "'IBM Plex Sans',sans-serif" }}>
+                    {rateNow >= ratePrev ? '▲' : '▼'} {Math.abs(rateNow - ratePrev).toFixed(0)}pp vs. mês anterior
+                  </span>
+                )}
+              </p>
+            </div>
 
-  if (savingsRate < 10) {
-    actionPlan.push(
-      `Aumente sua poupança mensal até 10% da renda — hoje está em ${savingsRate.toFixed(0)}%.`
-    );
-  }
-  if (totalDebt > 0) {
-    actionPlan.push(
-      `Priorize quitar suas dívidas, que hoje somam ${formatBRL(totalDebt)}.`
-    );
-  }
-  if (emergencyProgress < 100) {
-    actionPlan.push(
-      `Construa sua reserva de emergência até alcançar ${formatBRL(emergencyTarget)} (6 meses de gastos).`
-    );
-  }
-  (Object.keys(idealExpenses) as (keyof typeof idealExpenses)[]).forEach((key) => {
-    if (data.expenses[key] > idealExpenses[key]) {
-      actionPlan.push(`Revise os gastos com ${CATEGORY_LABELS[key]} — estão acima do ideal recomendado.`);
-    }
-  });
+            {entries.length > 1 && (
+              <div className="diag-section">
+                <p className="diag-label">Histórico de poupança</p>
+                {entries.map((e, i) => (
+                  <div className="bar-row" key={i}>
+                    <span className="bar-label">{new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ width: `${(savingsRateOf(e) / maxRate) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-  return {
-    savingsRate,
-    savingsGoalRate: 10,
-    totalExpenses,
-    idealExpenses,
-    totalDebt,
-    emergencyTarget,
-    emergencyProgress,
-    projection10y,
-    actionPlan: actionPlan.slice(0, 4),
-  };
-}
+            {entries.length > 1 && entries.some((e) => e.totalDebt > 0) && (
+              <div className="diag-section">
+                <p className="diag-label">Histórico de dívida total</p>
+                {entries.map((e, i) => (
+                  <div className="bar-row" key={i}>
+                    <span className="bar-label">{new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{ width: `${(e.totalDebt / maxDebt) * 100}%`, background: 'var(--clay)' }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-export function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  });
+            <div className="diag-section">
+              <p className="diag-label">Seu plano de ação desse mês</p>
+              <div className="action-list">
+                {actionPlan.map((item, i) => (
+                  <div className="action-item" key={i}>
+                    <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
+                    <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button className="btn-primary" type="button" onClick={() => setShowForm(true)} style={{ marginTop: 8 }}>
+              Fazer novo check-in
+            </button>
+          </>
+        )}
+
+        {showForm && (
+          <>
+            <p className="wizard-sub">Leva 1 minuto — só os números principais do mês.</p>
+            <div className="field-group">
+              <label className="field-label">Renda mensal</label>
+              <input className="field-input" type="number" min="0" value={income || ''} onChange={(e) => setIncome(Math.max(parseFloat(e.target.value) || 0, 0))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Quanto guardou esse mês</label>
+              <input className="field-input" type="number" min="0" value={savings || ''} onChange={(e) => setSavings(Math.max(parseFloat(e.target.value) || 0, 0))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Total de gastos esse mês</label>
+              <input className="field-input" type="number" min="0" value={expenses || ''} onChange={(e) => setExpenses(Math.max(parseFloat(e.target.value) || 0, 0))} />
+            </div>
+            <div className="field-group">
+              <label className="field-label">Total de dívidas hoje</label>
+              <input className="field-input" type="number" min="0" value={debt || ''} onChange={(e) => setDebt(Math.max(parseFloat(e.target.value) || 0, 0))} />
+            </div>
+            <button className="btn-primary" type="button" onClick={submit} disabled={income <= 0}>
+              Salvar check-in
+            </button>
+          </>
+        )}
+
+        <div className="wizard-nav">
+          <button className="btn-outline" type="button" onClick={onClose}>Voltar</button>
+          <span />
+        </div>
+      </div>
+    </div>
+  );
 }
