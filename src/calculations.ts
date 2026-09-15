@@ -1,166 +1,104 @@
-import { WizardData, EXPENSE_CATEGORIES } from './types';
+import { WizardData } from './types';
 
-export const fmtBRL = (value: number): string =>
-  value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-export const fmtPct = (value: number): string =>
-  `${(value * 100).toFixed(1).replace('.', ',')}%`;
-
-export type Diagnosis = {
-  savingsTarget: number;
-  savingsDiff: number;
-  savingsStatus: 'ok' | 'below' | 'above';
+export interface Diagnosis {
+  savingsRate: number;
+  savingsGoalRate: number;
   totalExpenses: number;
-  totalMonthlyOutflow: number;
-  categoryAnalysis: {
-    key: string;
-    label: string;
-    amount: number;
-    pctOfIncome: number;
-    idealPct: number;
-    idealAmount: number;
-    overBudget: boolean;
-  }[];
+  idealExpenses: {
+    moradia: number;
+    alimentacao: number;
+    transporte: number;
+    lazer: number;
+  };
   totalDebt: number;
-  debtToIncomeRatio: number;
   emergencyTarget: number;
   emergencyProgress: number;
-  emergencyRemaining: number;
-  compoundProjection: {
-    monthly: number;
-    months: number;
-    rate: number;
-    finalAmount: number;
-    totalContributed: number;
-    totalInterest: number;
-  };
-  actionPlan: { title: string; detail: string }[];
+  projection10y: number;
+  actionPlan: string[];
+}
+
+const IDEAL_PCT = {
+  moradia: 0.3,
+  alimentacao: 0.15,
+  transporte: 0.1,
+  lazer: 0.1,
+};
+
+const CATEGORY_LABELS: Record<keyof WizardData['expenses'], string> = {
+  moradia: 'moradia',
+  alimentacao: 'alimentação',
+  transporte: 'transporte',
+  lazer: 'lazer',
 };
 
 export function calculateDiagnosis(data: WizardData): Diagnosis {
   const income = data.monthlyIncome || 0;
-  const savingsTarget = income * 0.1;
-  const savingsDiff = data.monthlySavings - savingsTarget;
-  const savingsStatus =
-    data.monthlySavings >= savingsTarget
-      ? savingsDiff > savingsTarget * 0.5
-        ? 'above'
-        : 'ok'
-      : 'below';
+  const savingsRate = income > 0 ? (data.currentSavings / income) * 100 : 0;
 
-  const categoryAnalysis = EXPENSE_CATEGORIES.map((cat) => {
-    const amount = data.expenses[cat.key] || 0;
-    const pctOfIncome = income > 0 ? amount / income : 0;
-    const idealAmount = income * cat.idealPct;
-    return {
-      key: cat.key,
-      label: cat.label,
-      amount,
-      pctOfIncome,
-      idealPct: cat.idealPct,
-      idealAmount,
-      overBudget: income > 0 && amount > idealAmount,
-    };
+  const totalExpenses = Object.values(data.expenses).reduce((a, b) => a + b, 0);
+
+  const idealExpenses = {
+    moradia: income * IDEAL_PCT.moradia,
+    alimentacao: income * IDEAL_PCT.alimentacao,
+    transporte: income * IDEAL_PCT.transporte,
+    lazer: income * IDEAL_PCT.lazer,
+  };
+
+  const totalDebt = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
+
+  const emergencyTarget = totalExpenses * 6;
+  const emergencyProgress =
+    emergencyTarget > 0 ? Math.min((data.emergencyFund / emergencyTarget) * 100, 100) : 0;
+
+  // Projeção de juros compostos: aporte mensal de 10% da renda, 10 anos, ~10% a.a. (0,8% a.m.)
+  const monthlyRate = 0.008;
+  const months = 120;
+  const monthlyContribution = income * 0.1;
+  const projection10y =
+    monthlyContribution > 0
+      ? monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
+      : 0;
+
+  const actionPlan: string[] = [];
+
+  if (savingsRate < 10) {
+    actionPlan.push(
+      `Aumente sua poupança mensal até 10% da renda — hoje está em ${savingsRate.toFixed(0)}%.`
+    );
+  }
+  if (totalDebt > 0) {
+    actionPlan.push(
+      `Priorize quitar suas dívidas, que hoje somam ${formatBRL(totalDebt)}.`
+    );
+  }
+  if (emergencyProgress < 100) {
+    actionPlan.push(
+      `Construa sua reserva de emergência até alcançar ${formatBRL(emergencyTarget)} (6 meses de gastos).`
+    );
+  }
+  (Object.keys(idealExpenses) as (keyof typeof idealExpenses)[]).forEach((key) => {
+    if (data.expenses[key] > idealExpenses[key]) {
+      actionPlan.push(`Revise os gastos com ${CATEGORY_LABELS[key]} — estão acima do ideal recomendado.`);
+    }
   });
 
-  const totalExpenses = categoryAnalysis.reduce((s, c) => s + c.amount, 0);
-  const totalMonthlyOutflow = totalExpenses + data.monthlySavings;
-
-  const totalDebt = data.debts.reduce((s, d) => s + (d.amount || 0), 0);
-  const debtToIncomeRatio = income > 0 ? totalDebt / income : 0;
-
-  const emergencyTarget = totalMonthlyOutflow * 4;
-  const emergencyProgress =
-    emergencyTarget > 0 ? Math.min(data.emergencyFund / emergencyTarget, 1) : 0;
-  const emergencyRemaining = Math.max(emergencyTarget - data.emergencyFund, 0);
-
-  const monthly = savingsTarget;
-  const months = 120;
-  const rate = 0.008;
-  // FV = PMT * [((1+r)^n - 1) / r]
-  const finalAmount =
-    monthly * (((Math.pow(1 + rate, months) - 1) / rate) * (1 + rate));
-  const totalContributed = monthly * months;
-  const totalInterest = finalAmount - totalContributed;
-
-  // Action plan — prioritized
-  const actionPlan: { title: string; detail: string }[] = [];
-
-  // 1. Quitar dívida mais cara
-  if (totalDebt > 0) {
-    const dearest = [...data.debts].sort((a, b) => b.amount - a.amount)[0];
-    actionPlan.push({
-      title: 'Quitar a dívida mais cara',
-      detail:
-        dearest.description.trim() || 'Sua maior dívida'
-          ? `Comece pela dívida "${dearest.description.trim() || 'sem nome'}" de ${fmtBRL(
-              dearest.amount,
-            )}. Dedique o máximo de recursos possível até zerá-la.`
-          : '',
-    });
-  }
-
-  // 2. Construir reserva de emergência
-  if (emergencyRemaining > 0) {
-    actionPlan.push({
-      title: 'Construir reserva de emergência',
-      detail: `Sua meta é ${fmtBRL(emergencyTarget)} (4 meses de despesas). Você já tem ${fmtBRL(
-        data.emergencyFund,
-      )}. Falta ${fmtBRL(emergencyRemaining)}.`,
-    });
-  }
-
-  // 3. Ajustar poupança para 10%
-  if (savingsStatus === 'below') {
-    actionPlan.push({
-      title: 'Ajustar poupança para 10% da renda',
-      detail: `Você guarda ${fmtBRL(data.monthlySavings)} por mês. A meta é ${fmtBRL(
-        savingsTarget,
-      )}. Aumente em ${fmtBRL(Math.abs(savingsDiff))} para chegar lá.`,
-    });
-  }
-
-  // 4. Reduzir categoria acima do ideal
-  const overCategories = categoryAnalysis.filter((c) => c.overBudget);
-  if (overCategories.length > 0) {
-    const worst = overCategories.sort(
-      (a, b) => b.pctOfIncome - a.idealPct - (a.pctOfIncome - a.idealPct),
-    )[0];
-    actionPlan.push({
-      title: `Reduzir gastos com ${worst.label}`,
-      detail: `Você gasta ${fmtBRL(worst.amount)} (${fmtPct(
-        worst.pctOfIncome,
-      )} da renda). O ideal é até ${fmtPct(worst.idealPct)} (${fmtBRL(
-        worst.idealAmount,
-      )}).`,
-    });
-  }
-
   return {
-    savingsTarget,
-    savingsDiff,
-    savingsStatus,
+    savingsRate,
+    savingsGoalRate: 10,
     totalExpenses,
-    totalMonthlyOutflow,
-    categoryAnalysis,
+    idealExpenses,
     totalDebt,
-    debtToIncomeRatio,
     emergencyTarget,
     emergencyProgress,
-    emergencyRemaining,
-    compoundProjection: {
-      monthly,
-      months,
-      rate,
-      finalAmount,
-      totalContributed,
-      totalInterest,
-    },
+    projection10y,
     actionPlan: actionPlan.slice(0, 4),
   };
+}
+
+export function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  });
 }
