@@ -280,6 +280,7 @@ function App() {
         .field-label{display:block;font-size:13.5px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;margin-bottom:7px;}
         .field-input{width:100%;border:1px solid var(--hairline);border-radius:8px;padding:13px 16px;font-size:17px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:#FFFDF7;}
         .field-input:focus{outline:none;border-color:var(--gold);}
+        .field-error{font-size:12.5px;color:var(--clay);margin-top:6px;}
         .debt-row{display:flex;gap:10px;margin-bottom:10px;align-items:center;}
         .debt-row .field-input{flex:1;}
         .debt-remove{border:1px solid var(--hairline);background:transparent;border-radius:8px;padding:0 14px;height:48px;color:var(--clay);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:18px;}
