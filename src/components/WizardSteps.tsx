@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { WizardData, DebtItem } from './types';
-import { Diagnosis, formatBRL } from './calculations';
+import { WizardData, DebtItem } from '../types';
+import { Diagnosis, formatBRL } from '../calculations';
 
 /* ---------- shared bits ---------- */
 
