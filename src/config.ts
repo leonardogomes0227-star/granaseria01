@@ -41,3 +41,28 @@ export function hasDiagnosisCompleted(): boolean {
     return false;
   }
 }
+
+// Check-in mensal — versão localStorage. Quando a conta (Supabase) entrar, migra pra lá sem
+// mudar a assinatura dessas duas funções, só a implementação por dentro.
+import { CheckinEntry } from './types';
+
+const CHECKINS_KEY = 'selos-checkins';
+
+export function getCheckins(): CheckinEntry[] {
+  try {
+    const raw = localStorage.getItem(CHECKINS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as CheckinEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export function addCheckin(entry: CheckinEntry): void {
+  try {
+    const current = getCheckins();
+    localStorage.setItem(CHECKINS_KEY, JSON.stringify([...current, entry]));
+  } catch {
+    // segue sem persistir
+  }
+}
