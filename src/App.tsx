@@ -6,7 +6,7 @@ import {
   DebtsStep,
   EmergencyStep,
   DiagnosisStep,
-} from './WizardSteps';
+} from './components/WizardSteps';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
 
