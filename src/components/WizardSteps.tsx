@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { WizardData, DebtItem } from '../types';
 import { Diagnosis, formatBRL } from '../calculations';
+import { CHECKOUT_URL, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
+import { ShareDiagnosisButton } from './SelosAndShare';
 
 /* ---------- shared bits ---------- */
 
@@ -326,6 +328,12 @@ export function DiagnosisStep({
     ...Object.values(diagnosis.idealExpenses)
   ) || 1;
 
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => {
+    setUnlocked(isUnlocked());
+    markDiagnosisCompleted();
+  }, []);
+
   return (
     <div className="wizard-card" style={{ maxWidth: 640 }}>
       <div className="wizard-kicker"><span className="wedge" />Seu diagnóstico</div>
@@ -379,23 +387,50 @@ export function DiagnosisStep({
       <div className="diag-section">
         <p className="diag-label">Projeção em 10 anos, guardando 10% da renda todo mês</p>
         <p className="diag-number">{formatBRL(diagnosis.projection10y)}</p>
+        <ShareDiagnosisButton diagnosis={diagnosis} />
       </div>
 
       <div className="diag-section" style={{ marginBottom: 8 }}>
         <p className="diag-label">Seu plano de ação</p>
-        <div className="action-list">
-          {diagnosis.actionPlan.map((item, i) => (
-            <div className="action-item" key={i}>
-              <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
-              <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+        {unlocked ? (
+          <div className="action-list">
+            {diagnosis.actionPlan.map((item, i) => (
+              <div className="action-item" key={i}>
+                <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
+                <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+              </div>
+            ))}
+            {diagnosis.actionPlan.length === 0 && (
+              <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>
+                Você já está em dia com os três princípios — continue assim.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="paywall">
+            <div className="paywall-teaser">
+              {diagnosis.actionPlan.slice(0, 1).map((item, i) => (
+                <div className="action-item" key={i}>
+                  <span className="action-num">01</span>
+                  <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+                </div>
+              ))}
+              <div className="paywall-fade" />
             </div>
-          ))}
-          {diagnosis.actionPlan.length === 0 && (
-            <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>
-              Você já está em dia com os três princípios — continue assim.
+            <p className="wizard-sub" style={{ marginBottom: 16 }}>
+              Os próximos passos priorizados pra você ficam completos depois do desbloqueio.
             </p>
-          )}
-        </div>
+            <a
+              href={CHECKOUT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary"
+              style={{ display: 'inline-block', textDecoration: 'none' }}
+            >
+              Desbloquear meu plano de ação — {PRICE_LABEL}
+            </a>
+          </div>
+        )}
       </div>
 
       <WizardNav onNext={onRestart} nextLabel="Refazer diagnóstico" canNext />
