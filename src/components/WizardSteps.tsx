@@ -70,11 +70,13 @@ function CurrencyField({
   value,
   onChange,
   autoFocus,
+  error,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   autoFocus?: boolean;
+  error?: string;
 }) {
   return (
     <div className="field-group">
@@ -83,11 +85,18 @@ function CurrencyField({
         className="field-input"
         type="number"
         inputMode="decimal"
+        min="0"
+        max="99999999"
         placeholder="R$ 0,00"
         value={value || ''}
         autoFocus={autoFocus}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const raw = parseFloat(e.target.value);
+          const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 99999999);
+          onChange(clamped);
+        }}
       />
+      {error && <p className="field-error">{error}</p>}
     </div>
   );
 }
@@ -138,6 +147,11 @@ export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
         value={data.currentSavings}
         onChange={(v) => update({ currentSavings: v })}
         autoFocus
+        error={
+          data.monthlyIncome > 0 && data.currentSavings > data.monthlyIncome
+            ? 'Esse valor é maior que sua renda mensal — confere aí.'
+            : undefined
+        }
       />
       <WizardNav onBack={onBack} onNext={onNext} />
     </div>
@@ -215,10 +229,16 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
           <input
             className="field-input"
             type="number"
+            min="0"
+            max="99999999"
             placeholder="R$"
             style={{ maxWidth: 120 }}
             value={debt.value || ''}
-            onChange={(e) => updateDebt(debt.id, { value: parseFloat(e.target.value) || 0 })}
+            onChange={(e) => {
+              const raw = parseFloat(e.target.value);
+              const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 99999999);
+              updateDebt(debt.id, { value: clamped });
+            }}
           />
           <button className="debt-remove" type="button" onClick={() => removeDebt(debt.id)}>
             ×
@@ -248,6 +268,7 @@ export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
     <div className="wizard-card">
       <ProgressDots step={5} total={6} />
       <div className="wizard-kicker"><span className="wedge" />Etapa 5 de 6</div>
+      <SeloBadge numeral="III" label="construa sua reserva" />
       <h2 className="wizard-h2">Quanto você já tem de reserva de emergência?</h2>
       <p className="wizard-sub">Dinheiro guardado, líquido, pra imprevistos.</p>
       <CurrencyField
@@ -326,7 +347,7 @@ export function DiagnosisStep({
       </div>
 
       <div className="diag-section">
-        <p className="diag-label">Reserva de emergência</p>
+        <p className="diag-label">Reserva de emergência (Selo III — construa sua reserva)</p>
         <p className="diag-number">{diagnosis.emergencyProgress.toFixed(0)}%</p>
         <div className="progress-track">
           <div className="progress-fill" style={{ width: `${diagnosis.emergencyProgress}%` }} />
