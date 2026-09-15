@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   IncomeStep,
   SavingsStep,
@@ -10,10 +10,38 @@ import {
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
 
+const STORAGE_KEY = 'selos-wizard-progress';
+
+interface SavedProgress {
+  data: WizardData;
+  step: number;
+}
+
+function loadSavedProgress(): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedProgress;
+    // só considera "progresso salvo" se a pessoa realmente preencheu algo
+    if (!parsed.data || parsed.data.monthlyIncome <= 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 function App() {
   const [showWizard, setShowWizard] = useState(false);
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardData>(INITIAL_DATA);
+  const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(() => loadSavedProgress());
+
+  // salva a cada mudança, mas só depois que a pessoa começou a preencher de verdade
+  useEffect(() => {
+    if (data.monthlyIncome > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, step }));
+    }
+  }, [data, step]);
 
   const update = (patch: Partial<WizardData>) => setData((prev) => ({ ...prev, ...patch }));
   const updateExpenses = (key: keyof WizardData['expenses'], value: number) =>
@@ -22,10 +50,19 @@ function App() {
   const onNext = () => setStep((s) => s + 1);
   const onBack = () => setStep((s) => Math.max(s - 1, 1));
   const startWizard = () => {
-    setShowWizard(true);
+    setData(INITIAL_DATA);
     setStep(1);
+    setShowWizard(true);
+  };
+  const resumeWizard = () => {
+    if (!savedProgress) return;
+    setData(savedProgress.data);
+    setStep(savedProgress.step);
+    setShowWizard(true);
   };
   const onRestart = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setSavedProgress(null);
     setData(INITIAL_DATA);
     setStep(1);
     setShowWizard(false);
@@ -161,6 +198,13 @@ function App() {
         }
         .btn-outline:hover{border-color:var(--ink);}
         .microcopy{font-size:13px;color:var(--ink-faint);margin-top:16px;font-family:'IBM Plex Sans',sans-serif;}
+        .resume-banner{
+          background:var(--sand-deep);border:1px solid var(--hairline);border-radius:8px;
+          padding:14px 18px;margin-bottom:24px;font-family:'IBM Plex Sans',sans-serif;
+        }
+        .resume-banner span{display:block;font-size:14px;color:var(--ink-soft);margin-bottom:12px;}
+        .resume-actions{display:flex;gap:10px;flex-wrap:wrap;}
+        .resume-actions .btn-primary,.resume-actions .btn-outline{padding:10px 18px;font-size:13.5px;}
 
         .seal-frame{position:relative;display:flex;justify-content:center;}
         .medallion{width:min(360px,88%);filter:drop-shadow(0 26px 34px rgba(90,58,10,0.22));}
@@ -326,6 +370,15 @@ function App() {
 
       <section className="hero">
         <div className="hero-copy">
+          {savedProgress && (
+            <div className="resume-banner">
+              <span>Encontramos um diagnóstico em andamento (etapa {savedProgress.step} de 6).</span>
+              <div className="resume-actions">
+                <button className="btn-primary" onClick={resumeWizard} type="button">Continuar</button>
+                <button className="btn-outline" onClick={startWizard} type="button">Começar do zero</button>
+              </div>
+            </div>
+          )}
           <div className="kicker"><span className="wedge"></span>Um diagnóstico para a vida real</div>
           <h1>Sua riqueza começa com um punhado de moedas guardadas com disciplina.</h1>
           <p className="lede">
