@@ -1,4 +1,38 @@
+import { useState } from 'react';
+import {
+  IncomeStep,
+  SavingsStep,
+  ExpensesStep,
+  DebtsStep,
+  EmergencyStep,
+  DiagnosisStep,
+} from './WizardSteps';
+import { INITIAL_DATA, WizardData } from './types';
+import { calculateDiagnosis } from './calculations';
+
 function App() {
+  const [showWizard, setShowWizard] = useState(false);
+  const [step, setStep] = useState(1);
+  const [data, setData] = useState<WizardData>(INITIAL_DATA);
+
+  const update = (patch: Partial<WizardData>) => setData((prev) => ({ ...prev, ...patch }));
+  const updateExpenses = (key: keyof WizardData['expenses'], value: number) =>
+    setData((prev) => ({ ...prev, expenses: { ...prev.expenses, [key]: value } }));
+
+  const onNext = () => setStep((s) => s + 1);
+  const onBack = () => setStep((s) => Math.max(s - 1, 1));
+  const startWizard = () => {
+    setShowWizard(true);
+    setStep(1);
+  };
+  const onRestart = () => {
+    setData(INITIAL_DATA);
+    setStep(1);
+    setShowWizard(false);
+  };
+
+  const stepProps = { data, update, updateExpenses, onNext, onBack, canNext: true };
+
   return (
     <>
       <style>{`
@@ -16,6 +50,7 @@ function App() {
           --hairline:#DCC996;
           --hairline-soft:#E9DBB4;
           --white:#FFFDF7;
+          --lapis:#1C4F72;
         }
         *{margin:0;padding:0;box-sizing:border-box;}
         html{scroll-behavior:smooth;}
@@ -227,8 +262,48 @@ function App() {
         .foot-col a{display:block;font-size:14px;color:var(--ink-soft);margin-bottom:10px;font-family:'IBM Plex Sans',sans-serif;}
         .foot-col a:hover{color:var(--ink);}
         .foot-bottom{margin-top:48px;font-size:12.5px;color:var(--ink-faint);font-family:'IBM Plex Sans',sans-serif;}
+
+        /* ---------- wizard (Selos) ---------- */
+        .wizard-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:60px 20px;}
+        .wizard-card{width:100%;max-width:560px;background:var(--white);border:1px solid var(--hairline);border-radius:10px;padding:44px 38px;position:relative;}
+        @media (max-width:640px){.wizard-card{padding:32px 22px;}}
+        .wizard-progress{display:flex;gap:8px;margin-bottom:28px;}
+        .wizard-dot{flex:1;height:4px;border-radius:2px;background:var(--hairline-soft);}
+        .wizard-dot.done{background:var(--gold);}
+        .wizard-dot.active{background:var(--gold-bright);}
+        .wizard-kicker{font-size:13px;color:var(--gold-deep);font-family:'IBM Plex Sans',sans-serif;font-weight:500;margin-bottom:14px;display:flex;align-items:center;}
+        .wizard-h2{font-size:26px;margin-bottom:8px;}
+        .wizard-sub{font-size:14.5px;color:var(--ink-soft);margin-bottom:26px;}
+        .selo-badge{display:inline-flex;align-items:center;gap:10px;background:var(--sand-deep);border:1px solid var(--hairline);border-radius:999px;padding:6px 16px 6px 6px;margin-bottom:20px;}
+        .selo-badge .label{font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;font-weight:500;}
+        .field-group{margin-bottom:18px;}
+        .field-label{display:block;font-size:13.5px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;margin-bottom:7px;}
+        .field-input{width:100%;border:1px solid var(--hairline);border-radius:8px;padding:13px 16px;font-size:17px;font-family:'IBM Plex Sans',sans-serif;color:var(--ink);background:#FFFDF7;}
+        .field-input:focus{outline:none;border-color:var(--gold);}
+        .debt-row{display:flex;gap:10px;margin-bottom:10px;align-items:center;}
+        .debt-row .field-input{flex:1;}
+        .debt-remove{border:1px solid var(--hairline);background:transparent;border-radius:8px;padding:0 14px;height:48px;color:var(--clay);cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:18px;}
+        .add-debt{background:transparent;border:1px dashed var(--hairline);border-radius:8px;padding:12px;width:100%;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:4px;}
+        .wizard-nav{display:flex;justify-content:space-between;align-items:center;margin-top:30px;}
+        .wizard-nav .btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+        .diag-section{margin-bottom:28px;}
+        .diag-label{font-size:13px;color:var(--ink-faint);font-family:'IBM Plex Sans',sans-serif;margin-bottom:8px;}
+        .diag-number{font-family:'Cinzel',serif;font-size:28px;color:var(--ink);margin-bottom:10px;}
+        .bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+        .bar-row .bar-label{width:96px;font-size:13px;color:var(--ink-soft);font-family:'IBM Plex Sans',sans-serif;flex-shrink:0;}
+        .bar-track{flex:1;height:10px;background:var(--sand-deep);border-radius:5px;overflow:hidden;position:relative;}
+        .bar-fill{height:100%;background:var(--gold);border-radius:5px;}
+        .bar-ideal-mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--lapis);}
+        .progress-track{height:12px;background:var(--sand-deep);border-radius:6px;overflow:hidden;}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold-bright),var(--gold));}
+        .action-list{margin-top:4px;}
+        .action-item{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--hairline-soft);}
+        .action-item:first-child{border-top:none;}
+        .action-num{font-family:'Cinzel',serif;color:var(--gold-deep);font-size:16px;flex-shrink:0;width:24px;}
       `}</style>
 
+      {!showWizard && (
+      <>
       <header>
         <nav>
           <div className="brand">
@@ -244,7 +319,7 @@ function App() {
             <a href="#como-funciona">Como funciona</a>
             <a href="#">Sobre</a>
           </div>
-          <a href="#" className="nav-cta">Fazer diagnóstico</a>
+          <a href="#" className="nav-cta" onClick={(e) => { e.preventDefault(); startWizard(); }}>Fazer diagnóstico</a>
         </nav>
       </header>
 
@@ -257,7 +332,7 @@ function App() {
             <i>O Homem Mais Rico da Babilônia</i> — sem planilha, sem jargão, sem enrolação.
           </p>
           <div className="cta-row">
-            <button className="btn-primary">Fazer meu diagnóstico</button>
+            <button className="btn-primary" onClick={startWizard}>Fazer meu diagnóstico</button>
             <button className="btn-outline">Ver como funciona</button>
           </div>
           <p className="microcopy">Leva 10 minutos. O plano é seu, de graça.</p>
@@ -392,7 +467,7 @@ function App() {
           <div className="corner br"><svg viewBox="0 0 22 22"><path d="M1 21V1H21" fill="none" stroke="#BD7E1E" strokeWidth="2" /></svg></div>
           <h2>Pronto para guardar sua primeira moeda?</h2>
           <p>O diagnóstico é gratuito e leva menos tempo do que decidir o que comer no almoço.</p>
-          <button className="btn-primary">Fazer meu diagnóstico</button>
+          <button className="btn-primary" onClick={startWizard}>Fazer meu diagnóstico</button>
         </div>
       </section>
 
@@ -417,12 +492,27 @@ function App() {
           </div>
           <div className="foot-col">
             <h4>Comece</h4>
-            <a href="#">Fazer diagnóstico</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); startWizard(); }}>Fazer diagnóstico</a>
             <a href="#">Falar no WhatsApp</a>
           </div>
         </div>
         <p className="foot-bottom">Grana Séria — diagnóstico financeiro</p>
       </footer>
+      </>
+      )}
+
+      {showWizard && (
+        <div className="wizard-wrap">
+          {step === 1 && <IncomeStep {...stepProps} canNext={data.monthlyIncome > 0} />}
+          {step === 2 && <SavingsStep {...stepProps} />}
+          {step === 3 && <ExpensesStep {...stepProps} />}
+          {step === 4 && <DebtsStep {...stepProps} />}
+          {step === 5 && <EmergencyStep {...stepProps} />}
+          {step === 6 && (
+            <DiagnosisStep data={data} diagnosis={calculateDiagnosis(data)} onRestart={onRestart} />
+          )}
+        </div>
+      )}
     </>
   );
 }
