@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { CheckinEntry } from '../types';
-import { formatBRL, checkinActionPlan } from '../calculations';
+import { checkinActionPlan } from '../calculations';
 import { getCheckins, addCheckin } from '../config';
+import { ToolShell, ToolNavProps, MoneyField } from './Tools';
+import { CountUp, AnimatedFill } from './motion';
 
 function savingsRateOf(e: CheckinEntry): number {
   return e.monthlyIncome > 0 ? (e.currentSavings / e.monthlyIncome) * 100 : 0;
 }
 
-export function CheckInTool({ onClose }: { onClose: () => void }) {
+export function CheckInTool(nav: ToolNavProps) {
   const [entries, setEntries] = useState<CheckinEntry[]>(() => getCheckins());
   const [showForm, setShowForm] = useState(entries.length === 0);
 
@@ -38,10 +40,7 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
   const actionPlan = last ? checkinActionPlan(last) : [];
 
   return (
-    <div className="wizard-wrap">
-      <div className="wizard-card" style={{ maxWidth: 600 }}>
-        <div className="wizard-kicker"><span className="wedge" />Check-in mensal</div>
-        <h2 className="wizard-h2">Como você está esse mês?</h2>
+    <ToolShell id="checkin" {...nav}>
 
         {!showForm && last && (
           <>
@@ -52,7 +51,7 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
             <div className="diag-section">
               <p className="diag-label">Taxa de poupança</p>
               <p className="diag-number">
-                {rateNow.toFixed(0)}%
+                <CountUp value={rateNow} format={(n) => `${n.toFixed(0)}%`} />
                 {ratePrev !== null && (
                   <span style={{ fontSize: 14, color: rateNow >= ratePrev ? 'var(--gold-deep)' : 'var(--clay)', marginLeft: 10, fontFamily: "'IBM Plex Sans',sans-serif" }}>
                     {rateNow >= ratePrev ? '▲' : '▼'} {Math.abs(rateNow - ratePrev).toFixed(0)}pp vs. mês anterior
@@ -68,7 +67,7 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
                   <div className="bar-row" key={i}>
                     <span className="bar-label">{new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(savingsRateOf(e) / maxRate) * 100}%` }} />
+                      <AnimatedFill className="bar-fill" pct={(savingsRateOf(e) / maxRate) * 100} delay={i * 80} />
                     </div>
                   </div>
                 ))}
@@ -82,7 +81,7 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
                   <div className="bar-row" key={i}>
                     <span className="bar-label">{new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
                     <div className="bar-track">
-                      <div className="bar-fill" style={{ width: `${(e.totalDebt / maxDebt) * 100}%`, background: 'var(--clay)' }} />
+                      <AnimatedFill className="bar-fill" pct={(e.totalDebt / maxDebt) * 100} delay={i * 80} style={{ background: 'var(--clay)' }} />
                     </div>
                   </div>
                 ))}
@@ -95,7 +94,7 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
                 {actionPlan.map((item, i) => (
                   <div className="action-item" key={i}>
                     <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
-                    <p style={{ fontSize: 14.5, color: 'var(--ink-soft)' }}>{item}</p>
+                    <p>{item}</p>
                   </div>
                 ))}
               </div>
@@ -110,33 +109,16 @@ export function CheckInTool({ onClose }: { onClose: () => void }) {
         {showForm && (
           <>
             <p className="wizard-sub">Leva 1 minuto — só os números principais do mês.</p>
-            <div className="field-group">
-              <label className="field-label">Renda mensal</label>
-              <input className="field-input" type="number" min="0" value={income || ''} onChange={(e) => setIncome(Math.max(parseFloat(e.target.value) || 0, 0))} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Quanto guardou esse mês</label>
-              <input className="field-input" type="number" min="0" value={savings || ''} onChange={(e) => setSavings(Math.max(parseFloat(e.target.value) || 0, 0))} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Total de gastos esse mês</label>
-              <input className="field-input" type="number" min="0" value={expenses || ''} onChange={(e) => setExpenses(Math.max(parseFloat(e.target.value) || 0, 0))} />
-            </div>
-            <div className="field-group">
-              <label className="field-label">Total de dívidas hoje</label>
-              <input className="field-input" type="number" min="0" value={debt || ''} onChange={(e) => setDebt(Math.max(parseFloat(e.target.value) || 0, 0))} />
-            </div>
+            <MoneyField label="Renda mensal" value={income} onChange={setIncome} autoFocus />
+            <MoneyField label="Quanto guardou esse mês" value={savings} onChange={setSavings} />
+            <MoneyField label="Total de gastos esse mês" value={expenses} onChange={setExpenses} />
+            <MoneyField label="Total de dívidas hoje" value={debt} onChange={setDebt} />
             <button className="btn-primary" type="button" onClick={submit} disabled={income <= 0}>
               Salvar check-in
             </button>
           </>
         )}
 
-        <div className="wizard-nav">
-          <button className="btn-outline" type="button" onClick={onClose}>Voltar</button>
-          <span />
-        </div>
-      </div>
-    </div>
+    </ToolShell>
   );
 }

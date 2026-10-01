@@ -1,4 +1,6 @@
+import { ArrowRight, Share2 } from 'lucide-react';
 import { hasDiagnosisCompleted } from '../config';
+import { ToolShell, ToolNavProps } from './Tools';
 import { Diagnosis, formatBRL } from '../calculations';
 
 /* ---------- Painel de selos ---------- */
@@ -10,52 +12,38 @@ const ALL_SELOS = [
   { numeral: 'IV', label: 'Proteja-se de perdas' },
 ];
 
-export function SelosPanel({ onClose }: { onClose: () => void }) {
+export function SelosPanel({ onStart, ...nav }: { onStart: () => void } & ToolNavProps) {
   const earned = hasDiagnosisCompleted();
 
   return (
-    <div className="wizard-wrap">
-      <div className="wizard-card" style={{ maxWidth: 560 }}>
-        <div className="wizard-kicker"><span className="wedge" />Meus selos</div>
-        <h2 className="wizard-h2">
-          {earned ? 'Você conquistou seus selos' : 'Seus selos ainda estão bloqueados'}
-        </h2>
-        <p className="wizard-sub">
-          {earned
-            ? 'Completar o diagnóstico libera os quatro selos das leis do livro.'
-            : 'Complete o diagnóstico pra desbloquear os quatro selos das leis do livro.'}
-        </p>
+    <ToolShell id="selos" {...nav}>
+      <p className="wizard-sub">
+        {earned
+          ? 'Você completou o diagnóstico e conquistou os quatro selos das leis do livro.'
+          : 'Complete o diagnóstico pra desbloquear os quatro selos das leis do livro.'}
+      </p>
 
-        <div className="selos-grid">
-          {ALL_SELOS.map((s) => (
-            <div className={`selo-tile ${earned ? 'earned' : 'locked'}`} key={s.numeral}>
-              <svg width="48" height="48" viewBox="0 0 48 48">
-                <circle cx="24" cy="24" r="21" fill={earned ? '#C6842A' : '#E9DBB4'} />
-                <circle cx="24" cy="24" r="21" fill="none" stroke={earned ? '#7A5311' : '#DCC996'} strokeWidth="1.5" />
-                <text
-                  x="24"
-                  y="31"
-                  textAnchor="middle"
-                  fontFamily="Cinzel, serif"
-                  fontSize="17"
-                  fill={earned ? '#3A2506' : '#B7A576'}
-                >
-                  {s.numeral}
-                </text>
-              </svg>
-              <p className="selo-tile-label">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="wizard-nav">
-          <button className="btn-outline" type="button" onClick={onClose}>
-            Voltar
-          </button>
-          <span />
-        </div>
+      <div className="selos-grid">
+        {ALL_SELOS.map((s, i) => (
+          <div className={`selo-tile ${earned ? 'earned' : 'locked'}`} key={s.numeral} style={{ animation: `rise 0.5s var(--ease-out) both ${i * 0.1}s` }}>
+            <svg width="52" height="52" viewBox="0 0 48 48" style={{ animationDelay: `${0.2 + i * 0.12}s` }}>
+              <circle cx="24" cy="24" r="21" fill={earned ? '#C6842A' : '#E9DBB4'} />
+              <circle cx="24" cy="24" r="21" fill="none" stroke={earned ? '#7A5311' : '#DCC996'} strokeWidth="1.5" />
+              <text x="24" y="31" textAnchor="middle" fontFamily="Cinzel, serif" fontSize="17" fill={earned ? '#3A2506' : '#B7A576'}>
+                {s.numeral}
+              </text>
+            </svg>
+            <p className="selo-tile-label">{s.label}</p>
+          </div>
+        ))}
       </div>
-    </div>
+
+      {!earned && (
+        <button className="btn-primary" type="button" onClick={onStart} style={{ marginTop: 16 }}>
+          Fazer diagnóstico <ArrowRight size={16} className="arrow" />
+        </button>
+      )}
+    </ToolShell>
   );
 }
 
@@ -164,7 +152,7 @@ export function ShareDiagnosisButton({ diagnosis }: { diagnosis: Diagnosis }) {
 
   return (
     <button className="btn-outline" type="button" onClick={handleShare} style={{ marginTop: 12 }}>
-      Compartilhar meu diagnóstico
+      <Share2 size={16} /> Compartilhar meu diagnóstico
     </button>
   );
 }
