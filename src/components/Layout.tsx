@@ -133,6 +133,7 @@ export function SiteHeader({
             </div>
             <a className="navlink" href="#como-funciona">Como funciona</a>
             <a className="navlink" href="#principios">Princípios</a>
+            <a className="navlink" href="#duvidas">Dúvidas</a>
           </div>
 
           <div className="nav-right">
@@ -171,6 +172,7 @@ export function SiteHeader({
             <p className="drawer-label">Navegação</p>
             <a className="drawer-link" href="#como-funciona" onClick={() => setDrawerOpen(false)}>Como funciona</a>
             <a className="drawer-link" href="#principios" onClick={() => setDrawerOpen(false)}>Princípios</a>
+            <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
           </aside>
         </>
       )}
@@ -217,8 +219,8 @@ export function SiteFooter({ onStart, onOpenTool }: { onStart: () => void; onOpe
         <div className="foot-col">
           <h4>Comece</h4>
           <button type="button" onClick={onStart}>Fazer diagnóstico</button>
-          <a href="#como-funciona">Como funciona</a>
-          <a href="#principios">Princípios</a>
+          <Link to="/#como-funciona">Como funciona</Link>
+          <Link to="/#duvidas">Dúvidas frequentes</Link>
         </div>
         <div className="foot-col">
           <h4>Legal</h4>

@@ -1,10 +1,11 @@
-import { useState, ReactNode } from 'react';
+import { useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
 import { DebtItem } from '../types';
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment } from '../calculations';
 import { TOOLS, ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { CountUp } from './motion';
+import { DecimalInput } from './DecimalInput';
 
 /* ---------- casca comum das ferramentas ---------- */
 
@@ -50,7 +51,7 @@ export function ToolShell({
           {children}
           <div className="wizard-nav">
             <button className="btn-outline" type="button" onClick={onClose}>
-              <ArrowLeft size={16} /> Voltar ao início
+              <ArrowLeft size={16} /> Todas as ferramentas
             </button>
             <span />
           </div>
@@ -61,11 +62,6 @@ export function ToolShell({
 }
 
 /* ---------- campos ---------- */
-
-function parsePositive(v: string, fallback = 0): number {
-  const n = parseFloat(v);
-  return isNaN(n) ? fallback : Math.max(n, 0);
-}
 
 export function MoneyField({
   label,
@@ -80,21 +76,13 @@ export function MoneyField({
   autoFocus?: boolean;
   hint?: string;
 }) {
+  const id = useId();
   return (
     <div className="field-group">
-      <label className="field-label">{label}</label>
+      <label className="field-label" htmlFor={id}>{label}</label>
       <div className="input-prefix">
         <span>R$</span>
-        <input
-          className="field-input"
-          type="number"
-          inputMode="decimal"
-          min="0"
-          placeholder="0"
-          autoFocus={autoFocus}
-          value={value || ''}
-          onChange={(e) => onChange(Math.min(parsePositive(e.target.value), 99999999))}
-        />
+        <DecimalInput id={id} placeholder="0,00" autoFocus={autoFocus} value={value} onChange={onChange} />
       </div>
       {hint && <p className="field-hint">{hint}</p>}
     </div>
@@ -120,10 +108,11 @@ function RangeField({
   suffix?: string;
   prefix?: string;
 }) {
+  const id = useId();
   const pct = ((Math.min(Math.max(value, min), max) - min) / (max - min)) * 100;
   return (
     <div className="field-group">
-      <label className="field-label">{label}</label>
+      <label className="field-label" htmlFor={id}>{label}</label>
       <div className="range-row">
         <input
           type="range"
@@ -138,14 +127,12 @@ function RangeField({
         />
         <div className={prefix ? 'input-prefix' : 'input-suffix'} style={{ width: 130, flexShrink: 0 }}>
           {prefix && <span>{prefix}</span>}
-          <input
-            className="field-input"
-            type="number"
-            inputMode="decimal"
-            min={min}
-            step={step}
-            value={value || ''}
-            onChange={(e) => onChange(parsePositive(e.target.value))}
+          <DecimalInput
+            id={id}
+            decimals={step % 1 === 0 ? 0 : 2}
+            max={prefix ? 99_999_999 : max * 10}
+            value={value}
+            onChange={onChange}
             style={{ width: '100%' }}
           />
           {suffix && <span>{suffix}</span>}
@@ -414,16 +401,16 @@ function LoanColumn({
       </div>
       <MoneyField label="Valor financiado" value={principal} onChange={setPrincipal} />
       <div className="field-group">
-        <label className="field-label">Taxa</label>
+        <label className="field-label">Taxa de juros</label>
         <div className="input-suffix">
-          <input className="field-input" type="number" min="0" step="0.1" value={rate || ''} onChange={(e) => setRate(parsePositive(e.target.value))} />
+          <DecimalInput aria-label={`Taxa da ${label}`} max={100} value={rate} onChange={setRate} placeholder="0" />
           <span>% a.m.</span>
         </div>
       </div>
       <div className="field-group" style={{ marginBottom: 0 }}>
         <label className="field-label">Parcelas</label>
         <div className="input-suffix">
-          <input className="field-input" type="number" min="1" value={installmentsCount || ''} onChange={(e) => setInstallmentsCount(Math.max(parsePositive(e.target.value, 1), 1))} />
+          <DecimalInput aria-label={`Parcelas da ${label}`} decimals={0} max={600} value={installmentsCount} onChange={(v) => setInstallmentsCount(Math.max(v, 1))} />
           <span>meses</span>
         </div>
       </div>

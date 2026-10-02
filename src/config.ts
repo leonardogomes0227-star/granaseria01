@@ -2,6 +2,9 @@
 // (ou Hotmart/Eduzz — qualquer uma funciona, é só trocar a URL aqui).
 export const CHECKOUT_URL = 'https://pay.kiwify.com.br/SEU-LINK-AQUI';
 export const PRICE_LABEL = 'R$ 27';
+// Enquanto o link de pagamento não for configurado, o plano aparece liberado —
+// melhor do que mostrar um botão de compra que leva pra uma página quebrada.
+export const CHECKOUT_READY = !CHECKOUT_URL.includes('SEU-LINK-AQUI');
 
 const UNLOCK_KEY = 'selos-unlocked';
 

@@ -10,12 +10,9 @@ function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="wrap" style={{ padding: '80px 40px 100px', maxWidth: 780 }}>
-      <Link to="/" className="microcopy" style={{ display: 'inline-block', marginBottom: 24 }}>
-        ← Voltar pro início
-      </Link>
+    <div className="page-wrap anim-in">
       <div className="kicker"><span className="wedge" />{kicker}</div>
-      <h1 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 28 }}>{title}</h1>
+      <h1>{title}</h1>
       <div className="page-body">{children}</div>
     </div>
   );
@@ -31,9 +28,9 @@ export function PrivacyPage() {
       </p>
       <h3>Como usamos seus dados</h3>
       <p>
-        Os valores que você informa ficam salvos no seu próprio navegador (para você poder continuar o
-        diagnóstico de onde parou) e, após a compra, associados à sua conta para permitir o check-in mensal e o
-        histórico de progresso.
+        Os valores que você informa ficam salvos apenas no seu próprio navegador — é isso que permite continuar
+        o diagnóstico de onde parou e guardar o histórico do check-in mensal. Eles não são enviados para nenhum
+        servidor. Para apagar tudo, basta limpar os dados de navegação deste site.
       </p>
       <h3>Seus direitos</h3>
       <p>
@@ -79,13 +76,13 @@ export function TermsPage() {
 
 export function NotFoundPage() {
   return (
-    <div className="wrap" style={{ padding: '120px 40px', textAlign: 'center', maxWidth: 560 }}>
+    <div className="page-wrap anim-in" style={{ textAlign: 'center', maxWidth: 560 }}>
       <div className="kicker" style={{ justifyContent: 'center' }}><span className="wedge" />404</div>
-      <h1 style={{ fontSize: 'clamp(28px,4vw,40px)', marginBottom: 16 }}>Essa página não existe.</h1>
+      <h1 style={{ marginBottom: 16 }}>Essa página não existe.</h1>
       <p className="wizard-sub" style={{ marginBottom: 28 }}>
         Pode ter sido movida, ou o link está errado. Volta pro início e tenta de novo.
       </p>
-      <Link to="/" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
+      <Link to="/" className="btn-primary">
         Voltar pro início
       </Link>
     </div>

@@ -151,3 +151,39 @@ export function checkinActionPlan(entry: { monthlyIncome: number; currentSavings
   }
   return plan;
 }
+
+// Nota de 0 a 100 que resume o diagnóstico numa frase — o "e aí, estou bem?" que a pessoa quer saber.
+// Pesos: poupança 35, reserva 25, dívidas 20, gastos dentro do teto 20.
+export interface HealthScore {
+  score: number;
+  label: string;
+  tone: 'good' | 'warn' | 'bad';
+  parts: { label: string; points: number; max: number }[];
+}
+
+export function calculateHealthScore(data: WizardData, d: Diagnosis): HealthScore {
+  const income = data.monthlyIncome || 0;
+  const savings = Math.min(d.savingsRate / d.savingsGoalRate, 1) * 35;
+  const emergency = (d.emergencyProgress / 100) * 25;
+  // dívida de 5 rendas mensais ou mais zera essa parte
+  const debt = d.totalDebt <= 0 ? 20 : income > 0 ? Math.max(0, 20 - (d.totalDebt / income) * 4) : 0;
+  const keys = Object.keys(d.idealExpenses) as (keyof typeof d.idealExpenses)[];
+  const within = keys.filter((k) => data.expenses[k] <= d.idealExpenses[k]).length;
+  const expenses = (within / keys.length) * 20;
+
+  const score = Math.round(savings + emergency + debt + expenses);
+  const tone = score >= 70 ? 'good' : score >= 40 ? 'warn' : 'bad';
+  const label = score >= 70 ? 'Saúde financeira forte' : score >= 40 ? 'No caminho, com ajustes' : 'Precisa de atenção agora';
+
+  return {
+    score,
+    label,
+    tone,
+    parts: [
+      { label: 'Poupança', points: Math.round(savings), max: 35 },
+      { label: 'Reserva', points: Math.round(emergency), max: 25 },
+      { label: 'Dívidas', points: Math.round(debt), max: 20 },
+      { label: 'Gastos', points: Math.round(expenses), max: 20 },
+    ],
+  };
+}
