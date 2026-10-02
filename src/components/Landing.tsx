@@ -171,6 +171,31 @@ function StoryShowcase({ onStart }: { onStart: () => void }) {
   );
 }
 
+function MobileCta({ onStart }: { onStart: () => void }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const nearEnd = y + window.innerHeight > document.documentElement.scrollHeight - 900;
+      setShow(y > 650 && !nearEnd);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+  return (
+    <div className={`mobile-cta ${show ? 'show' : ''}`} aria-hidden={!show}>
+      <button type="button" className="btn-primary" onClick={onStart} tabIndex={show ? 0 : -1}>
+        Fazer meu diagnóstico grátis <ArrowRight size={16} className="arrow" />
+      </button>
+    </div>
+  );
+}
+
 function HowItWorks() {
   const { ref, inView } = useInView<HTMLDivElement>();
   const steps = [
@@ -435,6 +460,7 @@ export function Landing({
 
       <SiteFooter onStart={onStart} onOpenTool={onOpenTool} />
       <BackToTop />
+      <MobileCta onStart={onStart} />
     </div>
   );
 }
