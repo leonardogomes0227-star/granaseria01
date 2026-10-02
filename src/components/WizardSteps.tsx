@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { WizardData, DebtItem } from '../types';
-import { Diagnosis, formatBRL } from '../calculations';
-import { CHECKOUT_URL, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
+import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
+import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
 import { ShareDiagnosisButton } from './SelosAndShare';
-import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck } from 'lucide-react';
 import { CountUp, AnimatedFill } from './motion';
+import { DecimalInput } from './DecimalInput';
 import { TOOLS, ToolId } from '../tools';
 import { ToolIcon } from './Layout';
 
@@ -57,12 +58,14 @@ function WizardNav({
   canNext = true,
   nextLabel = 'Continuar',
   loading = false,
+  submit = false,
 }: {
   onBack?: () => void;
   onNext: () => void;
   canNext?: boolean;
   nextLabel?: string;
   loading?: boolean;
+  submit?: boolean; // dentro de StepCard: Enter no teclado também avança
 }) {
   return (
     <div className="wizard-nav">
@@ -73,7 +76,12 @@ function WizardNav({
       ) : (
         <span />
       )}
-      <button className="btn-primary" onClick={onNext} disabled={!canNext || loading} type="button">
+      <button
+        className="btn-primary"
+        onClick={submit ? undefined : onNext}
+        disabled={!canNext || loading}
+        type={submit ? 'submit' : 'button'}
+      >
         {loading && <span className="btn-spinner" />}
         {loading ? 'Aguarde...' : nextLabel}
         {!loading && <ArrowRight size={16} className="arrow" />}
@@ -95,31 +103,54 @@ function CurrencyField({
   autoFocus?: boolean;
   error?: string;
 }) {
+  const id = useId();
   return (
     <div className="field-group">
-      <label className="field-label">{label}</label>
+      <label className="field-label" htmlFor={id}>{label}</label>
       <div className="input-prefix">
         <span>R$</span>
-        <input
-          className="field-input"
-          type="number"
-          inputMode="decimal"
-          min="0"
-          max="99999999"
-          placeholder="0"
-          value={value || ''}
-          autoFocus={autoFocus}
-          onChange={(e) => {
-            const raw = parseFloat(e.target.value);
-            const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 99999999);
-            onChange(clamped);
-          }}
-        />
+        <DecimalInput id={id} placeholder="0,00" autoFocus={autoFocus} value={value} onChange={onChange} />
       </div>
       {error && <p className="field-error">{error}</p>}
     </div>
   );
 }
+
+/** Cartão da etapa como <form>: apertar Enter (ou "Ir" no teclado do celular) avança. */
+function StepCard({
+  children,
+  onSubmit,
+  canSubmit = true,
+  style,
+}: {
+  children: React.ReactNode;
+  onSubmit: () => void;
+  canSubmit?: boolean;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <form
+      className="wizard-card"
+      style={style}
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (canSubmit) onSubmit();
+      }}
+    >
+      {children}
+    </form>
+  );
+}
+
+function Insight({ tone, children }: { tone: 'good' | 'warn' | 'bad' | 'info'; children: React.ReactNode }) {
+  return <div className={`insight insight-${tone}`}>{children}</div>;
+}
+
+const pct = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : 0);
+
+// id local sem depender de crypto.randomUUID (indisponível em navegadores antigos)
+const newId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 /* ---------- shared step props ---------- */
 
@@ -136,7 +167,7 @@ interface StepProps {
 
 export function IncomeStep({ data, update, onNext }: StepProps) {
   return (
-    <div className="wizard-card">
+    <StepCard onSubmit={onNext} canSubmit={data.monthlyIncome > 0}>
       <ProgressDots step={1} total={7} />
       <h2 className="wizard-h2">Qual sua renda mensal?</h2>
       <p className="wizard-sub">Considere o que entra todo mês, depois dos impostos.</p>
@@ -146,8 +177,9 @@ export function IncomeStep({ data, update, onNext }: StepProps) {
         onChange={(v) => update({ monthlyIncome: v })}
         autoFocus
       />
-      <WizardNav onNext={onNext} canNext={data.monthlyIncome > 0} />
-    </div>
+      <p className="field-hint" style={{ marginTop: -8 }}>Seus números ficam só neste navegador — ninguém mais vê.</p>
+      <WizardNav onNext={onNext} canNext={data.monthlyIncome > 0} submit />
+    </StepCard>
   );
 }
 
@@ -155,7 +187,7 @@ export function IncomeStep({ data, update, onNext }: StepProps) {
 
 export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
   return (
-    <div className="wizard-card">
+    <StepCard onSubmit={onNext}>
       <ProgressDots step={2} total={7} />
       <SeloBadge numeral="I" label="pague-se primeiro" />
       <h2 className="wizard-h2">Quanto você guarda hoje, por mês?</h2>
@@ -171,16 +203,29 @@ export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
             : undefined
         }
       />
-      <WizardNav onBack={onBack} onNext={onNext} />
-    </div>
+      {data.currentSavings > 0 && data.currentSavings <= data.monthlyIncome && (
+        <Insight tone={pct(data.currentSavings, data.monthlyIncome) >= 10 ? 'good' : 'warn'}>
+          Isso é <b>{pct(data.currentSavings, data.monthlyIncome).toFixed(0)}%</b> da sua renda.{' '}
+          {pct(data.currentSavings, data.monthlyIncome) >= 10
+            ? 'Você já cumpre a primeira lei do livro: guardar pelo menos 10%. 👏'
+            : `A meta do livro é 10% (${formatBRL(data.monthlyIncome * 0.1)} por mês).`}
+        </Insight>
+      )}
+      {data.currentSavings === 0 && (
+        <p className="field-hint">Não guarda nada hoje? Sem problema — deixe em branco e continue.</p>
+      )}
+      <WizardNav onBack={onBack} onNext={onNext} submit />
+    </StepCard>
   );
 }
 
 /* ---------- step 3: gastos por categoria ---------- */
 
 export function ExpensesStep({ data, updateExpenses, onNext, onBack }: StepProps) {
+  const total = Object.values(data.expenses).reduce((a, b) => a + b, 0);
+  const left = data.monthlyIncome - data.currentSavings - total;
   return (
-    <div className="wizard-card">
+    <StepCard onSubmit={onNext}>
       <ProgressDots step={3} total={7} />
       <SeloBadge numeral="II" label="controle os gastos" />
       <h2 className="wizard-h2">Seus gastos mensais, por categoria</h2>
@@ -206,8 +251,16 @@ export function ExpensesStep({ data, updateExpenses, onNext, onBack }: StepProps
         value={data.expenses.lazer}
         onChange={(v) => updateExpenses('lazer', v)}
       />
-      <WizardNav onBack={onBack} onNext={onNext} />
-    </div>
+      {total > 0 && (
+        <Insight tone={left < 0 ? 'bad' : 'info'}>
+          Total: <b>{formatBRL(total)}</b> ({pct(total, data.monthlyIncome).toFixed(0)}% da renda).{' '}
+          {left < 0
+            ? `Somando com o que você guarda, passa ${formatBRL(-left)} da sua renda — vale conferir.`
+            : `Sobram ${formatBRL(left)} pra outros gastos.`}
+        </Insight>
+      )}
+      <WizardNav onBack={onBack} onNext={onNext} submit />
+    </StepCard>
   );
 }
 
@@ -215,7 +268,7 @@ export function ExpensesStep({ data, updateExpenses, onNext, onBack }: StepProps
 
 export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
   const addDebt = () => {
-    const newDebt: DebtItem = { id: crypto.randomUUID(), description: '', value: 0 };
+    const newDebt: DebtItem = { id: newId(), description: '', value: 0 };
     update({ debts: [...data.debts, newDebt] });
   };
   const updateDebt = (id: string, patch: Partial<DebtItem>) => {
@@ -227,7 +280,7 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
   const total = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
 
   return (
-    <div className="wizard-card">
+    <StepCard onSubmit={onNext}>
       <ProgressDots step={4} total={7} />
       <SeloBadge numeral="IV" label="proteja-se de perdas" />
       <h2 className="wizard-h2">Você tem alguma dívida?</h2>
@@ -242,32 +295,18 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
             value={debt.description}
             onChange={(e) => updateDebt(debt.id, { description: e.target.value })}
           />
-          <input
-            className="field-input"
-            type="number"
-            min="0"
-            max="99999999"
+          <DecimalInput
+            aria-label="Valor da dívida"
             placeholder="R$ valor"
-            value={debt.value || ''}
-            onChange={(e) => {
-              const raw = parseFloat(e.target.value);
-              const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 99999999);
-              updateDebt(debt.id, { value: clamped });
-            }}
+            value={debt.value}
+            onChange={(v) => updateDebt(debt.id, { value: v })}
           />
-          <input
-            className="field-input"
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
+          <DecimalInput
+            aria-label="Juros ao mês (%)"
             placeholder="% juros a.m."
-            value={debt.interestRate || ''}
-            onChange={(e) => {
-              const raw = parseFloat(e.target.value);
-              const clamped = isNaN(raw) ? 0 : Math.min(Math.max(raw, 0), 100);
-              updateDebt(debt.id, { interestRate: clamped });
-            }}
+            max={100}
+            value={debt.interestRate || 0}
+            onChange={(v) => updateDebt(debt.id, { interestRate: v })}
           />
           <button className="debt-remove" type="button" aria-label="Remover dívida" onClick={() => removeDebt(debt.id)}>
             <Trash2 size={16} />
@@ -275,30 +314,39 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
         </div>
       ))}
 
-      <p className="wizard-sub" style={{ fontSize: 12.5, marginTop: -8, marginBottom: 16 }}>
-        A taxa de juros é opcional, mas ajuda no simulador avalanche vs. bola de neve.
-      </p>
-
-      <button className="add-debt" type="button" onClick={addDebt}>
-        <Plus size={16} /> Adicionar dívida
-      </button>
-
       {data.debts.length > 0 && (
-        <p className="wizard-sub" style={{ marginTop: 16, marginBottom: 0 }}>
-          Total: <strong>{formatBRL(total)}</strong>
+        <p className="field-hint" style={{ marginTop: -2, marginBottom: 14 }}>
+          A taxa de juros é opcional, mas deixa o simulador de quitação mais preciso.
         </p>
       )}
 
-      <WizardNav onBack={onBack} onNext={onNext} />
-    </div>
+      <button className="add-debt" type="button" onClick={addDebt}>
+        <Plus size={16} /> {data.debts.length === 0 ? 'Adicionar uma dívida' : 'Adicionar outra dívida'}
+      </button>
+
+      {data.debts.length > 0 && total > 0 && (
+        <Insight tone={total > data.monthlyIncome * 3 ? 'bad' : 'warn'}>
+          Total: <b>{formatBRL(total)}</b> — equivale a {(total / Math.max(data.monthlyIncome, 1)).toFixed(1).replace('.', ',')} mês(es) da sua renda.
+        </Insight>
+      )}
+
+      <WizardNav
+        onBack={onBack}
+        onNext={onNext}
+        nextLabel={data.debts.length === 0 ? 'Não tenho dívidas' : 'Continuar'}
+        submit
+      />
+    </StepCard>
   );
 }
 
 /* ---------- step 5: reserva de emergência ---------- */
 
 export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
+  const expenses = Object.values(data.expenses).reduce((a, b) => a + b, 0);
+  const target = expenses * 6;
   return (
-    <div className="wizard-card">
+    <StepCard onSubmit={onNext}>
       <ProgressDots step={5} total={7} />
       <SeloBadge numeral="III" label="construa sua reserva" />
       <h2 className="wizard-h2">Quanto você já tem de reserva de emergência?</h2>
@@ -309,8 +357,18 @@ export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
         onChange={(v) => update({ emergencyFund: v })}
         autoFocus
       />
-      <WizardNav onBack={onBack} onNext={onNext} nextLabel="Revisar respostas" />
-    </div>
+      {target > 0 && (
+        <Insight tone={data.emergencyFund >= target ? 'good' : 'info'}>
+          O ideal é ter 6 meses de gastos guardados: <b>{formatBRL(target)}</b>.{' '}
+          {data.emergencyFund >= target
+            ? 'Você já chegou lá! 🎉'
+            : data.emergencyFund > 0
+              ? `Você tem ${Math.round(pct(data.emergencyFund, target))}% disso.`
+              : 'Não tem nada ainda? Tudo bem, é só continuar.'}
+        </Insight>
+      )}
+      <WizardNav onBack={onBack} onNext={onNext} nextLabel="Revisar respostas" submit />
+    </StepCard>
   );
 }
 
@@ -324,7 +382,7 @@ export function ReviewStep({
 }: StepProps & { goToStep: (step: number) => void }) {
   const debtsTotal = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
   return (
-    <div className="wizard-card" style={{ maxWidth: 600 }}>
+    <StepCard onSubmit={onNext} style={{ maxWidth: 600 }}>
       <ProgressDots step={6} total={7} />
       <h2 className="wizard-h2">Revisa antes de ver o diagnóstico</h2>
       <p className="wizard-sub">Confere se os números batem — dá pra editar qualquer etapa daqui.</p>
@@ -369,8 +427,8 @@ export function ReviewStep({
         </div>
       </div>
 
-      <WizardNav onBack={onBack} onNext={onNext} nextLabel="Ver diagnóstico" />
-    </div>
+      <WizardNav onBack={onBack} onNext={onNext} nextLabel="Ver meu diagnóstico" submit />
+    </StepCard>
   );
 }
 
@@ -401,10 +459,11 @@ export function DiagnosisStep({
 
   const [unlocked, setUnlocked] = useState(false);
   useEffect(() => {
-    setUnlocked(isUnlocked());
+    setUnlocked(isUnlocked() || !CHECKOUT_READY);
     markDiagnosisCompleted();
   }, []);
 
+  const health = calculateHealthScore(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;
   const suggested = TOOLS.filter((t) =>
@@ -416,6 +475,8 @@ export function DiagnosisStep({
       <div className="wizard-kicker"><span className="wedge" />Seu diagnóstico</div>
       <h2 className="wizard-h2">Aqui está o retrato da sua vida financeira</h2>
       <p className="wizard-sub">Lido à luz das leis de <i>O Homem Mais Rico da Babilônia</i>.</p>
+
+      <ScoreHero health={health} />
 
       <div className="diag-grid stagger">
         <div className="stat-card">
@@ -536,7 +597,64 @@ export function DiagnosisStep({
         </div>
       </div>
 
-      <WizardNav onNext={onRestart} nextLabel="Refazer diagnóstico" canNext />
+      <div className="wizard-nav">
+        <button className="btn-outline" type="button" onClick={onRestart}>
+          <RotateCcw size={15} /> Refazer
+        </button>
+        <button className="btn-primary" type="button" onClick={() => onOpenTool('checkin')}>
+          <CalendarCheck size={16} /> Acompanhar todo mês
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ScoreHero({ health }: { health: ReturnType<typeof calculateHealthScore> }) {
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(health.score));
+    return () => cancelAnimationFrame(id);
+  }, [health.score]);
+  const color = health.tone === 'good' ? '#4F7A5A' : health.tone === 'warn' ? '#BD7E1E' : '#9C4C2A';
+  return (
+    <div className={`score-hero anim-in`}>
+      <div className="score-ring" role="img" aria-label={`Nota ${health.score} de 100: ${health.label}`}>
+        <svg viewBox="0 0 120 120" width="128" height="128" aria-hidden="true">
+          <circle cx="60" cy="60" r={r} fill="none" stroke="var(--sand-deep)" strokeWidth="10" />
+          <circle
+            cx="60"
+            cy="60"
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ * (1 - shown / 100)}
+            transform="rotate(-90 60 60)"
+            style={{ transition: 'stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)' }}
+          />
+        </svg>
+        <div className="score-num">
+          <CountUp value={health.score} duration={1400} />
+          <small>de 100</small>
+        </div>
+      </div>
+      <div className="score-copy">
+        <p className="diag-label" style={{ marginBottom: 2 }}>Sua nota Grana Séria</p>
+        <p className={`score-label tone-text-${health.tone}`}>
+          {health.tone === 'good' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />} {health.label}
+        </p>
+        <div className="score-parts">
+          {health.parts.map((p) => (
+            <span key={p.label}>
+              {p.label} <b>{p.points}/{p.max}</b>
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

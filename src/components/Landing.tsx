@@ -1,5 +1,6 @@
-import { MouseEvent } from 'react';
-import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass } from 'lucide-react';
+import { MouseEvent, useState } from 'react';
+import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass, Plus } from 'lucide-react';
+import { CHECKOUT_READY, PRICE_LABEL } from '../config';
 import { TOOLS, ToolId } from '../tools';
 import { formatBRL } from '../calculations';
 import { Reveal, CountUp, AnimatedFill, useInView } from './motion';
@@ -50,6 +51,63 @@ function Medallion() {
         <ellipse cx="150" cy="150" rx="150" ry="34" fill="#FFF3D6" opacity="0.28" />
       </g>
     </svg>
+  );
+}
+
+const FAQ: { q: string; a: string }[] = [
+  {
+    q: 'O diagnóstico é de graça mesmo?',
+    a: 'Sim. O diagnóstico completo e todas as ferramentas são gratuitos e não pedem cadastro. Você responde, vê seu retrato financeiro e sua nota na hora.',
+  },
+  ...(CHECKOUT_READY
+    ? [
+        {
+          q: 'Então o que é pago?',
+          a: `Só o plano de ação completo e priorizado pra sua situação, por ${PRICE_LABEL} em pagamento único. O primeiro passo do plano você já vê de graça no resultado.`,
+        },
+      ]
+    : []),
+  {
+    q: 'Meus dados ficam salvos onde?',
+    a: 'Só no seu navegador, neste aparelho. Nada do que você digita é enviado pra um servidor — por isso dá pra continuar de onde parou, e ninguém além de você vê seus números.',
+  },
+  {
+    q: 'Preciso saber os valores exatos?',
+    a: 'Não. Estimativas já dão um retrato bem fiel. Depois você pode refazer o diagnóstico ou usar o check-in mensal pra ir ajustando.',
+  },
+  {
+    q: 'Isso é consultoria financeira?',
+    a: 'Não. A Grana Séria é uma ferramenta educacional baseada nos princípios do livro O Homem Mais Rico da Babilônia. Ela ajuda a enxergar e organizar, mas não substitui um profissional certificado.',
+  },
+  {
+    q: 'Funciona no celular?',
+    a: 'Funciona — o site foi feito pensando primeiro no celular. Leva uns 10 minutos do começo ao resultado.',
+  },
+];
+
+function Faq() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <div className="faq">
+      {FAQ.map((item, i) => (
+        <Reveal key={item.q} delay={i * 60} className={`faq-item ${open === i ? 'open' : ''}`}>
+          <button
+            type="button"
+            className="faq-q"
+            aria-expanded={open === i}
+            onClick={() => setOpen(open === i ? null : i)}
+          >
+            {item.q}
+            <Plus size={20} />
+          </button>
+          <div className="faq-a">
+            <div>
+              <p>{item.a}</p>
+            </div>
+          </div>
+        </Reveal>
+      ))}
+    </div>
   );
 }
 
@@ -279,6 +337,14 @@ export function Landing({
           </Reveal>
           <HowItWorks />
         </div>
+      </section>
+
+      <section className="section" id="duvidas" style={{ paddingTop: 0 }}>
+        <Reveal className="section-head">
+          <div className="kicker"><span className="wedge" />Dúvidas frequentes</div>
+          <h2>Antes de começar, o que todo mundo pergunta.</h2>
+        </Reveal>
+        <Faq />
       </section>
 
       <section className="final-cta">

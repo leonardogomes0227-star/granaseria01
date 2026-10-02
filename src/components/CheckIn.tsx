@@ -13,10 +13,10 @@ export function CheckInTool(nav: ToolNavProps) {
   const [entries, setEntries] = useState<CheckinEntry[]>(() => getCheckins());
   const [showForm, setShowForm] = useState(entries.length === 0);
 
-  const [income, setIncome] = useState(entries.at(-1)?.monthlyIncome || 0);
+  const [income, setIncome] = useState(entries[entries.length - 1]?.monthlyIncome || 0);
   const [savings, setSavings] = useState(0);
   const [expenses, setExpenses] = useState(0);
-  const [debt, setDebt] = useState(entries.at(-1)?.totalDebt || 0);
+  const [debt, setDebt] = useState(entries[entries.length - 1]?.totalDebt || 0);
 
   const submit = () => {
     const entry: CheckinEntry = {
@@ -31,7 +31,7 @@ export function CheckInTool(nav: ToolNavProps) {
     setShowForm(false);
   };
 
-  const last = entries.at(-1);
+  const last = entries[entries.length - 1];
   const prev = entries.length > 1 ? entries[entries.length - 2] : null;
   const rateNow = last ? savingsRateOf(last) : 0;
   const ratePrev = prev ? savingsRateOf(prev) : null;
