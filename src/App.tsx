@@ -12,6 +12,7 @@ import {
 import { ImpulseTool, DebtSimulator, LongTermSimulator, GoalCalculator, LoanComparator } from './components/Tools';
 import { SelosPanel } from './components/SelosAndShare';
 import { CheckInTool } from './components/CheckIn';
+import { QuoteTool } from './components/QuoteTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { Landing } from './components/Landing';
 import { AppBar, SiteFooter } from './components/Layout';
@@ -295,6 +296,7 @@ function ToolRoute({
       <AppBar onHome={onHome} />
       {/* key: trocar de ferramenta zera os campos da anterior */}
       <div key={tool.id} style={{ display: 'contents' }}>
+        {tool.id === 'quote' && <QuoteTool {...toolProps} />}
         {tool.id === 'impulse' && <ImpulseTool monthlyIncome={data.monthlyIncome} {...toolProps} />}
         {tool.id === 'debts' && <DebtSimulator debts={data.debts} onStart={onStart} {...toolProps} />}
         {tool.id === 'selos' && <SelosPanel onStart={onStart} {...toolProps} />}

@@ -774,3 +774,37 @@ input[type='number'] { -moz-appearance: textfield; }
   .showcase-phones .phone-2 { transform: translate(12%, -46%) rotate(9deg); }
 }
 .showcase-phones .phone:hover { z-index: 3; }
+
+/* ---------- frase do dia ---------- */
+.quote-layout { display: grid; grid-template-columns: 240px 1fr; gap: 28px; align-items: start; }
+@media (max-width: 600px) { .quote-layout { grid-template-columns: 1fr; } .quote-phone { margin: 0 auto; } }
+.quote-phone { width: 240px; transform: none; }
+.quote-phone.feed .phone-screen { aspect-ratio: 4 / 5; }
+.quote-phone .phone-screen { transition: aspect-ratio 0.3s var(--ease-out); }
+.quote-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--hairline); background: var(--white); color: var(--ink);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.icon-btn:hover { border-color: var(--gold); }
+.icon-btn:active { transform: scale(0.94); }
+.quote-badge { flex: 1; text-align: center; font-family: var(--sans); font-size: 13px; color: var(--ink-soft); padding: 9px 10px; border-radius: 10px; background: var(--paper); border: 1px solid var(--hairline-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quote-badge.today { color: var(--gold-deep); font-weight: 600; background: #FBF1DA; border-color: #EEDBA8; }
+.seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--sand-deep); gap: 2px; }
+.seg button { border: none; background: none; padding: 8px 16px; border-radius: 8px; font-family: var(--sans); font-size: 13.5px; font-weight: 500; color: var(--ink-soft); cursor: pointer; transition: background 0.2s ease, color 0.2s ease; }
+.seg button small { font-size: 11px; opacity: 0.7; margin-left: 3px; }
+.seg button.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+.quote-cta { margin-top: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; position: relative; }
+.quote-cta .btn-outline { background: transparent; color: var(--paper); border-color: rgba(221, 161, 59, 0.45); }
+.quote-cta .btn-outline:hover { border-color: var(--gold-bright); background: rgba(255, 255, 255, 0.04); }
+.quote-section .today-tag { display: inline-block; font-family: var(--sans); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--gold-bright); margin-bottom: 18px; }
+
+/* cartão do diagnóstico ocupa a linha inteira no fim da grade */
+.tools-grid > :last-child { grid-column: 1 / -1; }
+@media (min-width: 700px) {
+  .tool-card.feature { flex-direction: row; align-items: center; gap: 22px; padding: 26px 28px; }
+  .tool-card.feature h3 { margin: 0 0 4px; font-size: 20px; }
+  .tool-card.feature p { flex: none; }
+  .tool-card.feature .open { margin: 0 0 0 auto; white-space: nowrap; font-size: 15px; }
+}
