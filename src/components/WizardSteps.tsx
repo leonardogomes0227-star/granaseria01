@@ -2,12 +2,13 @@ import { useState, useEffect, useId } from 'react';
 import { WizardData, DebtItem } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
-import { ShareDiagnosisButton } from './SelosAndShare';
 import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck } from 'lucide-react';
 import { CountUp, AnimatedFill } from './motion';
 import { DecimalInput } from './DecimalInput';
 import { TOOLS, ToolId } from '../tools';
 import { ToolIcon } from './Layout';
+import { ArchetypeShare } from './ArchetypeShare';
+import { getArchetype } from '../archetypes';
 
 /* ---------- shared bits ---------- */
 
@@ -464,6 +465,7 @@ export function DiagnosisStep({
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
+  const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;
   const suggested = TOOLS.filter((t) =>
@@ -471,12 +473,14 @@ export function DiagnosisStep({
   );
 
   return (
-    <div className="wizard-card" style={{ maxWidth: 680 }}>
+    <div className="wizard-card" style={{ maxWidth: 720 }}>
       <div className="wizard-kicker"><span className="wedge" />Seu diagnóstico</div>
       <h2 className="wizard-h2">Aqui está o retrato da sua vida financeira</h2>
       <p className="wizard-sub">Lido à luz das leis de <i>O Homem Mais Rico da Babilônia</i>.</p>
 
       <ScoreHero health={health} />
+
+      <ArchetypeShare archetype={archetype} score={health.score} />
 
       <div className="diag-grid stagger">
         <div className="stat-card">
@@ -543,7 +547,6 @@ export function DiagnosisStep({
         </p>
       </div>
 
-      <ShareDiagnosisButton diagnosis={diagnosis} />
 
       <div className="diag-section" style={{ marginTop: 28, marginBottom: 8 }}>
         <p className="diag-label">Seu plano de ação</p>

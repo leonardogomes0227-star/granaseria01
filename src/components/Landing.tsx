@@ -1,6 +1,8 @@
-import { MouseEvent, useState } from 'react';
+import { MouseEvent, useEffect, useState } from 'react';
 import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass, Plus } from 'lucide-react';
 import { CHECKOUT_READY, PRICE_LABEL } from '../config';
+import { ARCHETYPES } from '../archetypes';
+import { renderStoryCard, StoryTheme } from '../storyCard';
 import { TOOLS, ToolId } from '../tools';
 import { formatBRL } from '../calculations';
 import { Reveal, CountUp, AnimatedFill, useInView } from './motion';
@@ -108,6 +110,63 @@ function Faq() {
         </Reveal>
       ))}
     </div>
+  );
+}
+
+const SHOWCASE: { id: keyof typeof ARCHETYPES; theme: StoryTheme }[] = [
+  { id: 'construtor', theme: 'lapis' },
+  { id: 'guardiao', theme: 'ouro' },
+  { id: 'semeador', theme: 'terracota' },
+];
+
+function StoryShowcase({ onStart }: { onStart: () => void }) {
+  const { ref, inView } = useInView<HTMLDivElement>('200px');
+  const [imgs, setImgs] = useState<string[]>([]);
+  useEffect(() => {
+    if (!inView) return;
+    let alive = true;
+    Promise.all(
+      SHOWCASE.map((s) =>
+        renderStoryCard(ARCHETYPES[s.id], s.theme, { siteUrl: window.location.host.replace(/^www\./, '') }).then((c) =>
+          c.toDataURL('image/jpeg', 0.75)
+        )
+      )
+    ).then((r) => alive && setImgs(r));
+    return () => {
+      alive = false;
+    };
+  }, [inView]);
+
+  return (
+    <section className="showcase" id="arquetipos">
+      <div className="showcase-inner">
+        <Reveal className="showcase-copy" variant="left">
+          <div className="kicker"><span className="wedge" />Feito pra postar</div>
+          <h2>Qual é o seu arquétipo financeiro?</h2>
+          <p>
+            No fim do diagnóstico você descobre qual personagem da Babilônia você é — e ganha um cartão lindo,
+            no formato do story, pra postar. Sem nenhum valor em reais: só a sua vibe.
+          </p>
+          <ul className="showcase-list">
+            {Object.values(ARCHETYPES).map((a) => (
+              <li key={a.id}><b>{a.numeral}</b> {a.name}</li>
+            ))}
+          </ul>
+          <button className="btn-primary btn-shine" type="button" onClick={onStart}>
+            Descobrir o meu <ArrowRight size={17} className="arrow" />
+          </button>
+        </Reveal>
+        <div className="showcase-phones" ref={ref}>
+          {SHOWCASE.map((s, i) => (
+            <div className={`phone phone-${i}`} key={s.id}>
+              <div className="phone-screen">
+                {imgs[i] ? <img src={imgs[i]} alt={`Exemplo de cartão: ${ARCHETYPES[s.id].name}`} /> : <div className="phone-loading" />}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -287,7 +346,9 @@ export function Landing({
         </div>
       </section>
 
-      <section className="section" id="principios" style={{ paddingTop: 0 }}>
+      <StoryShowcase onStart={onStart} />
+
+      <section className="section" id="principios">
         <Reveal className="section-head">
           <div className="kicker"><span className="wedge" />Os princípios</div>
           <h2>Três leis, escritas há milhares de anos, ainda sustentam qualquer plano.</h2>
