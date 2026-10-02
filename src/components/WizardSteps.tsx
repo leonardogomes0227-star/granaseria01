@@ -287,31 +287,43 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
       <h2 className="wizard-h2">Você tem alguma dívida?</h2>
       <p className="wizard-sub">Cadastre cada uma — cartão, empréstimo, financiamento.</p>
 
-      {data.debts.map((debt) => (
-        <div className="debt-row" key={debt.id}>
+      {data.debts.map((debt, i) => (
+        <div className="debt-card" key={debt.id}>
+          <div className="debt-card-head">
+            Dívida {i + 1}
+            <button className="debt-remove" type="button" aria-label={`Remover dívida ${i + 1}`} onClick={() => removeDebt(debt.id)}>
+              <Trash2 size={15} />
+            </button>
+          </div>
           <input
             className="field-input"
             type="text"
-            placeholder="Descrição (ex: cartão de crédito)"
+            aria-label="Descrição da dívida"
+            placeholder="Ex.: cartão de crédito"
             value={debt.description}
             onChange={(e) => updateDebt(debt.id, { description: e.target.value })}
           />
-          <DecimalInput
-            aria-label="Valor da dívida"
-            placeholder="R$ valor"
-            value={debt.value}
-            onChange={(v) => updateDebt(debt.id, { value: v })}
-          />
-          <DecimalInput
-            aria-label="Juros ao mês (%)"
-            placeholder="% juros a.m."
-            max={100}
-            value={debt.interestRate || 0}
-            onChange={(v) => updateDebt(debt.id, { interestRate: v })}
-          />
-          <button className="debt-remove" type="button" aria-label="Remover dívida" onClick={() => removeDebt(debt.id)}>
-            <Trash2 size={16} />
-          </button>
+          <div className="debt-card-grid">
+            <div className="input-prefix">
+              <span>R$</span>
+              <DecimalInput
+                aria-label="Valor da dívida"
+                placeholder="Valor"
+                value={debt.value}
+                onChange={(v) => updateDebt(debt.id, { value: v })}
+              />
+            </div>
+            <div className="input-suffix">
+              <DecimalInput
+                aria-label="Juros ao mês (%)"
+                placeholder="Juros"
+                max={100}
+                value={debt.interestRate || 0}
+                onChange={(v) => updateDebt(debt.id, { interestRate: v })}
+              />
+              <span>% a.m.</span>
+            </div>
+          </div>
         </div>
       ))}
 
