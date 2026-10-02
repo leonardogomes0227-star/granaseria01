@@ -1,7 +1,8 @@
 import { MouseEvent, useEffect, useState } from 'react';
-import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass, Plus } from 'lucide-react';
+import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass, Plus, Instagram } from 'lucide-react';
 import { CHECKOUT_READY, PRICE_LABEL } from '../config';
 import { ARCHETYPES } from '../archetypes';
+import { QUOTES, dailyQuoteIndex, formatDayLabel } from '../quotes';
 import { renderStoryCard, StoryTheme } from '../storyCard';
 import { TOOLS, ToolId } from '../tools';
 import { formatBRL } from '../calculations';
@@ -338,8 +339,10 @@ export function Landing({
           <Reveal delay={270} variant="up">
             <button type="button" className="tool-card feature" onClick={onStart} onMouseMove={trackGlow}>
               <span className="tool-icon lg tone-gold"><Sparkles size={24} strokeWidth={1.9} /></span>
-              <h3>Diagnóstico completo</h3>
-              <p>O ponto de partida: em 10 minutos, um retrato da sua vida financeira e o que fazer primeiro.</p>
+              <span>
+                <h3>Diagnóstico completo</h3>
+                <p>Em 10 minutos: sua nota de 0 a 100, seu arquétipo financeiro e o que fazer primeiro.</p>
+              </span>
               <span className="open">Começar agora <ArrowRight size={15} /></span>
             </button>
           </Reveal>
@@ -379,9 +382,14 @@ export function Landing({
         </svg>
         <div className="wrap">
           <Reveal className="quote-frame" variant="scale">
+            <span className="today-tag">Frase do dia · {formatDayLabel()}</span>
             <span className="dropcap">“</span>
-            <blockquote>A riqueza, como uma árvore, cresce de uma pequena semente. Quanto antes você a plantar, mais cedo a árvore crescerá.</blockquote>
-            <cite>O Homem Mais Rico da Babilônia, George S. Clason</cite>
+            <blockquote>{QUOTES[dailyQuoteIndex()]}</blockquote>
+            <div className="quote-cta">
+              <button type="button" className="btn-primary btn-shine" onClick={() => onOpenTool('quote')}>
+                <Instagram size={17} /> Postar a frase de hoje
+              </button>
+            </div>
           </Reveal>
         </div>
       </section>

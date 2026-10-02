@@ -5,7 +5,7 @@ import { Archetype } from './archetypes';
 
 export type StoryTheme = 'ouro' | 'areia' | 'lapis' | 'terracota';
 
-interface Palette {
+export interface Palette {
   label: string;
   bg: [string, string];
   fg: string;
@@ -62,7 +62,7 @@ export const STORY_THEMES: Record<StoryTheme, Palette> = {
 export const STORY_W = 1080;
 export const STORY_H = 1920;
 
-async function ensureFonts() {
+export async function ensureFonts() {
   if (!document.fonts?.load) return;
   const loads = [
     document.fonts.load('500 80px Cinzel'),
@@ -75,7 +75,7 @@ async function ensureFonts() {
   await Promise.race([Promise.allSettled(loads), new Promise((r) => setTimeout(r, 1500))]);
 }
 
-function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+export function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(' ');
   const lines: string[] = [];
   let line = '';
@@ -90,7 +90,7 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   return lines;
 }
 
-function spaced(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, spacing: number) {
+export function spaced(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, spacing: number) {
   // texto com espaçamento entre letras, centralizado em x
   const chars = [...text];
   const total = chars.reduce((s, c) => s + ctx.measureText(c).width, 0) + spacing * (chars.length - 1);
@@ -103,7 +103,7 @@ function spaced(ctx: CanvasRenderingContext2D, text: string, x: number, y: numbe
   ctx.textAlign = 'center';
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);

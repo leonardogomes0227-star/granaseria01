@@ -1,6 +1,6 @@
-import { ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, LucideIcon } from 'lucide-react';
+import { ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, LucideIcon } from 'lucide-react';
 
-export type ToolId = 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan';
+export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan';
 
 export interface ToolInfo {
   id: ToolId;
@@ -16,6 +16,15 @@ export interface ToolInfo {
 }
 
 export const TOOLS: ToolInfo[] = [
+  {
+    id: 'quote',
+    slug: 'frase-do-dia',
+    title: 'Frase do dia',
+    short: 'Frase do dia',
+    description: 'Uma frase nova todo dia sobre dinheiro e disciplina, em cartões prontos pra postar no story ou no feed.',
+    icon: Quote,
+    tone: 'lapis',
+  },
   {
     id: 'impulse',
     slug: 'vale-a-pena-comprar',
