@@ -3,9 +3,19 @@ import type { Expense } from './db.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
 export interface BotDeps {
-  insertExpense: (e: { phone: string; amount: number; category: string; description: string; waMessageId: string }) => Promise<boolean>;
-  listExpensesSince: (phone: string, since: Date) => Promise<Expense[]>;
-  deleteLastExpense: (phone: string) => Promise<Expense | null>;
+  findUserByPhone: (phone: string) => Promise<string | null>;
+  insertExpense: (e: {
+    userId: string;
+    amount: number;
+    category: string;
+    description: string;
+    date: string;
+    waMessageId: string;
+  }) => Promise<boolean>;
+  listExpensesSince: (userId: string, sinceDate: string) => Promise<Expense[]>;
+  deleteLastExpense: (userId: string) => Promise<Expense | null>;
+  /** Link do cadastro no site, mostrado pra quem ainda não tem conta. */
+  signupUrl?: string;
   now?: () => Date;
 }
 
@@ -19,6 +29,11 @@ export function startOfDayBRT(now: Date): Date {
   const local = new Date(now.getTime() - BRT_OFFSET_MS);
   local.setUTCHours(0, 0, 0, 0);
   return new Date(local.getTime() + BRT_OFFSET_MS);
+}
+
+/** Dia (yyyy-mm-dd) no horário de Brasília — o mesmo formato da coluna "data" dos gastos. */
+export function dateBRT(d: Date): string {
+  return new Date(d.getTime() - BRT_OFFSET_MS).toISOString().slice(0, 10);
 }
 
 export function startOfWeekBRT(now: Date): Date {
@@ -64,6 +79,16 @@ export const HELP_TEXT = [
   '• *apagar* — desfaz o último registro',
 ].join('\n');
 
+export function notRegisteredText(signupUrl?: string): string {
+  return [
+    '👋 Oi! Ainda não encontrei uma conta Grana Séria com este número.',
+    '',
+    signupUrl
+      ? `Crie sua conta grátis em ${signupUrl} usando este mesmo WhatsApp e depois é só me mandar seus gastos.`
+      : 'Crie sua conta grátis no site da Grana Séria usando este mesmo WhatsApp e depois é só me mandar seus gastos.',
+  ].join('\n');
+}
+
 export async function handleText(
   msg: { id: string; phone: string; text: string },
   deps: BotDeps
@@ -71,22 +96,27 @@ export async function handleText(
   const now = deps.now?.() ?? new Date();
   const cmd = parseMessage(msg.text);
 
+  // os gastos ficam na conta do site: o número precisa ser o mesmo do cadastro
+  const userId = await deps.findUserByPhone(msg.phone);
+  if (!userId) return notRegisteredText(deps.signupUrl);
+
   switch (cmd.kind) {
     case 'help':
       return HELP_TEXT;
 
     case 'expense': {
+      const todayDate = dateBRT(now);
       const inserted = await deps.insertExpense({
-        phone: msg.phone,
+        userId,
         amount: cmd.amount,
         category: cmd.category,
         description: cmd.description,
+        date: todayDate,
         waMessageId: msg.id,
       });
       if (!inserted) return null; // mensagem repetida pela Meta — já respondemos antes
-      const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
-      const todayStart = startOfDayBRT(now).getTime();
-      const today = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart));
+      const monthRows = await deps.listExpensesSince(userId, dateBRT(startOfMonthBRT(now)));
+      const today = sum(monthRows.filter((r) => r.date === todayDate));
       return [
         `✅ ${brl(cmd.amount)} em ${categoryEmoji(cmd.category)} *${cmd.category}*`,
         `_${cmd.description}_`,
@@ -99,26 +129,26 @@ export async function handleText(
     }
 
     case 'today': {
-      const rows = await deps.listExpensesSince(msg.phone, startOfDayBRT(now));
+      const rows = await deps.listExpensesSince(userId, dateBRT(startOfDayBRT(now)));
       if (rows.length === 0) return 'Nenhum gasto registrado hoje. 🙌';
       const lines = rows.map((r) => `• ${brl(r.amount)} — ${r.description}`);
       return [`📅 *Hoje*: ${brl(sum(rows))}`, '', ...lines].join('\n');
     }
 
     case 'week': {
-      const rows = await deps.listExpensesSince(msg.phone, startOfWeekBRT(now));
+      const rows = await deps.listExpensesSince(userId, dateBRT(startOfWeekBRT(now)));
       if (rows.length === 0) return 'Nenhum gasto registrado nesta semana.';
       return [`🗓️ *Semana* (desde segunda): ${brl(sum(rows))}`, '', byCategory(rows)].join('\n');
     }
 
     case 'month': {
-      const rows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
+      const rows = await deps.listExpensesSince(userId, dateBRT(startOfMonthBRT(now)));
       if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda.';
       return [`📊 *Mês*: ${brl(sum(rows))} em ${rows.length} registro(s)`, '', byCategory(rows)].join('\n');
     }
 
     case 'undo': {
-      const removed = await deps.deleteLastExpense(msg.phone);
+      const removed = await deps.deleteLastExpense(userId);
       if (!removed) return 'Não encontrei nenhum gasto pra apagar.';
       return `🗑️ Apaguei: ${brl(removed.amount)} — ${removed.description}`;
     }

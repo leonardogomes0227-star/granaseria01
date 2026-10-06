@@ -178,7 +178,7 @@ export function IncomeStep({ data, update, onNext }: StepProps) {
         onChange={(v) => update({ monthlyIncome: v })}
         autoFocus
       />
-      <p className="field-hint" style={{ marginTop: -8 }}>Seus números ficam só neste navegador — ninguém mais vê.</p>
+      <p className="field-hint" style={{ marginTop: -8 }}>Seus números ficam salvos só na sua conta — ninguém mais vê.</p>
       <WizardNav onNext={onNext} canNext={data.monthlyIncome > 0} submit />
     </StepCard>
   );

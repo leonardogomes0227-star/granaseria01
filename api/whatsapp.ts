@@ -6,7 +6,7 @@
 
 import { extractTextMessages, isAllowed, normalizeBrPhone, sendText, verifySignature } from '../server/whatsapp/meta.js';
 import { handleText } from '../server/whatsapp/bot.js';
-import { insertExpense, listExpensesSince, deleteLastExpense } from '../server/whatsapp/db.js';
+import { findUserByPhone, insertExpense, listExpensesSince, deleteLastExpense } from '../server/whatsapp/db.js';
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -42,7 +42,13 @@ export async function POST(request: Request): Promise<Response> {
     try {
       const reply = await handleText(
         { id: msg.id, phone: normalizeBrPhone(msg.from), text: msg.text },
-        { insertExpense, listExpensesSince, deleteLastExpense }
+        {
+          findUserByPhone,
+          insertExpense,
+          listExpensesSince,
+          deleteLastExpense,
+          signupUrl: process.env.SITE_URL ? `${process.env.SITE_URL.replace(/\/$/, '')}/cadastro` : undefined,
+        }
       );
       if (reply) await sendText(msg.from, reply);
     } catch (err) {

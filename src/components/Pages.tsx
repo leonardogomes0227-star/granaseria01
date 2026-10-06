@@ -22,15 +22,19 @@ export function PrivacyPage() {
   return (
     <PageShell title="Política de privacidade" kicker="Legal">
       <p>
-        A Grana Séria coleta as informações que você preenche no diagnóstico — renda, gastos, dívidas e reserva
-        de emergência — apenas para calcular o seu resultado e o seu plano de ação. Não vendemos nem
-        compartilhamos esses dados com terceiros para fins de publicidade.
+        A Grana Séria coleta os dados da sua conta — nome, e-mail e número de WhatsApp —, as informações que você
+        preenche no diagnóstico — renda, gastos, dívidas e reserva de emergência — e os gastos que você anota no
+        site ou pelo WhatsApp. Usamos esses dados apenas para calcular o seu resultado, montar o seu plano de ação e
+        mostrar o acompanhamento dos seus gastos. Não vendemos nem compartilhamos esses dados com terceiros para
+        fins de publicidade.
       </p>
       <h3>Como usamos seus dados</h3>
       <p>
-        Os valores que você informa ficam salvos apenas no seu próprio navegador — é isso que permite continuar
-        o diagnóstico de onde parou e guardar o histórico do check-in mensal. Eles não são enviados para nenhum
-        servidor. Para apagar tudo, basta limpar os dados de navegação deste site.
+        Os dados da sua conta, o seu diagnóstico e os seus gastos ficam guardados no nosso banco de dados
+        (Supabase), protegido de forma que cada pessoa só consegue acessar os próprios dados. É isso que permite
+        rever o seu último diagnóstico e acompanhar seus gastos de qualquer aparelho. O seu número de WhatsApp é
+        usado para identificar você quando anota gastos pelo assistente. O progresso de um diagnóstico em
+        andamento e o histórico do check-in mensal também ficam salvos no seu navegador, neste aparelho.
       </p>
       <h3>Seus direitos</h3>
       <p>

@@ -1,14 +1,28 @@
 // Acesso ao Supabase pela API REST (PostgREST), só com fetch — sem SDK no servidor.
 // Usa a service role key, que NUNCA vai pro navegador: só existe nas variáveis de ambiente da Vercel.
+//
+// O bot grava na mesma tabela "gastos" do site. A pessoa é identificada pelo telefone salvo no
+// cadastro (profiles.telefone, formato 5567999999999).
 
 export interface Expense {
-  id: number;
-  phone: string;
+  id: string;
   amount: number;
   category: string;
   description: string;
+  date: string; // yyyy-mm-dd (dia do gasto, horário de Brasília)
   created_at: string;
 }
+
+interface GastoRow {
+  id: string;
+  valor: number | string;
+  categoria: string;
+  descricao: string | null;
+  data: string;
+  criado_em: string;
+}
+
+const SELECT = 'id,valor,categoria,descricao,data,criado_em';
 
 function env(name: string): string {
   const v = process.env[name];
@@ -29,22 +43,45 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   });
 }
 
+function toExpense(r: GastoRow): Expense {
+  return {
+    id: r.id,
+    amount: Number(r.valor),
+    category: r.categoria,
+    description: r.descricao || r.categoria,
+    date: r.data,
+    created_at: r.criado_em,
+  };
+}
+
+/** Dono do número (id do usuário), ou null se ninguém se cadastrou no site com esse WhatsApp. */
+export async function findUserByPhone(phone: string): Promise<string | null> {
+  const q = new URLSearchParams({ telefone: `eq.${phone}`, select: 'id', limit: '1' });
+  const res = await rest(`profiles?${q}`);
+  if (!res.ok) throw new Error(`Supabase select profiles ${res.status}: ${await res.text()}`);
+  const [row] = (await res.json()) as { id: string }[];
+  return row?.id ?? null;
+}
+
 /** Grava o gasto. Retorna false se essa mensagem já tinha sido gravada (a Meta às vezes reenvia). */
 export async function insertExpense(e: {
-  phone: string;
+  userId: string;
   amount: number;
   category: string;
   description: string;
+  date: string;
   waMessageId: string;
 }): Promise<boolean> {
-  const res = await rest('expenses', {
+  const res = await rest('gastos', {
     method: 'POST',
     headers: { Prefer: 'return=minimal' },
     body: JSON.stringify({
-      phone: e.phone,
-      amount: e.amount,
-      category: e.category,
-      description: e.description,
+      user_id: e.userId,
+      valor: e.amount,
+      categoria: e.category,
+      descricao: e.description,
+      data: e.date,
+      origem: 'whatsapp',
       wa_message_id: e.waMessageId,
     }),
   });
@@ -53,32 +90,32 @@ export async function insertExpense(e: {
   return true;
 }
 
-export async function listExpensesSince(phone: string, since: Date): Promise<Expense[]> {
+/** Gastos com data (dia do gasto) a partir de sinceDate (yyyy-mm-dd), do mais antigo pro mais novo. */
+export async function listExpensesSince(userId: string, sinceDate: string): Promise<Expense[]> {
   const q = new URLSearchParams({
-    phone: `eq.${phone}`,
-    created_at: `gte.${since.toISOString()}`,
-    select: 'id,phone,amount,category,description,created_at',
-    order: 'created_at.asc',
+    user_id: `eq.${userId}`,
+    data: `gte.${sinceDate}`,
+    select: SELECT,
+    order: 'data.asc,criado_em.asc',
   });
-  const res = await rest(`expenses?${q}`);
+  const res = await rest(`gastos?${q}`);
   if (!res.ok) throw new Error(`Supabase select ${res.status}: ${await res.text()}`);
-  const rows = (await res.json()) as Expense[];
-  return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
+  return ((await res.json()) as GastoRow[]).map(toExpense);
 }
 
-/** Apaga o gasto mais recente da pessoa e devolve o que foi apagado. */
-export async function deleteLastExpense(phone: string): Promise<Expense | null> {
+/** Apaga o gasto registrado por último (no site ou no WhatsApp) e devolve o que foi apagado. */
+export async function deleteLastExpense(userId: string): Promise<Expense | null> {
   const q = new URLSearchParams({
-    phone: `eq.${phone}`,
-    select: 'id,phone,amount,category,description,created_at',
-    order: 'created_at.desc',
+    user_id: `eq.${userId}`,
+    select: SELECT,
+    order: 'criado_em.desc',
     limit: '1',
   });
-  const res = await rest(`expenses?${q}`);
+  const res = await rest(`gastos?${q}`);
   if (!res.ok) throw new Error(`Supabase select ${res.status}: ${await res.text()}`);
-  const [last] = (await res.json()) as Expense[];
+  const [last] = (await res.json()) as GastoRow[];
   if (!last) return null;
-  const del = await rest(`expenses?id=eq.${last.id}&phone=eq.${phone}`, { method: 'DELETE' });
+  const del = await rest(`gastos?id=eq.${last.id}&user_id=eq.${userId}`, { method: 'DELETE' });
   if (!del.ok) throw new Error(`Supabase delete ${del.status}: ${await del.text()}`);
-  return { ...last, amount: Number(last.amount) };
+  return toExpense(last);
 }

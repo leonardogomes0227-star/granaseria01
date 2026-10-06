@@ -1,10 +1,12 @@
 # Assistente de gastos pelo WhatsApp — guia de configuração (fase de teste)
 
-O assistente recebe mensagens como *"gastei 35 no mercado"*, grava no Supabase e responde com o total do dia e do mês.
+O assistente recebe mensagens como *"gastei 35 no mercado"*, grava na conta da pessoa no Supabase e responde com o total do dia e do mês.
+Os gastos vão para a mesma tabela `gastos` do site, então aparecem também em **Meus gastos** (marcados "via WhatsApp").
+A pessoa é identificada pelo WhatsApp informado no cadastro do site (`profiles.telefone`); número sem conta recebe o link pra se cadastrar.
 Nesta fase, **só os números listados em `ALLOWED_NUMBERS` são atendidos** (você + 1 pessoa). Qualquer outro número é ignorado.
 
 ```
-WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Supabase (tabela expenses)
+WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Supabase (tabela gastos)
                     ▲                       │
                     └──── resposta ◄────────┘
 ```
@@ -27,7 +29,9 @@ Categorias automáticas: Alimentação, Transporte, Moradia, Saúde, Lazer, Comp
 ## Passo 1 — Banco de dados (Supabase)
 
 1. Crie uma conta em **supabase.com** → **New project** (região *São Paulo*). Anote a senha.
-2. No projeto: **SQL Editor → New query**, cole o conteúdo de [`supabase/whatsapp.sql`](../supabase/whatsapp.sql) e clique **Run**.
+2. No projeto: **SQL Editor → New query**, cole o conteúdo de [`supabase/contas.sql`](../supabase/contas.sql) e clique **Run**.
+   Ele cria as permissões das contas e a coluna que evita gastos duplicados, e traz os gastos da fase de teste
+   (tabela antiga `expenses`, de [`supabase/whatsapp.sql`](../supabase/whatsapp.sql)) para `gastos`.
 3. Em **Project Settings → API**, copie:
    - **Project URL** → vai ser o `SUPABASE_URL`
    - **service_role key** (secreta) → vai ser o `SUPABASE_SERVICE_ROLE_KEY`
@@ -64,6 +68,7 @@ Vercel → projeto **granaseria01** → **Settings → Environment Variables** (
 | `ALLOWED_NUMBERS` | números liberados, separados por vírgula, com 55 + DDD: `5511987654321,5521912345678` |
 | `SUPABASE_URL` | do passo 1.3 |
 | `SUPABASE_SERVICE_ROLE_KEY` | do passo 1.3 |
+| `SITE_URL` | endereço do site, ex.: `https://granaseria01.vercel.app` (vai no link de cadastro que o bot manda) |
 
 Depois de salvar: **Deployments → ⋯ no último deploy → Redeploy** (as variáveis só valem num deploy novo).
 
@@ -79,10 +84,10 @@ Depois de salvar: **Deployments → ⋯ no último deploy → Redeploy** (as var
 
 ## Passo 5 — Testar
 
-Do seu celular (um dos números em `ALLOWED_NUMBERS`), mande **oi** para o número do chip. Deve chegar o menu.
+Antes, crie uma conta no site usando o mesmo WhatsApp. Depois, do seu celular (um dos números em `ALLOWED_NUMBERS`), mande **oi** para o número do chip. Deve chegar o menu.
 Depois: `gastei 35 no mercado` → `hoje` → `mês` → `apagar`.
 
-Os gastos aparecem no Supabase em **Table Editor → expenses**.
+Os gastos aparecem no site em **Meus gastos** e no Supabase em **Table Editor → gastos**.
 
 ### Se não responder
 
@@ -90,4 +95,5 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - **sem nenhuma chamada** → webhook não configurado/assinado (passo 4) ou app não publicado
   - **401** → `WHATSAPP_APP_SECRET` errado
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
+  - responde "não encontrei uma conta" → o WhatsApp do cadastro no site é diferente do número que mandou a mensagem
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada

@@ -60,7 +60,7 @@ function Medallion() {
 const FAQ: { q: string; a: string }[] = [
   {
     q: 'O diagnóstico é de graça mesmo?',
-    a: 'Sim. O diagnóstico completo e todas as ferramentas são gratuitos e não pedem cadastro. Você responde, vê seu retrato financeiro e sua nota na hora.',
+    a: 'Sim. O diagnóstico completo e todas as ferramentas são gratuitos. O diagnóstico pede só uma conta grátis (nome, e-mail e WhatsApp) pra guardar seu resultado; as ferramentas nem isso. Você responde, vê seu retrato financeiro e sua nota na hora.',
   },
   ...(CHECKOUT_READY
     ? [
@@ -72,7 +72,7 @@ const FAQ: { q: string; a: string }[] = [
     : []),
   {
     q: 'Meus dados ficam salvos onde?',
-    a: 'Só no seu navegador, neste aparelho. Nada do que você digita é enviado pra um servidor — por isso dá pra continuar de onde parou, e ninguém além de você vê seus números.',
+    a: 'Na sua conta, num banco de dados protegido: cada pessoa só acessa os próprios dados, e ninguém além de você vê seus números. É isso que permite rever seu diagnóstico e acompanhar seus gastos de qualquer aparelho. As ferramentas avulsas continuam guardando o que você digita só no seu navegador.',
   },
   {
     q: 'Preciso saber os valores exatos?',
@@ -272,8 +272,8 @@ export function Landing({
           </div>
           <div className="trust-row">
             <span><Clock size={15} /> 10 minutos</span>
-            <span><Check size={15} /> Sem cadastro</span>
-            <span><Lock size={15} /> Dados ficam no seu navegador</span>
+            <span><Check size={15} /> Grátis</span>
+            <span><Lock size={15} /> Só você vê seus dados</span>
           </div>
         </div>
 
