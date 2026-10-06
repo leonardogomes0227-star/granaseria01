@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Menu, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LogIn, LogOut, Menu, UserRound, Wallet, X } from 'lucide-react';
 import { TOOLS, ToolId, ToolInfo } from '../tools';
+import { useAuth } from '../contexts/AuthContext';
 
 export function BrandMark({ className = 'brand-mark' }: { className?: string }) {
   return (
@@ -32,6 +33,93 @@ function ToolMenuItem({ tool, onClick }: { tool: ToolInfo; onClick: () => void }
         <span className="desc">{tool.description}</span>
       </span>
     </button>
+  );
+}
+
+function firstName(name: string): string {
+  return name.trim().split(/\s+/)[0] ?? '';
+}
+
+/** Sair da conta e voltar pro início; se der erro, avisa sem quebrar a página. */
+function useSignOut() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    if (busy) return;
+    setBusy(true);
+    const { error } = await signOut();
+    setBusy(false);
+    if (error) {
+      window.alert(`Não foi possível sair: ${error}`);
+      return;
+    }
+    navigate('/');
+  };
+  return { run, busy };
+}
+
+/** Nome do usuário, "Meus gastos" e "Sair" — ou "Entrar" quando não há sessão. */
+function AccountNav({ className = '' }: { className?: string }) {
+  const { user, displayName, loading } = useAuth();
+  const { run, busy } = useSignOut();
+  if (loading) return null;
+  if (!user) {
+    return (
+      <div className={`account-nav ${className}`}>
+        <Link className="navlink" to="/entrar">
+          <LogIn size={15} /> <span className="account-label">Entrar</span>
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className={`account-nav ${className}`}>
+      <span className="account-name" title={displayName}>
+        <UserRound size={15} /> <span>{firstName(displayName)}</span>
+      </span>
+      <Link className="navlink" to="/meus-gastos" aria-label="Meus gastos">
+        <Wallet size={15} /> <span className="account-label">Meus gastos</span>
+      </Link>
+      <button type="button" className="navlink" onClick={run} disabled={busy} aria-label="Sair">
+        {busy ? <span className="btn-spinner gold" aria-hidden="true" /> : <LogOut size={15} />}{' '}
+        <span className="account-label">Sair</span>
+      </button>
+    </div>
+  );
+}
+
+/** Versão do menu lateral (celular). */
+function DrawerAccount({ onNavigate }: { onNavigate: () => void }) {
+  const { user, displayName, loading } = useAuth();
+  const { run, busy } = useSignOut();
+  if (loading) return null;
+  return (
+    <>
+      <p className="drawer-label">Sua conta</p>
+      {user ? (
+        <>
+          <p className="drawer-user"><UserRound size={16} /> {displayName}</p>
+          <Link className="drawer-link" to="/meus-gastos" onClick={onNavigate}>Meus gastos</Link>
+          <button
+            type="button"
+            className="drawer-link drawer-btn"
+            disabled={busy}
+            onClick={async () => {
+              await run();
+              onNavigate();
+            }}
+          >
+            {busy ? 'Saindo…' : 'Sair'}
+          </button>
+        </>
+      ) : (
+        <>
+          <Link className="drawer-link" to="/entrar" onClick={onNavigate}>Entrar</Link>
+          <Link className="drawer-link" to="/cadastro" onClick={onNavigate}>Criar conta</Link>
+        </>
+      )}
+    </>
   );
 }
 
@@ -137,6 +225,7 @@ export function SiteHeader({
           </div>
 
           <div className="nav-right">
+            <AccountNav className="account-desktop" />
             <button type="button" className="nav-cta" onClick={onStart}>
               Fazer diagnóstico <ArrowRight size={14} />
             </button>
@@ -163,6 +252,7 @@ export function SiteHeader({
             <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => { setDrawerOpen(false); onStart(); }}>
               Fazer meu diagnóstico <ArrowRight size={16} className="arrow" />
             </button>
+            <DrawerAccount onNavigate={() => setDrawerOpen(false)} />
             <p className="drawer-label">Ferramentas</p>
             <div className="stagger">
               {TOOLS.map((t) => (
@@ -190,6 +280,7 @@ export function AppBar({ onHome }: { onHome: () => void }) {
           <span className="logo">Grana Séria</span>
         </button>
         <div className="nav-right">
+          <AccountNav className="account-compact" />
           <button type="button" className="btn-ghost" onClick={onHome}>
             <ArrowLeft size={16} /> Início
           </button>

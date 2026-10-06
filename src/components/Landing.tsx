@@ -223,11 +223,13 @@ export function Landing({
   savedProgress,
   onStart,
   onResume,
+  onRestart,
   onOpenTool,
 }: {
   savedProgress: SavedProgressInfo | null;
   onStart: () => void;
   onResume: () => void;
+  onRestart?: () => void;
   onOpenTool: (id: ToolId) => void;
 }) {
   const quickTools = TOOLS.filter((t) => !t.needsDiagnosis);
@@ -248,7 +250,7 @@ export function Landing({
                 <button className="btn-primary" onClick={onResume} type="button">
                   {savedProgress.step >= 7 ? 'Ver diagnóstico' : 'Continuar'}
                 </button>
-                <button className="btn-outline" onClick={onStart} type="button">Recomeçar</button>
+                <button className="btn-outline" onClick={onRestart ?? onStart} type="button">Recomeçar</button>
               </div>
             </div>
           )}
