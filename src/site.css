@@ -933,3 +933,137 @@ html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%;
 html { overflow-x: hidden; }
 @supports (overflow: clip) { html, body { overflow-x: clip; } }
 @media (max-width: 640px) { .tool-card .tag.free { display: none; } }
+
+/* ---------- plano de ação ---------- */
+.tone-text-info { color: var(--lapis); }
+.plan-power { margin-bottom: 18px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.plan-chips span { font-family: var(--sans); font-size: 12.5px; color: var(--ink-soft); background: var(--sand); border: 1px solid var(--hairline-soft); border-radius: 999px; padding: 4px 10px; }
+.plan-chips b { color: var(--ink); font-weight: 600; }
+.plan-phases { list-style: none; margin: 0 0 20px; padding: 0; position: relative; }
+.plan-phase { display: flex; gap: 14px; position: relative; padding-bottom: 16px; }
+.plan-phase:not(:last-child)::before { content: ''; position: absolute; left: 13px; top: 30px; bottom: 2px; width: 2px; background: var(--hairline-soft); }
+.plan-phase-dot { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 13px; color: var(--white); background: var(--gold); }
+.phase-debts .plan-phase-dot { background: var(--clay); }
+.phase-reserve .plan-phase-dot { background: var(--lapis); }
+.phase-invest .plan-phase-dot { background: var(--sage); }
+.plan-phase-when { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-faint); }
+.plan-phase-title { font-family: var(--serif); font-size: 19px; color: var(--ink); line-height: 1.25; }
+.plan-phase-note { font-size: 14.5px; color: var(--ink-soft); }
+.plan-step-title { font-family: var(--sans); font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.plan .action-item p:not(.plan-step-title) { font-size: 14.5px; }
+.plan .paywall-teaser { max-height: 120px; }
+.plan-nego, .plan-schedule { margin-top: 18px; }
+.plan-nego-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; line-height: 1.55; color: var(--ink); background: var(--white); border: 1px solid var(--hairline-soft); border-radius: 10px; padding: 12px 14px; margin: 0; }
+.plan-nego-text.manual { user-select: all; outline: 2px solid var(--gold-bright); }
+.plan-nego-warn { display: flex; gap: 6px; align-items: flex-start; margin-top: 12px; font-family: var(--sans); font-size: 12.5px; color: #8E4426; }
+.plan-nego-warn svg { flex-shrink: 0; margin-top: 1px; }
+.plan-row { display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--hairline-soft); font-family: var(--sans); font-size: 13.5px; color: var(--ink); }
+.plan-row:first-child { border-top: none; }
+.plan-row small { color: var(--ink-faint); font-size: 12px; }
+.plan-row-month { font-weight: 600; color: var(--gold-deep); }
+.plan-row-pay { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.plan-row-left { text-align: right; white-space: nowrap; }
+.plan-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; min-height: 40px; font-family: var(--sans); font-size: 13.5px; font-weight: 600; color: var(--lapis); background: none; border: none; cursor: pointer; padding: 0; }
+.debt-card .debt-kind { margin-top: 8px; }
+.plan-heading { font-family: var(--serif); font-size: 24px; color: var(--ink); margin: 2px 0 14px; line-height: 1.2; }
+.debt-mini-label { font-family: var(--sans); font-size: 12px; color: var(--ink-faint); margin-bottom: -4px; }
+.copy-btn { margin-top: 10px; }
+.plan-rights, .plan-boosters { margin-top: 18px; }
+.plan-boosters { display: grid; gap: 4px; }
+.plan-right { padding: 10px 0; border-top: 1px solid var(--hairline-soft); }
+.plan-right:first-of-type { border-top: none; padding-top: 0; }
+.plan-right p:not(.plan-step-title) { font-size: 14.5px; color: var(--ink-soft); }
+
+/* ---------- caça-vazamentos e direitos ---------- */
+.leaks-total { margin-bottom: 16px; }
+.leaks-list, .rights-list { display: grid; gap: 10px; }
+.leak-card { border: 1px solid var(--hairline-soft); background: var(--paper); border-radius: 12px; padding: 12px 14px 6px; transition: border-color 0.2s ease, background 0.2s ease; }
+.leak-card.on { border-color: var(--gold); background: #FBF1DA; }
+.leak-check { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+.leak-check b { display: block; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.leak-check small { display: block; font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+.leak-box { flex-shrink: 0; width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid var(--hairline); background: var(--white); display: grid; place-items: center; color: var(--white); margin-top: 1px; }
+.leak-card.on .leak-box { background: var(--gold); border-color: var(--gold); }
+.leak-amount { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 2px 36px; font-family: var(--sans); font-size: 13px; color: var(--ink-soft); }
+.leak-amount .input-prefix { width: 130px; flex-shrink: 0; }
+.leak-amount .field-input { padding-top: 9px; padding-bottom: 9px; }
+.leak-card .plan-more { margin: 2px 0 0 36px; }
+.leak-fix { margin: 0 0 10px 36px; font-size: 14.5px; color: var(--ink-soft); }
+.leak-fix p { margin-bottom: 8px; }
+.right-law { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.4px; color: var(--gold-deep); margin-bottom: 6px; }
+.right-summary { font-size: 15px; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .leak-amount { flex-direction: column; align-items: stretch; margin-left: 0; }
+  .leak-amount .input-prefix { width: 100%; }
+  .leak-fix, .leak-card .plan-more { margin-left: 0; }
+  .leak-amount .field-input { font-size: 16px; }
+}
+
+/* ---------- meu plano, mês a mês ---------- */
+.tracker-tasks { display: grid; gap: 10px; margin: 12px 0 14px; }
+.tracker-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tracker-task b { display: block; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.tracker-task small { font-family: var(--sans); font-size: 12.5px; color: var(--ink-faint); }
+.tracker-task .input-prefix { width: 150px; flex-shrink: 0; }
+.tracker-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.tracker-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.tracker-badge { font-family: var(--sans); font-size: 12.5px; padding: 5px 11px; border-radius: 999px; border: 1px dashed var(--hairline); color: var(--ink-faint); }
+.tracker-badge.earned { border-style: solid; border-color: var(--gold); background: #FBF1DA; color: var(--gold-deep); font-weight: 600; }
+@media (max-width: 640px) {
+  .tracker-task { flex-direction: column; align-items: stretch; gap: 6px; }
+  .tracker-task .input-prefix { width: 100%; }
+  .tracker-actions > * { flex: 1 1 100%; }
+  .tracker-task .field-input { font-size: 16px; }
+}
+
+/* ---------- conta ---------- */
+.account-page { max-width: 640px; }
+.account-form { display: grid; gap: 10px; max-width: 440px; }
+.account-card { margin-top: 4px; }
+.account-line { font-size: 15.5px; color: var(--ink-soft); margin-bottom: 10px; }
+.account-code { font-family: var(--display); font-size: 28px; letter-spacing: 2px; color: var(--ink); background: var(--white); border: 1px dashed var(--gold); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; text-align: center; }
+.account-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.plan-more.danger { color: #8E4426; }
+.account-card .field-input { max-width: 260px; }
+.account-card .btn-primary { margin-bottom: 8px; }
+
+/* ---------- leitor de fatura ---------- */
+.fatura-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 28px 18px; border: 1.5px dashed var(--gold); border-radius: 14px; background: var(--paper); color: var(--gold-deep); cursor: pointer; transition: background 0.2s ease; }
+.fatura-drop input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.fatura-drop b { font-family: var(--sans); font-size: 15.5px; color: var(--ink); }
+.fatura-drop small { font-family: var(--sans); font-size: 12.5px; color: var(--ink-faint); }
+.fatura-drop.busy { cursor: progress; background: #FBF1DA; }
+.fatura-drop.busy svg { animation: pulse 1.2s ease-in-out infinite; }
+.fatura-drop:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) { .fatura-drop:hover { background: #FBF1DA; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.fatura-result { margin-top: 16px; }
+.fatura-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--hairline-soft); font-family: var(--sans); }
+.fatura-row:first-of-type { border-top: none; }
+.fatura-desc b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.fatura-desc small { display: block; font-size: 12.5px; color: var(--ink-soft); }
+.fatura-val { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.fatura-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sand-deep); color: var(--ink-soft); white-space: nowrap; }
+.fatura-tag.tag-assinatura { background: #E3ECF3; color: var(--lapis); }
+.fatura-tag.tag-seguro, .fatura-tag.tag-juros_multa { background: #F8E6DD; color: #8E4426; }
+.fatura-tag.tag-tarifa, .fatura-tag.tag-anuidade { background: #FBF1DA; color: #7A5311; }
+@media (max-width: 640px) { .fatura-row { grid-template-columns: 1fr auto; } .fatura-tag { grid-column: 1 / -1; justify-self: start; } }
+
+/* ---------- guias ---------- */
+.guide-list { display: grid; gap: 10px; margin-top: 8px; }
+.guide-item { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--hairline-soft); border-radius: 12px; background: var(--paper); text-decoration: none; transition: border-color 0.2s ease, transform 0.2s ease; }
+.guide-item b { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--ink); line-height: 1.25; }
+.guide-item span:not(.guide-kicker) { font-size: 14.5px; color: var(--ink-soft); }
+.guide-kicker { font-family: var(--sans); font-size: 11.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--gold-deep); }
+@media (hover: hover) { .guide-item:hover { border-color: var(--gold); transform: translateY(-2px); } }
+.guide .page-body h2 { font-family: var(--serif); font-size: 24px; font-weight: 500; margin: 32px 0 10px; color: var(--ink); }
+.guide .page-body ul { margin: 0 0 18px; padding-left: 22px; list-style: disc; }
+.guide .page-body li::marker { color: var(--gold); }
+.guide .page-body li { margin-bottom: 10px; color: var(--ink-soft); font-size: 16.5px; line-height: 1.55; }
+.guide-cta { margin-top: 28px; padding: 22px; border-radius: 14px; background: #FBF1DA; border: 1px solid #EEDBA8; }
+.guide-cta p { font-size: 16.5px; color: var(--ink); margin-bottom: 14px; }
+.guide-more { margin-top: 30px; display: grid; gap: 8px; }
+.guide-more a { font-size: 15.5px; color: var(--lapis); text-decoration: none; }
+@media (hover: hover) { .guide-more a:hover { text-decoration: underline; } }
+.diag-label svg, .plan-step-title svg, .insight svg, .field-label svg { display: inline-block; }

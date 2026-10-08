@@ -1,6 +1,6 @@
-import { ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, LucideIcon } from 'lucide-react';
+import { ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
 
-export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan';
+export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
 
 export interface ToolInfo {
   id: ToolId;
@@ -16,6 +16,52 @@ export interface ToolInfo {
 }
 
 export const TOOLS: ToolInfo[] = [
+  {
+    id: 'tracker',
+    slug: 'meu-plano',
+    title: 'Meu plano, mês a mês',
+    short: 'Meu plano',
+    description: 'Feche cada mês dizendo quanto pagou. O plano se recalcula sozinho e mostra se você está adiantado ou atrasado.',
+    icon: ClipboardCheck,
+    tone: 'clay',
+    needsDiagnosis: true,
+  },
+  {
+    id: 'extra',
+    slug: 'decimo-terceiro',
+    title: 'O que fazer com o 13º',
+    short: '13º e extras',
+    description: 'Recebeu 13º, restituição ou FGTS? Veja onde colocar cada real e quantos meses antes você sai das dívidas.',
+    icon: Gift,
+    tone: 'gold',
+  },
+  {
+    id: 'fatura',
+    slug: 'leitor-de-fatura',
+    title: 'Leitor de fatura com IA',
+    short: 'Ler fatura',
+    description: 'Mande o PDF da fatura ou do extrato: a IA acha assinaturas, seguros, tarifas e juros escondidos e organiza seus gastos.',
+    icon: ScanText,
+    tone: 'clay',
+  },
+  {
+    id: 'leaks',
+    slug: 'caca-vazamentos',
+    title: 'Caça-vazamentos',
+    short: 'Vazamentos',
+    description: 'Tarifas, seguros que você não pediu, assinaturas esquecidas: ache o dinheiro que escapa todo mês, com a mensagem pronta pra cancelar.',
+    icon: Droplets,
+    tone: 'lapis',
+  },
+  {
+    id: 'rights',
+    slug: 'seus-direitos',
+    title: 'Seus direitos com o banco',
+    short: 'Direitos',
+    description: 'Portabilidade, desconto pra quitar antes, teto de juros do cartão: o que a lei já garante e a mensagem pra pedir.',
+    icon: ShieldCheck,
+    tone: 'sage',
+  },
   {
     id: 'quote',
     slug: 'frase-do-dia',

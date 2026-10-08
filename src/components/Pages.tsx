@@ -26,16 +26,40 @@ export function PrivacyPage() {
         de emergência — apenas para calcular o seu resultado e o seu plano de ação. Não vendemos nem
         compartilhamos esses dados com terceiros para fins de publicidade.
       </p>
-      <h3>Como usamos seus dados</h3>
+      <h3>Onde seus dados ficam</h3>
       <p>
-        Os valores que você informa ficam salvos apenas no seu próprio navegador — é isso que permite continuar
-        o diagnóstico de onde parou e guardar o histórico do check-in mensal. Eles não são enviados para nenhum
-        servidor. Para apagar tudo, basta limpar os dados de navegação deste site.
+        Sem conta, tudo o que você preenche fica salvo apenas no seu próprio navegador — é isso que permite
+        continuar o diagnóstico de onde parou e acompanhar o plano mês a mês. Para apagar, basta limpar os dados
+        de navegação deste site.
+      </p>
+      <p>
+        Se você criar uma conta (login pelo e-mail), seu diagnóstico, seu plano e os vazamentos marcados passam a
+        ser guardados também no nosso banco de dados (Supabase), para você acessar de qualquer aparelho. Só você,
+        logado, consegue ler esses dados.
+      </p>
+      <h3>WhatsApp</h3>
+      <p>
+        Se você vincular seu WhatsApp, guardamos o número para responder suas mensagens e mandar o lembrete mensal
+        do plano no dia que você escolher. Os gastos que você registra por lá ficam salvos para montar seus
+        resumos. Você pode desligar os lembretes ou desvincular o número a qualquer momento.
+      </p>
+      <h3>Leitor de fatura</h3>
+      <p>
+        Quando você usa o leitor de fatura, o arquivo é enviado para a API da Anthropic (Claude), que faz a
+        leitura e devolve o resultado. Não guardamos o arquivo. Evite enviar documentos com dados que você não
+        quer compartilhar.
+      </p>
+      <h3>Métricas de uso</h3>
+      <p>
+        Usamos métricas sem cookies (Plausible) para saber quantas pessoas usam cada parte do site e melhorar o
+        que não funciona. Elas nunca incluem valores em reais nem dados que identifiquem você. Se um dia usarmos
+        o Pixel da Meta para anúncios, ele recebe só o nome das páginas e ações, nunca seus números.
       </p>
       <h3>Seus direitos</h3>
       <p>
-        Você pode pedir a exclusão completa dos seus dados a qualquer momento. Para isso, entre em contato pelo
-        canal de suporte indicado no rodapé do site. O pedido é atendido em até 15 dias.
+        Você pode apagar seus dados a qualquer momento em Minha conta → Apagar meus dados, ou pedir a exclusão
+        completa (inclusive do login e dos gastos registrados pelo WhatsApp) pelo canal de suporte indicado no
+        rodapé do site. O pedido é atendido em até 15 dias.
       </p>
       <h3>Contato</h3>
       <p>Dúvidas sobre esta política podem ser enviadas pelo mesmo canal de suporte.</p>

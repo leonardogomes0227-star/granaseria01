@@ -1,8 +1,13 @@
+// Tipo da dívida — define a taxa típica usada quando a pessoa não sabe os juros
+export type DebtKind = 'cartao' | 'cheque' | 'emprestimo' | 'consignado' | 'financiamento' | 'outro';
+
 export interface DebtItem {
   id: string;
   description: string;
   value: number;
-  interestRate?: number; // % ao mês, opcional — usado pelo simulador avalanche
+  interestRate?: number; // % ao mês, opcional — sem ele o plano usa a taxa típica do tipo
+  kind?: DebtKind; // opcional pra não quebrar dívidas salvas antes desse campo existir
+  installment?: number; // parcela (ou mínimo) que a pessoa já paga por mês
 }
 
 export interface CheckinEntry {

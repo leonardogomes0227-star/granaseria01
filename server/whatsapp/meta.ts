@@ -67,3 +67,29 @@ export async function sendText(to: string, body: string): Promise<void> {
   });
   if (!res.ok) throw new Error(`WhatsApp send ${res.status}: ${await res.text()}`);
 }
+
+/**
+ * Mensagem iniciada pela Grana Séria (ex.: lembrete do plano). Fora da janela de 24h desde a última
+ * mensagem da pessoa, a Meta só entrega modelos aprovados — ver docs/whatsapp-assistente.md.
+ * Parâmetros do corpo não podem ter quebra de linha.
+ */
+export async function sendTemplate(to: string, name: string, language: string, bodyParams: string[]): Promise<void> {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_TOKEN;
+  if (!phoneNumberId || !token) throw new Error('WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_TOKEN ausentes');
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name,
+        language: { code: language },
+        components: [{ type: 'body', parameters: bodyParams.map((text) => ({ type: 'text', text: text.replace(/\s+/g, ' ').trim() })) }],
+      },
+    }),
+  });
+  if (!res.ok) throw new Error(`WhatsApp template ${res.status}: ${await res.text()}`);
+}

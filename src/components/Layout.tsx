@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Menu, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Menu, UserRound, X } from 'lucide-react';
 import { TOOLS, ToolId, ToolInfo } from '../tools';
+import { accountsEnabled } from '../supabase';
 
 export function BrandMark({ className = 'brand-mark' }: { className?: string }) {
   return (
@@ -134,6 +135,8 @@ export function SiteHeader({
             <a className="navlink" href="#como-funciona">Como funciona</a>
             <a className="navlink" href="#principios">Princípios</a>
             <a className="navlink" href="#duvidas">Dúvidas</a>
+            <Link className="navlink" to="/guias">Guias</Link>
+            {accountsEnabled && <Link className="navlink" to="/conta">Entrar</Link>}
           </div>
 
           <div className="nav-right">
@@ -173,6 +176,8 @@ export function SiteHeader({
             <a className="drawer-link" href="#como-funciona" onClick={() => setDrawerOpen(false)}>Como funciona</a>
             <a className="drawer-link" href="#principios" onClick={() => setDrawerOpen(false)}>Princípios</a>
             <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
+            <Link className="drawer-link" to="/guias">Guias</Link>
+            {accountsEnabled && <Link className="drawer-link" to="/conta">Minha conta</Link>}
           </aside>
         </>
       )}
@@ -190,6 +195,11 @@ export function AppBar({ onHome }: { onHome: () => void }) {
           <span className="logo">Grana Séria</span>
         </button>
         <div className="nav-right">
+          {accountsEnabled && (
+            <Link className="btn-ghost" to="/conta">
+              <UserRound size={16} /> Conta
+            </Link>
+          )}
           <button type="button" className="btn-ghost" onClick={onHome}>
             <ArrowLeft size={16} /> Início
           </button>
@@ -221,6 +231,8 @@ export function SiteFooter({ onStart, onOpenTool }: { onStart: () => void; onOpe
           <button type="button" onClick={onStart}>Fazer diagnóstico</button>
           <Link to="/#como-funciona">Como funciona</Link>
           <Link to="/#duvidas">Dúvidas frequentes</Link>
+          <Link to="/guias">Guias</Link>
+          {accountsEnabled && <Link to="/conta">Minha conta</Link>}
         </div>
         <div className="foot-col">
           <h4>Legal</h4>
