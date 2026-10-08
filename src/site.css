@@ -933,3 +933,38 @@ html { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%;
 html { overflow-x: hidden; }
 @supports (overflow: clip) { html, body { overflow-x: clip; } }
 @media (max-width: 640px) { .tool-card .tag.free { display: none; } }
+
+/* ---------- plano de ação ---------- */
+.tone-text-info { color: var(--lapis); }
+.plan-power { margin-bottom: 18px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.plan-chips span { font-family: var(--sans); font-size: 12.5px; color: var(--ink-soft); background: var(--sand); border: 1px solid var(--hairline-soft); border-radius: 999px; padding: 4px 10px; }
+.plan-chips b { color: var(--ink); font-weight: 600; }
+.plan-phases { list-style: none; margin: 0 0 20px; padding: 0; position: relative; }
+.plan-phase { display: flex; gap: 14px; position: relative; padding-bottom: 16px; }
+.plan-phase:not(:last-child)::before { content: ''; position: absolute; left: 13px; top: 30px; bottom: 2px; width: 2px; background: var(--hairline-soft); }
+.plan-phase-dot { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 13px; color: var(--white); background: var(--gold); }
+.phase-debts .plan-phase-dot { background: var(--clay); }
+.phase-reserve .plan-phase-dot { background: var(--lapis); }
+.phase-invest .plan-phase-dot { background: var(--sage); }
+.plan-phase-when { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink-faint); }
+.plan-phase-title { font-family: var(--serif); font-size: 19px; color: var(--ink); line-height: 1.25; }
+.plan-phase-note { font-size: 14.5px; color: var(--ink-soft); }
+.plan-step-title { font-family: var(--sans); font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+.plan .action-item p:not(.plan-step-title) { font-size: 14.5px; }
+.plan .paywall-teaser { max-height: 120px; }
+.plan-nego, .plan-schedule { margin-top: 18px; }
+.plan-nego-text { white-space: pre-wrap; font-family: var(--sans); font-size: 14px; line-height: 1.55; color: var(--ink); background: var(--white); border: 1px solid var(--hairline-soft); border-radius: 10px; padding: 12px 14px; margin: 0; }
+.plan-nego-text.manual { user-select: all; outline: 2px solid var(--gold-bright); }
+.plan-nego-warn { display: flex; gap: 6px; align-items: flex-start; margin-top: 12px; font-family: var(--sans); font-size: 12.5px; color: #8E4426; }
+.plan-nego-warn svg { flex-shrink: 0; margin-top: 1px; }
+.plan-row { display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--hairline-soft); font-family: var(--sans); font-size: 13.5px; color: var(--ink); }
+.plan-row:first-child { border-top: none; }
+.plan-row small { color: var(--ink-faint); font-size: 12px; }
+.plan-row-month { font-weight: 600; color: var(--gold-deep); }
+.plan-row-pay { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.plan-row-left { text-align: right; white-space: nowrap; }
+.plan-more { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; min-height: 40px; font-family: var(--sans); font-size: 13.5px; font-weight: 600; color: var(--lapis); background: none; border: none; cursor: pointer; padding: 0; }
+.debt-card .debt-kind { margin-top: 8px; }
+.plan-heading { font-family: var(--serif); font-size: 24px; color: var(--ink); margin: 2px 0 14px; line-height: 1.2; }
+.debt-mini-label { font-family: var(--sans); font-size: 12px; color: var(--ink-faint); margin-bottom: -4px; }

@@ -1,5 +1,5 @@
-import { useState, useEffect, useId } from 'react';
-import { WizardData, DebtItem } from '../types';
+import { useState, useEffect, useId, useMemo } from 'react';
+import { WizardData, DebtItem, DebtKind } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
 import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck } from 'lucide-react';
@@ -9,6 +9,8 @@ import { TOOLS, ToolId } from '../tools';
 import { ToolIcon } from './Layout';
 import { ArchetypeShare } from './ArchetypeShare';
 import { getArchetype } from '../archetypes';
+import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
+import { ActionPlanView } from './ActionPlanView';
 
 /* ---------- shared bits ---------- */
 
@@ -269,7 +271,7 @@ export function ExpensesStep({ data, updateExpenses, onNext, onBack }: StepProps
 
 export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
   const addDebt = () => {
-    const newDebt: DebtItem = { id: newId(), description: '', value: 0 };
+    const newDebt: DebtItem = { id: newId(), description: '', value: 0, kind: 'cartao' };
     update({ debts: [...data.debts, newDebt] });
   };
   const updateDebt = (id: string, patch: Partial<DebtItem>) => {
@@ -299,24 +301,46 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
             className="field-input"
             type="text"
             aria-label="Descrição da dívida"
-            placeholder="Ex.: cartão de crédito"
+            placeholder="Ex.: cartão Nubank"
             value={debt.description}
             onChange={(e) => updateDebt(debt.id, { description: e.target.value })}
           />
+          <select
+            className="field-input debt-kind"
+            aria-label="Tipo da dívida"
+            value={debt.kind ?? ''}
+            onChange={(e) => updateDebt(debt.id, { kind: e.target.value as DebtKind })}
+          >
+            {!debt.kind && <option value="">Tipo da dívida</option>}
+            {DEBT_KINDS.map((k) => (
+              <option key={k.id} value={k.id}>{k.label}</option>
+            ))}
+          </select>
           <div className="debt-card-grid">
+            <span className="debt-mini-label">Quanto falta pagar</span>
+            <span className="debt-mini-label">Parcela por mês</span>
             <div className="input-prefix">
               <span>R$</span>
               <DecimalInput
-                aria-label="Valor da dívida"
-                placeholder="Valor"
+                aria-label="Quanto falta pagar"
+                placeholder="0,00"
                 value={debt.value}
                 onChange={(v) => updateDebt(debt.id, { value: v })}
               />
             </div>
-            <div className="input-suffix">
+            <div className="input-prefix">
+              <span>R$</span>
+              <DecimalInput
+                aria-label="Parcela por mês"
+                placeholder="0,00"
+                value={debt.installment || 0}
+                onChange={(v) => updateDebt(debt.id, { installment: v })}
+              />
+            </div>
+            <div className="input-suffix" style={{ gridColumn: '1 / -1' }}>
               <DecimalInput
                 aria-label="Juros ao mês (%)"
-                placeholder="Juros"
+                placeholder={`Juros (típico: ${effectiveRate({ ...debt, interestRate: 0 }).rate.toLocaleString('pt-BR')})`}
                 max={100}
                 value={debt.interestRate || 0}
                 onChange={(v) => updateDebt(debt.id, { interestRate: v })}
@@ -329,7 +353,7 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
 
       {data.debts.length > 0 && (
         <p className="field-hint" style={{ marginTop: -2, marginBottom: 14 }}>
-          A taxa de juros é opcional, mas deixa o simulador de quitação mais preciso.
+          Não sabe os juros? Deixe em branco — usamos a taxa típica do tipo de dívida. A parcela é o que você já paga por mês (ou o mínimo da fatura).
         </p>
       )}
 
@@ -477,6 +501,7 @@ export function DiagnosisStep({
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
+  const plan = useMemo(() => buildPlan(data), [data]);
   const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;
@@ -562,39 +587,21 @@ export function DiagnosisStep({
 
       <div className="diag-section" style={{ marginTop: 28, marginBottom: 8 }}>
         <p className="diag-label">Seu plano de ação</p>
-        {unlocked ? (
-          <div className="action-list stagger">
-            {diagnosis.actionPlan.map((item, i) => (
-              <div className="action-item" key={i}>
-                <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
-                <p>{item}</p>
-              </div>
-            ))}
-            {diagnosis.actionPlan.length === 0 && (
-              <p style={{ fontSize: 15, color: 'var(--ink-soft)' }}>
-                Você já está em dia com os três princípios — continue assim.
+        <h3 className="plan-heading">O que fazer, quanto e até quando</h3>
+        <ActionPlanView
+          plan={plan}
+          locked={!unlocked}
+          lockedSlot={
+            <>
+              <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
+                O plano completo traz todos os passos com valores e datas, a mensagem pronta pra renegociar e o calendário mês a mês.
               </p>
-            )}
-          </div>
-        ) : (
-          <div className="paywall">
-            <div className="paywall-teaser">
-              {diagnosis.actionPlan.slice(0, 1).map((item, i) => (
-                <div className="action-item" key={i}>
-                  <span className="action-num">01</span>
-                  <p>{item}</p>
-                </div>
-              ))}
-              <div className="paywall-fade" />
-            </div>
-            <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
-              Os próximos passos priorizados pra você ficam completos depois do desbloqueio.
-            </p>
-            <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine">
-              Desbloquear meu plano de ação — {PRICE_LABEL}
-            </a>
-          </div>
-        )}
+              <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine">
+                Desbloquear meu plano de ação — {PRICE_LABEL}
+              </a>
+            </>
+          }
+        />
       </div>
 
       <div className="diag-section" style={{ marginTop: 28 }}>

@@ -14,7 +14,6 @@ export interface Diagnosis {
   emergencyTarget: number;
   emergencyProgress: number;
   projection10y: number;
-  actionPlan: string[];
 }
 
 const IDEAL_PCT = {
@@ -22,13 +21,6 @@ const IDEAL_PCT = {
   alimentacao: 0.15,
   transporte: 0.1,
   lazer: 0.1,
-};
-
-const CATEGORY_LABELS: Record<keyof WizardData['expenses'], string> = {
-  moradia: 'moradia',
-  alimentacao: 'alimentação',
-  transporte: 'transporte',
-  lazer: 'lazer',
 };
 
 export function calculateDiagnosis(data: WizardData): Diagnosis {
@@ -59,29 +51,6 @@ export function calculateDiagnosis(data: WizardData): Diagnosis {
       ? monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate)
       : 0;
 
-  const actionPlan: string[] = [];
-
-  if (savingsRate < 10) {
-    actionPlan.push(
-      `Aumente sua poupança mensal até 10% da renda — hoje está em ${savingsRate.toFixed(0)}%.`
-    );
-  }
-  if (totalDebt > 0) {
-    actionPlan.push(
-      `Priorize quitar suas dívidas, que hoje somam ${formatBRL(totalDebt)}.`
-    );
-  }
-  if (emergencyProgress < 100) {
-    actionPlan.push(
-      `Construa sua reserva de emergência até alcançar ${formatBRL(emergencyTarget)} (6 meses de gastos).`
-    );
-  }
-  (Object.keys(idealExpenses) as (keyof typeof idealExpenses)[]).forEach((key) => {
-    if (data.expenses[key] > idealExpenses[key]) {
-      actionPlan.push(`Revise os gastos com ${CATEGORY_LABELS[key]} — estão acima do ideal recomendado.`);
-    }
-  });
-
   return {
     savingsRate,
     savingsGoalRate: 10,
@@ -91,7 +60,6 @@ export function calculateDiagnosis(data: WizardData): Diagnosis {
     emergencyTarget,
     emergencyProgress,
     projection10y,
-    actionPlan: actionPlan.slice(0, 4),
   };
 }
 

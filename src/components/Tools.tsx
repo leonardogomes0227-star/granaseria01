@@ -1,6 +1,7 @@
 import { useState, useId, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { DebtItem } from '../types';
+import { effectiveRate } from '../plan';
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment } from '../calculations';
 import { TOOLS, ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
@@ -226,7 +227,7 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
 /* ---------- Avalanche vs. bola de neve ---------- */
 
 function sortAvalanche(debts: DebtItem[]): DebtItem[] {
-  return [...debts].sort((a, b) => (b.interestRate || 0) - (a.interestRate || 0));
+  return [...debts].sort((a, b) => effectiveRate(b).rate - effectiveRate(a).rate);
 }
 
 function sortSnowball(debts: DebtItem[]): DebtItem[] {
@@ -244,7 +245,7 @@ function DebtOrderList({ title, note, debts }: { title: string; note: string; de
             <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
             <p>
               {d.description || 'Dívida sem nome'} — {formatBRL(d.value)}
-              {d.interestRate ? ` (${d.interestRate}% a.m.)` : ''}
+              {` (${effectiveRate(d).rate.toLocaleString('pt-BR')}% a.m.${effectiveRate(d).assumed ? ', típica' : ''})`}
             </p>
           </div>
         ))}
@@ -267,16 +268,12 @@ export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; o
     );
   }
 
-  const hasInterest = debts.some((d) => d.interestRate && d.interestRate > 0);
-
   return (
     <ToolShell id="debts" {...nav}>
       <p className="wizard-sub">Duas ordens pra decidir qual dívida atacar primeiro, mantendo o mínimo nas outras.</p>
-
-      {!hasInterest && (
-        <p className="field-error" style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
-          <Info size={16} style={{ flexShrink: 0, marginTop: 2 }} />
-          Nenhuma dívida tem taxa de juros cadastrada — a ordem avalanche fica igual à ordem que você digitou. Volte no diagnóstico e adicione a taxa pra um resultado mais preciso.
+      {debts.some((d) => effectiveRate(d).assumed) && (
+        <p className="field-hint" style={{ marginTop: -8, marginBottom: 16 }}>
+          Onde você não informou os juros, usamos a taxa típica do tipo de dívida. O plano completo, com valores e datas, está no resultado do diagnóstico.
         </p>
       )}
 
