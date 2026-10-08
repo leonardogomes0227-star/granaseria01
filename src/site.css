@@ -1016,3 +1016,54 @@ html { overflow-x: hidden; }
   .tracker-actions > * { flex: 1 1 100%; }
   .tracker-task .field-input { font-size: 16px; }
 }
+
+/* ---------- conta ---------- */
+.account-page { max-width: 640px; }
+.account-form { display: grid; gap: 10px; max-width: 440px; }
+.account-card { margin-top: 4px; }
+.account-line { font-size: 15.5px; color: var(--ink-soft); margin-bottom: 10px; }
+.account-code { font-family: var(--display); font-size: 28px; letter-spacing: 2px; color: var(--ink); background: var(--white); border: 1px dashed var(--gold); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; text-align: center; }
+.account-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+.plan-more.danger { color: #8E4426; }
+.account-card .field-input { max-width: 260px; }
+.account-card .btn-primary { margin-bottom: 8px; }
+
+/* ---------- leitor de fatura ---------- */
+.fatura-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 28px 18px; border: 1.5px dashed var(--gold); border-radius: 14px; background: var(--paper); color: var(--gold-deep); cursor: pointer; transition: background 0.2s ease; }
+.fatura-drop input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.fatura-drop b { font-family: var(--sans); font-size: 15.5px; color: var(--ink); }
+.fatura-drop small { font-family: var(--sans); font-size: 12.5px; color: var(--ink-faint); }
+.fatura-drop.busy { cursor: progress; background: #FBF1DA; }
+.fatura-drop.busy svg { animation: pulse 1.2s ease-in-out infinite; }
+.fatura-drop:focus-within { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (hover: hover) { .fatura-drop:hover { background: #FBF1DA; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.fatura-result { margin-top: 16px; }
+.fatura-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--hairline-soft); font-family: var(--sans); }
+.fatura-row:first-of-type { border-top: none; }
+.fatura-desc b { display: block; font-size: 14px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.fatura-desc small { display: block; font-size: 12.5px; color: var(--ink-soft); }
+.fatura-val { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.fatura-tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--sand-deep); color: var(--ink-soft); white-space: nowrap; }
+.fatura-tag.tag-assinatura { background: #E3ECF3; color: var(--lapis); }
+.fatura-tag.tag-seguro, .fatura-tag.tag-juros_multa { background: #F8E6DD; color: #8E4426; }
+.fatura-tag.tag-tarifa, .fatura-tag.tag-anuidade { background: #FBF1DA; color: #7A5311; }
+@media (max-width: 640px) { .fatura-row { grid-template-columns: 1fr auto; } .fatura-tag { grid-column: 1 / -1; justify-self: start; } }
+
+/* ---------- guias ---------- */
+.guide-list { display: grid; gap: 10px; margin-top: 8px; }
+.guide-item { display: grid; gap: 4px; padding: 16px 18px; border: 1px solid var(--hairline-soft); border-radius: 12px; background: var(--paper); text-decoration: none; transition: border-color 0.2s ease, transform 0.2s ease; }
+.guide-item b { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--ink); line-height: 1.25; }
+.guide-item span:not(.guide-kicker) { font-size: 14.5px; color: var(--ink-soft); }
+.guide-kicker { font-family: var(--sans); font-size: 11.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--gold-deep); }
+@media (hover: hover) { .guide-item:hover { border-color: var(--gold); transform: translateY(-2px); } }
+.guide .page-body h2 { font-family: var(--serif); font-size: 24px; font-weight: 500; margin: 32px 0 10px; color: var(--ink); }
+.guide .page-body ul { margin: 0 0 18px; padding-left: 22px; list-style: disc; }
+.guide .page-body li::marker { color: var(--gold); }
+.guide .page-body li { margin-bottom: 10px; color: var(--ink-soft); font-size: 16.5px; line-height: 1.55; }
+.guide-cta { margin-top: 28px; padding: 22px; border-radius: 14px; background: #FBF1DA; border: 1px solid #EEDBA8; }
+.guide-cta p { font-size: 16.5px; color: var(--ink); margin-bottom: 14px; }
+.guide-more { margin-top: 30px; display: grid; gap: 8px; }
+.guide-more a { font-size: 15.5px; color: var(--lapis); text-decoration: none; }
+@media (hover: hover) { .guide-more a:hover { text-decoration: underline; } }
+.diag-label svg, .plan-step-title svg, .insight svg, .field-label svg { display: inline-block; }

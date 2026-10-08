@@ -6,6 +6,7 @@ import { monthLong, monthShort } from '../plan';
 import { Tracking, getTracking, startTracking, trackingView, closeMonth, undoLastMonth } from '../tracking';
 import { ToolShell, ToolNavProps } from './Tools';
 import { DecimalInput } from './DecimalInput';
+import { track } from '../analytics';
 
 /* ---------- Meu plano, mês a mês ---------- */
 
@@ -20,7 +21,10 @@ export function PlanTracker({ data, onStart, ...nav }: { data: WizardData; onSta
           Todo mês você diz quanto pagou de cada dívida e quanto guardou. O plano se recalcula com o saldo real: se atrasar, a nova data aparece na hora; se adiantar, também.
         </p>
         {diag ? (
-          <button className="btn-primary" type="button" onClick={() => setTracking(startTracking(data))}>
+          <button className="btn-primary" type="button" onClick={() => {
+            track('plano_seguido');
+            setTracking(startTracking(data));
+          }}>
             Começar a seguir meu plano <ArrowRight size={16} className="arrow" />
           </button>
         ) : (
@@ -105,7 +109,10 @@ function TrackerBody({
         )}
 
         <div className="tracker-actions">
-          <button className="btn-primary" type="button" onClick={() => setTracking(closeMonth(tracking, paid))}>
+          <button className="btn-primary" type="button" onClick={() => {
+            track('mes_fechado', { cumprido: paidTotal + 0.5 >= suggestedTotal });
+            setTracking(closeMonth(tracking, paid));
+          }}>
             Fechar {monthShort(start, view.openMonth)}
             {paidTotal + 0.5 < suggestedTotal ? ` (${formatBRL(paidTotal)})` : ''} <ArrowRight size={16} className="arrow" />
           </button>

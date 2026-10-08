@@ -15,12 +15,19 @@ import { CheckInTool } from './components/CheckIn';
 import { QuoteTool } from './components/QuoteTool';
 import { ExtraMoneyTool, LeaksTool, RightsTool } from './components/SolutionTools';
 import { PlanTracker } from './components/PlanTracker';
+import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { Landing } from './components/Landing';
 import { AppBar, SiteFooter } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
+import { track, trackPageview } from './analytics';
+import { useSession } from './account';
+import { startSync } from './sync';
+import { AccountPage } from './components/Account';
+import { GuidesIndex, GuidePage } from './components/Guides';
+import { getGuide } from './guides';
 
 const STORAGE_KEY = 'selos-wizard-progress';
 const TOTAL_STEPS = 7;
@@ -80,6 +87,9 @@ function ScrollManager() {
     }
     window.scrollTo({ top: 0 });
   }, [pathname, search, hash]);
+  useEffect(() => {
+    trackPageview();
+  }, [pathname]);
   return null;
 }
 
@@ -101,6 +111,7 @@ function App() {
 
   const goToStep = (s: number) => navigate(`/diagnostico?etapa=${s}`);
   const startWizard = () => {
+    track('diagnostico_iniciado');
     setData(INITIAL_DATA);
     goToStep(1);
   };
@@ -115,7 +126,10 @@ function App() {
     setData(INITIAL_DATA);
     goToStep(1);
   };
-  const openTool = (id: ToolId) => navigate(`/ferramentas/${getTool(id).slug}`);
+  const openTool = (id: ToolId) => {
+    track('ferramenta_aberta', { ferramenta: id });
+    navigate(`/ferramentas/${getTool(id).slug}`);
+  };
   const goHome = () => {
     setSavedProgress(loadSavedProgress());
     navigate('/');
@@ -128,6 +142,11 @@ function App() {
   useEffect(() => {
     if (location.pathname === '/') setSavedProgress(loadSavedProgress());
   }, [location.pathname]);
+
+  const session = useSession();
+  useEffect(() => {
+    void startSync(session);
+  }, [session]);
 
   const footer = <SiteFooter onStart={startWizard} onOpenTool={openTool} />;
 
@@ -169,6 +188,27 @@ function App() {
             <Titled title="Política de privacidade">
               <AppBar onHome={goHome} />
               <PrivacyPage />
+              {footer}
+            </Titled>
+          }
+        />
+        <Route
+          path="/guias"
+          element={
+            <Titled title="Guias">
+              <AppBar onHome={goHome} />
+              <GuidesIndex />
+              {footer}
+            </Titled>
+          }
+        />
+        <Route path="/guias/:slug" element={<GuideRoute onHome={goHome} onStart={startWizard} footer={footer} />} />
+        <Route
+          path="/conta"
+          element={
+            <Titled title="Minha conta">
+              <AppBar onHome={goHome} />
+              <AccountPage session={session} />
               {footer}
             </Titled>
           }
@@ -232,6 +272,10 @@ function WizardRoute({
     else navigate('/diagnostico?etapa=1', { replace: true });
   }, [blocked, setData, navigate]);
 
+  useEffect(() => {
+    track('diagnostico_etapa', { etapa: step });
+  }, [step]);
+
   // salva a cada mudança, mas só depois que a pessoa começou a preencher de verdade
   useEffect(() => {
     if (data.monthlyIncome > 0) saveProgress({ data, step });
@@ -264,6 +308,19 @@ function WizardRoute({
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+function GuideRoute({ onHome, onStart, footer }: { onHome: () => void; onStart: () => void; footer: ReactNode }) {
+  const { slug } = useParams();
+  const guide = getGuide(slug);
+  useTitle(guide ? guide.title : 'Página não encontrada');
+  return (
+    <>
+      <AppBar onHome={onHome} />
+      {guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}
+      {footer}
     </>
   );
 }
@@ -309,6 +366,7 @@ function ToolRoute({
         {tool.id === 'extra' && <ExtraMoneyTool data={data} onStart={onStart} {...toolProps} />}
         {tool.id === 'leaks' && <LeaksTool data={data} {...toolProps} />}
         {tool.id === 'rights' && <RightsTool data={data} {...toolProps} />}
+        {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
         {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
       </div>
     </>

@@ -1,6 +1,6 @@
-import { WizardData } from './types';
-import { buildPlan, effectiveRate, ActionPlan } from './plan';
-import { leaksMonthlyTotal } from './leaks';
+import type { WizardData } from './types';
+import { buildPlan, effectiveRate, type ActionPlan } from './plan.js';
+import { leaksMonthlyTotal } from './leaks.js';
 
 // Acompanhamento do plano: a pessoa fecha cada mês dizendo quanto pagou de verdade.
 // O plano é sempre recalculado a partir do saldo real — atrasou, a data muda; adiantou, também.
@@ -75,9 +75,9 @@ export interface TrackingView {
   badges: { id: string; label: string; earned: boolean }[];
 }
 
-export function trackingView(t: Tracking): TrackingView {
+// extraMonthly: vazamentos achados. No navegador vem do localStorage; no servidor (WhatsApp), do estado salvo.
+export function trackingView(t: Tracking, extraMonthly: number = leaksMonthlyTotal()): TrackingView {
   const start = new Date(t.createdAt);
-  const extraMonthly = leaksMonthlyTotal();
   const original = buildPlan(t.baseline, { start, extraMonthly });
   const done = t.months.length;
   const state = currentState(t);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { track } from '../analytics';
 
 // Texto pronto (renegociação, cancelamento, pedido de direito) com botão de copiar.
 export function CopyMessage({ text, label = 'Copiar mensagem' }: { text: string; label?: string }) {
@@ -9,6 +10,7 @@ export function CopyMessage({ text, label = 'Copiar mensagem' }: { text: string;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(text);
+      track('mensagem_copiada');
       setCopied(true);
       setTimeout(() => setCopied(false), 2200);
     } catch {

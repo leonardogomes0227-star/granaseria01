@@ -1,4 +1,4 @@
-import { WizardData } from './types';
+import type { WizardData } from './types';
 
 export interface Diagnosis {
   savingsRate: number;

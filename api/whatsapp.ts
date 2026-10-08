@@ -5,8 +5,61 @@
 // POST → mensagens recebidas
 
 import { extractTextMessages, isAllowed, normalizeBrPhone, sendText, verifySignature } from '../server/whatsapp/meta.js';
-import { handleText } from '../server/whatsapp/bot.js';
+import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
 import { insertExpense, listExpensesSince, deleteLastExpense } from '../server/whatsapp/db.js';
+import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
+import { parseMessage } from '../server/whatsapp/parse.js';
+import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser } from '../server/account/db.js';
+
+const SITE_URL = (process.env.SITE_URL || 'https://granaseria01.vercel.app').replace(/\/$/, '');
+
+/**
+ * Responde uma mensagem de texto. Quem vinculou a conta no site usa tudo (plano + gastos);
+ * quem não vinculou só usa se estiver em ALLOWED_NUMBERS (fase de teste) — ou manda "vincular <código>".
+ */
+async function reply(msg: { id: string; from: string; text: string }): Promise<string | null> {
+  const phone = normalizeBrPhone(msg.from);
+  const cmd = parsePlanCommand(msg.text);
+  const accounts = accountsConfigured();
+
+  if (cmd?.kind === 'link') {
+    if (!accounts) return null;
+    if (!(await markProcessed(msg.id))) return null;
+    const ok = await linkPhoneByCode(cmd.code, phone);
+    return ok
+      ? `✅ WhatsApp vinculado à sua conta Grana Séria!\n\nEscolha no site o dia do lembrete (o dia em que seu salário cai) ou mande, por exemplo, *lembrete 5*.\n${PLAN_HELP}`
+      : `Esse código não vale mais (ele dura 30 minutos). Gere um novo em ${SITE_URL}/conta.`;
+  }
+
+  const user = accounts ? await findUserByPhone(phone) : null;
+  if (!user && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) return null;
+
+  if (cmd) {
+    if (!user) return `Pra usar o plano por aqui, vincule seu WhatsApp em ${SITE_URL}/conta.`;
+    if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não fecha o mês duas vezes
+    switch (cmd.kind) {
+      case 'reminderDay':
+        await updateUser(user.user_id, { reminder_day: cmd.day, reminders: true });
+        return `🔔 Combinado: lembrete todo dia ${cmd.day}.`;
+      case 'remindersOff':
+        await updateUser(user.user_id, { reminders: false });
+        return '🔕 Lembretes desligados. Pra voltar, mande *voltar lembretes*.';
+      case 'remindersOn':
+        await updateUser(user.user_id, { reminders: true });
+        return user.reminder_day ? `🔔 Lembretes ligados: todo dia ${user.reminder_day}.` : '🔔 Lembretes ligados. Qual dia? Mande, por exemplo, *lembrete 5*.';
+      default: {
+        const result = runPlanCommand(cmd, user.state ?? {});
+        if (result.newState) await saveState(user.user_id, result.newState);
+        return result.reply;
+      }
+    }
+  }
+
+  // ajuda mostra também os comandos do plano pra quem tem conta
+  if (user && parseMessage(msg.text).kind === 'help') return HELP_TEXT + '\n' + PLAN_HELP;
+
+  return handleText({ id: msg.id, phone, text: msg.text }, { insertExpense, listExpensesSince, deleteLastExpense });
+}
 
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -37,14 +90,9 @@ export async function POST(request: Request): Promise<Response> {
   const { texts, others } = extractTextMessages(payload);
 
   for (const msg of texts) {
-    // Fase de teste: só os números liberados em ALLOWED_NUMBERS usam o assistente. O resto é ignorado em silêncio.
-    if (!isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) continue;
     try {
-      const reply = await handleText(
-        { id: msg.id, phone: normalizeBrPhone(msg.from), text: msg.text },
-        { insertExpense, listExpensesSince, deleteLastExpense }
-      );
-      if (reply) await sendText(msg.from, reply);
+      const text = await reply(msg);
+      if (text) await sendText(msg.from, text);
     } catch (err) {
       console.error('Erro ao processar mensagem', msg.id, err);
       try {
@@ -56,7 +104,8 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   for (const msg of others) {
-    if (!isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) continue;
+    const linked = accountsConfigured() ? await findUserByPhone(normalizeBrPhone(msg.from)).catch(() => null) : null;
+    if (!linked && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) continue;
     try {
       await sendText(msg.from, 'Por enquanto eu só entendo texto. ✍️ Ex.: "gastei 35 no mercado"');
     } catch (err) {

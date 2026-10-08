@@ -1,5 +1,5 @@
-import { WizardData, DebtItem, DebtKind } from './types';
-import { formatBRL, computeProjection } from './calculations';
+import type { WizardData, DebtItem, DebtKind } from './types';
+import { formatBRL, computeProjection } from './calculations.js';
 
 // Plano de ação de verdade: o que fazer, quanto, onde e até quando.
 // Tudo sai dos números que a pessoa já digitou no diagnóstico — nada de "revise seus gastos".

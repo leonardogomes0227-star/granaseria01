@@ -13,6 +13,7 @@ import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
 import { leaksMonthlyTotal } from '../leaks';
 import { getTracking, startTracking } from '../tracking';
+import { track } from '../analytics';
 
 /* ---------- shared bits ---------- */
 
@@ -500,6 +501,8 @@ export function DiagnosisStep({
   useEffect(() => {
     setUnlocked(isUnlocked() || !CHECKOUT_READY);
     markDiagnosisCompleted();
+    track('diagnostico_concluido', { tem_dividas: data.debts.some((d) => d.value > 0) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por resultado
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
@@ -599,7 +602,7 @@ export function DiagnosisStep({
               <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
                 O plano completo traz todos os passos com valores e datas, a mensagem pronta pra renegociar e o calendário mês a mês.
               </p>
-              <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine">
+              <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine" onClick={() => track('checkout_clique')}>
                 Desbloquear meu plano de ação — {PRICE_LABEL}
               </a>
             </>
@@ -630,7 +633,10 @@ export function DiagnosisStep({
           className="btn-primary"
           type="button"
           onClick={() => {
-            if (!getTracking()) startTracking(data);
+            if (!getTracking()) {
+              startTracking(data);
+              track('plano_seguido');
+            }
             onOpenTool('tracker');
           }}
         >

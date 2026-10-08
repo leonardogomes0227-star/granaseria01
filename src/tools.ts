@@ -1,6 +1,6 @@
-import { ClipboardCheck, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
+import { ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
 
-export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker';
+export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
 
 export interface ToolInfo {
   id: ToolId;
@@ -34,6 +34,15 @@ export const TOOLS: ToolInfo[] = [
     description: 'Recebeu 13º, restituição ou FGTS? Veja onde colocar cada real e quantos meses antes você sai das dívidas.',
     icon: Gift,
     tone: 'gold',
+  },
+  {
+    id: 'fatura',
+    slug: 'leitor-de-fatura',
+    title: 'Leitor de fatura com IA',
+    short: 'Ler fatura',
+    description: 'Mande o PDF da fatura ou do extrato: a IA acha assinaturas, seguros, tarifas e juros escondidos e organiza seus gastos.',
+    icon: ScanText,
+    tone: 'clay',
   },
   {
     id: 'leaks',

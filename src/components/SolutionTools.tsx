@@ -8,6 +8,7 @@ import { ToolShell, ToolNavProps, MoneyField } from './Tools';
 import { CopyMessage } from './CopyMessage';
 import { DecimalInput } from './DecimalInput';
 import { CountUp } from './motion';
+import { track } from '../analytics';
 
 const hasDiagnosis = (data: WizardData) => data.monthlyIncome > 0;
 
@@ -190,7 +191,10 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
   const toggle = (id: string, typical: number) => {
     const next = { ...sel };
     if (id in next) delete next[id];
-    else next[id] = typical;
+    else {
+      next[id] = typical;
+      track('vazamento_marcado', { item: id });
+    }
     update(next);
   };
 
