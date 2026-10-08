@@ -968,3 +968,51 @@ html { overflow-x: hidden; }
 .debt-card .debt-kind { margin-top: 8px; }
 .plan-heading { font-family: var(--serif); font-size: 24px; color: var(--ink); margin: 2px 0 14px; line-height: 1.2; }
 .debt-mini-label { font-family: var(--sans); font-size: 12px; color: var(--ink-faint); margin-bottom: -4px; }
+.copy-btn { margin-top: 10px; }
+.plan-rights, .plan-boosters { margin-top: 18px; }
+.plan-boosters { display: grid; gap: 4px; }
+.plan-right { padding: 10px 0; border-top: 1px solid var(--hairline-soft); }
+.plan-right:first-of-type { border-top: none; padding-top: 0; }
+.plan-right p:not(.plan-step-title) { font-size: 14.5px; color: var(--ink-soft); }
+
+/* ---------- caça-vazamentos e direitos ---------- */
+.leaks-total { margin-bottom: 16px; }
+.leaks-list, .rights-list { display: grid; gap: 10px; }
+.leak-card { border: 1px solid var(--hairline-soft); background: var(--paper); border-radius: 12px; padding: 12px 14px 6px; transition: border-color 0.2s ease, background 0.2s ease; }
+.leak-card.on { border-color: var(--gold); background: #FBF1DA; }
+.leak-check { display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left; background: none; border: none; padding: 0; cursor: pointer; font: inherit; color: inherit; }
+.leak-check b { display: block; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.leak-check small { display: block; font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+.leak-box { flex-shrink: 0; width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid var(--hairline); background: var(--white); display: grid; place-items: center; color: var(--white); margin-top: 1px; }
+.leak-card.on .leak-box { background: var(--gold); border-color: var(--gold); }
+.leak-amount { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 2px 36px; font-family: var(--sans); font-size: 13px; color: var(--ink-soft); }
+.leak-amount .input-prefix { width: 130px; flex-shrink: 0; }
+.leak-amount .field-input { padding-top: 9px; padding-bottom: 9px; }
+.leak-card .plan-more { margin: 2px 0 0 36px; }
+.leak-fix { margin: 0 0 10px 36px; font-size: 14.5px; color: var(--ink-soft); }
+.leak-fix p { margin-bottom: 8px; }
+.right-law { font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.4px; color: var(--gold-deep); margin-bottom: 6px; }
+.right-summary { font-size: 15px; color: var(--ink-soft); }
+@media (max-width: 640px) {
+  .leak-amount { flex-direction: column; align-items: stretch; margin-left: 0; }
+  .leak-amount .input-prefix { width: 100%; }
+  .leak-fix, .leak-card .plan-more { margin-left: 0; }
+  .leak-amount .field-input { font-size: 16px; }
+}
+
+/* ---------- meu plano, mês a mês ---------- */
+.tracker-tasks { display: grid; gap: 10px; margin: 12px 0 14px; }
+.tracker-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tracker-task b { display: block; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.tracker-task small { font-family: var(--sans); font-size: 12.5px; color: var(--ink-faint); }
+.tracker-task .input-prefix { width: 150px; flex-shrink: 0; }
+.tracker-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.tracker-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.tracker-badge { font-family: var(--sans); font-size: 12.5px; padding: 5px 11px; border-radius: 999px; border: 1px dashed var(--hairline); color: var(--ink-faint); }
+.tracker-badge.earned { border-style: solid; border-color: var(--gold); background: #FBF1DA; color: var(--gold-deep); font-weight: 600; }
+@media (max-width: 640px) {
+  .tracker-task { flex-direction: column; align-items: stretch; gap: 6px; }
+  .tracker-task .input-prefix { width: 100%; }
+  .tracker-actions > * { flex: 1 1 100%; }
+  .tracker-task .field-input { font-size: 16px; }
+}

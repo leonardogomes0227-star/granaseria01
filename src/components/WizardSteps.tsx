@@ -11,6 +11,8 @@ import { ArchetypeShare } from './ArchetypeShare';
 import { getArchetype } from '../archetypes';
 import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
+import { leaksMonthlyTotal } from '../leaks';
+import { getTracking, startTracking } from '../tracking';
 
 /* ---------- shared bits ---------- */
 
@@ -501,7 +503,7 @@ export function DiagnosisStep({
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
-  const plan = useMemo(() => buildPlan(data), [data]);
+  const plan = useMemo(() => buildPlan(data, { extraMonthly: leaksMonthlyTotal() }), [data]);
   const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;
@@ -591,6 +593,7 @@ export function DiagnosisStep({
         <ActionPlanView
           plan={plan}
           locked={!unlocked}
+          onOpenTool={onOpenTool}
           lockedSlot={
             <>
               <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
@@ -623,8 +626,15 @@ export function DiagnosisStep({
         <button className="btn-outline" type="button" onClick={onRestart}>
           <RotateCcw size={15} /> Refazer
         </button>
-        <button className="btn-primary" type="button" onClick={() => onOpenTool('checkin')}>
-          <CalendarCheck size={16} /> Acompanhar todo mês
+        <button
+          className="btn-primary"
+          type="button"
+          onClick={() => {
+            if (!getTracking()) startTracking(data);
+            onOpenTool('tracker');
+          }}
+        >
+          <CalendarCheck size={16} /> Seguir meu plano mês a mês
         </button>
       </div>
     </div>

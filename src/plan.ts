@@ -185,7 +185,7 @@ export interface PlanPhase {
 export interface ScheduleRow {
   month: number;
   label: string;
-  payments: { name: string; amount: number }[];
+  payments: { id: string; name: string; amount: number }[];
   toReserve: number;
   debtLeft: number;
 }
@@ -194,7 +194,7 @@ export interface ActionPlan {
   start: Date;
   monthlyPower: number;
   powerAssumed: boolean; // a pessoa não tinha sobra declarada: o plano assume 10% da renda
-  sources: { savings: number; cuts: number; installments: number };
+  sources: { savings: number; cuts: number; installments: number; leaks: number };
   unaccounted: number; // renda que não aparece em nenhuma categoria
   cuts: PlanCut[];
   debts: PlanDebt[]; // na ordem de ataque
@@ -222,7 +222,14 @@ const CEILINGS: { key: keyof WizardData['expenses']; label: string; pct: number 
 
 const fmtRate = (r: number) => `${r.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês`;
 
-export function buildPlan(data: WizardData, start: Date = new Date()): ActionPlan {
+export interface PlanOptions {
+  start?: Date;
+  extraMonthly?: number; // dinheiro achado no caça-vazamentos, somado ao valor mensal do plano
+}
+
+export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan {
+  const start = opts.start ?? new Date();
+  const extraMonthly = Math.max(0, opts.extraMonthly ?? 0);
   const income = data.monthlyIncome || 0;
   const totalExpenses = Object.values(data.expenses).reduce((a, b) => a + b, 0);
 
@@ -256,10 +263,11 @@ export function buildPlan(data: WizardData, start: Date = new Date()): ActionPla
       };
     })
     .sort((a, b) => b.rate - a.rate);
-  const installments = debts.reduce((s, d) => s + d.installment, 0);
+  // inclui dívidas já zeradas (ex.: quitadas com o 13º): a parcela delas continua indo pro plano
+  const installments = data.debts.reduce((s, d) => s + (d.installment || 0), 0);
 
   // 3. Quanto vai pro plano por mês: o que já guarda + cortes + parcelas que já paga
-  let monthlyPower = data.currentSavings + cutsTotal + installments;
+  let monthlyPower = data.currentSavings + cutsTotal + installments + extraMonthly;
   let powerAssumed = false;
   if (monthlyPower <= 0 && income > 0) {
     monthlyPower = Math.round(income * 0.1);
@@ -359,7 +367,7 @@ export function buildPlan(data: WizardData, start: Date = new Date()): ActionPla
   const schedule: ScheduleRow[] = (stuck ? [] : result.schedule).map((row, i) => ({
     month: i + 1,
     label: monthShort(start, i + 1),
-    payments: planDebts.filter((d) => row.payments[d.id]).map((d) => ({ name: names[d.id], amount: row.payments[d.id] })),
+    payments: planDebts.filter((d) => row.payments[d.id]).map((d) => ({ id: d.id, name: names[d.id], amount: row.payments[d.id] })),
     toReserve: row.leftover,
     debtLeft: row.debtLeft,
   }));
@@ -504,7 +512,7 @@ export function buildPlan(data: WizardData, start: Date = new Date()): ActionPla
     start,
     monthlyPower,
     powerAssumed,
-    sources: { savings: data.currentSavings, cuts: cutsTotal, installments },
+    sources: { savings: data.currentSavings, cuts: cutsTotal, installments, leaks: extraMonthly },
     unaccounted,
     cuts,
     debts: planDebts,
@@ -522,4 +530,91 @@ export function buildPlan(data: WizardData, start: Date = new Date()): ActionPla
     steps,
     negotiation,
   };
+}
+
+/* ---------- dinheiro extra (13º, restituição, FGTS…) ---------- */
+
+export interface LumpAllocation {
+  label: string;
+  amount: number;
+  kind: 'debt' | 'reserve' | 'invest';
+  why: string;
+}
+
+export interface LumpResult {
+  allocation: LumpAllocation[];
+  before: ActionPlan;
+  after: ActionPlan;
+  monthsSooner: number | null; // quanto antes sai das dívidas (null = não se aplica)
+  interestSaved: number;
+  unstuck: boolean; // a dívida não fechava e, com o extra, passa a fechar
+}
+
+// Ordem: dívidas caras (avalanche) → reserva de emergência → dívidas baratas → investir.
+// Dívida a 3% ao mês ou mais custa muito mais do que qualquer aplicação rende.
+export function simulateLumpSum(data: WizardData, amount: number, opts: PlanOptions = {}): LumpResult {
+  const before = buildPlan(data, opts);
+  let left = Math.max(0, amount);
+  const allocation: LumpAllocation[] = [];
+  const debts = data.debts.map((d) => ({ ...d }));
+  const byRate = [...debts].filter((d) => d.value > 0).sort((a, b) => effectiveRate(b).rate - effectiveRate(a).rate);
+
+  const payDebts = (filter: (rate: number) => boolean, why: (rate: number) => string) => {
+    for (const d of byRate) {
+      const { rate } = effectiveRate(d);
+      if (left <= 0 || !filter(rate) || d.value <= 0) continue;
+      const pay = Math.min(left, d.value);
+      d.value -= pay;
+      left -= pay;
+      allocation.push({
+        label: d.value <= 0.5 ? `Quitar ${before.debts.find((x) => x.id === d.id)?.name ?? 'dívida'}` : `Abater ${before.debts.find((x) => x.id === d.id)?.name ?? 'dívida'}`,
+        amount: pay,
+        kind: 'debt',
+        why: why(rate),
+      });
+      if (d.value <= 0.5) d.value = 0;
+    }
+  };
+
+  payDebts(
+    (r) => r >= 3,
+    (r) => `Cobra ${fmtRate(r)} — nenhum investimento rende isso.`
+  );
+
+  let emergencyFund = data.emergencyFund;
+  const target = Object.values(data.expenses).reduce((a, b) => a + b, 0) * 6;
+  if (left > 0 && emergencyFund < target) {
+    const put = Math.min(left, target - emergencyFund);
+    emergencyFund += put;
+    left -= put;
+    allocation.push({
+      label: 'Reserva de emergência',
+      amount: put,
+      kind: 'reserve',
+      why: 'Num CDB de liquidez diária ou Tesouro Selic — protege o plano de um imprevisto.',
+    });
+  }
+
+  payDebts(
+    () => true,
+    (r) => `Juros de ${fmtRate(r)}: amortizar antes reduz o total pago.`
+  );
+
+  if (left > 0) {
+    allocation.push({
+      label: 'Investir',
+      amount: left,
+      kind: 'invest',
+      why: 'Sem dívidas e com a reserva completa: Tesouro IPCA+ ou fundos de índice.',
+    });
+  }
+
+  const after = buildPlan({ ...data, debts, emergencyFund }, { ...opts, start: before.start });
+  const monthsSooner =
+    before.debts.length > 0 && before.debtFreeMonth !== null && after.debtFreeMonth !== null
+      ? before.debtFreeMonth - after.debtFreeMonth
+      : null;
+  const interestSaved = before.stuck ? 0 : Math.max(0, before.totalInterest - after.totalInterest);
+
+  return { allocation, before, after, monthsSooner, interestSaved, unstuck: before.stuck && !after.stuck };
 }

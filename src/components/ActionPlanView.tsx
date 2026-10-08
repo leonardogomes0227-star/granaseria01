@@ -1,11 +1,25 @@
 import { useState } from 'react';
-import { Copy, Check, ChevronDown, ShieldAlert } from 'lucide-react';
+import { ChevronDown, ShieldAlert } from 'lucide-react';
+import { CopyMessage } from './CopyMessage';
 import { ActionPlan, monthShort } from '../plan';
+import { RIGHTS, relevantRights } from '../leaks';
+import { ToolId, getTool } from '../tools';
+import { ToolIcon } from './Layout';
 import { formatBRL } from '../calculations';
 
 /* ---------- Plano de ação: valor mensal, fases, passos, renegociação e calendário ---------- */
 
-export function ActionPlanView({ plan, locked, lockedSlot }: { plan: ActionPlan; locked: boolean; lockedSlot?: React.ReactNode }) {
+export function ActionPlanView({
+  plan,
+  locked,
+  lockedSlot,
+  onOpenTool,
+}: {
+  plan: ActionPlan;
+  locked: boolean;
+  lockedSlot?: React.ReactNode;
+  onOpenTool: (id: ToolId) => void;
+}) {
   const visibleSteps = locked ? plan.steps.slice(0, 1) : plan.steps;
 
   return (
@@ -31,6 +45,8 @@ export function ActionPlanView({ plan, locked, lockedSlot }: { plan: ActionPlan;
       </div>
 
       {!locked && plan.negotiation && <NegotiationCard negotiation={plan.negotiation} />}
+      {!locked && <RightsCard plan={plan} onOpenTool={onOpenTool} />}
+      <Boosters plan={plan} onOpenTool={onOpenTool} />
       {!locked && plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
 
       <p className="field-hint" style={{ marginTop: 14 }}>
@@ -46,6 +62,7 @@ function PowerStrip({ plan }: { plan: ActionPlan }) {
     { label: 'o que você já guarda', value: plan.sources.savings },
     { label: 'cortes nos gastos', value: plan.sources.cuts },
     { label: 'parcelas que já paga', value: plan.sources.installments },
+    { label: 'vazamentos achados', value: plan.sources.leaks },
   ].filter((p) => p.value > 0);
 
   return (
@@ -88,33 +105,66 @@ function PhaseTimeline({ plan }: { plan: ActionPlan }) {
 }
 
 function NegotiationCard({ negotiation }: { negotiation: NonNullable<ActionPlan['negotiation']> }) {
-  const [copied, setCopied] = useState(false);
-  const [manual, setManual] = useState(false);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(negotiation.message);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
-    } catch {
-      // clipboard bloqueado: deixa o texto selecionável pra copiar na mão
-      setManual(true);
-    }
-  };
-
   return (
     <div className="stat-card plan-nego">
       <p className="diag-label" style={{ marginBottom: 4 }}>Mensagem pronta pra renegociar · {negotiation.debtName}</p>
       <p className="field-hint" style={{ marginTop: 0, marginBottom: 10 }}>
         Mande pelo app, chat ou SAC de quem você deve. Também dá pra negociar no Serasa Limpa Nome e reclamar no consumidor.gov.br se não tiver resposta.
       </p>
-      <pre className={`plan-nego-text ${manual ? 'manual' : ''}`}>{negotiation.message}</pre>
-      <button type="button" className="btn-outline" onClick={copy} style={{ marginTop: 10 }}>
-        {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copiado!' : 'Copiar mensagem'}
-      </button>
+      <CopyMessage text={negotiation.message} />
       <p className="plan-nego-warn">
         <ShieldAlert size={15} /> Nunca pague taxa antecipada pra "limpar o nome" ou liberar empréstimo — é golpe.
       </p>
+    </div>
+  );
+}
+
+function RightsCard({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: ToolId) => void }) {
+  const ids = relevantRights(plan);
+  if (ids.length === 0) return null;
+  return (
+    <div className="stat-card plan-rights">
+      <p className="diag-label" style={{ marginBottom: 8 }}>Seus direitos nesse caso</p>
+      {RIGHTS.filter((r) => ids.includes(r.id)).map((r) => (
+        <div className="plan-right" key={r.id}>
+          <p className="plan-step-title">{r.title}</p>
+          <p>{r.summary}</p>
+        </div>
+      ))}
+      <button type="button" className="plan-more" onClick={() => onOpenTool('rights')}>
+        Ver todos os direitos e as mensagens prontas →
+      </button>
+    </div>
+  );
+}
+
+// Atalhos pra acelerar o plano: dinheiro extra e vazamentos
+function Boosters({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: ToolId) => void }) {
+  const items: { id: ToolId; text: string }[] = [
+    { id: 'extra', text: 'Vai receber 13º, restituição ou FGTS? Veja quantos meses ele tira do seu plano.' },
+    {
+      id: 'leaks',
+      text:
+        plan.sources.leaks > 0
+          ? `Você já achou ${formatBRL(plan.sources.leaks)}/mês em vazamentos. Tem mais?`
+          : 'Tarifas, seguros que você não pediu, assinaturas: ache dinheiro escondido pra acelerar o plano.',
+    },
+  ];
+  return (
+    <div className="plan-boosters">
+      <p className="diag-label" style={{ marginBottom: 6 }}>Acelere seu plano</p>
+      {items.map((it) => {
+        const t = getTool(it.id);
+        return (
+          <button type="button" className="mega-item" key={it.id} onClick={() => onOpenTool(it.id)} style={{ border: '1px solid var(--hairline-soft)' }}>
+            <ToolIcon tool={t} size="sm" />
+            <span>
+              <b>{t.title}</b>
+              <span className="desc">{it.text}</span>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -132,7 +182,7 @@ function ScheduleTable({ plan }: { plan: ActionPlan }) {
             <span className="plan-row-month">{r.label}</span>
             <span className="plan-row-pay">
               {r.payments.map((p) => (
-                <span key={p.name}>
+                <span key={p.id}>
                   {formatBRL(p.amount)} <small>{p.name}</small>
                 </span>
               ))}

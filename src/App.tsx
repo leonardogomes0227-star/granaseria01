@@ -13,6 +13,8 @@ import { ImpulseTool, DebtSimulator, LongTermSimulator, GoalCalculator, LoanComp
 import { SelosPanel } from './components/SelosAndShare';
 import { CheckInTool } from './components/CheckIn';
 import { QuoteTool } from './components/QuoteTool';
+import { ExtraMoneyTool, LeaksTool, RightsTool } from './components/SolutionTools';
+import { PlanTracker } from './components/PlanTracker';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { Landing } from './components/Landing';
 import { AppBar, SiteFooter } from './components/Layout';
@@ -304,6 +306,10 @@ function ToolRoute({
         {tool.id === 'longterm' && <LongTermSimulator monthlyIncome={data.monthlyIncome} {...toolProps} />}
         {tool.id === 'goal' && <GoalCalculator {...toolProps} />}
         {tool.id === 'loan' && <LoanComparator {...toolProps} />}
+        {tool.id === 'extra' && <ExtraMoneyTool data={data} onStart={onStart} {...toolProps} />}
+        {tool.id === 'leaks' && <LeaksTool data={data} {...toolProps} />}
+        {tool.id === 'rights' && <RightsTool data={data} {...toolProps} />}
+        {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
       </div>
     </>
   );
