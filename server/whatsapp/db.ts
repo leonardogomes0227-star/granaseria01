@@ -20,8 +20,8 @@ export function supabaseKeyHeaders(key: string): Record<string, string> {
 
 function env(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`Variável de ambiente ausente: ${name}`);
-  return v;
+  if (!v?.trim()) throw new Error(`Variável de ambiente ausente: ${name}`);
+  return v.trim();
 }
 
 async function rest(path: string, init: RequestInit = {}): Promise<Response> {
