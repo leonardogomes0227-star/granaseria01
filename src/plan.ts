@@ -1,4 +1,4 @@
-import type { WizardData, DebtItem, DebtKind } from './types';
+import type { WizardData, DebtItem, DebtKind } from './types.js';
 import { formatBRL, computeProjection } from './calculations.js';
 
 // Plano de ação de verdade: o que fazer, quanto, onde e até quando.

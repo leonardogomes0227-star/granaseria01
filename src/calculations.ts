@@ -1,4 +1,4 @@
-import type { WizardData } from './types';
+import type { WizardData } from './types.js';
 
 export interface Diagnosis {
   savingsRate: number;

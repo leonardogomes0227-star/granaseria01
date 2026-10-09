@@ -21,8 +21,8 @@ const COLS = 'user_id,phone,state,updated_at,reminder_day,reminders,last_reminde
 
 function env(name: string): string {
   const v = process.env[name];
-  if (!v) throw new Error(`Variável de ambiente ausente: ${name}`);
-  return v;
+  if (!v?.trim()) throw new Error(`Variável de ambiente ausente: ${name}`);
+  return v.trim();
 }
 
 export const accountsConfigured = () => Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);

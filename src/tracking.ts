@@ -1,4 +1,4 @@
-import type { WizardData } from './types';
+import type { WizardData } from './types.js';
 import { buildPlan, effectiveRate, type ActionPlan } from './plan.js';
 import { leaksMonthlyTotal } from './leaks.js';
 
