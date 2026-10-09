@@ -10,6 +10,14 @@ export interface Expense {
   created_at: string;
 }
 
+/**
+ * Chave antiga (service_role, um JWT "eyJ…") vai também no Authorization.
+ * Chave nova (sb_secret_…) vai só no apikey — no Authorization ela é recusada.
+ */
+export function supabaseKeyHeaders(key: string): Record<string, string> {
+  return key.startsWith('eyJ') ? { apikey: key, Authorization: `Bearer ${key}` } : { apikey: key };
+}
+
 function env(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Variável de ambiente ausente: ${name}`);
@@ -21,8 +29,7 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   return fetch(`${env('SUPABASE_URL').replace(/\/$/, '')}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: key,
-      Authorization: `Bearer ${key}`,
+      ...supabaseKeyHeaders(key),
       'Content-Type': 'application/json',
       ...(init.headers || {}),
     },

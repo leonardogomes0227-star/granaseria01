@@ -1,6 +1,8 @@
 // Conta da pessoa no Supabase (tabela user_state), acessada pelo servidor com a service role.
 // Mesma abordagem do whatsapp/db.ts: REST (PostgREST) com fetch, sem SDK.
 
+import { supabaseKeyHeaders } from '../whatsapp/db.js';
+
 export type StateSnapshot = Record<string, string>; // chave do localStorage → valor (texto)
 
 export interface UserRow {
@@ -29,7 +31,7 @@ async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   return fetch(`${env('SUPABASE_URL').replace(/\/$/, '')}/rest/v1/${path}`, {
     ...init,
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+    headers: { ...supabaseKeyHeaders(key), 'Content-Type': 'application/json', ...(init.headers || {}) },
   });
 }
 
