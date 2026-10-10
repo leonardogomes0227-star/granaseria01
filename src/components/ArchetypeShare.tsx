@@ -6,7 +6,7 @@ import { STORY_THEMES, StoryTheme, renderStoryCard, shareOrDownload } from '../s
 const THEME_KEY = 'selos-story-theme';
 
 function siteHost(): string {
-  return typeof window !== 'undefined' ? window.location.host.replace(/^www\./, '') : 'granaseria01.vercel.app';
+  return typeof window !== 'undefined' ? window.location.host.replace(/^www\./, '') : 'granaseria.com.br';
 }
 
 function loadTheme(): StoryTheme {

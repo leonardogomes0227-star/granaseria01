@@ -11,7 +11,7 @@ import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser } from '../server/account/db.js';
 
-const SITE_URL = (process.env.SITE_URL || 'https://granaseria01.vercel.app').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://granaseria.com.br').replace(/\/$/, '');
 
 /**
  * Responde uma mensagem de texto. Quem vinculou a conta no site usa tudo (plano + gastos);
