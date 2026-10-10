@@ -244,6 +244,7 @@ export function SiteFooter({ onStart, onOpenTool }: { onStart: () => void; onOpe
         © {new Date().getFullYear()} Grana Séria. Não somos uma consultoria financeira registrada; o conteúdo é
         educacional, baseado nos princípios do livro O Homem Mais Rico da Babilônia.
       </p>
+      <p className="foot-bottom">69.557.683 LEONARDO GOMES BALOQUE · CNPJ 69.557.683/0001-89</p>
     </footer>
   );
 }

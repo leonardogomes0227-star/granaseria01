@@ -33,7 +33,7 @@ function page(template, { path, title, description, body }) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(")/, `$1${esc(fullTitle)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(")/, `$1${esc(description)}$2`)
     .replace('</head>', `  <link rel="canonical" href="${esc(url)}" />\n  </head>`);
-  html = html.replace('<div id="root"></div>', `<div id="root"><main class="page-wrap">${body}</main></div>`);
+  html = html.replace(/<div id="root">.*?<\/div>/s, `<div id="root"><main class="page-wrap">${body}</main></div>`);
   return html;
 }
 
