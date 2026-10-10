@@ -17,7 +17,7 @@ faça **Deployments → ⋯ → Redeploy**.
 
 ## 1. Métricas (Plausible)
 
-1. Crie a conta em **plausible.io** → **Add website** → domínio `granaseria01.vercel.app` (ou o seu).
+1. Crie a conta em **plausible.io** → **Add website** → domínio `granaseria.com.br` (ou o seu).
 2. Na Vercel: `VITE_PLAUSIBLE_DOMAIN` = o mesmo domínio.
 3. No Plausible, em **Site settings → Goals → Add goal → Custom event**, cadastre os eventos que quer acompanhar:
 
@@ -45,8 +45,8 @@ Use o mesmo projeto do assistente de WhatsApp, se já tiver criado.
 
 1. **SQL Editor → New query**: rode [`supabase/whatsapp.sql`](../supabase/whatsapp.sql) (se ainda não rodou) e depois [`supabase/conta.sql`](../supabase/conta.sql).
 2. **Authentication → URL Configuration**:
-   - **Site URL:** `https://granaseria01.vercel.app`
-   - **Redirect URLs:** adicione `https://granaseria01.vercel.app/conta`
+   - **Site URL:** `https://granaseria.com.br`
+   - **Redirect URLs:** adicione `https://granaseria.com.br/conta`
 3. **Authentication → Email Templates → Magic Link** (opcional): troque o texto pra português, ex.:
    *"Seu link de acesso à Grana Séria: {{ .ConfirmationURL }}"*.
    O e-mail padrão do Supabase tem limite baixo de envios por hora — quando tiver volume, configure um SMTP próprio
@@ -88,7 +88,7 @@ Fora da janela de 24h, a Meta só entrega **modelos aprovados**, então crie o m
 |---|---|
 | `CRON_SECRET` | invente uma senha longa (a Vercel usa pra chamar o lembrete) |
 | `WHATSAPP_REMINDER_TEMPLATE` | `lembrete_plano` (se usar outro nome) |
-| `SITE_URL` | `https://granaseria01.vercel.app` (usado nos links das mensagens e no sitemap) |
+| `SITE_URL` | `https://granaseria.com.br` (usado nos links das mensagens e no sitemap) |
 
 ## 4. Leitor de fatura com IA
 
@@ -102,7 +102,7 @@ O arquivo vai pra API, a leitura volta pro navegador e nada é guardado.
 
 O build já gera uma página estática pra cada guia e ferramenta, mais `sitemap.xml` e `robots.txt`.
 
-1. Acesse **search.google.com/search-console** → **Adicionar propriedade** → prefixo de URL `https://granaseria01.vercel.app`.
+1. Acesse **search.google.com/search-console** → **Adicionar propriedade** → prefixo de URL `https://granaseria.com.br`.
 2. Verifique pelo método **Tag HTML** (cole a meta tag no `index.html`, no `<head>`) e faça o deploy.
 3. Em **Sitemaps**, envie `sitemap.xml`.
 

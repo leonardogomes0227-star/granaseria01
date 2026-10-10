@@ -70,12 +70,12 @@ Depois de salvar: **Deployments → ⋯ no último deploy → Redeploy** (as var
 ## Passo 4 — Ligar o webhook
 
 1. developers.facebook.com → seu app → **WhatsApp → Configuração (Configuration) → Webhook → Editar**:
-   - **URL de retorno:** `https://granaseria01.vercel.app/api/whatsapp`
+   - **URL de retorno:** `https://granaseria.com.br/api/whatsapp`
    - **Token de verificação:** o mesmo `WHATSAPP_VERIFY_TOKEN` do passo 3
    - Clique **Verificar e salvar**. Se der erro, confira se fez o *Redeploy*.
 2. Ainda em Webhook → **Campos (Webhook fields)** → assine o campo **messages**.
 3. **Publique o app** (topo do painel: modo *Desenvolvimento → Ativo/Live*). A Meta pede a URL da política de privacidade:
-   `https://granaseria01.vercel.app/politica-de-privacidade`
+   `https://granaseria.com.br/politica-de-privacidade`
 
 ## Passo 5 — Testar
 

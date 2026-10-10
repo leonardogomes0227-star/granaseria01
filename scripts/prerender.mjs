@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dist = join(root, 'dist');
-const SITE_URL = (process.env.SITE_URL || 'https://granaseria01.vercel.app').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://granaseria.com.br').replace(/\/$/, '');
 
 // carrega os dados dos guias e das ferramentas direto do código do site (TypeScript)
 async function load(entry) {
