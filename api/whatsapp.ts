@@ -6,7 +6,8 @@
 
 import { extractTextMessages, isAllowed, normalizeBrPhone, sendText, verifySignature } from '../server/whatsapp/meta.js';
 import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
-import { insertExpense, listExpensesSince, deleteLastExpense } from '../server/whatsapp/db.js';
+import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense } from '../server/whatsapp/db.js';
+import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser } from '../server/account/db.js';
@@ -61,7 +62,10 @@ async function reply(msg: { id: string; from: string; text: string }): Promise<s
   // ajuda mostra também os comandos do plano pra quem tem conta
   if (user && parseMessage(msg.text).kind === 'help') return HELP_TEXT + '\n' + PLAN_HELP;
 
-  return handleText({ id: msg.id, phone, text: msg.text }, { insertExpense, listExpensesSince, deleteLastExpense });
+  return handleText(
+    { id: msg.id, phone, text: msg.text },
+    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, smart: smartConfigured() ? askClaude : undefined }
+  );
 }
 
 export async function GET(request: Request): Promise<Response> {

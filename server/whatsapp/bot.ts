@@ -1,11 +1,18 @@
 import { parseMessage, categoryEmoji } from './parse.js';
 import type { Expense } from './db.js';
+import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
 export interface BotDeps {
-  insertExpense: (e: { phone: string; amount: number; category: string; description: string; waMessageId: string }) => Promise<boolean>;
+  insertExpense: (e: { phone: string; amount: number; category: string; description: string; waMessageId: string; createdAt?: string }) => Promise<boolean>;
   listExpensesSince: (phone: string, since: Date) => Promise<Expense[]>;
   deleteLastExpense: (phone: string) => Promise<Expense | null>;
+  updateLastExpense?: (
+    phone: string,
+    patch: { amount?: number; description?: string; category?: string }
+  ) => Promise<{ before: Expense; after: Expense } | null>;
+  // IA opcional: sem ela o bot usa só as regras
+  smart?: (text: string, ctx: SmartContext) => Promise<SmartResult | null>;
   now?: () => Date;
 }
 
@@ -71,6 +78,15 @@ export async function handleText(
   const now = deps.now?.() ?? new Date();
   const cmd = parseMessage(msg.text);
 
+  if (deps.smart && needsSmart(msg.text, cmd)) {
+    try {
+      const out = await handleSmart(msg, deps, now);
+      if (out.handled) return out.text;
+    } catch (err) {
+      console.error('WhatsApp: a IA falhou, seguindo só com as regras', err); // não derruba o registro
+    }
+  }
+
   switch (cmd.kind) {
     case 'help':
       return HELP_TEXT;
@@ -126,4 +142,110 @@ export async function handleText(
     default:
       return 'Não entendi. 🤔 Mande o gasto com o valor, tipo *"gastei 35 no mercado"*, ou *ajuda* pra ver os comandos.';
   }
+}
+
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function dayLabel(created: Date, now: Date): string {
+  const days = Math.round((startOfDayBRT(now).getTime() - startOfDayBRT(created).getTime()) / DAY_MS);
+  if (days <= 0) return 'hoje';
+  if (days === 1) return 'ontem';
+  return created.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
+}
+
+async function buildSmartContext(phone: string, deps: BotDeps, now: Date): Promise<SmartContext> {
+  const rows = await deps.listExpensesSince(phone, startOfMonthBRT(now));
+  const todayStart = startOfDayBRT(now).getTime();
+  const weekStart = startOfWeekBRT(now).getTime();
+  const at = (r: Expense) => new Date(r.created_at).getTime();
+  const totals = new Map<string, number>();
+  for (const r of rows) totals.set(r.category, (totals.get(r.category) ?? 0) + r.amount);
+  return {
+    today: now.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }),
+    totals: {
+      today: sum(rows.filter((r) => at(r) >= todayStart)),
+      week: sum(rows.filter((r) => at(r) >= weekStart)),
+      month: sum(rows),
+    },
+    byCategory: [...totals.entries()].map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total),
+    recent: [...rows]
+      .sort((a, b) => at(b) - at(a))
+      .slice(0, 40)
+      .map((r) => ({ when: dayLabel(new Date(r.created_at), now), amount: r.amount, category: r.category, description: r.description })),
+  };
+}
+
+const UNDERSTOOD_NOTHING =
+  'Não entendi. 🤔 Mande o gasto com o valor, tipo *"gastei 35 no mercado"*, ou *ajuda* pra ver os comandos.';
+
+/** Mensagens mais complexas: a IA entende, o código registra e confirma com os números reais. */
+async function handleSmart(
+  msg: { id: string; phone: string; text: string },
+  deps: BotDeps,
+  now: Date
+): Promise<{ handled: boolean; text: string | null }> {
+  if (!deps.smart) return { handled: false, text: null };
+  const ctx = await buildSmartContext(msg.phone, deps, now);
+  const result = await deps.smart(msg.text, ctx);
+  if (!result) return { handled: false, text: null };
+
+  if (result.undoLast) {
+    const removed = await deps.deleteLastExpense(msg.phone);
+    return { handled: true, text: removed ? `🗑️ Apaguei: ${brl(removed.amount)} — ${removed.description}` : 'Não encontrei nenhum gasto pra apagar.' };
+  }
+
+  if (result.fix && deps.updateLastExpense) {
+    const done = await deps.updateLastExpense(msg.phone, result.fix);
+    if (!done) return { handled: true, text: 'Não encontrei nenhum gasto pra corrigir.' };
+    const { before, after } = done;
+    const changes = [
+      after.amount !== before.amount ? `${brl(before.amount)} → ${brl(after.amount)}` : null,
+      after.category !== before.category ? `${categoryEmoji(before.category)} ${before.category} → ${categoryEmoji(after.category)} ${after.category}` : null,
+      after.description !== before.description ? `"${before.description}" → "${after.description}"` : null,
+    ].filter(Boolean);
+    return { handled: true, text: `✏️ Corrigi o último gasto:\n${changes.join('\n')}` };
+  }
+
+  if (result.expenses.length > 0) {
+    const today = startOfDayBRT(now).getTime();
+    let saved = 0;
+    const lines: string[] = [];
+    for (const [i, e] of result.expenses.entries()) {
+      const created = e.daysAgo > 0 ? new Date(today - e.daysAgo * DAY_MS + 12 * 60 * 60 * 1000).toISOString() : undefined;
+      // um id por gasto: a mesma mensagem pode registrar vários, e a Meta às vezes reenvia
+      const inserted = await deps.insertExpense({
+        phone: msg.phone,
+        amount: e.amount,
+        category: e.category,
+        description: e.description,
+        waMessageId: `${msg.id}#${i}`,
+        createdAt: created,
+      });
+      if (!inserted) {
+        if (i === 0) return { handled: true, text: null }; // reenvio da Meta: já respondemos antes
+        continue;
+      }
+      saved++;
+      const when = e.daysAgo > 0 ? ` _(${e.daysAgo === 1 ? 'ontem' : `há ${e.daysAgo} dias`})_` : '';
+      lines.push(`• ${brl(e.amount)} ${categoryEmoji(e.category)} *${e.category}* — ${e.description}${when}`);
+    }
+    if (saved === 0) return { handled: true, text: null };
+    const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
+    const todayTotal = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= today));
+    return {
+      handled: true,
+      text: [
+        saved === 1 ? '✅ Registrei:' : `✅ Registrei ${saved} gastos:`,
+        ...lines,
+        '',
+        `Hoje: ${brl(todayTotal)} · Mês: ${brl(sum(monthRows))}`,
+        result.reply ? `\n${result.reply}` : '',
+      ]
+        .join('\n')
+        .trim(),
+    };
+  }
+
+  return { handled: true, text: result.reply || UNDERSTOOD_NOTHING };
 }

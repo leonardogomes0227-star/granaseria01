@@ -94,6 +94,7 @@ Fora da janela de 24h, a Meta só entrega **modelos aprovados**, então crie o m
 
 1. Crie a conta em **platform.claude.com** → **API Keys → Create Key**. Coloque créditos em **Billing**.
 2. Na Vercel: `ANTHROPIC_API_KEY` = a chave. Opcional: `FATURA_MONTHLY_LIMIT` (padrão 5 leituras por pessoa por mês).
+3. A mesma chave liga o **assistente inteligente do WhatsApp** (entende perguntas, vários gastos numa frase, "ontem gastei…", correções). Sem a chave, o bot segue só com as regras simples. Opcional: `WHATSAPP_AI_MODEL` (padrão `claude-opus-5-5`; `claude-haiku-5-5` deixa cada resposta muito mais barata).
 
 O leitor só funciona pra quem está logado (parte 2) — é assim que o limite por pessoa é contado.
 O arquivo vai pra API, a leitura volta pro navegador e nada é guardado.
