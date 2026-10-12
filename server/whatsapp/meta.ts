@@ -188,3 +188,21 @@ export async function sendTemplate(to: string, name: string, language: string, b
   });
   if (!res.ok) throw new Error(`WhatsApp template ${res.status}: ${await res.text()}`);
 }
+
+export class MediaTooBigError extends Error {}
+
+/** Baixa o PDF/foto que a pessoa mandou (a Meta só dá um id; o arquivo vem por uma URL que exige o token). */
+export async function downloadMedia(mediaId: string, maxBytes: number): Promise<{ mime: string; base64: string }> {
+  const token = process.env.WHATSAPP_TOKEN;
+  if (!token) throw new Error('WHATSAPP_TOKEN ausente');
+  const auth = { Authorization: `Bearer ${token}` };
+  const info = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${mediaId}`, { headers: auth });
+  if (!info.ok) throw new Error(`WhatsApp media ${info.status}: ${await info.text()}`);
+  const { url, mime_type: mime, file_size: size } = (await info.json()) as { url: string; mime_type: string; file_size?: number };
+  if (size && size > maxBytes) throw new MediaTooBigError();
+  const file = await fetch(url, { headers: auth });
+  if (!file.ok) throw new Error(`WhatsApp download ${file.status}`);
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (bytes.length > maxBytes) throw new MediaTooBigError();
+  return { mime, base64: bytes.toString('base64') };
+}

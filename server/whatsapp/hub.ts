@@ -9,122 +9,16 @@ import type { Outgoing } from './meta.js';
 import type { StateSnapshot } from '../account/db.js';
 import { buildPlan, simulateLumpSum, monthLong, effectiveRate, type LumpResult } from '../../src/plan.js';
 import { LEAKS, RIGHTS, relevantRights, leaksMonthlyTotal, type LeakSelection } from '../../src/leaks.js';
-import { calculateDiagnosis, calculateHealthScore, formatBRL } from '../../src/calculations.js';
-import { INITIAL_DATA, type WizardData, type DebtItem, type DebtKind } from '../../src/types.js';
+import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations.js';
+import { getArchetype } from '../../src/archetypes.js';
+import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep } from './tools.js';
+import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
 import { parseAmount } from './parse.js';
+import { diagnosisFrom, leaksFrom, normalize, parseDebt, parseMoney, txt, buttons, brl, type Session, type HubInput, type HubResult } from './hubcore.js';
 
-export type Flow = 'diag' | 'extra' | 'leaks';
-
-export interface Session {
-  flow: Flow;
-  step: string;
-  data: Record<string, unknown>;
-}
-
-export interface HubInput {
-  text: string; // texto digitado, ou o id do botão/linha tocado
-  session: Session | null;
-  profile: StateSnapshot; // mesmo formato do que o site guarda (selos-wizard-progress, selos-tracking, selos-leaks…)
-  now: Date;
-  faturaEnabled?: boolean; // mostra "Ler minha fatura" no menu
-}
-
-export interface HubResult {
-  out: Outgoing[];
-  session: Session | null; // null = conversa encerrada
-  profile?: StateSnapshot; // só quando mudou
-}
-
-/* ---------- utilitários ---------- */
-
-const txt = (text: string): Outgoing => ({ kind: 'text', text });
-const buttons = (text: string, b: [string, string][]): Outgoing => ({ kind: 'buttons', text, buttons: b.map(([id, title]) => ({ id, title })) });
-const brl = (n: number) => formatBRL(n);
-
-export function normalize(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[º°]/g, 'o')
-    .replace(/ª/g, 'a')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[!?.]+$/, '')
-    .trim();
-}
-
-/** "3500", "3.500,50", "R$ 3500", "3 mil", "3k"; "zero/nada/não" = 0. null se não achar valor. */
-export function parseMoney(raw: string): number | null {
-  const t = normalize(raw);
-  if (/^(0|zero|nada|nenhum|nenhuma|nao tenho|nao|sem)$/.test(t)) return 0;
-  const m = t.match(/(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*(mil|k)\b)?/);
-  if (!m) return null;
-  const n = parseAmount(m[1]);
-  if (n === null) return null;
-  return Math.round((m[2] ? n * 1000 : n) * 100) / 100;
-}
-
-const KIND_SHORT: Record<DebtKind, string> = {
-  cartao: 'Cartão',
-  cheque: 'Cheque especial',
-  emprestimo: 'Empréstimo',
-  consignado: 'Consignado',
-  financiamento: 'Financiamento',
-  outro: 'Outra dívida',
-};
-
-function detectKind(t: string): DebtKind {
-  if (/\b(cartao|fatura|rotativo)\b/.test(t)) return 'cartao';
-  if (/\bcheque\b/.test(t)) return 'cheque';
-  if (/\bconsignado\b/.test(t)) return 'consignado';
-  if (/\b(financiamento|carro|moto|casa|imovel|apartamento)\b/.test(t)) return 'financiamento';
-  if (/\b(emprestimo|credito pessoal)\b/.test(t)) return 'emprestimo';
-  return 'outro';
-}
-
-/** "cartão nubank 4500", "empréstimo 3000 parcela 250 juros 5": uma dívida por mensagem. */
-export function parseDebt(raw: string, id: string): DebtItem | null {
-  const t = normalize(raw);
-  const inst = t.match(/parcelas?\s*(?:de)?\s*(?:r\$)?\s*([\d.,]+)/);
-  const rate = t.match(/juros?\s*(?:de)?\s*([\d.,]+)\s*%?/);
-  const rest = t.replace(inst?.[0] ?? '', ' ').replace(rate?.[0] ?? '', ' ');
-  const value = parseMoney(rest);
-  if (value === null || value <= 0) return null;
-  const kind = detectKind(t);
-  const extra = rest
-    .replace(/[\d.,%]+|\b(mil|k|reais|real|r\$|de|do|da|no|na|em|com|um|uma|e)\b/g, ' ')
-    .split(/\s+/)
-    .filter((w) => w && !/^(cartao|cheque|especial|consignado|financiamento|emprestimo|fatura|rotativo|credito|pessoal|divida)$/.test(w))
-    .join(' ')
-    .trim();
-  const debt: DebtItem = { id, description: extra ? `${KIND_SHORT[kind]} ${extra}` : KIND_SHORT[kind], value, kind };
-  const installment = inst ? parseAmount(inst[1]) : null;
-  if (installment) debt.installment = installment;
-  const r = rate ? parseAmount(rate[1]) : null;
-  if (r && r < 100) debt.interestRate = r;
-  return debt;
-}
-
-/** O diagnóstico salvo (pelo site ou por aqui), se tiver. */
-export function diagnosisFrom(profile: StateSnapshot): WizardData | null {
-  try {
-    const raw = profile['selos-wizard-progress'];
-    if (!raw) return null;
-    const data = (JSON.parse(raw) as { data?: Partial<WizardData> }).data;
-    if (!data || !(Number(data.monthlyIncome) > 0)) return null;
-    return { ...INITIAL_DATA, ...data, expenses: { ...INITIAL_DATA.expenses, ...(data.expenses ?? {}) }, debts: data.debts ?? [] } as WizardData;
-  } catch {
-    return null;
-  }
-}
-
-function leaksFrom(profile: StateSnapshot): LeakSelection {
-  try {
-    return profile['selos-leaks'] ? (JSON.parse(profile['selos-leaks']) as LeakSelection) : {};
-  } catch {
-    return {};
-  }
-}
+export { parseMoney, parseDebt, diagnosisFrom, normalize } from './hubcore.js';
+export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 
 /* ---------- menu ---------- */
 
@@ -132,11 +26,14 @@ export function menu(faturaEnabled = false): Outgoing[] {
   const rows = [
     { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar este mês' },
     { id: 'menu:diag', title: '📊 Fazer diagnóstico', description: 'Nota, plano e datas em uns 2 minutos' },
+    { id: 'menu:gastos', title: '💸 Registrar gastos', description: 'Como anotar o que você gastou' },
     { id: 'menu:13o', title: '🎁 13º e dinheiro extra', description: 'Onde colocar cada real' },
     { id: 'menu:vazamentos', title: '🔎 Caça-vazamentos', description: 'Dinheiro que escapa todo mês' },
     { id: 'menu:direitos', title: '⚖️ Meus direitos', description: 'O que a lei garante com banco e dívida' },
-    { id: 'menu:gastos', title: '💸 Registrar gastos', description: 'Como anotar o que você gastou' },
+    { id: 'menu:calc', title: '🧮 Calculadoras', description: 'Compra, meta, longo prazo, empréstimo, dívidas' },
+    { id: 'menu:checkin', title: '📅 Check-in do mês', description: 'Acompanhe sua evolução' },
     ...(faturaEnabled ? [{ id: 'menu:fatura', title: '🧾 Ler minha fatura', description: 'Acho cobranças escondidas' }] : []),
+    { id: 'menu:mais', title: '✨ Selos e frase do dia', description: 'Suas conquistas e uma frase' },
   ];
   return [
     {
@@ -182,7 +79,8 @@ function diagSummary(data: WizardData, now: Date): string {
   const d = calculateDiagnosis(data);
   const score = calculateHealthScore(data, d);
   const plan = buildPlan(data, { start: now });
-  const lines = [`📊 *Seu diagnóstico*`, `Nota: *${score.score}/100* — ${score.label}`, ''];
+  const archetype = getArchetype(data, d);
+  const lines = [`📊 *Seu diagnóstico*`, `Nota: *${score.score}/100* — ${score.label}`, `Perfil: *${archetype.name}*`, ''];
   lines.push(`Renda ${brl(data.monthlyIncome)} · gastos ${brl(d.totalExpenses)} (${Math.round((d.totalExpenses / data.monthlyIncome) * 100)}% da renda)`);
 
   if (plan.debts.length > 0) {
@@ -497,6 +395,29 @@ const GASTOS_HELP = txt(
   '💸 *Registrar gastos* é só me mandar o que gastou:\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nComandos: *hoje*, *semana*, *mês* (resumo por categoria) e *apagar* (desfaz o último).'
 );
 
+/** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
+function shortcutStart(t: string, profile: StateSnapshot, now: Date): HubResult | null {
+  if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
+  if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
+  if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
+  if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag();
+  const buy = t.match(/^vale a pena( comprar)?(?: (.*))?$/);
+  if (buy) {
+    const price = buy[2] ? parseMoney(buy[2]) : null;
+    return startCompra(profile, price && price > 0 ? price : undefined);
+  }
+  if (/^(meta|minha meta|calculadora de meta)$/.test(t)) return startMeta();
+  if (/^(longo prazo|simulador|aposentadoria|simulador de longo prazo)$/.test(t)) return startLongo(profile);
+  if (/^(emprestimo|comparar emprestimos?|financiamento)$/.test(t)) return startEmprestimo();
+  if (/^(dividas|qual divida pagar|avalanche|bola de neve|avalanche x bola de neve)$/.test(t)) return startDividas(profile);
+  if (/^(calculadoras?|calcular)$/.test(t)) return { out: calcMenu(), session: null };
+  if (/^check[ -]?in( do mes)?$/.test(t)) return startCheckin(profile);
+  if (/^(selos|meus selos|perfil|meu perfil)$/.test(t)) return { out: selosOut(profile), session: null };
+  if (/^(frase|frase do dia)$/.test(t)) return { out: fraseOut(null, now), session: null };
+
+  return null;
+}
+
 /** Decide se a mensagem é do hub. Devolve null quando não é: aí vale o fluxo antigo (gastos, plano). */
 export function hubStep(input: HubInput): HubResult | null {
   const { text, session, profile, now } = input;
@@ -515,6 +436,17 @@ export function hubStep(input: HubInput): HubResult | null {
   if (t === 'menu:13o') return startExtra(profile);
   if (t === 'menu:vazamentos') return startLeaks();
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
+  if (t === 'menu:calc') return { out: calcMenu(), session: null };
+  if (t === 'menu:mais') return { out: maisMenu(), session: null };
+  if (t === 'menu:checkin') return startCheckin(profile);
+  if (t === 'calc:compra') return startCompra(profile);
+  if (t === 'calc:meta') return startMeta();
+  if (t === 'calc:longo') return startLongo(profile);
+  if (t === 'calc:emprestimo') return startEmprestimo();
+  if (t === 'calc:dividas') return startDividas(profile);
+  if (t === 'mais:selos') return { out: selosOut(profile), session: null };
+  if (t === 'mais:frase') return { out: fraseOut(null, now), session: null };
+  if (t.startsWith('frase:')) return { out: fraseOut(Number(t.slice(6)), now), session: null };
   if (t === 'menu:fatura') {
     return {
       out: [txt('🧾 Mande aqui o *PDF ou a foto* da fatura do cartão (ou do extrato) e eu procuro assinaturas, tarifas e juros escondidos.')],
@@ -523,20 +455,31 @@ export function hubStep(input: HubInput): HubResult | null {
   }
 
   // conversa em andamento: toda resposta vai pra ela (um "3000" aqui é resposta, não gasto)
-  if (session) {
+  const shortcut = shortcutStart(t, profile, now);
+  if (shortcut) return shortcut;
+
+  if (session && session.flow === 'fatura') {
+    // só vale pros botões da leitura da fatura; qualquer outra coisa segue o fluxo normal
+    if (t === 'fatura:add') {
+      const found = (session.data.leaks as LeakSelection | undefined) ?? {};
+      const merged = { ...leaksFrom(profile), ...found };
+      return {
+        out: [txt(`✅ Adicionei *${brl(leaksMonthlyTotal(found))}/mês* ao seu caça-vazamentos. Mande *vazamentos* pra ver como resolver cada um.`)],
+        session: null,
+        profile: { ...profile, 'selos-leaks': JSON.stringify(merged) },
+      };
+    }
+    if (t === 'fatura:skip') return { out: [txt('Beleza! Mande *menu* quando quiser algo mais.')], session: null };
+  } else if (session) {
     if (session.flow === 'diag') return stepDiag(session, text, profile, now);
     if (session.flow === 'extra') return stepExtra(session, text, profile, now);
     if (session.flow === 'leaks') return stepLeaks(session, text, profile, now);
+    const tool = toolStep(session, text, profile, now);
+    if (tool) return tool;
   }
 
   // botões antigos, de uma conversa que já terminou
-  if (/^(menu|dir|extra|diag):\S+$/.test(t)) return { out: [EXPIRED], session: null };
-
-  // atalhos digitados
-  if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
-  if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
-  if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
-  if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag();
+  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura):\S+$/.test(t)) return { out: [EXPIRED], session: null };
 
   return null;
 }

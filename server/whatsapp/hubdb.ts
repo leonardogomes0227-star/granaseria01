@@ -55,3 +55,11 @@ export async function bumpUsage(phone: string, period: string, limit: number): P
   await check(await upsert('wa_usage', 'phone,period', { phone, period, count: count + 1 }), 'upsert');
   return true;
 }
+
+/** Desfaz uma contagem (a leitura falhou por culpa nossa, então não gasta o limite da pessoa). */
+export async function refundUsage(phone: string, period: string): Promise<void> {
+  const res = await rest(`wa_usage?${new URLSearchParams({ phone: `eq.${phone}`, period: `eq.${period}`, select: 'count', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { count: number }[];
+  if (row && row.count > 0) await check(await upsert('wa_usage', 'phone,period', { phone, period, count: row.count - 1 }), 'upsert');
+}

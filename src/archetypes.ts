@@ -1,5 +1,5 @@
-import { WizardData } from './types';
-import { Diagnosis } from './calculations';
+import { WizardData } from './types.js';
+import { Diagnosis } from './calculations.js';
 
 // Arquétipos financeiros — o resultado do diagnóstico como "personagem" da Babilônia,
 // feito pra ser postado. Nunca mostra valores em reais: só o perfil.
