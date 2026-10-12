@@ -84,6 +84,72 @@ function startDiag(name?: string | null, then?: 'extra'): HubResult {
   };
 }
 
+/* ---------- começo rápido (3 perguntas) ---------- */
+
+const QUICK_QUESTION = {
+  q_income: '💰 *1 de 3.* Quanto você recebe por mês, já líquido (o que cai na conta)?\n\nResponda só o valor, ex.: *3500*',
+  q_spend: '🧾 *2 de 3.* E quanto sai por mês, somando tudo? Pode ser aproximado: casa, comida, transporte, lazer, contas…',
+  q_debt: '💳 *3 de 3.* Você deve alguma coisa (cartão, empréstimo, cheque especial)? Mande o valor total aproximado, ou *não tenho*.',
+} as const;
+
+function startQuick(name?: string | null): HubResult {
+  return {
+    out: [
+      txt(`${name ? `${name}, bora` : 'Bora'} começar leve. 🪙 São só 3 perguntas, 1 minuto, e já te mostro onde você está. Pra parar, mande *cancelar*.`),
+      txt(QUICK_QUESTION.q_income),
+    ],
+    session: { flow: 'diag', step: 'q_income', data: {} },
+    event: 'quick_start',
+  };
+}
+
+function quickResult(income: number, spend: number, debt: number, name?: string | null): HubResult {
+  const free = income - spend;
+  const tenth = income * 0.1;
+  const lines = [`${name ? `${name}, olha` : 'Olha'} onde você está: 🙂`, ''];
+  lines.push(`Entra ${brl(income)} · sai ${brl(spend)} (${Math.round((spend / income) * 100)}% da renda)`);
+  if (free > 0) {
+    lines.push(`Sobra ${brl(free)} por mês, ${Math.round((free / income) * 100)}% do que você ganha.`);
+    lines.push('', free >= tenth
+      ? '👏 Você já consegue guardar o que a primeira lei do ouro pede: pelo menos 10% de tudo que ganha. O desafio é guardar de verdade, antes de gastar.'
+      : `A primeira lei do ouro pede guardar pelo menos 10% do que se ganha, ou seja, ${brl(tenth)}. Falta pouco: dá pra chegar lá cortando ${brl(tenth - free)} de algum gasto.`);
+    const reserve = spend * 6;
+    const months = Math.ceil(reserve / free);
+    lines.push(`🛟 A reserva ideal é 6 meses de gastos, ${brl(reserve)}. Guardando ${brl(free)} por mês, você chega em cerca de ${months} ${months === 1 ? 'mês' : 'meses'}.`);
+  } else {
+    lines.push(free === 0 ? 'Não sobra nada no fim do mês.' : `Falta ${brl(-free)} por mês pra fechar a conta.`);
+    lines.push('', 'Isso é mais comum do que parece, e tem saída. O primeiro passo é enxergar pra onde o dinheiro vai: anote cada gasto aqui (*gastei 35 no mercado*) por uns dias.');
+  }
+  if (debt > 0) {
+    lines.push('', `💳 Dívidas de ${brl(debt)}: ${debt > income * 3 ? 'é bastante, mas ' : ''}o jeito certo é atacar primeiro a que tem juros mais altos. No diagnóstico completo eu calculo a ordem e a data de ficar livre.`);
+  }
+  return {
+    out: [
+      txt(lines.join('\n')),
+      buttons('Esse é só o começo. Quer o plano completo, com nota, datas e passo a passo?', [['menu:diag', 'Diagnóstico completo'], ['menu:menu', 'Ver opções']]),
+    ],
+    session: null,
+    event: 'quick_done',
+  };
+}
+
+function stepQuick(session: Session, text: string, name?: string | null): HubResult {
+  const d = session.data as { income?: number; spend?: number };
+  const t = normalize(text);
+  if (session.step === 'q_debt') {
+    const none = /^(nao tenho|nao|nenhuma|nenhum|sem dividas?|zero|0)$/.test(t);
+    const v = none ? 0 : parseMoney(text);
+    if (v === null) return { out: [txt('Não entendi. 🤔 Mande o valor total, ex.: *4500*, ou *não tenho*.')], session };
+    return quickResult(d.income ?? 0, d.spend ?? 0, v, name);
+  }
+  const v = parseMoney(text);
+  if (v === null || v <= 0) return { out: [txt(MONEY_HINT)], session };
+  if (session.step === 'q_income') {
+    return { out: [txt(`Anotado: ${brl(v)} por mês. 👍\n\n${QUICK_QUESTION.q_spend}`)], session: { flow: 'diag', step: 'q_spend', data: { income: v } } };
+  }
+  return { out: [txt(`Gastos: ${brl(v)}. Certo.\n\n${QUICK_QUESTION.q_debt}`)], session: { flow: 'diag', step: 'q_debt', data: { ...session.data, spend: v } } };
+}
+
 const kinderLabel = (score: number) => (score >= 70 ? 'saúde financeira forte' : score >= 40 ? 'no caminho, com ajustes' : 'hora de cuidar com carinho, e tem saída');
 
 /** O que já está bom (até 2): a pessoa precisa ouvir o que está certo antes de ouvir o que falta. */
@@ -160,6 +226,7 @@ function startTracking(profile: StateSnapshot, data: WizardData, now: Date): Sta
 }
 
 function stepDiag(session: Session, text: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult {
+  if (session.step.startsWith('q_')) return stepQuick(session, text, name);
   const step = session.step as DiagStep | 'follow';
   const d = session.data as { income?: number; moradia?: number; alimentacao?: number; transporte?: number; lazer?: number; debts?: DebtItem[]; reserve?: number; savings?: number; then?: 'extra'; ready?: WizardData };
   const t = normalize(text);
@@ -473,6 +540,7 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: stri
   if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
   if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
   if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag(name);
+  if (/^(rapido|comeco rapido|inicio rapido|comecar rapido|diagnostico rapido)$/.test(t)) return startQuick(name);
   const buy = t.match(/^vale a pena( comprar)?(?: (.*))?$/);
   if (buy) {
     const price = buy[2] ? parseMoney(buy[2]) : null;
@@ -572,6 +640,7 @@ function route(input: HubInput): HubResult | null {
   if (t.startsWith('dir:')) return { out: rightDetail(t.slice(4)), session: null };
   if (t === 'menu:gastos') return { out: [GASTOS_HELP], session: null };
   if (t === 'menu:diag') return startDiag(name);
+  if (t === 'menu:rapido') return startQuick(name);
   if (t === 'menu:13o') return startExtra(profile);
   if (t === 'menu:vazamentos') return startLeaks();
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
