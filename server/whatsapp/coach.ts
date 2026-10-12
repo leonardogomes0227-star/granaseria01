@@ -55,8 +55,8 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (!diag) {
     return [
       buttons(
-        `${hi}Eu sou o assistente da *Grana Séria*. 🪙\n\nAqui a gente segue as ideias de *O Homem Mais Rico da Babilônia*: a primeira lei do ouro é guardar uma parte de tudo o que você ganha. Mas, antes de montar o seu plano, preciso conhecer a sua situação. Leva uns 2 minutos e fica só entre nós.`,
-        [['menu:diag', 'Começar agora'], ['menu:menu', 'Ver o que faço']]
+        `${hi}Eu sou o assistente da *Grana Séria*. 🪙\n\nAqui a gente segue as ideias de *O Homem Mais Rico da Babilônia*: a primeira lei do ouro é guardar uma parte de tudo o que você ganha. Mas, antes de montar o seu plano, preciso conhecer a sua situação. Escolha um começo rápido (3 perguntas) ou o diagnóstico completo (8 perguntas). Fica tudo só entre nós.`,
+        [['menu:rapido', 'Começo rápido (1 min)'], ['menu:diag', 'Completo (2 min)'], ['menu:menu', 'Ver o que faço']]
       ),
     ];
   }
