@@ -56,6 +56,11 @@ export function PrivacyPage() {
         gastos do mês são enviados para a API da Anthropic (Claude) só para entender e responder. Seu número de
         telefone não é enviado.
       </p>
+      <p>
+        Quando você usa as ferramentas pelo WhatsApp (diagnóstico, 13º, caça-vazamentos), as respostas que você
+        manda ficam guardadas junto do seu número de telefone, só para montar seu plano e continuar a conversa de
+        onde parou. Para apagar, entre em contato pelo e-mail abaixo.
+      </p>
       <h3>Métricas de uso</h3>
       <p>
         Usamos métricas sem cookies (Plausible) para saber quantas pessoas usam cada parte do site e melhorar o

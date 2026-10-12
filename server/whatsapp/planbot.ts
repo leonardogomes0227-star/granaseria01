@@ -53,7 +53,7 @@ export function readPlanState(state: StateSnapshot) {
 }
 
 const NOT_STARTED =
-  'Você ainda não começou a seguir um plano. 📋\nNo site, faça o diagnóstico e toque em *Seguir meu plano mês a mês* — depois é só mandar *plano* aqui.';
+  'Você ainda não começou a seguir um plano. 📋\nMande *diagnóstico* aqui mesmo (uns 2 minutos) ou faça no site e toque em *Seguir meu plano mês a mês*. Depois é só mandar *plano*.';
 
 /** Texto curto do que pagar no mês em aberto — usado no lembrete (sem quebras de linha, regra do modelo da Meta). */
 export function tasksInline(tracking: Tracking, extraMonthly: number): string | null {

@@ -91,3 +91,16 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - **401** → `WHATSAPP_APP_SECRET` errado
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada
+
+## Ferramentas do site no WhatsApp (menu, diagnóstico, 13º, vazamentos, direitos)
+
+Mande **oi** ou **menu** e o bot mostra uma lista com as opções. Também funcionam atalhos digitados:
+`diagnóstico`, `13º`, `vazamentos`, `direitos`, `plano`. Dentro de uma conversa, `cancelar` sai.
+
+**Antes de usar, rode uma vez no Supabase** (SQL Editor → New query → Run) o conteúdo de `supabase/whatsapp-hub.sql`.
+Ele cria três tabelas: `wa_sessions` (em que pergunta a pessoa parou), `wa_profiles` (diagnóstico, plano e vazamentos de
+quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o menu fica desligado e o bot segue só com gastos e plano.
+
+- Quem **tem conta** no site e vinculou o número usa os mesmos dados nos dois lugares (o diagnóstico feito no WhatsApp aparece no site).
+- Quem **não tem conta** tem os dados guardados pelo número, em `wa_profiles`.
+- Limite diário de respostas com IA por pessoa: `WHATSAPP_AI_DAILY_LIMIT` (padrão 40). Passou disso, o bot segue só com as regras.

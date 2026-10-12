@@ -5,25 +5,63 @@ const GRAPH_VERSION = 'v21.0';
 export interface IncomingText {
   id: string; // id da mensagem (usado pra não gravar duas vezes)
   from: string; // número de quem mandou, como a Meta informa (ex.: 5511987654321)
-  text: string;
+  text: string; // texto digitado, ou o id do botão/linha da lista que a pessoa tocou (ex.: "menu:13o")
 }
 
-/** Extrai as mensagens de texto do payload do webhook. Ignora status de entrega, áudio, figurinha etc. */
-export function extractTextMessages(payload: unknown): { texts: IncomingText[]; others: { id: string; from: string }[] } {
+export interface IncomingMedia {
+  id: string;
+  from: string;
+  mediaId: string;
+  mime: string;
+  filename?: string;
+  caption?: string;
+}
+
+type RawMessage = {
+  id: string;
+  from: string;
+  type: string;
+  text?: { body?: string };
+  interactive?: { type?: string; button_reply?: { id?: string }; list_reply?: { id?: string } };
+  document?: { id?: string; mime_type?: string; filename?: string; caption?: string };
+  image?: { id?: string; mime_type?: string; caption?: string };
+};
+
+function rawMessages(payload: unknown): RawMessage[] {
+  const p = payload as { entry?: { changes?: { value?: { messages?: RawMessage[] } }[] }[] };
+  const out: RawMessage[] = [];
+  for (const entry of p?.entry ?? []) for (const change of entry.changes ?? []) out.push(...(change.value?.messages ?? []));
+  return out;
+}
+
+/**
+ * Extrai as mensagens do payload do webhook: texto, toque em botão/lista (vira o id do botão) e arquivos
+ * (PDF/foto). Ignora status de entrega, áudio, figurinha etc. — esses vão pra "others".
+ */
+export function extractMessages(payload: unknown): {
+  texts: IncomingText[];
+  media: IncomingMedia[];
+  others: { id: string; from: string }[];
+} {
   const texts: IncomingText[] = [];
+  const media: IncomingMedia[] = [];
   const others: { id: string; from: string }[] = [];
-  const p = payload as {
-    entry?: { changes?: { value?: { messages?: { id: string; from: string; type: string; text?: { body?: string } }[] } }[] }[];
-  };
-  for (const entry of p?.entry ?? []) {
-    for (const change of entry.changes ?? []) {
-      for (const msg of change.value?.messages ?? []) {
-        if (msg.type === 'text' && msg.text?.body) texts.push({ id: msg.id, from: msg.from, text: msg.text.body });
-        else others.push({ id: msg.id, from: msg.from });
-      }
-    }
+  for (const msg of rawMessages(payload)) {
+    const picked = msg.interactive?.button_reply?.id ?? msg.interactive?.list_reply?.id;
+    if (msg.type === 'text' && msg.text?.body) texts.push({ id: msg.id, from: msg.from, text: msg.text.body });
+    else if (msg.type === 'interactive' && picked) texts.push({ id: msg.id, from: msg.from, text: picked });
+    else if (msg.type === 'document' && msg.document?.id)
+      media.push({ id: msg.id, from: msg.from, mediaId: msg.document.id, mime: msg.document.mime_type ?? '', filename: msg.document.filename, caption: msg.document.caption });
+    else if (msg.type === 'image' && msg.image?.id) media.push({ id: msg.id, from: msg.from, mediaId: msg.image.id, mime: msg.image.mime_type ?? '', caption: msg.image.caption });
+    else others.push({ id: msg.id, from: msg.from });
   }
-  return { texts, others };
+  return { texts, media, others };
+}
+
+/** Compatibilidade: só texto e toques em botão, mais o que não foi entendido. */
+export function extractTextMessages(payload: unknown): { texts: IncomingText[]; others: { id: string; from: string }[] } {
+  const { texts, media, others } = extractMessages(payload);
+  return { texts, others: [...others, ...media.map((m) => ({ id: m.id, from: m.from }))] };
 }
 
 /**
@@ -54,6 +92,63 @@ export async function verifySignature(rawBody: string, header: string | null, ap
   let diff = 0;
   for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ expected.charCodeAt(i);
   return diff === 0;
+}
+
+/** O que o bot manda: texto simples, até 3 botões ou uma lista de até 10 opções. */
+export type Outgoing =
+  | { kind: 'text'; text: string }
+  | { kind: 'buttons'; text: string; buttons: { id: string; title: string }[] }
+  | { kind: 'list'; text: string; button: string; rows: { id: string; title: string; description?: string }[] };
+
+const cut = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max - 1).trimEnd() + '…');
+
+/** Corpo da chamada à API pra cada tipo de mensagem. Limites do WhatsApp: botão 20, título da linha 24, descrição 72. */
+export function outgoingPayload(to: string, out: Outgoing): Record<string, unknown> {
+  const base = { messaging_product: 'whatsapp', to };
+  switch (out.kind) {
+    case 'text':
+      return { ...base, type: 'text', text: { body: cut(out.text, 4000), preview_url: false } };
+    case 'buttons':
+      return {
+        ...base,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: cut(out.text, 1000) },
+          action: { buttons: out.buttons.slice(0, 3).map((b) => ({ type: 'reply', reply: { id: b.id, title: cut(b.title, 20) } })) },
+        },
+      };
+    case 'list':
+      return {
+        ...base,
+        type: 'interactive',
+        interactive: {
+          type: 'list',
+          body: { text: cut(out.text, 1000) },
+          action: {
+            button: cut(out.button, 20),
+            sections: [
+              {
+                title: 'Opções',
+                rows: out.rows.slice(0, 10).map((r) => ({ id: r.id, title: cut(r.title, 24), ...(r.description ? { description: cut(r.description, 72) } : {}) })),
+              },
+            ],
+          },
+        },
+      };
+  }
+}
+
+export async function sendOutgoing(to: string, out: Outgoing): Promise<void> {
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const token = process.env.WHATSAPP_TOKEN;
+  if (!phoneNumberId || !token) throw new Error('WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_TOKEN ausentes');
+  const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(outgoingPayload(to, out)),
+  });
+  if (!res.ok) throw new Error(`WhatsApp send ${res.status}: ${await res.text()}`);
 }
 
 export async function sendText(to: string, body: string): Promise<void> {

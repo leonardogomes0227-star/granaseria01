@@ -4,32 +4,60 @@
 // GET  → verificação do webhook pela Meta (uma vez, ao configurar)
 // POST → mensagens recebidas
 
-import { extractTextMessages, isAllowed, normalizeBrPhone, sendText, verifySignature } from '../server/whatsapp/meta.js';
+import { extractTextMessages, isAllowed, normalizeBrPhone, sendOutgoing, sendText, verifySignature, type Outgoing } from '../server/whatsapp/meta.js';
 import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
 import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense } from '../server/whatsapp/db.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
+import { hubStep } from '../server/whatsapp/hub.js';
+import { bumpUsage, clearSession, getProfile, getSession, saveProfile, saveSession } from '../server/whatsapp/hubdb.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
-import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser } from '../server/account/db.js';
+import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
 
 const SITE_URL = (process.env.SITE_URL || 'https://granaseria.com.br').replace(/\/$/, '');
 
+const AI_DAILY_LIMIT = Number(process.env.WHATSAPP_AI_DAILY_LIMIT || 40);
+const text = (t: string): Outgoing[] => [{ kind: 'text', text: t }];
+
+/** Conversa em andamento + dados da pessoa. Se as tabelas novas ainda não existem, o hub fica desligado e o resto segue. */
+async function loadHub(user: UserRow | null, phone: string): Promise<{ session: Awaited<ReturnType<typeof getSession>>; profile: StateSnapshot } | null> {
+  try {
+    const [session, profile] = await Promise.all([getSession(phone), user ? Promise.resolve(user.state ?? {}) : getProfile(phone)]);
+    return { session, profile };
+  } catch (err) {
+    console.error('WhatsApp: ferramentas indisponíveis (rodou o SQL supabase/whatsapp-hub.sql?)', err);
+    return null;
+  }
+}
+
+/** A IA, com limite diário por pessoa pra não estourar o custo. Passou do limite: segue só com as regras. */
+function limitedSmart(phone: string): typeof askClaude {
+  return async (msgText, ctx) => {
+    const day = new Date().toISOString().slice(0, 10);
+    const allowed = await bumpUsage(phone, `ai:${day}`, AI_DAILY_LIMIT).catch(() => true);
+    return allowed ? askClaude(msgText, ctx) : null;
+  };
+}
+
 /**
- * Responde uma mensagem de texto. Quem vinculou a conta no site usa tudo (plano + gastos);
+ * Responde uma mensagem. Quem vinculou a conta no site usa tudo (plano + gastos);
  * quem não vinculou só usa se estiver em ALLOWED_NUMBERS (fase de teste) — ou manda "vincular <código>".
  */
-async function reply(msg: { id: string; from: string; text: string }): Promise<string | null> {
+async function reply(msg: { id: string; from: string; text: string }): Promise<Outgoing[] | null> {
   const phone = normalizeBrPhone(msg.from);
-  const cmd = parsePlanCommand(msg.text);
+  const incoming = msg.text === 'menu:plano' ? 'plano' : msg.text; // linha "Meu plano" do menu
+  const cmd = parsePlanCommand(incoming);
   const accounts = accountsConfigured();
 
   if (cmd?.kind === 'link') {
     if (!accounts) return null;
     if (!(await markProcessed(msg.id))) return null;
     const ok = await linkPhoneByCode(cmd.code, phone);
-    return ok
-      ? `✅ WhatsApp vinculado à sua conta Grana Séria!\n\nEscolha no site o dia do lembrete (o dia em que seu salário cai) ou mande, por exemplo, *lembrete 5*.\n${PLAN_HELP}`
-      : `Esse código não vale mais (ele dura 30 minutos). Gere um novo em ${SITE_URL}/conta.`;
+    return text(
+      ok
+        ? `✅ WhatsApp vinculado à sua conta Grana Séria!\n\nEscolha no site o dia do lembrete (o dia em que seu salário cai) ou mande, por exemplo, *lembrete 5*.\n${PLAN_HELP}`
+        : `Esse código não vale mais (ele dura 30 minutos). Gere um novo em ${SITE_URL}/conta.`
+    );
   }
 
   const user = accounts ? await findUserByPhone(phone) : null;
@@ -38,34 +66,50 @@ async function reply(msg: { id: string; from: string; text: string }): Promise<s
     return null;
   }
 
-  if (cmd) {
-    if (!user) return `Pra usar o plano por aqui, vincule seu WhatsApp em ${SITE_URL}/conta.`;
-    if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não fecha o mês duas vezes
-    switch (cmd.kind) {
-      case 'reminderDay':
-        await updateUser(user.user_id, { reminder_day: cmd.day, reminders: true });
-        return `🔔 Combinado: lembrete todo dia ${cmd.day}.`;
-      case 'remindersOff':
-        await updateUser(user.user_id, { reminders: false });
-        return '🔕 Lembretes desligados. Pra voltar, mande *voltar lembretes*.';
-      case 'remindersOn':
-        await updateUser(user.user_id, { reminders: true });
-        return user.reminder_day ? `🔔 Lembretes ligados: todo dia ${user.reminder_day}.` : '🔔 Lembretes ligados. Qual dia? Mande, por exemplo, *lembrete 5*.';
-      default: {
-        const result = runPlanCommand(cmd, user.state ?? {});
-        if (result.newState) await saveState(user.user_id, result.newState);
-        return result.reply;
-      }
+  // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:
+  // no meio de um diagnóstico, "3000" é resposta, não gasto.
+  const hub = await loadHub(user, phone);
+  if (hub) {
+    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now: new Date() });
+    if (step) {
+      if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não avança a conversa duas vezes
+      if (step.session) await saveSession(phone, step.session);
+      else if (hub.session) await clearSession(phone);
+      if (step.profile) await (user ? saveState(user.user_id, step.profile) : saveProfile(phone, step.profile));
+      return step.out;
     }
   }
 
-  // ajuda mostra também os comandos do plano pra quem tem conta
-  if (user && parseMessage(msg.text).kind === 'help') return HELP_TEXT + '\n' + PLAN_HELP;
+  if (cmd) {
+    if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não fecha o mês duas vezes
+    if (cmd.kind === 'reminderDay' || cmd.kind === 'remindersOff' || cmd.kind === 'remindersOn') {
+      if (!user) return text(`Os lembretes precisam da conta no site. Vincule seu WhatsApp em ${SITE_URL}/conta.`);
+      if (cmd.kind === 'reminderDay') {
+        await updateUser(user.user_id, { reminder_day: cmd.day, reminders: true });
+        return text(`🔔 Combinado: lembrete todo dia ${cmd.day}.`);
+      }
+      if (cmd.kind === 'remindersOff') {
+        await updateUser(user.user_id, { reminders: false });
+        return text('🔕 Lembretes desligados. Pra voltar, mande *voltar lembretes*.');
+      }
+      await updateUser(user.user_id, { reminders: true });
+      return text(user.reminder_day ? `🔔 Lembretes ligados: todo dia ${user.reminder_day}.` : '🔔 Lembretes ligados. Qual dia? Mande, por exemplo, *lembrete 5*.');
+    }
+    // plano, paguei, não paguei: funciona com ou sem conta (sem conta, o plano fica guardado pelo número)
+    const state = hub?.profile ?? user?.state ?? {};
+    const result = runPlanCommand(cmd, state);
+    if (result.newState) await (user ? saveState(user.user_id, result.newState) : saveProfile(phone, result.newState));
+    return text(result.reply);
+  }
 
-  return handleText(
+  // ajuda mostra também os comandos do plano pra quem tem conta
+  if (user && parseMessage(msg.text).kind === 'help') return text(HELP_TEXT + '\n' + PLAN_HELP);
+
+  const answer = await handleText(
     { id: msg.id, phone, text: msg.text },
-    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, smart: smartConfigured() ? askClaude : undefined }
+    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
+  return answer ? text(answer) : null;
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -98,10 +142,10 @@ export async function POST(request: Request): Promise<Response> {
 
   for (const msg of texts) {
     try {
-      const text = await reply(msg);
-      if (text) {
-        await sendText(msg.from, text);
-        console.log(`WhatsApp: resposta enviada para o número final ${msg.from.slice(-4)}`);
+      const out = await reply(msg);
+      if (out) {
+        for (const o of out) await sendOutgoing(msg.from, o);
+        console.log(`WhatsApp: ${out.length} resposta(s) enviada(s) para o número final ${msg.from.slice(-4)}`);
       } else {
         console.log(`WhatsApp: sem resposta para a mensagem ${msg.id}`);
       }
