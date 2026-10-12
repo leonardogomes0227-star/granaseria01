@@ -43,6 +43,7 @@ export async function insertExpense(e: {
   category: string;
   description: string;
   waMessageId: string;
+  createdAt?: string; // ISO; sem isso vale a hora do registro (gasto de "ontem" passa a data)
 }): Promise<boolean> {
   const res = await rest('expenses', {
     method: 'POST',
@@ -53,6 +54,7 @@ export async function insertExpense(e: {
       category: e.category,
       description: e.description,
       wa_message_id: e.waMessageId,
+      ...(e.createdAt ? { created_at: e.createdAt } : {}),
     }),
   });
   if (res.status === 409) return false;
@@ -88,4 +90,29 @@ export async function deleteLastExpense(phone: string): Promise<Expense | null> 
   const del = await rest(`expenses?id=eq.${last.id}&phone=eq.${phone}`, { method: 'DELETE' });
   if (!del.ok) throw new Error(`Supabase delete ${del.status}: ${await del.text()}`);
   return { ...last, amount: Number(last.amount) };
+}
+
+/** Corrige o gasto mais recente (valor, descrição e/ou categoria). Devolve como era e como ficou. */
+export async function updateLastExpense(
+  phone: string,
+  patch: { amount?: number; description?: string; category?: string }
+): Promise<{ before: Expense; after: Expense } | null> {
+  const q = new URLSearchParams({
+    phone: `eq.${phone}`,
+    select: 'id,phone,amount,category,description,created_at',
+    order: 'created_at.desc',
+    limit: '1',
+  });
+  const res = await rest(`expenses?${q}`);
+  if (!res.ok) throw new Error(`Supabase select ${res.status}: ${await res.text()}`);
+  const [last] = (await res.json()) as Expense[];
+  if (!last) return null;
+  const upd = await rest(`expenses?id=eq.${last.id}&phone=eq.${phone}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(patch),
+  });
+  if (!upd.ok) throw new Error(`Supabase update ${upd.status}: ${await upd.text()}`);
+  const before = { ...last, amount: Number(last.amount) };
+  return { before, after: { ...before, ...patch } };
 }

@@ -49,6 +49,13 @@ export function PrivacyPage() {
         leitura e devolve o resultado. Não guardamos o arquivo. Evite enviar documentos com dados que você não
         quer compartilhar.
       </p>
+      <h3>Assistente no WhatsApp</h3>
+      <p>
+        Mensagens simples, como "gastei 35 no mercado", são entendidas pelo nosso sistema. Quando a frase é mais
+        complexa (uma pergunta, vários gastos de uma vez, uma correção), o texto da mensagem e um resumo dos seus
+        gastos do mês são enviados para a API da Anthropic (Claude) só para entender e responder. Seu número de
+        telefone não é enviado.
+      </p>
       <h3>Métricas de uso</h3>
       <p>
         Usamos métricas sem cookies (Plausible) para saber quantas pessoas usam cada parte do site e melhorar o
