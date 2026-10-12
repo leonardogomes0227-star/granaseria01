@@ -1,12 +1,34 @@
 {
   "rewrites": [
-    { "source": "/guias", "destination": "/guias/index.html" },
-    { "source": "/guias/:slug", "destination": "/guias/:slug/index.html" },
-    { "source": "/ferramentas/:slug", "destination": "/ferramentas/:slug/index.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/guias",
+      "destination": "/guias/index.html"
+    },
+    {
+      "source": "/guias/:slug",
+      "destination": "/guias/:slug/index.html"
+    },
+    {
+      "source": "/ferramentas/:slug",
+      "destination": "/ferramentas/:slug/index.html"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ],
   "functions": {
-    "api/fatura.ts": { "maxDuration": 60 }
+    "api/fatura.ts": {
+      "maxDuration": 60
+    },
+    "api/whatsapp.ts": {
+      "maxDuration": 60
+    }
   },
-  "crons": [{ "path": "/api/lembretes", "schedule": "0 12 * * *" }]
+  "crons": [
+    {
+      "path": "/api/lembretes",
+      "schedule": "0 12 * * *"
+    }
+  ]
 }

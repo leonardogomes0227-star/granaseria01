@@ -92,15 +92,34 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada
 
-## Ferramentas do site no WhatsApp (menu, diagnóstico, 13º, vazamentos, direitos)
+## Ferramentas do site no WhatsApp
 
-Mande **oi** ou **menu** e o bot mostra uma lista com as opções. Também funcionam atalhos digitados:
-`diagnóstico`, `13º`, `vazamentos`, `direitos`, `plano`. Dentro de uma conversa, `cancelar` sai.
+Mande **oi** ou **menu** e o bot mostra uma lista de opções. Também funcionam palavras digitadas, mesmo no meio de outra conversa:
+
+| Ferramenta | Como chamar |
+|---|---|
+| Diagnóstico (8 perguntas) | `diagnóstico` |
+| Meu plano, `paguei`, `não paguei` | `plano` |
+| O que fazer com o 13º / dinheiro extra | `13º` |
+| Caça-vazamentos | `vazamentos` |
+| Seus direitos com o banco | `direitos` |
+| Vale a pena comprar isso? | `vale a pena comprar 2000` |
+| Calculadora de meta | `meta` |
+| Simulador de longo prazo | `longo prazo` |
+| Comparador de empréstimo (aceita "5000 em 12x de 520") | `empréstimo` |
+| Avalanche × bola de neve | `dívidas` |
+| Check-in mensal | `check-in` |
+| Selos e perfil | `selos` |
+| Frase do dia | `frase` |
+| Leitor de fatura | mandar o **PDF ou a foto** da fatura (precisa de `ANTHROPIC_API_KEY`) |
+
+`cancelar` sai de qualquer conversa. Gastos continuam do jeito de sempre: `gastei 35 no mercado`.
 
 **Antes de usar, rode uma vez no Supabase** (SQL Editor → New query → Run) o conteúdo de `supabase/whatsapp-hub.sql`.
-Ele cria três tabelas: `wa_sessions` (em que pergunta a pessoa parou), `wa_profiles` (diagnóstico, plano e vazamentos de
+Ele cria três tabelas: `wa_sessions` (em que pergunta a pessoa parou), `wa_profiles` (diagnóstico, plano, vazamentos e check-ins de
 quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o menu fica desligado e o bot segue só com gastos e plano.
 
 - Quem **tem conta** no site e vinculou o número usa os mesmos dados nos dois lugares (o diagnóstico feito no WhatsApp aparece no site).
 - Quem **não tem conta** tem os dados guardados pelo número, em `wa_profiles`.
-- Limite diário de respostas com IA por pessoa: `WHATSAPP_AI_DAILY_LIMIT` (padrão 40). Passou disso, o bot segue só com as regras.
+- Limites por pessoa: respostas com IA por dia (`WHATSAPP_AI_DAILY_LIMIT`, padrão 40) e leituras de fatura por mês (`FATURA_MONTHLY_LIMIT`, padrão 5). Passou do limite da IA, o bot segue só com as regras.
+- A leitura da fatura pode levar uns 30 segundos; `api/whatsapp.ts` tem `maxDuration` de 60 s no `vercel.json`.

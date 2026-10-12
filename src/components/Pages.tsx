@@ -45,7 +45,7 @@ export function PrivacyPage() {
       </p>
       <h3>Leitor de fatura</h3>
       <p>
-        Quando você usa o leitor de fatura, o arquivo é enviado para a API da Anthropic (Claude), que faz a
+        Quando você usa o leitor de fatura (no site ou mandando o PDF/foto pelo WhatsApp), o arquivo é enviado para a API da Anthropic (Claude), que faz a
         leitura e devolve o resultado. Não guardamos o arquivo. Evite enviar documentos com dados que você não
         quer compartilhar.
       </p>
