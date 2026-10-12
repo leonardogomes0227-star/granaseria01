@@ -104,7 +104,7 @@ export function runPlanCommand(
   const next: Tracking = { ...tracking, months: [...tracking.months, { paid }] };
   const head =
     cmd.kind === 'paid'
-      ? `✅ Fechei ${monthShort(new Date(tracking.createdAt), view.openMonth)} como combinado. Mandou bem!`
+      ? `✅ Fechei ${monthShort(new Date(tracking.createdAt), view.openMonth)} como combinado. Mais uma moeda no lugar certo. 🪙`
       : `Anotado: ${monthShort(new Date(tracking.createdAt), view.openMonth)} sem pagamento. Sem culpa — já recalculei o plano.`;
   return {
     reply: `${head}\n\n${planStatusText(next, extraMonthly)}`,

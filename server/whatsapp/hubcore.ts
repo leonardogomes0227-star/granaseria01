@@ -8,7 +8,7 @@ import { INITIAL_DATA, type WizardData, type DebtItem, type DebtKind } from '../
 import { type LeakSelection } from '../../src/leaks.js';
 import { parseAmount } from './parse.js';
 
-export type Flow = 'diag' | 'extra' | 'leaks' | 'compra' | 'meta' | 'longo' | 'emprestimo' | 'dividas' | 'checkin' | 'fatura';
+export type Flow = 'diag' | 'extra' | 'leaks' | 'compra' | 'meta' | 'longo' | 'emprestimo' | 'dividas' | 'checkin' | 'fatura' | 'erase' | 'feedback';
 
 export interface Session {
   flow: Flow;
@@ -22,15 +22,31 @@ export interface HubInput {
   profile: StateSnapshot; // mesmo formato do que o site guarda (selos-wizard-progress, selos-tracking, selos-leaks…)
   now: Date;
   faturaEnabled?: boolean; // mostra "Ler minha fatura" no menu
+  name?: string | null; // primeiro nome da pessoa, se der pra usar
+  expensesThisMonth?: number; // quantos gastos ela já anotou no mês (pra sugerir o próximo passo)
 }
 
 export interface HubResult {
   out: Outgoing[];
   session: Session | null; // null = conversa encerrada
   profile?: StateSnapshot; // só quando mudou
+  event?: string; // pra medir o uso (ex.: diag_done)
+  note?: string; // texto do feedback "não ajudou"
+  erase?: boolean; // apagar todos os dados deste número (quem executa é o webhook)
 }
 
 /* ---------- utilitários ---------- */
+
+/**
+ * Primeiro nome pra chamar a pessoa. O nome do WhatsApp pode ser apelido, emoji ou frase:
+ * só usamos se parecer um nome mesmo (letras, até 20 caracteres), senão a conversa segue sem nome.
+ */
+export function firstName(raw?: string | null): string | null {
+  const first = raw?.trim().split(/\s+/)[0] ?? '';
+  if (!/^[\p{L}][\p{L}'-]{1,19}$/u.test(first)) return null;
+  return first.charAt(0).toLocaleUpperCase('pt-BR') + first.slice(1).toLocaleLowerCase('pt-BR');
+}
+
 
 export const txt = (text: string): Outgoing => ({ kind: 'text', text });
 export const buttons = (text: string, b: [string, string][]): Outgoing => ({ kind: 'buttons', text, buttons: b.map(([id, title]) => ({ id, title })) });

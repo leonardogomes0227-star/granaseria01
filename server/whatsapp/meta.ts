@@ -6,6 +6,7 @@ export interface IncomingText {
   id: string; // id da mensagem (usado pra não gravar duas vezes)
   from: string; // número de quem mandou, como a Meta informa (ex.: 5511987654321)
   text: string; // texto digitado, ou o id do botão/linha da lista que a pessoa tocou (ex.: "menu:13o")
+  profileName?: string; // nome que a pessoa colocou no WhatsApp (pode ser apelido)
 }
 
 export interface IncomingMedia {
@@ -27,10 +28,17 @@ type RawMessage = {
   image?: { id?: string; mime_type?: string; caption?: string };
 };
 
-function rawMessages(payload: unknown): RawMessage[] {
-  const p = payload as { entry?: { changes?: { value?: { messages?: RawMessage[] } }[] }[] };
-  const out: RawMessage[] = [];
-  for (const entry of p?.entry ?? []) for (const change of entry.changes ?? []) out.push(...(change.value?.messages ?? []));
+type WithName = RawMessage & { profileName?: string };
+
+function rawMessages(payload: unknown): WithName[] {
+  const p = payload as { entry?: { changes?: { value?: { messages?: RawMessage[]; contacts?: { wa_id?: string; profile?: { name?: string } }[] } }[] }[] };
+  const out: WithName[] = [];
+  for (const entry of p?.entry ?? []) {
+    for (const change of entry.changes ?? []) {
+      const names = new Map((change.value?.contacts ?? []).map((c) => [c.wa_id, c.profile?.name]));
+      for (const m of change.value?.messages ?? []) out.push({ ...m, profileName: names.get(m.from) });
+    }
+  }
   return out;
 }
 
@@ -48,8 +56,8 @@ export function extractMessages(payload: unknown): {
   const others: { id: string; from: string }[] = [];
   for (const msg of rawMessages(payload)) {
     const picked = msg.interactive?.button_reply?.id ?? msg.interactive?.list_reply?.id;
-    if (msg.type === 'text' && msg.text?.body) texts.push({ id: msg.id, from: msg.from, text: msg.text.body });
-    else if (msg.type === 'interactive' && picked) texts.push({ id: msg.id, from: msg.from, text: picked });
+    if (msg.type === 'text' && msg.text?.body) texts.push({ id: msg.id, from: msg.from, text: msg.text.body, profileName: msg.profileName });
+    else if (msg.type === 'interactive' && picked) texts.push({ id: msg.id, from: msg.from, text: picked, profileName: msg.profileName });
     else if (msg.type === 'document' && msg.document?.id)
       media.push({ id: msg.id, from: msg.from, mediaId: msg.document.id, mime: msg.document.mime_type ?? '', filename: msg.document.filename, caption: msg.document.caption });
     else if (msg.type === 'image' && msg.image?.id) media.push({ id: msg.id, from: msg.from, mediaId: msg.image.id, mime: msg.image.mime_type ?? '', caption: msg.image.caption });

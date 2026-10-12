@@ -11,6 +11,8 @@ export interface BotDeps {
     phone: string,
     patch: { amount?: number; description?: string; category?: string }
   ) => Promise<{ before: Expense; after: Expense } | null>;
+  // quanto a pessoa disse que gasta por mês em cada categoria (do diagnóstico): vira o orçamento do dia a dia
+  budgets?: Record<string, number>;
   // IA opcional: sem ela o bot usa só as regras
   smart?: (text: string, ctx: SmartContext) => Promise<SmartResult | null>;
   now?: () => Date;
@@ -54,6 +56,17 @@ function byCategory(rows: Expense[]): string {
     .sort((a, b) => b[1] - a[1])
     .map(([cat, v]) => `${categoryEmoji(cat)} ${cat}: ${brl(v)} (${Math.round((v / total) * 100)}%)`)
     .join('\n');
+}
+
+/** "🟡 Alimentação: R$ 320 de R$ 400 no mês (80%)": liga o gasto do dia ao que a pessoa planejou no diagnóstico. */
+export function budgetLine(category: string, rows: Expense[], budgets?: Record<string, number>): string | null {
+  const budget = budgets?.[category];
+  if (!budget || budget <= 0) return null;
+  const spent = sum(rows.filter((r) => r.category === category));
+  const pct = Math.round((spent / budget) * 100);
+  const dot = pct >= 100 ? '🔴' : pct >= 70 ? '🟡' : '🟢';
+  const tail = pct >= 100 ? ' Passou do que você planejou. Sem drama: respira e segura o resto do mês.' : pct >= 70 ? ' Já está chegando perto do que você planejou.' : '';
+  return `${dot} ${categoryEmoji(category)} ${category}: ${brl(spent)} de ${brl(budget)} no mês (${pct}%).${tail}`;
 }
 
 export const HELP_TEXT = [
@@ -108,6 +121,7 @@ export async function handleText(
         `_${cmd.description}_`,
         '',
         `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
+        ...(budgetLine(cmd.category, monthRows, deps.budgets) ? [budgetLine(cmd.category, monthRows, deps.budgets) as string] : []),
         cmd.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
       ]
         .join('\n')
@@ -240,6 +254,7 @@ async function handleSmart(
         ...lines,
         '',
         `Hoje: ${brl(todayTotal)} · Mês: ${brl(sum(monthRows))}`,
+        ...[...new Set(result.expenses.map((e) => e.category))].flatMap((c) => budgetLine(c, monthRows, deps.budgets) ?? []),
         result.reply ? `\n${result.reply}` : '',
       ]
         .join('\n')

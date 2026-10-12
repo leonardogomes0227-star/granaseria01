@@ -118,7 +118,7 @@ function compraResult(income: number, price: number): Outgoing[] {
         '',
         verdict,
         '',
-        'Se for parcelar no cartão, lembre: o rotativo cobra em média 14% ao mês.',
+        'Se for parcelar no cartão, lembre: o rotativo cobra em média 14% ao mês. E a lei do ouro é simples: gaste menos do que ganha, e deixe a vontade esfriar antes de decidir. 🪙',
       ].join('\n')
     ),
   ];
@@ -490,6 +490,7 @@ function stepCheckin(session: Session, text: string, profile: StateSnapshot, now
   if (prev) {
     const diff = rateNow - rateOf(prev);
     lines[2] += ` ${diff >= 0 ? '▲' : '▼'} ${num(Math.abs(diff), 0)} pontos vs. o mês anterior`;
+    lines.splice(3, 0, diff > 0 ? '👏 Subiu! É assim que a riqueza cresce: devagar e sempre.' : diff < 0 ? 'Caiu um pouco, e tudo bem. O importante é entender o que mudou neste mês.' : 'Ficou igual: constância também é conquista.');
   }
   if (all.length > 1) {
     const max = Math.max(10, ...all.map(rateOf));

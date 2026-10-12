@@ -11,22 +11,23 @@ import { buildPlan, simulateLumpSum, monthLong, effectiveRate, type LumpResult }
 import { LEAKS, RIGHTS, relevantRights, leaksMonthlyTotal, type LeakSelection } from '../../src/leaks.js';
 import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations.js';
 import { getArchetype } from '../../src/archetypes.js';
+import { nextStep } from './coach.js';
 import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
 import { parseAmount } from './parse.js';
-import { diagnosisFrom, leaksFrom, normalize, parseDebt, parseMoney, txt, buttons, brl, type Session, type HubInput, type HubResult } from './hubcore.js';
+import { diagnosisFrom, firstName, leaksFrom, normalize, parseDebt, parseMoney, txt, buttons, brl, type Session, type HubInput, type HubResult } from './hubcore.js';
 
-export { parseMoney, parseDebt, diagnosisFrom, normalize } from './hubcore.js';
+export { parseMoney, parseDebt, diagnosisFrom, normalize, firstName } from './hubcore.js';
 export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 
 /* ---------- menu ---------- */
 
-export function menu(faturaEnabled = false): Outgoing[] {
+export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   const rows = [
+    { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'O que eu devo fazer agora' },
     { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar este mês' },
     { id: 'menu:diag', title: '📊 Fazer diagnóstico', description: 'Nota, plano e datas em uns 2 minutos' },
-    { id: 'menu:gastos', title: '💸 Registrar gastos', description: 'Como anotar o que você gastou' },
     { id: 'menu:13o', title: '🎁 13º e dinheiro extra', description: 'Onde colocar cada real' },
     { id: 'menu:vazamentos', title: '🔎 Caça-vazamentos', description: 'Dinheiro que escapa todo mês' },
     { id: 'menu:direitos', title: '⚖️ Meus direitos', description: 'O que a lei garante com banco e dívida' },
@@ -38,12 +39,19 @@ export function menu(faturaEnabled = false): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: '👋 Oi! Eu sou o assistente da *Grana Séria*.\n\nPra anotar um gasto, é só me mandar, tipo *gastei 35 no mercado*. Pro resto, escolha uma opção:',
+      text: `Escolha uma opção${name ? `, ${name}` : ''}. 🪙\n\nPra anotar um gasto, é só me mandar, tipo *gastei 35 no mercado*.`,
       button: 'Ver opções',
       rows,
     },
   ];
 }
+
+/** "Isso te ajudou?": mede se a ferramenta presta e pega o que faltou, na voz de quem pergunta de coração. */
+export const feedbackAsk = (tool: string): Outgoing =>
+  buttons('Isso te ajudou?', [
+    [`fb:up:${tool}`, '👍 Ajudou'],
+    [`fb:down:${tool}`, '👎 Faltou algo'],
+  ]);
 
 const EXPIRED = txt('Essa opção já expirou. Mande *menu* pra ver as opções de novo. 🙂');
 
@@ -52,58 +60,93 @@ const EXPIRED = txt('Essa opção já expirou. Mande *menu* pra ver as opções 
 type DiagStep = 'income' | 'moradia' | 'alimentacao' | 'transporte' | 'lazer' | 'debts' | 'reserve' | 'savings';
 
 const DIAG_QUESTION: Record<DiagStep, string> = {
-  income: '💰 *1 de 8 — Renda.* Quanto você recebe por mês, já líquido (o que cai na conta)?\n\nResponda só o valor, ex.: *3500*',
-  moradia: '🏠 *2 de 8 — Moradia.* Quanto você gasta por mês com aluguel ou prestação, condomínio, luz, água e internet?',
-  alimentacao: '🍽️ *3 de 8 — Alimentação.* Mercado, restaurante, delivery… quanto vai por mês?',
-  transporte: '🚗 *4 de 8 — Transporte.* Combustível, ônibus, aplicativo, manutenção… quanto por mês?',
-  lazer: '🎉 *5 de 8 — Lazer.* Saídas, streaming, viagens, compras de prazer… quanto por mês?',
+  income: '💰 *1 de 8.* Quanto você recebe por mês, já líquido (o que cai na conta)?\n\nResponda só o valor, ex.: *3500*',
+  moradia: '🏠 *2 de 8.* Agora, pra onde ele vai. Com a casa, quanto você gasta por mês? Aluguel ou prestação, condomínio, luz, água e internet.',
+  alimentacao: '🍽️ *3 de 8.* E com comida? Mercado, restaurante, delivery…',
+  transporte: '🚗 *4 de 8.* Transporte: combustível, ônibus, aplicativo, manutenção…',
+  lazer: '🎉 *5 de 8.* Lazer: saídas, streaming, viagens, compras de prazer…',
   debts:
-    '💳 *6 de 8 — Dívidas.* Mande uma por mensagem: o tipo e o valor que ainda falta pagar.\n\nEx.: *cartão 4500*\nEx.: *empréstimo 3000 parcela 250*\nSe souber os juros: *cheque especial 800 juros 8*\n\nSe não tem dívida, mande *não tenho*.',
-  reserve: '🛟 *7 de 8 — Reserva.* Quanto você tem guardado só pra imprevistos (dinheiro de fácil saque)? Se não tem, *0*.',
-  savings: '🐖 *8 de 8 — Quanto sobra.* Em média, quanto você consegue guardar por mês? Se não sobra nada, *0*.',
+    '💳 *6 de 8.* Dívidas. Sem medo: a gente só precisa enxergar. Mande uma por mensagem, com o tipo e o valor que ainda falta pagar.\n\nEx.: *cartão 4500*\nEx.: *empréstimo 3000 parcela 250*\nSe souber os juros: *cheque especial 800 juros 8*\n\nSe não tem dívida, mande *não tenho*.',
+  reserve: '🛟 *7 de 8.* Quanto você tem guardado só pra imprevistos, em dinheiro de fácil saque? Se ainda não tem, *0*, e tudo bem.',
+  savings: '🐖 *8 de 8.* Última: em média, quanto você consegue guardar por mês? Se não sobra nada, *0*.',
 };
 
 const MONEY_HINT = 'Não entendi o valor. 🤔 Responda só o número, ex.: *1200* (ou *cancelar* pra sair).';
 
-function startDiag(then?: 'extra'): HubResult {
+function startDiag(name?: string | null, then?: 'extra'): HubResult {
   return {
     out: [
-      txt('📊 *Diagnóstico rápido.* São 8 perguntas, uns 2 minutos. Seus números ficam só com você. Pode mandar *cancelar* a qualquer hora.'),
+      txt(`${name ? `${name}, vamos` : 'Vamos'} olhar pro seu ouro juntos. 🪙 São 8 perguntas, uns 2 minutos, e os números ficam só entre nós. Pra parar, é só mandar *cancelar*.`),
       txt(DIAG_QUESTION.income),
     ],
     session: { flow: 'diag', step: 'income', data: then ? { then } : {} },
+    event: 'diag_start',
   };
 }
 
-function diagSummary(data: WizardData, now: Date): string {
+const kinderLabel = (score: number) => (score >= 70 ? 'saúde financeira forte' : score >= 40 ? 'no caminho, com ajustes' : 'hora de cuidar com carinho, e tem saída');
+
+/** O que já está bom (até 2): a pessoa precisa ouvir o que está certo antes de ouvir o que falta. */
+function whatIsGood(data: WizardData, plan: ReturnType<typeof buildPlan>, d: ReturnType<typeof calculateDiagnosis>): string[] {
+  const good: string[] = [];
+  const debtTotal = plan.debts.reduce((s, x) => s + x.balance, 0);
+  if (plan.debts.length === 0) good.push('Você não tem dívidas. Isso já é meio caminho andado.');
+  else if (!plan.stuck && debtTotal < data.monthlyIncome) good.push(`Suas dívidas (${brl(debtTotal)}) são menores que um salário seu. Dá pra resolver, e rápido.`);
+  if (d.savingsRate >= 10) good.push(`Você já guarda ${Math.round(d.savingsRate)}% da renda: a primeira lei do ouro, cumprida.`);
+  else if (data.currentSavings > 0) good.push('Você já guarda alguma coisa todo mês. É o começo de tudo.');
+  if (data.emergencyFund > 0) good.push('Você já começou uma reserva pra imprevistos.');
+  const keys = Object.keys(d.idealExpenses) as (keyof typeof d.idealExpenses)[];
+  if (keys.filter((k) => data.expenses[k] <= d.idealExpenses[k]).length >= 3) good.push('A maior parte dos seus gastos está dentro do saudável.');
+  if (good.length === 0) good.push('Você olhou os números de frente, e é justamente o que a maioria evita.');
+  return good.slice(0, 2);
+}
+
+/** O que mais pesa (até 2), dito sem julgamento. */
+function whatWeighs(data: WizardData, plan: ReturnType<typeof buildPlan>): string[] {
+  const heavy: string[] = [];
+  if (plan.stuck) heavy.push('Suas dívidas crescem mais rápido do que o valor que dá pra pagar hoje.');
+  else if (plan.debts[0] && plan.debts[0].rate >= 8) heavy.push(`${plan.debts[0].name} cobra ${plan.debts[0].rate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês. É a que mais pesa.`);
+  const worst = [...plan.cuts].sort((a, b) => b.amount - a.amount)[0];
+  if (worst && data.monthlyIncome > 0) {
+    heavy.push(`${worst.label} está em ${Math.round((worst.current / data.monthlyIncome) * 100)}% da renda (o saudável é até ${Math.round((worst.ceiling / data.monthlyIncome) * 100)}%).`);
+  }
+  if (plan.reserve.target > 0 && !plan.reserve.alreadyDone && data.emergencyFund <= 0) heavy.push('Ainda não existe uma reserva pra imprevistos.');
+  return heavy.slice(0, 2);
+}
+
+function diagSummary(data: WizardData, now: Date, name?: string | null): string {
   const d = calculateDiagnosis(data);
   const score = calculateHealthScore(data, d);
   const plan = buildPlan(data, { start: now });
   const archetype = getArchetype(data, d);
-  const lines = [`📊 *Seu diagnóstico*`, `Nota: *${score.score}/100* — ${score.label}`, `Perfil: *${archetype.name}*`, ''];
+  const lines = [`${name ? `${name}, olhei` : 'Olhei'} seus números com carinho. 🙂`, '', '*O que já está bom:*', ...whatIsGood(data, plan, d).map((x) => `• ${x}`)];
+  const heavy = whatWeighs(data, plan);
+  if (heavy.length > 0) lines.push('', '*O que mais pesa:*', ...heavy.map((x) => `• ${x}`));
+
+  lines.push('', `📊 Nota *${score.score}/100*, ${kinderLabel(score.score)}`, `🎭 Perfil: *${archetype.name}*`, '');
   lines.push(`Renda ${brl(data.monthlyIncome)} · gastos ${brl(d.totalExpenses)} (${Math.round((d.totalExpenses / data.monthlyIncome) * 100)}% da renda)`);
 
   if (plan.debts.length > 0) {
     const total = plan.debts.reduce((s, x) => s + x.balance, 0);
-    if (plan.stuck) lines.push(`💳 Dívidas: ${brl(total)} — ⚠️ hoje o valor do plano não cobre nem os juros. Renegociar é o primeiro passo.`);
-    else if (plan.debtFreeMonth !== null) lines.push(`💳 Dívidas: ${brl(total)} — livre em *${monthLong(plan.start, plan.debtFreeMonth)}*.`);
+    if (plan.stuck) lines.push(`💳 Dívidas: ${brl(total)}. Hoje o valor do plano não cobre nem os juros, então renegociar vem primeiro.`);
+    else if (plan.debtFreeMonth !== null) lines.push(`💳 Dívidas: ${brl(total)}. Dá pra estar livre em *${monthLong(plan.start, plan.debtFreeMonth)}*.`);
     else lines.push(`💳 Dívidas: ${brl(total)}.`);
-  } else lines.push('💳 Sem dívidas. 👏');
+  }
 
   if (plan.reserve.alreadyDone) lines.push(`🛟 Reserva completa (${brl(plan.reserve.target)}). 👏`);
-  else if (plan.reserve.doneMonth !== null) lines.push(`🛟 Reserva: ${brl(plan.reserve.current)} de ${brl(plan.reserve.target)} — pronta em ${monthLong(plan.start, plan.reserve.doneMonth)}.`);
+  else if (plan.reserve.doneMonth !== null) lines.push(`🛟 Reserva: ${brl(plan.reserve.current)} de ${brl(plan.reserve.target)}, pronta em ${monthLong(plan.start, plan.reserve.doneMonth)}.`);
   else lines.push(`🛟 Reserva: ${brl(plan.reserve.current)} de ${brl(plan.reserve.target)}.`);
 
   lines.push(`💪 Valor mensal do seu plano: *${brl(plan.monthlyPower)}*${plan.powerAssumed ? ' (estimado em 10% da renda)' : ''}`);
   if (plan.unaccounted >= Math.max(200, data.monthlyIncome * 0.1)) {
-    lines.push(`🕵️ *${brl(plan.unaccounted)} da sua renda por mês não aparecem em nenhum gasto que você me contou.* Pra descobrir pra onde vai, me mande cada gasto aqui (ex.: *gastei 35 no mercado*) por 30 dias.`);
+    lines.push(`🕵️ *${brl(plan.unaccounted)} da sua renda por mês não aparecem em nenhum gasto que você me contou.* Pra descobrir pra onde vai, anote cada gasto aqui (ex.: *gastei 35 no mercado*) por uns dias.`);
   }
-  const steps = plan.steps.slice(0, 3);
-  if (steps.length > 0) {
-    lines.push('', '*Primeiros passos:*');
-    steps.forEach((s, i) => lines.push(`${i + 1}. ${s.title}`));
+  const first = plan.steps[0];
+  if (first) {
+    const firstSentence = first.detail.split(/(?<=[.!?])\s/)[0] ?? '';
+    lines.push('', '*Seu primeiro passo, um só:*', `👉 ${first.title}.`, firstSentence.length > 0 && firstSentence.length <= 220 ? firstSentence : '');
   }
-  return lines.join('\n');
+  return lines.join('\n').trim();
 }
 
 function withDiagnosis(profile: StateSnapshot, data: WizardData): StateSnapshot {
@@ -111,7 +154,12 @@ function withDiagnosis(profile: StateSnapshot, data: WizardData): StateSnapshot 
   return { ...profile, 'selos-wizard-progress': JSON.stringify({ data, step: 6 }), 'selos-diagnosis-completed': 'true' };
 }
 
-function stepDiag(session: Session, text: string, profile: StateSnapshot, now: Date): HubResult {
+function startTracking(profile: StateSnapshot, data: WizardData, now: Date): StateSnapshot {
+  const tracking: Tracking = { createdAt: now.toISOString(), baseline: data, months: [] };
+  return { ...profile, 'selos-tracking': JSON.stringify(tracking) };
+}
+
+function stepDiag(session: Session, text: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult {
   const step = session.step as DiagStep | 'follow';
   const d = session.data as { income?: number; moradia?: number; alimentacao?: number; transporte?: number; lazer?: number; debts?: DebtItem[]; reserve?: number; savings?: number; then?: 'extra'; ready?: WizardData };
   const t = normalize(text);
@@ -119,38 +167,46 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
   if (step === 'follow') {
     const data = d.ready;
     if (t === 'diag:follow' && data) {
-      const tracking: Tracking = { createdAt: now.toISOString(), baseline: data, months: [] };
       return {
-        out: [txt('✅ Combinado! Todo mês eu te lembro do que pagar. Mande *plano* pra ver o mês atual e *paguei* quando cumprir.')],
+        out: [
+          txt('✅ Combinado! Todo mês eu te lembro do que fazer. Mande *plano* pra ver o mês atual e *paguei* quando cumprir. Sem culpa se atrasar: eu recalculo com você.'),
+          feedbackAsk('diag'),
+        ],
         session: null,
-        profile: { ...profile, 'selos-tracking': JSON.stringify(tracking) },
+        profile: startTracking(profile, data, now),
+        event: 'plan_follow',
       };
     }
-    return { out: [txt('Beleza, sem pressa. Quando quiser seguir o plano, mande *diagnóstico* de novo ou veja o site. Mande *menu* pra mais opções.')], session: null };
+    return { out: [txt('Sem pressa. 🙂 Quando quiser que eu acompanhe, mande *próximo passo*. Seu diagnóstico fica guardado.'), feedbackAsk('diag')], session: null };
   }
 
-  const next = (patch: Record<string, unknown>, to: DiagStep): HubResult => ({
-    out: [txt(DIAG_QUESTION[to])],
+  const next = (patch: Record<string, unknown>, to: DiagStep, ack?: string): HubResult => ({
+    out: [txt(`${ack ? `${ack}\n\n` : ''}${DIAG_QUESTION[to]}`)],
     session: { flow: 'diag', step: to, data: { ...session.data, ...patch } },
   });
 
   if (step === 'income') {
     const v = parseMoney(text);
     if (v === null || v <= 0) return { out: [txt('Preciso de um valor maior que zero. Ex.: *3500*')], session };
-    return next({ income: v }, 'moradia');
+    return next({ income: v }, 'moradia', `Anotado: ${brl(v)} por mês. 👍`);
   }
   if (step === 'moradia' || step === 'alimentacao' || step === 'transporte' || step === 'lazer') {
     const v = parseMoney(text);
     if (v === null) return { out: [txt(MONEY_HINT)], session };
     const order: DiagStep[] = ['moradia', 'alimentacao', 'transporte', 'lazer', 'debts'];
-    return next({ [step]: v }, order[order.indexOf(step) + 1]);
+    const ack =
+      step === 'moradia' ? `Casa: ${brl(v)}. Certo.`
+      : step === 'alimentacao' ? `Comida: ${brl(v)}. Anotado.`
+      : step === 'transporte' ? `Transporte: ${brl(v)}.`
+      : v === 0 ? 'Lazer zerado, anotado.' : `Lazer: ${brl(v)}. A vida também conta, né? 🙂`;
+    return next({ [step]: v }, order[order.indexOf(step) + 1], ack);
   }
 
   if (step === 'debts') {
     const debts = d.debts ?? [];
     const none = /^(nao tenho|nao|nenhuma|nenhum|sem dividas?|nao tenho dividas?)$/.test(t);
     const done = /^(pronto|acabou|so isso|so essas|e isso|fim|ok|so)$/.test(t);
-    if (none || done) return next({ debts }, 'reserve');
+    if (none || done) return next({ debts }, 'reserve', debts.length === 0 ? 'Sem dívidas, que bom! 👏' : 'Dívidas anotadas. Enxergar já é metade do caminho.');
     const debt = debts.length < 8 ? parseDebt(text, `wa-${debts.length + 1}`) : null;
     if (!debt) {
       return {
@@ -163,7 +219,7 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
     return {
       out: [
         txt(
-          `✅ Anotei: *${debt.description}* — ${brl(debt.value)}${debt.installment ? `, parcela de ${brl(debt.installment)}` : ''}. Juros ${assumed ? 'típicos' : 'de'} ${rate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês.\n\nTem outra? Mande agora. Se acabou, mande *pronto*.`
+          `✅ Anotei: *${debt.description}*, ${brl(debt.value)}${debt.installment ? `, parcela de ${brl(debt.installment)}` : ''}. Juros ${assumed ? 'típicos' : 'de'} ${rate.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês.\n\nTem outra? Mande agora. Se acabou, mande *pronto*.`
         ),
       ],
       session: { ...session, data: { ...session.data, debts: all } },
@@ -173,7 +229,7 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
   if (step === 'reserve') {
     const v = parseMoney(text);
     if (v === null) return { out: [txt(MONEY_HINT)], session };
-    return next({ reserve: v }, 'savings');
+    return next({ reserve: v }, 'savings', v === 0 ? 'Sem reserva ainda: é onde muita gente começa, e vamos construir.' : 'Você já tem uma reserva começada, isso é ótimo. 👏');
   }
 
   // savings: última pergunta
@@ -187,19 +243,21 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
     emergencyFund: d.reserve ?? 0,
   };
   const saved = withDiagnosis(profile, data);
-  const summary = txt(diagSummary(data, now));
+  const summary = txt(diagSummary(data, now, name));
 
   if (d.then === 'extra') {
     return {
       out: [summary, txt('🎁 Agora sim! Quanto de dinheiro extra vai entrar (13º, restituição do IR, FGTS, bônus)? Responda só o valor, ex.: *3000*')],
       session: { flow: 'extra', step: 'amount', data: {} },
       profile: saved,
+      event: 'diag_done',
     };
   }
   return {
-    out: [summary, buttons('Quer que eu acompanhe seu plano mês a mês e te lembre do que pagar?', [['diag:follow', 'Sim, seguir plano'], ['diag:skip', 'Agora não']])],
+    out: [summary, buttons('Quer que eu acompanhe seu plano mês a mês e te lembre do que fazer? É a primeira lei do ouro: pague-se primeiro.', [['diag:follow', 'Sim, acompanhar'], ['diag:skip', 'Agora não']])],
     session: { flow: 'diag', step: 'follow', data: { ready: data } },
     profile: saved,
+    event: 'diag_done',
   };
 }
 
@@ -252,10 +310,10 @@ function startExtra(profile: StateSnapshot): HubResult {
   };
 }
 
-function stepExtra(session: Session, text: string, profile: StateSnapshot, now: Date): HubResult {
+function stepExtra(session: Session, text: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult {
   const t = normalize(text);
   if (session.step === 'need-diag') {
-    if (t === 'extra:diag') return startDiag('extra');
+    if (t === 'extra:diag') return startDiag(name, 'extra');
     return { out: [txt(GENERIC_ORDER)], session: null };
   }
   const amount = parseMoney(text);
@@ -268,6 +326,7 @@ function stepExtra(session: Session, text: string, profile: StateSnapshot, now: 
     out: [
       txt([`🎁 *${brl(amount)} de dinheiro extra*`, '', extraHeadline(result, amount), '', '*Onde colocar cada real:*', ...alloc].join('\n')),
       txt('⚠️ Não comprometa o extra com compras parceladas novas: o 13º acaba em dezembro, mas as parcelas continuam até o meio do ano.'),
+      feedbackAsk('extra'),
     ],
     session: null,
   };
@@ -303,6 +362,7 @@ function leaksFinish(sel: LeakSelection, profile: StateSnapshot, now: Date): Hub
     out.push(txt(`*${l.title}*\n${l.fix}`));
     if (l.message) out.push(txt(`Mensagem pronta (é só copiar e mandar):\n\n${l.message}`));
   }
+  out.push(feedbackAsk('leaks'));
   return { out, session: null, profile: { ...profile, 'selos-leaks': JSON.stringify(sel) } };
 }
 
@@ -392,18 +452,27 @@ function rightDetail(id: string): Outgoing[] {
 
 /* ---------- ponto de entrada ---------- */
 
-const GREETING = /^(oi|ola|inicio|comecar|bom dia|boa tarde|boa noite|menu|opcoes)$/;
+const GREETING = /^(oi|ola|inicio|comecar|bom dia|boa tarde|boa noite)$/;
+const MENU_WORDS = /^(menu|opcoes|menu:menu)$/;
+const NEXT_STEP_WORDS = /^(menu:proximo|proximo passo|meu proximo passo|e agora|o que faco|o que eu faco|o que faco hoje|o que eu faco hoje|por onde comeco)$/;
+/** A mensagem pede o próximo passo (ou é um oi)? Quem chama usa pra buscar os dados extras só quando precisa. */
+export const wantsNextStep = (raw: string): boolean => {
+  const t = normalize(raw);
+  return GREETING.test(t) || NEXT_STEP_WORDS.test(t);
+};
+
+const ERASE_WORDS = /^(apagar|excluir|deletar) (meus |todos os )?dados$/;
 
 const GASTOS_HELP = txt(
   '💸 *Registrar gastos* é só me mandar o que gastou:\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nComandos: *hoje*, *semana*, *mês* (resumo por categoria) e *apagar* (desfaz o último).'
 );
 
 /** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
-function shortcutStart(t: string, profile: StateSnapshot, now: Date): HubResult | null {
+function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult | null {
   if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
   if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
   if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
-  if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag();
+  if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag(name);
   const buy = t.match(/^vale a pena( comprar)?(?: (.*))?$/);
   if (buy) {
     const price = buy[2] ? parseMoney(buy[2]) : null;
@@ -421,21 +490,88 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date): HubResult 
   return null;
 }
 
+// Pra medir o uso: qual ferramenta a pessoa abriu
+const EVENT_BY_WORD: Record<string, string> = {
+  'menu:13o': 'tool:extra',
+  'menu:vazamentos': 'tool:leaks',
+  vazamentos: 'tool:leaks',
+  'menu:direitos': 'tool:rights',
+  direitos: 'tool:rights',
+  'meus direitos': 'tool:rights',
+  'menu:checkin': 'tool:checkin',
+  'mais:selos': 'tool:selos',
+  selos: 'tool:selos',
+  'mais:frase': 'tool:frase',
+  frase: 'tool:frase',
+  'menu:proximo': 'next_step',
+  'proximo passo': 'next_step',
+  'menu:fatura': 'tool:fatura',
+};
+
 /** Decide se a mensagem é do hub. Devolve null quando não é: aí vale o fluxo antigo (gastos, plano). */
 export function hubStep(input: HubInput): HubResult | null {
+  const result = route(input);
+  if (!result || result.event) return result;
+  const t = normalize(input.text);
+  const opened = result.session && result.session.flow !== input.session?.flow && result.session.flow !== 'feedback' && result.session.flow !== 'erase' ? result.session.flow : null;
+  const event = EVENT_BY_WORD[t] ?? (opened ? `tool:${opened}` : undefined);
+  return event ? { ...result, event } : result;
+}
+
+function route(input: HubInput): HubResult | null {
   const { text, session, profile, now } = input;
+  const name = firstName(input.name ?? null);
   const t = normalize(text);
 
   // saídas
   if (session && /^(cancelar|sair|parar|voltar)$/.test(t)) {
     return { out: [txt('Tudo bem, parei por aqui. Mande *menu* quando quiser continuar. 🙂')], session: null };
   }
-  if (GREETING.test(t) || t === 'menu:menu') return { out: menu(input.faturaEnabled), session: null };
+
+  // apagar os dados (LGPD): sempre com confirmação
+  if (ERASE_WORDS.test(t)) {
+    return {
+      out: [
+        buttons('Vou apagar tudo o que guardei sobre você aqui: gastos, diagnóstico, plano, vazamentos e o resto. Não dá pra desfazer. Confirma?', [
+          ['erase:yes', 'Sim, apagar tudo'],
+          ['erase:no', 'Cancelar'],
+        ]),
+      ],
+      session: { flow: 'erase', step: 'confirm', data: {} },
+    };
+  }
+
+  // recepção: quem chega pela primeira vez é apresentado; quem já é de casa vê o próximo passo
+  if (MENU_WORDS.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
+  if (GREETING.test(t)) {
+    return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth, greeting: true }), session: null, event: 'greeting' };
+  }
+  if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
+  if (t === 'plan:start') {
+    const data = diagnosisFrom(profile);
+    if (!data) return startDiag(name);
+    return {
+      out: [txt('✅ Combinado! Todo mês eu te lembro do que fazer. Mande *plano* pra ver o mês atual e *paguei* quando cumprir. Sem culpa se atrasar: eu recalculo com você.'), feedbackAsk('plan')],
+      session: null,
+      profile: startTracking(profile, data, now),
+      event: 'plan_follow',
+    };
+  }
+
+  // feedback "isso te ajudou?"
+  const fb = t.match(/^fb:(up|down):([a-z0-9]+)$/);
+  if (fb) {
+    if (fb[1] === 'up') return { out: [txt('Que bom! 🙏 Fico feliz de ter ajudado.')], session: null, event: `feedback:up:${fb[2]}` };
+    return {
+      out: [txt('Obrigado por contar. 🙏 Me diz em uma frase o que faltou ou o que ficou ruim? (ou *pular*)')],
+      session: { flow: 'feedback', step: 'note', data: { tool: fb[2] } },
+    };
+  }
 
   // ids de botões e listas
   if (t.startsWith('dir:')) return { out: rightDetail(t.slice(4)), session: null };
   if (t === 'menu:gastos') return { out: [GASTOS_HELP], session: null };
-  if (t === 'menu:diag') return startDiag();
+  if (t === 'menu:diag') return startDiag(name);
   if (t === 'menu:13o') return startExtra(profile);
   if (t === 'menu:vazamentos') return startLeaks();
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
@@ -457,8 +593,8 @@ export function hubStep(input: HubInput): HubResult | null {
     };
   }
 
-  // conversa em andamento: toda resposta vai pra ela (um "3000" aqui é resposta, não gasto)
-  const shortcut = shortcutStart(t, profile, now);
+  // palavras exatas trocam de assunto, mesmo no meio de outra conversa
+  const shortcut = shortcutStart(t, profile, now, name);
   if (shortcut) return shortcut;
 
   if (session && session.flow === 'fatura') {
@@ -474,15 +610,31 @@ export function hubStep(input: HubInput): HubResult | null {
     }
     if (t === 'fatura:skip') return { out: [txt('Beleza! Mande *menu* quando quiser algo mais.')], session: null };
   } else if (session) {
-    if (session.flow === 'diag') return stepDiag(session, text, profile, now);
-    if (session.flow === 'extra') return stepExtra(session, text, profile, now);
+    // conversa em andamento: toda resposta vai pra ela (um "3000" aqui é resposta, não gasto)
+    if (session.flow === 'erase') {
+      if (t === 'erase:yes') {
+        return { out: [txt('Pronto. Apaguei tudo o que eu tinha sobre você aqui. 🧹 Se um dia quiser recomeçar, é só mandar *oi*.')], session: null, erase: true };
+      }
+      return { out: [txt('Combinado, não apaguei nada. 🙂')], session: null };
+    }
+    if (session.flow === 'feedback') {
+      const note = /^(pular|nada|nao|depois)$/.test(t) ? undefined : text.trim().slice(0, 280);
+      return {
+        out: [txt(note ? 'Anotado, de coração. Isso me ajuda a melhorar. 🙏' : 'Tudo bem. Obrigado mesmo assim. 🙏')],
+        session: null,
+        event: `feedback:down:${String(session.data.tool ?? 'geral')}`,
+        note,
+      };
+    }
+    if (session.flow === 'diag') return stepDiag(session, text, profile, now, name);
+    if (session.flow === 'extra') return stepExtra(session, text, profile, now, name);
     if (session.flow === 'leaks') return stepLeaks(session, text, profile, now);
     const tool = toolStep(session, text, profile, now);
     if (tool) return tool;
   }
 
   // botões antigos, de uma conversa que já terminou
-  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura):\S+$/.test(t)) return { out: [EXPIRED], session: null };
+  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura|plan|fb|erase):\S+$/.test(t)) return { out: [EXPIRED], session: null };
 
   return null;
 }
