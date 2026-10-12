@@ -204,11 +204,21 @@ function diagSummary(data: WizardData, now: Date, name?: string | null): string 
   else lines.push(`🛟 Reserva: ${brl(plan.reserve.current)} de ${brl(plan.reserve.target)}.`);
 
   lines.push(`💪 Valor mensal do seu plano: *${brl(plan.monthlyPower)}*${plan.powerAssumed ? ' (estimado em 10% da renda)' : ''}`);
+  if (plan.cuts.length > 0) lines.push('   _Esse valor conta com os gastos voltando ao saudável. Se for mais devagar, a data se ajusta, sem problema._');
   if (plan.unaccounted >= Math.max(200, data.monthlyIncome * 0.1)) {
     lines.push(`🕵️ *${brl(plan.unaccounted)} da sua renda por mês não aparecem em nenhum gasto que você me contou.* Pra descobrir pra onde vai, anote cada gasto aqui (ex.: *gastei 35 no mercado*) por uns dias.`);
   }
   const first = plan.steps[0];
-  if (first) {
+  const worstCut = [...plan.cuts].sort((a, b) => b.amount - a.amount)[0];
+  if (first && first.title.startsWith('Libere') && worstCut) {
+    // não manda cortar: mostra onde há folga e deixa a pessoa escolher por onde começar
+    const others = plan.cuts.filter((c) => c.key !== worstCut.key).map((c) => c.label.toLowerCase());
+    lines.push(
+      '',
+      '*Por onde começar, você escolhe:*',
+      `👉 O lugar com mais folga é *${worstCut.label.toLowerCase()}*: hoje ${brl(worstCut.current)}, e o saudável pra sua renda seria até ${brl(worstCut.ceiling)}. Não precisa cortar tudo de uma vez: cada ${brl(Math.max(10, Math.round(worstCut.amount / 4 / 10) * 10))} a menos já ajuda.${others.length > 0 ? ` Se preferir, dá pra começar por ${others.join(' ou ')}.` : ''}`
+    );
+  } else if (first) {
     const firstSentence = first.detail.split(/(?<=[.!?])\s/)[0] ?? '';
     lines.push('', '*Seu primeiro passo, um só:*', `👉 ${first.title}.`, firstSentence.length > 0 && firstSentence.length <= 220 ? firstSentence : '');
   }
