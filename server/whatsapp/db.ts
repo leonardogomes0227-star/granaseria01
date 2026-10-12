@@ -24,7 +24,7 @@ function env(name: string): string {
   return v.trim();
 }
 
-async function rest(path: string, init: RequestInit = {}): Promise<Response> {
+export async function rest(path: string, init: RequestInit = {}): Promise<Response> {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   return fetch(`${env('SUPABASE_URL').replace(/\/$/, '')}/rest/v1/${path}`, {
     ...init,
