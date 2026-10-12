@@ -118,6 +118,9 @@ export function parseMessage(input: string): Command {
   if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total)$/.test(t)) return { kind: 'month' };
   if (/^(apagar|apaga|desfazer|desfaz|cancelar|apagar ultimo|apaga o ultimo|errei)$/.test(t)) return { kind: 'undo' };
 
+  // pergunta ("pq 155?") não é gasto, mesmo que tenha número
+  if (text.includes('?')) return { kind: 'unknown' };
+
   const m = pickAmount(text);
   if (!m) return { kind: 'unknown' };
   const amount = parseAmount(m[2]);
