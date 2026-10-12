@@ -4,7 +4,7 @@
 
 import type { Outgoing } from './meta.js';
 import type { StateSnapshot } from '../account/db.js';
-import { computeProjection, computeRequiredContribution, computeLoanInstallment, checkinActionPlan, calculateDiagnosis } from '../../src/calculations.js';
+import { computeProjection, computeRequiredContribution, computeLoanInstallment, checkinActionPlan, calculateDiagnosis, inTodaysMoney, INFLATION_PCT } from '../../src/calculations.js';
 import { effectiveRate } from '../../src/plan.js';
 import { QUOTES, dailyQuoteIndex } from '../../src/quotes.js';
 import { getArchetype } from '../../src/archetypes.js';
@@ -98,7 +98,8 @@ export function startCompra(profile: StateSnapshot, firstPrice?: number): HubRes
 
 function compraResult(income: number, price: number): Outgoing[] {
   const share = (price / income) * 100;
-  const days = price / (income / 30);
+  const workdays = price / (income / 22); // 22 dias úteis num mês
+  const hours = price / (income / 22 / 8);
   const goal = income * 0.1;
   const delay = goal > 0 ? price / goal : 0;
   const verdict =
@@ -110,7 +111,7 @@ function compraResult(income: number, price: number): Outgoing[] {
   return [
     txt(
       [
-        `🛍️ *${brl(price)} custam ${days < 1 ? 'menos de 1 dia' : `${num(days)} dias`} do seu trabalho*`,
+        `🛍️ *${brl(price)} são ${workdays < 1 ? 'menos de 1 dia' : `${num(workdays)} dias`} de trabalho* (${num(hours, 0)} horas)`,
         '',
         `• ${pct(share)} da sua renda mensal`,
         `• Atrasa sua meta de poupança em ${delay < 1 ? 'menos de 1 mês' : `${num(delay)} meses`} (guardando 10% da renda, ${brl(goal)}/mês)`,
@@ -173,6 +174,7 @@ function stepMeta(session: Session, text: string): HubResult {
           '',
           `• Do seu bolso: ${brl(own)}`,
           `• Vem dos juros: ${brl(interest)} (a ${pct(rate)} ao ano)`,
+          ...(years >= 2 ? ['', `⚠️ Com inflação de ~${num(INFLATION_PCT)}% ao ano, ${brl(target)} daqui a ${num(years)} anos compram o que ${brl(inTodaysMoney(target, years))} compram hoje. Se a meta é em reais de hoje, aumente o valor.`] : []),
           '',
           'Dica: deixe o aporte automático no dia em que o salário cai. Pague-se primeiro. 🪙',
         ].join('\n')
@@ -222,6 +224,8 @@ function stepLongo(session: Session, text: string): HubResult {
           '',
           `• Do seu bolso: ${brl(own)}`,
           `• Só de juros: ${brl(Math.max(total - own, 0))} (a ${pct(rate)} ao ano)`,
+          '',
+          `Em reais de hoje (descontando ~${num(INFLATION_PCT)}% de inflação ao ano), isso compraria o que *${brl(inTodaysMoney(total, years))}* compram agora.`,
           '',
           'O tempo faz mais que o valor: quanto antes você começa, menos precisa guardar.',
         ].join('\n')
