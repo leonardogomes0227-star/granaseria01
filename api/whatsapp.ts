@@ -32,7 +32,10 @@ async function reply(msg: { id: string; from: string; text: string }): Promise<s
   }
 
   const user = accounts ? await findUserByPhone(phone) : null;
-  if (!user && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) return null;
+  if (!user && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) {
+    console.warn(`WhatsApp: mensagem ignorada, número final ${phone.slice(-4)} não vinculado e fora de ALLOWED_NUMBERS`);
+    return null;
+  }
 
   if (cmd) {
     if (!user) return `Pra usar o plano por aqui, vincule seu WhatsApp em ${SITE_URL}/conta.`;
@@ -92,7 +95,12 @@ export async function POST(request: Request): Promise<Response> {
   for (const msg of texts) {
     try {
       const text = await reply(msg);
-      if (text) await sendText(msg.from, text);
+      if (text) {
+        await sendText(msg.from, text);
+        console.log(`WhatsApp: resposta enviada para o número final ${msg.from.slice(-4)}`);
+      } else {
+        console.log(`WhatsApp: sem resposta para a mensagem ${msg.id}`);
+      }
     } catch (err) {
       console.error('Erro ao processar mensagem', msg.id, err);
       try {
