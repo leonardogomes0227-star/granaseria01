@@ -98,6 +98,7 @@ Mande **oi** ou **menu** e o bot mostra uma lista de opções. Também funcionam
 
 | Ferramenta | Como chamar |
 |---|---|
+| Começo rápido (3 perguntas: renda, gastos, dívidas) | `rápido` |
 | Diagnóstico (8 perguntas) | `diagnóstico` |
 | Meu plano, `paguei`, `não paguei` | `plano` |
 | O que fazer com o 13º / dinheiro extra | `13º` |
@@ -143,6 +144,7 @@ from wa_events group by event order by pessoas desc;
 
 -- do primeiro oi até seguir o plano
 select count(distinct person) filter (where event = 'greeting')    as chegaram,
+       count(distinct person) filter (where event = 'quick_done')  as fizeram_rapido,
        count(distinct person) filter (where event = 'diag_done')   as fizeram_diagnostico,
        count(distinct person) filter (where event = 'plan_follow') as seguiram_plano
 from wa_events;
