@@ -51,7 +51,7 @@ export function PrivacyPage() {
       </p>
       <h3>Assistente no WhatsApp</h3>
       <p>
-        Mensagens simples, como "gastei 35 no mercado", são entendidas pelo nosso sistema. Quando a frase é mais
+        Contamos quantas pessoas usam cada etapa do assistente e guardamos o feedback que você escrever, sem o seu número de telefone. Mensagens simples, como "gastei 35 no mercado", são entendidas pelo nosso sistema. Quando a frase é mais
         complexa (uma pergunta, vários gastos de uma vez, uma correção), o texto da mensagem e um resumo dos seus
         gastos do mês são enviados para a API da Anthropic (Claude) só para entender e responder. Seu número de
         telefone não é enviado.
@@ -59,7 +59,7 @@ export function PrivacyPage() {
       <p>
         Quando você usa as ferramentas pelo WhatsApp (diagnóstico, 13º, caça-vazamentos), as respostas que você
         manda ficam guardadas junto do seu número de telefone, só para montar seu plano e continuar a conversa de
-        onde parou. Para apagar, entre em contato pelo e-mail abaixo.
+        onde parou. Para apagar tudo, é só mandar "apagar meus dados" no WhatsApp, ou entrar em contato pelo e-mail abaixo.
       </p>
       <h3>Métricas de uso</h3>
       <p>

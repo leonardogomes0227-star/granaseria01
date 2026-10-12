@@ -1,5 +1,6 @@
 // Estado das conversas e dos perfis do WhatsApp (tabelas de supabase/whatsapp-hub.sql).
 
+import { createHash } from 'node:crypto';
 import { rest } from './db.js';
 import type { Session } from './hub.js';
 import type { StateSnapshot } from '../account/db.js';
@@ -62,4 +63,33 @@ export async function refundUsage(phone: string, period: string): Promise<void> 
   await check(res, 'select');
   const [row] = (await res.json()) as { count: number }[];
   if (row && row.count > 0) await check(await upsert('wa_usage', 'phone,period', { phone, period, count: row.count - 1 }), 'upsert');
+}
+
+/** Impressão digital do telefone: dá pra contar pessoas distintas sem guardar o número nas métricas. */
+export function personHash(phone: string): string {
+  return createHash('sha256').update(`${process.env.METRICS_SALT ?? 'grana-seria'}:${phone}`).digest('hex').slice(0, 24);
+}
+
+/** Registra um evento de uso. Nunca derruba a conversa: falha em silêncio (a tabela pode nem existir ainda). */
+export async function trackEvent(phone: string, event: string, note?: string): Promise<void> {
+  try {
+    const res = await rest('wa_events', {
+      method: 'POST',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ person: personHash(phone), event, ...(note ? { note: note.slice(0, 280) } : {}) }),
+    });
+    if (!res.ok) console.warn(`WhatsApp: evento não registrado (${res.status})`);
+  } catch (err) {
+    console.warn('WhatsApp: evento não registrado', err);
+  }
+}
+
+/** "Apagar meus dados" (LGPD): gastos, perfil, conversa em andamento, contadores e métricas deste número. */
+export async function eraseWhatsAppData(phone: string): Promise<void> {
+  const targets = [`expenses?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
+  for (const t of targets) {
+    const res = await rest(t, { method: 'DELETE' });
+    // wa_events pode não existir ainda (SQL de métricas não rodado): não é motivo pra deixar de apagar o resto
+    if (!res.ok && !t.startsWith('wa_events')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
+  }
 }

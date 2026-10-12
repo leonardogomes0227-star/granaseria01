@@ -7,9 +7,12 @@
 import { downloadMedia, extractMessages, isAllowed, MediaTooBigError, normalizeBrPhone, sendOutgoing, sendText, verifySignature, type IncomingMedia, type Outgoing } from '../server/whatsapp/meta.js';
 import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
 import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense } from '../server/whatsapp/db.js';
+import { startOfMonthBRT } from '../server/whatsapp/bot.js';
+import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep } from '../server/whatsapp/hub.js';
-import { bumpUsage, clearSession, getProfile, getSession, refundUsage, saveProfile, saveSession } from '../server/whatsapp/hubdb.js';
+import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
+import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
+import { bumpUsage, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { faturaOut } from '../server/whatsapp/tools.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -45,9 +48,10 @@ function limitedSmart(phone: string): typeof askClaude {
  * Responde uma mensagem. Quem vinculou a conta no site usa tudo (plano + gastos);
  * quem não vinculou só usa se estiver em ALLOWED_NUMBERS (fase de teste) — ou manda "vincular <código>".
  */
-async function reply(msg: { id: string; from: string; text: string }): Promise<Outgoing[] | null> {
+async function reply(msg: { id: string; from: string; text: string; profileName?: string }): Promise<Outgoing[] | null> {
   const phone = normalizeBrPhone(msg.from);
-  const incoming = msg.text === 'menu:plano' ? 'plano' : msg.text; // linha "Meu plano" do menu
+  // linha "Meu plano" do menu e botões "Já fiz" / "Não consegui" valem como os comandos de sempre
+  const incoming = msg.text === 'menu:plano' ? 'plano' : (PLAN_BUTTON_TEXT[msg.text] ?? msg.text);
   const cmd = parsePlanCommand(incoming);
   const accounts = accountsConfigured();
 
@@ -72,12 +76,20 @@ async function reply(msg: { id: string; from: string; text: string }): Promise<O
   // no meio de um diagnóstico, "3000" é resposta, não gasto.
   const hub = await loadHub(user, phone);
   if (hub) {
-    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now: new Date(), faturaEnabled: smartConfigured() });
+    const now = new Date();
+    // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi
+    const expensesThisMonth = wantsNextStep(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
+    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth });
     if (step) {
       if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não avança a conversa duas vezes
+      if (step.erase) {
+        await eraseWhatsAppData(phone); // apaga gastos, perfil, conversa, contadores e métricas deste número
+        return step.out;
+      }
       if (step.session) await saveSession(phone, step.session);
       else if (hub.session) await clearSession(phone);
       if (step.profile) await (user ? saveState(user.user_id, step.profile) : saveProfile(phone, step.profile));
+      if (step.event) await trackEvent(phone, step.event, step.note);
       return step.out;
     }
   }
@@ -107,9 +119,11 @@ async function reply(msg: { id: string; from: string; text: string }): Promise<O
   // ajuda mostra também os comandos do plano pra quem tem conta
   if (user && parseMessage(msg.text).kind === 'help') return text(HELP_TEXT + '\n' + PLAN_HELP);
 
+  const diag = diagnosisFrom(hub?.profile ?? user?.state ?? {});
+  const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
   const answer = await handleText(
     { id: msg.id, phone, text: msg.text },
-    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, smart: smartConfigured() ? limitedSmart(phone) : undefined }
+    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
   return answer ? text(answer) : null;
 }

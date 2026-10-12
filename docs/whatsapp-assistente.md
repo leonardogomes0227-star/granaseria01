@@ -123,3 +123,32 @@ quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o 
 - Quem **não tem conta** tem os dados guardados pelo número, em `wa_profiles`.
 - Limites por pessoa: respostas com IA por dia (`WHATSAPP_AI_DAILY_LIMIT`, padrão 40) e leituras de fatura por mês (`FATURA_MONTHLY_LIMIT`, padrão 5). Passou do limite da IA, o bot segue só com as regras.
 - A leitura da fatura pode levar uns 30 segundos; `api/whatsapp.ts` tem `maxDuration` de 60 s no `vercel.json`.
+
+## O coach: próximo passo, feedback e métricas
+
+- **`oi`** de quem já é de casa, ou **`próximo passo`** / **`e agora`**: o bot olha a situação e diz **um** passo, na ordem das leis do ouro
+  (conhecer → seguir o plano → controlar os gastos → proteger → acompanhar). O combinado do plano só aparece quando o mês chega.
+- **Orçamento no dia a dia:** depois do diagnóstico, cada gasto anotado mostra como está a categoria (🟢 🟡 🔴) contra o que a pessoa disse que gasta.
+- **Chama pelo nome** quando o nome do WhatsApp parece um nome (letras, até 20 caracteres); senão segue sem nome.
+- **`apagar meus dados`** (com confirmação): apaga gastos, perfil, conversa, contadores e métricas daquele número. Se a pessoa tem conta no site, os dados da conta continuam lá (ela apaga em /conta).
+- **"Isso te ajudou?"** (👍/👎) depois do diagnóstico, do 13º e dos vazamentos. O 👎 pede uma frase do que faltou.
+
+**Métricas:** rode `supabase/whatsapp-metrics.sql` uma vez. Não guarda o telefone, só um hash (`METRICS_SALT` na Vercel é opcional).
+Consultas úteis (SQL Editor):
+
+```sql
+-- quantas pessoas chegaram a cada etapa
+select event, count(distinct person) as pessoas, count(*) as vezes
+from wa_events group by event order by pessoas desc;
+
+-- do primeiro oi até seguir o plano
+select count(distinct person) filter (where event = 'greeting')    as chegaram,
+       count(distinct person) filter (where event = 'diag_done')   as fizeram_diagnostico,
+       count(distinct person) filter (where event = 'plan_follow') as seguiram_plano
+from wa_events;
+
+-- o que as pessoas dizem quando o 👎 aparece
+select created_at, event, note from wa_events where note is not null order by created_at desc limit 50;
+```
+
+Os diálogos e a voz estão em `docs/voz-da-grana-seria.md`.
