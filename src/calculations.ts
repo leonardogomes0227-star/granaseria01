@@ -73,9 +73,20 @@ export function formatBRL(value: number): string {
 
 // Projeção genérica de juros compostos — usada no diagnóstico (10 anos fixos) e
 // no simulador de longo prazo (prazo e taxa configuráveis).
+// A taxa anual é a taxa efetiva (a que banco e Tesouro divulgam): 10% ao ano = 0,797% ao mês, não 10%÷12.
+export const monthlyRateFromAnnual = (annualRatePct: number): number => Math.pow(1 + annualRatePct / 100, 1 / 12) - 1;
+
+// Inflação anual média que usamos pra mostrar quanto o dinheiro de amanhã vale em reais de hoje (meta do IPCA ~3% + folga).
+export const INFLATION_PCT = 4.5;
+
+/** Quanto um valor futuro vale em reais de hoje. */
+export function inTodaysMoney(futureValue: number, years: number, inflationPct = INFLATION_PCT): number {
+  return futureValue / Math.pow(1 + inflationPct / 100, years);
+}
+
 export function computeProjection(monthlyContribution: number, annualRatePct: number, years: number): number {
   if (monthlyContribution <= 0) return 0;
-  const monthlyRate = annualRatePct / 100 / 12;
+  const monthlyRate = monthlyRateFromAnnual(annualRatePct);
   const months = years * 12;
   if (monthlyRate === 0) return monthlyContribution * months;
   return monthlyContribution * ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate);
@@ -84,7 +95,7 @@ export function computeProjection(monthlyContribution: number, annualRatePct: nu
 // Inverso da projeção: dado um valor-alvo, quanto precisa guardar por mês pra chegar lá.
 export function computeRequiredContribution(target: number, annualRatePct: number, years: number): number {
   if (target <= 0 || years <= 0) return 0;
-  const monthlyRate = annualRatePct / 100 / 12;
+  const monthlyRate = monthlyRateFromAnnual(annualRatePct);
   const months = years * 12;
   if (monthlyRate === 0) return target / months;
   return (target * monthlyRate) / (Math.pow(1 + monthlyRate, months) - 1);

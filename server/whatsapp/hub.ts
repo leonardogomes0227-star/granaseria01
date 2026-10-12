@@ -95,6 +95,9 @@ function diagSummary(data: WizardData, now: Date): string {
   else lines.push(`🛟 Reserva: ${brl(plan.reserve.current)} de ${brl(plan.reserve.target)}.`);
 
   lines.push(`💪 Valor mensal do seu plano: *${brl(plan.monthlyPower)}*${plan.powerAssumed ? ' (estimado em 10% da renda)' : ''}`);
+  if (plan.unaccounted >= Math.max(200, data.monthlyIncome * 0.1)) {
+    lines.push(`🕵️ *${brl(plan.unaccounted)} da sua renda por mês não aparecem em nenhum gasto que você me contou.* Pra descobrir pra onde vai, me mande cada gasto aqui (ex.: *gastei 35 no mercado*) por 30 dias.`);
+  }
   const steps = plan.steps.slice(0, 3);
   if (steps.length > 0) {
     lines.push('', '*Primeiros passos:*');

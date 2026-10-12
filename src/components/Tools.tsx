@@ -2,7 +2,7 @@ import { useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { DebtItem } from '../types';
 import { effectiveRate } from '../plan';
-import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment } from '../calculations';
+import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment, inTodaysMoney, INFLATION_PCT } from '../calculations';
 import { TOOLS, ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { CountUp } from './motion';
@@ -178,7 +178,8 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
   const [price, setPrice] = useState(0);
 
   const pctOfIncome = income > 0 ? (price / income) * 100 : 0;
-  const daysOfWork = income > 0 ? price / (income / 30) : 0;
+  const WORKDAYS = 22; // dias úteis num mês
+  const daysOfWork = income > 0 ? price / (income / WORKDAYS) : 0;
   const savingsGoal = income * 0.1;
   const monthsDelay = savingsGoal > 0 ? price / savingsGoal : 0;
 
@@ -203,7 +204,7 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
           <p className="result-big">
             <CountUp value={daysOfWork} format={(n) => (daysOfWork < 1 ? 'menos de 1 dia' : `${n.toFixed(1)} dias`)} />
           </p>
-          <p className="diag-label">do seu trabalho</p>
+          <p className="diag-label">de trabalho (dias úteis)</p>
           <div className="result-split">
             <div className="stat-card">
               <p className="diag-label">Da sua renda mensal</p>
@@ -319,6 +320,9 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
               <p className="diag-number"><CountUp value={totalInterest} format={brl} /></p>
             </div>
           </div>
+          <p className="field-hint" style={{ marginTop: 12 }}>
+            Em reais de hoje (descontando uma inflação de {INFLATION_PCT.toLocaleString('pt-BR')}% ao ano), esse valor compraria o que {formatBRL(inTodaysMoney(total, years))} compram agora.
+          </p>
         </div>
       ) : (
         <div className="result-empty">Defina um aporte mensal pra ver a projeção.</div>
@@ -361,6 +365,11 @@ export function GoalCalculator(nav: ToolNavProps) {
               <p className="diag-number"><CountUp value={fromInterest} format={brl} /></p>
             </div>
           </div>
+          {years >= 2 && (
+            <p className="field-hint" style={{ marginTop: 12 }}>
+              Atenção à inflação: daqui a {years} anos, {formatBRL(target)} terão o poder de compra de {formatBRL(inTodaysMoney(target, years))} de hoje. Se a meta é em reais de hoje, aumente o valor.
+            </p>
+          )}
         </div>
       ) : (
         <div className="result-empty">Digite o valor da meta pra calcular quanto guardar por mês.</div>
