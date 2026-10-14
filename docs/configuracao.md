@@ -70,6 +70,10 @@ Pré-requisito: o assistente configurado conforme [`whatsapp-assistente.md`](./w
 O número vem do próprio WhatsApp, então ninguém vincula o número de outra pessoa.
 Quem vinculou pode usar o assistente mesmo fora do `ALLOWED_NUMBERS`.
 
+**Abrir pra todo mundo:** na Vercel, `WHATSAPP_OPEN` = `true` e Redeploy. Qualquer número que mandar mensagem é atendido,
+sem precisar do `ALLOWED_NUMBERS`. Pra voltar ao modo fechado, apague a variável (ou use `false`) e faça Redeploy.
+Antes de ligar, confira o custo da IA (`WHATSAPP_AI_DAILY_LIMIT`, `FATURA_MONTHLY_LIMIT`), a LGPD e a troca das chaves.
+
 **Comandos novos:** `plano`, `paguei`, `não paguei`, `lembrete 5`, `parar lembretes`, `voltar lembretes`.
 
 **Lembrete:** a Vercel chama `/api/lembretes` todo dia às 9h (Brasília) — está em `vercel.json`, nada pra fazer lá.
