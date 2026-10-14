@@ -82,7 +82,13 @@ export function normalizeBrPhone(raw: string): string {
   return d;
 }
 
+/** Modo aberto: com WHATSAPP_OPEN=true qualquer número é atendido (os limites diários de IA e fatura continuam valendo). */
+export function isOpen(flag: string | undefined = process.env.WHATSAPP_OPEN): boolean {
+  return flag?.trim().toLowerCase() === 'true';
+}
+
 export function isAllowed(phone: string, allowedCsv: string | undefined): boolean {
+  if (isOpen()) return true;
   if (!allowedCsv) return false;
   const allowed = allowedCsv.split(',').map((n) => normalizeBrPhone(n.trim())).filter(Boolean);
   return allowed.includes(normalizeBrPhone(phone));
