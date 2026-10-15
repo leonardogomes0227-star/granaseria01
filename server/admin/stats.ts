@@ -21,6 +21,7 @@ export interface AdminStats {
   };
   funnel: { key: string; label: string; people: number }[];
   tools: { tool: string; people: number; times: number }[];
+  goals: { goal: string; people: number; times: number }[];
   feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down' | 'note'; tool: string; note: string | null }[] };
 }
 
@@ -51,6 +52,7 @@ export function buildStats(rows: EventRow[], now = Date.now(), days = 14): Admin
   const perDay = new Map<string, { active: Set<string>; messages: number }>();
   const funnel = new Map<string, Set<string>>();
   const tools = new Map<string, { people: Set<string>; times: number }>();
+  const goals = new Map<string, { people: Set<string>; times: number }>();
   const feedback: AdminStats['feedback'] = { up: 0, down: 0, asked: 0, answeredAsk: 0, recent: [] };
   const answeredGeral = new Set<string>();
   let messages = 0;
@@ -81,6 +83,14 @@ export function buildStats(rows: EventRow[], now = Date.now(), days = 14): Admin
       tl.people.add(r.person);
       tl.times++;
       tools.set(name, tl);
+    }
+
+    if (r.event.startsWith('goal:')) {
+      const name = r.event.slice(5);
+      const g = goals.get(name) ?? { people: new Set<string>(), times: 0 };
+      g.people.add(r.person);
+      g.times++;
+      goals.set(name, g);
     }
 
     if (r.event === 'fb_ask') feedback.asked++;
@@ -138,6 +148,9 @@ export function buildStats(rows: EventRow[], now = Date.now(), days = 14): Admin
     funnel: FUNNEL.map(([key, label]) => ({ key, label, people: funnel.get(key)?.size ?? 0 })),
     tools: [...tools.entries()]
       .map(([tool, v]) => ({ tool, people: v.people.size, times: v.times }))
+      .sort((a, b) => b.people - a.people || b.times - a.times),
+    goals: [...goals.entries()]
+      .map(([goal, v]) => ({ goal, people: v.people.size, times: v.times }))
       .sort((a, b) => b.people - a.people || b.times - a.times),
     feedback,
   };

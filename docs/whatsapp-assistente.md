@@ -92,6 +92,16 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada
 
+## Começar pelo objetivo da pessoa
+
+Quem chega pela primeira vez não vê uma lista de ferramentas: o bot pergunta **"o que você quer resolver agora?"** e mostra os objetivos
+(sair das dívidas, juntar dinheiro, controlar os gastos, achar dinheiro que sobra, usar o 13º ou um extra, decidir uma compra, comparar empréstimos,
+conhecer os direitos, organizar tudo). Cada um explica em uma frase o que vai acontecer e já abre a ferramenta certa.
+Quem preferir escrever com as próprias palavras também é entendido, quando a frase começa declarando o objetivo:
+*quero sair das dívidas*, *preciso juntar dinheiro pra viajar*, *como faço pra guardar dinheiro?*, *me ajuda* (mostra a lista).
+A palavra *objetivo* abre a lista a qualquer hora. As escolhas aparecem no painel `/admin`, em "O que as pessoas querem resolver".
+O código está em `server/whatsapp/goals.ts`.
+
 ## Ferramentas do site no WhatsApp
 
 Mande **oi** ou **menu** e o bot mostra uma lista de opções, agrupada em *Começar*, *Economizar e proteger* e *Mais*. Depois de cada ferramenta, aparecem os botões *Ver menu*, *Próximo passo* e *Dar opinião*. Também funcionam palavras digitadas, mesmo no meio de outra conversa:

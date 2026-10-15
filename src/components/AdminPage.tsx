@@ -10,6 +10,7 @@ interface Stats {
   usage: { avgActiveDays: number; avgSpanDays: number; returned: number; returnedPct: number; buckets: { label: string; people: number }[] };
   funnel: { key: string; label: string; people: number }[];
   tools: { tool: string; people: number; times: number }[];
+  goals: { goal: string; people: number; times: number }[];
   feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down' | 'note'; tool: string; note: string | null }[] };
 }
 
@@ -23,6 +24,16 @@ const readKey = () => {
 };
 const ICON = { up: '👍', down: '👎', note: '💬' } as const;
 const SOURCE: Record<string, string> = { geral: 'pedido do bot', livre: 'mandou por conta própria' };
+const GOAL_LABEL: Record<string, string> = {
+  divida: 'Sair das dívidas',
+  guardar: 'Juntar dinheiro',
+  gastos: 'Controlar os gastos',
+  sobra: 'Achar dinheiro que sobra',
+  extra: 'Usar o 13º ou um extra',
+  comprar: 'Decidir uma compra',
+  emprestimo: 'Comparar empréstimos',
+  direitos: 'Conhecer os direitos',
+};
 const num = (n: number) => n.toLocaleString('pt-BR');
 const shortDay = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -177,6 +188,20 @@ export function AdminPage() {
           <span className="admin-count">{f.people}</span>
         </div>
       ))}
+
+      <h2 className="admin-h2">O que as pessoas querem resolver</h2>
+      {stats.goals.length === 0 ? (
+        <p className="admin-note">Ainda sem registros. Aparece quando alguém escolhe um objetivo na lista do bot (ou escreve, por exemplo, "quero sair das dívidas").</p>
+      ) : (
+        <table className="admin-table">
+          <thead><tr><th>Objetivo</th><th>Pessoas</th><th>Vezes</th></tr></thead>
+          <tbody>
+            {stats.goals.map((g) => (
+              <tr key={g.goal}><td>{GOAL_LABEL[g.goal] ?? g.goal}</td><td>{g.people}</td><td>{g.times}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       <h2 className="admin-h2">Ferramentas mais abertas</h2>
       {stats.tools.length === 0 ? (
