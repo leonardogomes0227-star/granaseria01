@@ -112,7 +112,13 @@ export async function verifySignature(rawBody: string, header: string | null, ap
 export type Outgoing =
   | { kind: 'text'; text: string }
   | { kind: 'buttons'; text: string; buttons: { id: string; title: string }[] }
-  | { kind: 'list'; text: string; button: string; rows: { id: string; title: string; description?: string }[] };
+  | { kind: 'list'; text: string; button: string; rows: ListRow[]; sections?: { title: string; rows: ListRow[] }[] };
+
+export interface ListRow {
+  id: string;
+  title: string;
+  description?: string;
+}
 
 const cut = (s: string, max: number) => (s.length <= max ? s : s.slice(0, max - 1).trimEnd() + '…');
 
@@ -141,16 +147,26 @@ export function outgoingPayload(to: string, out: Outgoing): Record<string, unkno
           body: { text: cut(out.text, 1000) },
           action: {
             button: cut(out.button, 20),
-            sections: [
-              {
-                title: 'Opções',
-                rows: out.rows.slice(0, 10).map((r) => ({ id: r.id, title: cut(r.title, 24), ...(r.description ? { description: cut(r.description, 72) } : {}) })),
-              },
-            ],
+            // com seções, a lista fica agrupada por assunto (limite do WhatsApp: 10 linhas no total)
+            sections: listSections(out),
           },
         },
       };
   }
+}
+
+const listRow = (r: ListRow) => ({ id: r.id, title: cut(r.title, 24), ...(r.description ? { description: cut(r.description, 72) } : {}) });
+
+function listSections(out: Extract<Outgoing, { kind: 'list' }>) {
+  if (!out.sections?.length) return [{ title: 'Opções', rows: out.rows.slice(0, 10).map(listRow) }];
+  let left = 10;
+  return out.sections
+    .map((s) => {
+      const rows = s.rows.slice(0, left).map(listRow);
+      left -= rows.length;
+      return { title: cut(s.title, 24), rows };
+    })
+    .filter((s) => s.rows.length > 0);
 }
 
 export async function sendOutgoing(to: string, out: Outgoing): Promise<void> {
