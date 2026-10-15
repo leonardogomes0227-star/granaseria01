@@ -26,6 +26,7 @@ import { track, trackPageview } from './analytics';
 import { useSession } from './account';
 import { startSync } from './sync';
 import { AccountPage } from './components/Account';
+import { AdminPage } from './components/AdminPage';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 
@@ -210,6 +211,15 @@ function App() {
               <AppBar onHome={goHome} />
               <AccountPage session={session} />
               {footer}
+            </Titled>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <Titled title="Painel">
+              <AppBar onHome={goHome} />
+              <AdminPage />
             </Titled>
           }
         />

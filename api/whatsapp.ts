@@ -72,6 +72,8 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     return null;
   }
 
+  await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio
+
   // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:
   // no meio de um diagnóstico, "3000" é resposta, não gasto.
   const hub = await loadHub(user, phone);

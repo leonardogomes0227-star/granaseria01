@@ -91,7 +91,7 @@ await writeFile(
     .map((u) => `  <url><loc>${SITE_URL}${u === '/' ? '/' : u}</loc><lastmod>${today}</lastmod></url>`)
     .join('\n')}\n</urlset>\n`
 );
-await writeFile(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /conta\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+await writeFile(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /conta\nDisallow: /admin\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 // rota de guia/ferramenta que não existe: a Vercel serve o 404.html, e o site mostra a página "não encontrada"
 await writeFile(join(dist, '404.html'), template.replace(/<title>[^<]*<\/title>/, '<title>Página não encontrada — Grana Séria</title>'));
 await rm(join(root, 'node_modules', '.prerender'), { recursive: true, force: true });
