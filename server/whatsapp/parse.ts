@@ -4,6 +4,9 @@
 export type Command =
   | { kind: 'expense'; amount: number; category: string; description: string }
   | { kind: 'today' }
+  | { kind: 'yesterday' }
+  | { kind: 'recent' }
+  | { kind: 'budget' }
   | { kind: 'week' }
   | { kind: 'month' }
   | { kind: 'undo' }
@@ -114,6 +117,9 @@ export function parseMessage(input: string): Command {
 
   if (/^(oi|ola|menu|ajuda|help|comandos|inicio|comecar|\?)$/.test(t)) return { kind: 'help' };
   if (/^(hoje|gastos de hoje|quanto gastei hoje)$/.test(t)) return { kind: 'today' };
+  if (/^(ontem|gastos de ontem|quanto gastei ontem)$/.test(t)) return { kind: 'yesterday' };
+  if (/^(ultimos|ultimos gastos|meus ultimos gastos|lista|listar)$/.test(t)) return { kind: 'recent' };
+  if (/^(quanto (ainda )?(posso|da pra|sobra pra) gastar|quanto (ainda )?(sobra|falta)|orcamento|meu orcamento|quanto ainda posso gastar neste mes)$/.test(t)) return { kind: 'budget' };
   if (/^(semana|essa semana|esta semana|gastos da semana)$/.test(t)) return { kind: 'week' };
   if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total)$/.test(t)) return { kind: 'month' };
   if (/^(apagar|apaga|desfazer|desfaz|cancelar|apagar ultimo|apaga o ultimo|errei)$/.test(t)) return { kind: 'undo' };

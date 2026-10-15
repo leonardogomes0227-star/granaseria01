@@ -48,6 +48,17 @@ export function firstName(raw?: string | null): string | null {
 }
 
 
+/** Linhas do menu de gastos → o comando que o registro de gastos já entende. */
+export const GASTOS_BUTTON_TEXT: Record<string, string> = {
+  'gastos:hoje': 'hoje',
+  'gastos:ontem': 'ontem',
+  'gastos:semana': 'semana',
+  'gastos:mes': 'mês',
+  'gastos:sobra': 'quanto ainda posso gastar',
+  'gastos:ultimos': 'últimos',
+  'gastos:desfazer': 'apagar',
+};
+
 export const txt = (text: string): Outgoing => ({ kind: 'text', text });
 export const buttons = (text: string, b: [string, string][]): Outgoing => ({ kind: 'buttons', text, buttons: b.map(([id, title]) => ({ id, title })) });
 export const brl = (n: number) => formatBRL(n);

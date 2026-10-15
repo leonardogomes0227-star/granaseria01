@@ -12,6 +12,7 @@ import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
 import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
+import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
@@ -52,7 +53,8 @@ function limitedSmart(phone: string): typeof askClaude {
 async function reply(msg: { id: string; from: string; text: string; profileName?: string }): Promise<Outgoing[] | null> {
   const phone = normalizeBrPhone(msg.from);
   // linha "Meu plano" do menu e botões "Já fiz" / "Não consegui" valem como os comandos de sempre
-  const incoming = msg.text === 'menu:plano' ? 'plano' : (PLAN_BUTTON_TEXT[msg.text] ?? msg.text);
+  // botões e linhas de lista viram os comandos de sempre ("gastos:hoje" → "hoje")
+  const incoming = msg.text === 'menu:plano' ? 'plano' : (PLAN_BUTTON_TEXT[msg.text] ?? GASTOS_BUTTON_TEXT[msg.text] ?? msg.text);
   const cmd = parsePlanCommand(incoming);
   const accounts = accountsConfigured();
 
@@ -120,12 +122,12 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   }
 
   // ajuda mostra também os comandos do plano pra quem tem conta
-  if (user && parseMessage(msg.text).kind === 'help') return text(HELP_TEXT + '\n' + PLAN_HELP);
+  if (user && parseMessage(incoming).kind === 'help') return text(HELP_TEXT + '\n' + PLAN_HELP);
 
   const diag = diagnosisFrom(hub?.profile ?? user?.state ?? {});
   const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
   const answer = await handleText(
-    { id: msg.id, phone, text: msg.text },
+    { id: msg.id, phone, text: incoming },
     { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
   return answer ? text(answer) : null;

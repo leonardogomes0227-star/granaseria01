@@ -14,9 +14,13 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | Mensagem | O que acontece |
 |---|---|
 | `gastei 35 no mercado`, `uber 18,50`, `R$ 1.234,56 aluguel` | Registra o gasto e já categoriza |
+| `gastos` (ou *Gastos do dia a dia* no menu) | Abre as opções de gastos: anotar, hoje, ontem, semana, mês, quanto ainda posso gastar, últimos e desfazer |
 | `hoje` | Lista os gastos de hoje |
+| `ontem` | Lista os gastos de ontem |
 | `semana` | Total desde segunda, por categoria |
 | `mês` / `resumo` | Total do mês, por categoria |
+| `últimos` | Os 10 últimos gastos anotados no mês, com o dia |
+| `quanto ainda posso gastar` | Por categoria (casa, comida, transporte, lazer): quanto já gastou do que planejou no diagnóstico, quanto ainda dá e uns quantos reais por dia até o fim do mês. Sem diagnóstico, convida a fazer |
 | `apagar` | Desfaz o último registro |
 | `oi` / `ajuda` | Mostra os comandos |
 
