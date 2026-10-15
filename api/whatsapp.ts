@@ -12,6 +12,7 @@ import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
 import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
+import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { faturaOut } from '../server/whatsapp/tools.js';
@@ -72,6 +73,8 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     return null;
   }
 
+  await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio
+
   // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:
   // no meio de um diagnóstico, "3000" é resposta, não gasto.
   const hub = await loadHub(user, phone);
@@ -126,6 +129,24 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
   return answer ? text(answer) : null;
+}
+
+/**
+ * Depois de a pessoa já ter usado o bot de verdade, pergunta como está sendo (uma ou duas vezes no total).
+ * Fica de fora quando ela está no meio de uma conversa, quando a resposta já trouxe o "isso te ajudou?"
+ * ou quando acabou de dar um feedback. Qualquer falha aqui só vai pro log: nunca atrapalha a conversa.
+ */
+async function maybeAskFeedback(from: string, sent: Outgoing[]): Promise<void> {
+  try {
+    if (sent.some((o) => o.kind === 'buttons' && o.buttons.some((b) => b.id.startsWith('fb:')))) return;
+    const phone = normalizeBrPhone(from);
+    if (!shouldAskFeedback(await loadFeedbackEvents(phone))) return;
+    if (await getSession(phone)) return;
+    await sendOutgoing(from, FEEDBACK_ASK);
+    await trackEvent(phone, 'fb_ask');
+  } catch (err) {
+    console.warn('WhatsApp: pedido de feedback não enviado', err);
+  }
 }
 
 const FATURA_MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
@@ -203,6 +224,7 @@ export async function POST(request: Request): Promise<Response> {
       if (out) {
         for (const o of out) await sendOutgoing(msg.from, o);
         console.log(`WhatsApp: ${out.length} resposta(s) enviada(s) para o número final ${msg.from.slice(-4)}`);
+        await maybeAskFeedback(msg.from, out);
       } else {
         console.log(`WhatsApp: sem resposta para a mensagem ${msg.id}`);
       }

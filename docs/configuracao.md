@@ -12,6 +12,7 @@ faça **Deployments → ⋯ → Redeploy**.
 | 3. WhatsApp vinculado + lembrete | parte 2 + o assistente do [`whatsapp-assistente.md`](./whatsapp-assistente.md) | lembrete: alguns centavos por mensagem (modelo "Utilidade") |
 | 4. Leitor de fatura | parte 2 + chave da API da Anthropic | centavos por leitura; limite de 5 leituras/pessoa/mês |
 | 5. Google | nada (já vem no build) | grátis |
+| 6. Painel do dono | parte 2 + `ADMIN_SECRET` | grátis |
 
 ---
 
@@ -102,6 +103,18 @@ Fora da janela de 24h, a Meta só entrega **modelos aprovados**, então crie o m
 
 O leitor só funciona pra quem está logado (parte 2) — é assim que o limite por pessoa é contado.
 O arquivo vai pra API, a leitura volta pro navegador e nada é guardado.
+
+## 6. Painel do dono (`/admin`)
+
+Mostra quantas pessoas usam o assistente do WhatsApp, quantas estão ativas (hoje, 7 e 30 dias), quanto tempo ficam usando (dias de uso, quem volta),
+onde chegam no funil (oi → começo rápido → diagnóstico → plano), as ferramentas mais abertas e o feedback 👍/👎 com as notas.
+
+1. Rode `supabase/whatsapp-metrics.sql` (tabela `wa_events`), se ainda não rodou.
+2. Na Vercel: `ADMIN_SECRET` = uma senha longa que só você sabe. Redeploy.
+3. Abra `https://granaseria.com.br/admin` e digite a senha.
+
+O painel não guarda nem mostra telefone: as métricas usam só um hash de cada pessoa. A contagem de mensagens e de dias de uso começa a valer
+a partir do deploy que trouxe o painel (os eventos antigos entram nas contagens de pessoas, funil e feedback). A página fica fora do Google (`noindex` e `Disallow` no robots).
 
 ## 5. Google
 

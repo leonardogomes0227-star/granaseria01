@@ -131,6 +131,9 @@ quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o 
   (conhecer → seguir o plano → controlar os gastos → proteger → acompanhar). O combinado do plano só aparece quando o mês chega.
 - **Orçamento no dia a dia:** depois do diagnóstico, cada gasto anotado mostra como está a categoria (🟢 🟡 🔴) contra o que a pessoa disse que gasta.
 - **Chama pelo nome** quando o nome do WhatsApp parece um nome (letras, até 20 caracteres); senão segue sem nome.
+- **Pedido de feedback automático:** quando a pessoa já usou de verdade (2 dias diferentes e 8 mensagens, ou 20 mensagens num dia só), o bot pergunta
+  "como está sendo usar a Grana Séria?" com os botões 😀 / 😕 (o 😕 pede uma frase do que falta). Só pergunta no fim de uma conversa, nunca no meio de um diagnóstico,
+  nem logo depois de um feedback; no máximo 2 vezes por pessoa, com 21 dias entre elas (a segunda só se a pessoa voltou a usar). Aparece no painel `/admin`.
 - **`apagar meus dados`** (com confirmação): apaga gastos, perfil, conversa, contadores e métricas daquele número. Se a pessoa tem conta no site, os dados da conta continuam lá (ela apaga em /conta).
 - **"Isso te ajudou?"** (👍/👎) depois do diagnóstico, do 13º e dos vazamentos. O 👎 pede uma frase do que faltou.
 
