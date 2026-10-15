@@ -1094,3 +1094,5 @@ html { overflow-x: hidden; }
 .admin-tool { color: var(--ink-soft); }
 .admin-quote { margin-top: 4px; color: var(--ink); font-style: italic; }
 @media (max-width: 560px) { .bar-row .bar-label.admin-wide { width: 120px; } .admin-value { font-size: 24px; } }
+.foot-admin { color: inherit; opacity: 0.55; text-decoration: none; }
+.foot-admin:hover { opacity: 1; text-decoration: underline; }
