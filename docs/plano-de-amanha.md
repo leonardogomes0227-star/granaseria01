@@ -19,6 +19,14 @@
 5. Passar pelo roteiro de testes abaixo com as pessoas que chamarem.
 6. Se quiser: atualizar o texto do plano no **site** (ainda diz "Libere R$ X nos gastos").
 
+## Próxima conversa: plano pra ferramentas mais úteis e mais usadas
+Combinado com o dono de montar esse plano depois de alguns dias de uso. Pra decidir com dados, juntar antes:
+- **Painel `/admin`:** quais ferramentas mais abertas (e quais quase ninguém abre), onde o funil trava (oi → começo rápido → diagnóstico → plano) e quantos voltam em outro dia.
+- **Feedback escrito** (seção "O que as pessoas escreveram"): o que pedem, o que não entendem.
+- **Reclamações já recebidas:** o tio achou a calculadora de meta "muito ruim" (ainda sem detalhe do que foi) e pediu percentuais exatos (já corrigido).
+- **Perguntas pra responder no plano:** quais ferramentas cortar, juntar ou destacar? O que faz a pessoa voltar (lembrete mensal, check-in, frase do dia)? Vale ligar a IA e o leitor de fatura? Revisar os textos de *direitos* e *caça-vazamentos* (vêm de `src/leaks.ts`)?
+- Já feito pra facilitar: menu em seções, botões de volta ao menu e "Dar opinião" depois de cada ferramenta, e o bot pedindo feedback sozinho.
+
 ## O que não custa nada (dá pra testar à vontade)
 - Responder quem escreveu primeiro no WhatsApp é gratuito (janela de 24h).
 - Sem `ANTHROPIC_API_KEY` na Vercel, o bot usa só as regras simples e **não gasta IA**. Também não lê fatura.
