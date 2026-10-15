@@ -55,7 +55,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (!diag) {
     return [
       buttons(
-        `${hi}Eu sou o assistente da *Grana Séria*. 🪙\n\nAqui a gente segue as ideias de *O Homem Mais Rico da Babilônia*: a primeira lei do ouro é guardar uma parte de tudo o que você ganha. Mas, antes de montar o seu plano, preciso conhecer a sua situação. Escolha um começo rápido (3 perguntas) ou o diagnóstico completo (8 perguntas). Fica tudo só entre nós.`,
+        `${hi}Eu sou o assistente da *Grana Séria*. 🪙\n\nEu ajudo você a organizar o dinheiro, um passo de cada vez, com as ideias do livro *O Homem Mais Rico da Babilônia*. A principal: guarde uma parte de tudo o que você ganha.\n\nPra começar, preciso conhecer a sua situação. Escolha o *começo rápido* (3 perguntas) ou o *completo* (8 perguntas). Suas respostas ficam só entre nós.`,
         [['menu:rapido', 'Começo rápido (1 min)'], ['menu:diag', 'Completo (2 min)'], ['menu:menu', 'Ver o que faço']]
       ),
     ];
@@ -65,7 +65,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (!tracking) {
     return [
       buttons(
-        `${hi}Seu diagnóstico está pronto, mas o plano ainda está só no papel. 📜\n\nQuer que eu acompanhe mês a mês e te lembre do que pagar? É a lei do ouro número 1: pague-se primeiro.`,
+        `${hi}Seu diagnóstico está pronto, mas o plano ainda está só no papel. 📜\n\nQuer que eu acompanhe mês a mês e te lembre do que pagar? Guardar logo que o dinheiro cai, antes de gastar, é o primeiro hábito do livro.`,
         [['plan:start', 'Sim, acompanhar'], ['menu:menu', 'Agora não']]
       ),
     ];
@@ -103,7 +103,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (plan.unaccounted >= Math.max(200, diag.monthlyIncome * 0.1) && expensesThisMonth < 5) {
     return [
       buttons(
-        `${hi}Tem *${brl(plan.unaccounted)}* da sua renda por mês que eu não sei pra onde vão. 🕵️\n\nA segunda lei do ouro é controlar os gastos, e só dá pra controlar o que se enxerga. Anote cada gasto aqui por uns dias, do jeito mais simples: *gastei 35 no mercado*.`,
+        `${hi}Tem *${brl(plan.unaccounted)}* da sua renda por mês que eu não sei pra onde vão. 🕵️\n\nSó dá pra controlar o que a gente enxerga. Por uns dias, anote cada gasto aqui do jeito mais simples, por exemplo: *gastei 35 no mercado*.`,
         [['menu:menu', 'Ver opções']]
       ),
     ];
@@ -113,7 +113,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (!profile['selos-leaks']) {
     return [
       buttons(
-        `${hi}Um jeito rápido de achar uma sobra é caçar o dinheiro que escapa sem você ver: assinatura esquecida, tarifa, seguro que ninguém pediu. 🔎\n\nProteger o tesouro das perdas também é lei do ouro.`,
+        `${hi}Um jeito rápido de achar uma sobra é caçar o dinheiro que escapa sem você ver: assinatura esquecida, tarifa, seguro que ninguém pediu. 🔎\n\nProteger o que você ganha das perdas também faz parte do livro.`,
         [['menu:vazamentos', 'Caçar vazamentos'], ['menu:menu', 'Depois']]
       ),
     ];
@@ -123,7 +123,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   const last = lastCheckin(profile);
   if (!last || now.getTime() - new Date(last.date).getTime() > CHECKIN_EVERY_DAYS * DAY_MS) {
     return [
-      buttons(`${hi}Já faz um tempo que a gente não confere como você está. Um check-in leva 1 minuto e mostra se a poupança está subindo. 📅`, [
+      buttons(`${hi}Já faz um tempo que a gente não confere como você está. Um check-in leva 1 minuto e mostra se o quanto você guarda está subindo. 📅`, [
         ['menu:checkin', 'Fazer check-in'],
         ['menu:menu', 'Depois'],
       ]),
