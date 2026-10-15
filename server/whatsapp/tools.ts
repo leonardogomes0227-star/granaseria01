@@ -74,6 +74,7 @@ export function maisMenu(): Outgoing[] {
       rows: [
         { id: 'mais:selos', title: '🏅 Meus selos', description: 'Suas conquistas e seu perfil' },
         { id: 'mais:frase', title: '✨ Frase do dia', description: 'Uma frase pra começar o dia' },
+        { id: 'mais:feedback', title: '💬 Dar feedback', description: 'Conte o que gostou ou o que melhorar' },
       ],
     },
   ];

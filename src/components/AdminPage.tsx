@@ -10,7 +10,7 @@ interface Stats {
   usage: { avgActiveDays: number; avgSpanDays: number; returned: number; returnedPct: number; buckets: { label: string; people: number }[] };
   funnel: { key: string; label: string; people: number }[];
   tools: { tool: string; people: number; times: number }[];
-  feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down'; tool: string; note: string | null }[] };
+  feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down' | 'note'; tool: string; note: string | null }[] };
 }
 
 const KEY = 'gs_admin';
@@ -21,6 +21,8 @@ const readKey = () => {
     return '';
   }
 };
+const ICON = { up: '👍', down: '👎', note: '💬' } as const;
+const SOURCE: Record<string, string> = { geral: 'pedido do bot', livre: 'mandou por conta própria' };
 const num = (n: number) => n.toLocaleString('pt-BR');
 const shortDay = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -114,6 +116,7 @@ export function AdminPage() {
   const maxFunnel = Math.max(1, ...stats.funnel.map((f) => f.people));
   const maxBucket = Math.max(1, ...stats.usage.buckets.map((b) => b.people));
   const asked = stats.feedback.up + stats.feedback.down;
+  const written = stats.feedback.recent.filter((f) => f.note);
 
   return (
     <div className="page-wrap anim-in admin-page">
@@ -196,14 +199,15 @@ export function AdminPage() {
         <Card label="Respostas ao 👍/👎" value={num(asked)} />
         <Card label="Pedidos de feedback enviados" value={num(stats.feedback.asked)} sub={`${num(stats.feedback.answeredAsk)} pessoas responderam`} />
       </div>
-      {stats.feedback.recent.length === 0 ? (
-        <p className="admin-note">Ninguém avaliou ainda.</p>
+      <h2 className="admin-h2">O que as pessoas escreveram</h2>
+      {written.length === 0 ? (
+        <p className="admin-note">Ainda ninguém escreveu. O bot pede depois de alguns dias de uso, e quem quiser pode mandar <b>feedback</b> a qualquer hora.</p>
       ) : (
         <ul className="admin-feed">
-          {stats.feedback.recent.map((f, i) => (
+          {written.map((f, i) => (
             <li key={`${f.at}-${i}`}>
-              <b>{f.kind === 'up' ? '👍' : '👎'}</b> <span className="admin-tool">{f.tool === 'geral' ? 'pedido do bot' : f.tool}</span> · {when(f.at)}
-              {f.note && <div className="admin-quote">“{f.note}”</div>}
+              <b>{ICON[f.kind]}</b> <span className="admin-tool">{SOURCE[f.tool] ?? f.tool}</span> · {when(f.at)}
+              <div className="admin-quote">“{f.note}”</div>
             </li>
           ))}
         </ul>

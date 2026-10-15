@@ -568,8 +568,17 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: stri
   if (/^check[ -]?in( do mes)?$/.test(t)) return startCheckin(profile);
   if (/^(selos|meus selos|perfil|meu perfil)$/.test(t)) return { out: selosOut(profile), session: null };
   if (/^(frase|frase do dia)$/.test(t)) return { out: fraseOut(null, now), session: null };
+  if (/^(feedback|sugestao|sugestoes|reclamacao|opiniao|elogio|dar feedback|deixar feedback)$/.test(t)) return startFreeFeedback();
 
   return null;
+}
+
+/** A pessoa quer falar com o dono por conta própria: o texto cai no painel. */
+function startFreeFeedback(): HubResult {
+  return {
+    out: [txt('Quero ouvir você! 🙏 Escreva do seu jeito: o que está bom, o que está ruim ou o que você gostaria que eu fizesse. Quem lê é o criador da Grana Séria. (ou *cancelar*)')],
+    session: { flow: 'feedback', step: 'note', data: { tool: 'livre', kind: 'note' } },
+  };
 }
 
 // Pra medir o uso: qual ferramenta a pessoa abriu
@@ -644,8 +653,14 @@ function route(input: HubInput): HubResult | null {
   const fb = t.match(/^fb:(up|down):([a-z0-9]+)$/);
   if (fb) {
     if (fb[1] === 'up') {
-      const thanks = fb[2] === 'geral' ? 'Que bom! 🙏 Fico feliz de estar ajudando. Se tiver uma ideia do que eu poderia fazer melhor, é só mandar aqui.' : 'Que bom! 🙏 Fico feliz de ter ajudado.';
-      return { out: [txt(thanks)], session: null, event: `feedback:up:${fb[2]}` };
+      if (fb[2] === 'geral') {
+        // pedido do bot: quem gostou também escreve o que mais ajudou e o que melhorar
+        return {
+          out: [txt('Que bom! 🙏 Me conta com suas palavras: o que mais te ajudou e o que eu poderia fazer melhor? (ou *pular*)')],
+          session: { flow: 'feedback', step: 'note', data: { tool: 'geral', kind: 'up' } },
+        };
+      }
+      return { out: [txt('Que bom! 🙏 Fico feliz de ter ajudado.')], session: null, event: `feedback:up:${fb[2]}` };
     }
     return {
       out: [txt('Obrigado por contar. 🙏 Me diz em uma frase o que faltou ou o que ficou ruim? (ou *pular*)')],
@@ -663,6 +678,7 @@ function route(input: HubInput): HubResult | null {
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
   if (t === 'menu:calc') return { out: calcMenu(), session: null };
   if (t === 'menu:mais') return { out: maisMenu(), session: null };
+  if (t === 'mais:feedback') return startFreeFeedback();
   if (t === 'menu:checkin') return startCheckin(profile);
   if (t === 'calc:compra') return startCompra(profile);
   if (t === 'calc:meta') return startMeta();
@@ -704,13 +720,11 @@ function route(input: HubInput): HubResult | null {
       return { out: [txt('Combinado, não apaguei nada. 🙂')], session: null };
     }
     if (session.flow === 'feedback') {
-      const note = /^(pular|nada|nao|depois)$/.test(t) ? undefined : text.trim().slice(0, 280);
-      return {
-        out: [txt(note ? 'Anotado, de coração. Isso me ajuda a melhorar. 🙏' : 'Tudo bem. Obrigado mesmo assim. 🙏')],
-        session: null,
-        event: `feedback:down:${String(session.data.tool ?? 'geral')}`,
-        note,
-      };
+      const note = /^(pular|nada|nao|depois)$/.test(t) ? undefined : text.trim().slice(0, 600);
+      const kind = session.data.kind === 'up' || session.data.kind === 'note' ? session.data.kind : 'down';
+      const out = [txt(note ? 'Anotado, de coração. Isso me ajuda a melhorar. 🙏' : 'Tudo bem. Obrigado mesmo assim. 🙏')];
+      if (kind === 'note' && !note) return { out, session: null }; // mensagem livre sem texto: não há o que registrar
+      return { out, session: null, event: `feedback:${kind}:${String(session.data.tool ?? 'geral')}`, note };
     }
     if (session.flow === 'diag') return stepDiag(session, text, profile, now, name);
     if (session.flow === 'extra') return stepExtra(session, text, profile, now, name);
