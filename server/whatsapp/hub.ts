@@ -103,13 +103,17 @@ function startQuick(name?: string | null): HubResult {
   };
 }
 
+/** Percentual com até 2 casas (81,25%), sem zeros sobrando (81%). */
+const pctOf = (part: number, whole: number) =>
+  `${((part / whole) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
+
 function quickResult(income: number, spend: number, debt: number, name?: string | null): HubResult {
   const free = income - spend;
   const tenth = income * 0.1;
   const lines = [`${name ? `${name}, olha` : 'Olha'} onde você está: 🙂`, ''];
-  lines.push(`Entra ${brl(income)} · sai ${brl(spend)} (${Math.round((spend / income) * 100)}% da renda)`);
+  lines.push(`Entra ${brl(income)} · sai ${brl(spend)} (${pctOf(spend, income)} da renda)`);
   if (free > 0) {
-    lines.push(`Sobra ${brl(free)} por mês, ${Math.round((free / income) * 100)}% do que você ganha.`);
+    lines.push(`Sobra ${brl(free)} por mês, ${pctOf(free, income)} do que você ganha.`);
     lines.push('', free >= tenth
       ? '👏 Você já consegue guardar o que a primeira lei do ouro pede: pelo menos 10% de tudo que ganha. O desafio é guardar de verdade, antes de gastar.'
       : `A primeira lei do ouro pede guardar pelo menos 10% do que se ganha, ou seja, ${brl(tenth)}. Falta pouco: dá pra chegar lá cortando ${brl(tenth - free)} de algum gasto.`);
@@ -190,7 +194,7 @@ function diagSummary(data: WizardData, now: Date, name?: string | null): string 
   if (heavy.length > 0) lines.push('', '*O que mais pesa:*', ...heavy.map((x) => `• ${x}`));
 
   lines.push('', `📊 Nota *${score.score}/100*, ${kinderLabel(score.score)}`, `🎭 Perfil: *${archetype.name}*`, '');
-  lines.push(`Renda ${brl(data.monthlyIncome)} · gastos ${brl(d.totalExpenses)} (${Math.round((d.totalExpenses / data.monthlyIncome) * 100)}% da renda)`);
+  lines.push(`Renda ${brl(data.monthlyIncome)} · gastos ${brl(d.totalExpenses)} (${pctOf(d.totalExpenses, data.monthlyIncome)} da renda)`);
 
   if (plan.debts.length > 0) {
     const total = plan.debts.reduce((s, x) => s + x.balance, 0);
