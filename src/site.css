@@ -1096,3 +1096,4 @@ html { overflow-x: hidden; }
 @media (max-width: 560px) { .bar-row .bar-label.admin-wide { width: 120px; } .admin-value { font-size: 24px; } }
 .foot-admin { color: inherit; opacity: 0.55; text-decoration: none; }
 .foot-admin:hover { opacity: 1; text-decoration: underline; }
+.nav-admin { font-weight: 600; color: var(--gold-deep, var(--ink)); }
