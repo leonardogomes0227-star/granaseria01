@@ -643,7 +643,10 @@ function route(input: HubInput): HubResult | null {
   // feedback "isso te ajudou?"
   const fb = t.match(/^fb:(up|down):([a-z0-9]+)$/);
   if (fb) {
-    if (fb[1] === 'up') return { out: [txt('Que bom! 🙏 Fico feliz de ter ajudado.')], session: null, event: `feedback:up:${fb[2]}` };
+    if (fb[1] === 'up') {
+      const thanks = fb[2] === 'geral' ? 'Que bom! 🙏 Fico feliz de estar ajudando. Se tiver uma ideia do que eu poderia fazer melhor, é só mandar aqui.' : 'Que bom! 🙏 Fico feliz de ter ajudado.';
+      return { out: [txt(thanks)], session: null, event: `feedback:up:${fb[2]}` };
+    }
     return {
       out: [txt('Obrigado por contar. 🙏 Me diz em uma frase o que faltou ou o que ficou ruim? (ou *pular*)')],
       session: { flow: 'feedback', step: 'note', data: { tool: fb[2] } },

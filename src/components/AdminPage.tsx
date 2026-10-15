@@ -10,7 +10,7 @@ interface Stats {
   usage: { avgActiveDays: number; avgSpanDays: number; returned: number; returnedPct: number; buckets: { label: string; people: number }[] };
   funnel: { key: string; label: string; people: number }[];
   tools: { tool: string; people: number; times: number }[];
-  feedback: { up: number; down: number; recent: { at: string; kind: 'up' | 'down'; tool: string; note: string | null }[] };
+  feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down'; tool: string; note: string | null }[] };
 }
 
 const KEY = 'gs_admin';
@@ -194,6 +194,7 @@ export function AdminPage() {
         <Card label="👍 Ajudou" value={num(stats.feedback.up)} />
         <Card label="👎 Não ajudou" value={num(stats.feedback.down)} />
         <Card label="Respostas ao 👍/👎" value={num(asked)} />
+        <Card label="Pedidos de feedback enviados" value={num(stats.feedback.asked)} sub={`${num(stats.feedback.answeredAsk)} pessoas responderam`} />
       </div>
       {stats.feedback.recent.length === 0 ? (
         <p className="admin-note">Ninguém avaliou ainda.</p>
@@ -201,7 +202,7 @@ export function AdminPage() {
         <ul className="admin-feed">
           {stats.feedback.recent.map((f, i) => (
             <li key={`${f.at}-${i}`}>
-              <b>{f.kind === 'up' ? '👍' : '👎'}</b> <span className="admin-tool">{f.tool}</span> · {when(f.at)}
+              <b>{f.kind === 'up' ? '👍' : '👎'}</b> <span className="admin-tool">{f.tool === 'geral' ? 'pedido do bot' : f.tool}</span> · {when(f.at)}
               {f.note && <div className="admin-quote">“{f.note}”</div>}
             </li>
           ))}
