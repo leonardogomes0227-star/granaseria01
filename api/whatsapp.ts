@@ -13,6 +13,7 @@ import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
 import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
+import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
@@ -84,7 +85,8 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     const now = new Date();
     // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi
     const expensesThisMonth = wantsNextStep(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
-    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth });
+    const shortcuts = wantsNextStep(incoming) && !hub.session ? await loadShortcuts(phone, smartConfigured()).catch(() => []) : undefined;
+    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth, shortcuts });
     if (step) {
       if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não avança a conversa duas vezes
       if (step.erase) {

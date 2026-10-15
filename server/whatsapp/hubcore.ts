@@ -24,6 +24,7 @@ export interface HubInput {
   faturaEnabled?: boolean; // mostra "Ler minha fatura" no menu
   name?: string | null; // primeiro nome da pessoa, se der pra usar
   expensesThisMonth?: number; // quantos gastos ela já anotou no mês (pra sugerir o próximo passo)
+  shortcuts?: [string, string][]; // as ferramentas que ela mais usa (id, título), pra oferecer no "oi"
 }
 
 export interface HubResult {

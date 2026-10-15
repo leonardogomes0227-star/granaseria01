@@ -12,6 +12,7 @@ import { LEAKS, RIGHTS, relevantRights, leaksMonthlyTotal, type LeakSelection } 
 import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations.js';
 import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
+import { TIP_WORD } from './shortcuts.js';
 import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
 import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
@@ -44,7 +45,7 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.\n🎯 Prefere dizer o que quer resolver? Mande *objetivo*.\n💬 Pra dar sua opinião, mande *feedback*.`,
+      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.\n🎯 Prefere dizer o que quer resolver? Mande *objetivo*.\n💬 Pra dar sua opinião, mande *feedback*.\n⚡ Dica: você pode escrever direto o que quer, tipo *meta*, *dívidas* ou *gastos*.`,
       button: 'Ver opções',
       rows: [...start, ...save, ...more],
       sections: [
@@ -592,19 +593,19 @@ const GASTOS_HELP = txt(
 function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult | null {
   if (/^(gastos|meus gastos|gastos diarios|gastos do dia a dia|gastos do dia|despesas)$/.test(t)) return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
-  if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
+  if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?|assinaturas|tarifas|dinheiro perdido|dinheiro que sobra)$/.test(t)) return startLeaks();
   if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
   if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag(name);
   if (/^(rapido|comeco rapido|inicio rapido|comecar rapido|diagnostico rapido)$/.test(t)) return startQuick(name);
-  const buy = t.match(/^vale a pena( comprar)?(?: (.*))?$/);
+  const buy = t.match(/^(?:vale a pena|vale comprar|posso comprar|devo comprar)( comprar)?(?: (.*))?$/);
   if (buy) {
     const price = buy[2] ? parseMoney(buy[2]) : null;
     return startCompra(profile, price && price > 0 ? price : undefined);
   }
-  if (/^(meta|minha meta|calculadora de meta)$/.test(t)) return startMeta();
+  if (/^(meta|minha meta|calculadora de meta|juntar dinheiro|guardar dinheiro|poupar|quanto guardar)$/.test(t)) return startMeta();
   if (/^(longo prazo|simulador|aposentadoria|simulador de longo prazo)$/.test(t)) return startLongo(profile);
   if (/^(emprestimo|comparar emprestimos?|financiamento)$/.test(t)) return startEmprestimo();
-  if (/^(dividas|qual divida pagar|avalanche|bola de neve|avalanche x bola de neve)$/.test(t)) return startDividas(profile);
+  if (/^(dividas|minhas dividas|sair das dividas|pagar dividas|qual divida pagar|avalanche|bola de neve|avalanche x bola de neve)$/.test(t)) return startDividas(profile);
   if (/^(calculadoras?|calcular)$/.test(t)) return { out: calcMenu(), session: null };
   if (/^check[ -]?in( do mes)?$/.test(t)) return startCheckin(profile);
   if (/^(selos|meus selos|perfil|meu perfil)$/.test(t)) return { out: selosOut(profile), session: null };
@@ -641,9 +642,18 @@ const EVENT_BY_WORD: Record<string, string> = {
 };
 
 /** Decide se a mensagem é do hub. Devolve null quando não é: aí vale o fluxo antigo (gastos, plano). */
+/** Abriu pelo menu? Ensina a palavra que abre a mesma ferramenta direto, numa linha antes da ferramenta. */
+function withShortcutTip(r: HubResult, rawText: string): HubResult {
+  const word = TIP_WORD[rawText.trim().toLowerCase()];
+  if (!word || r.out.length === 0) return r;
+  return { ...r, out: [txt(`💡 _Da próxima vez, é só mandar *${word}* que eu abro direto._`), ...r.out] };
+}
+
 export function hubStep(input: HubInput): HubResult | null {
-  const result = route(input);
-  if (!result || result.event) return result;
+  const routed = route(input);
+  if (!routed) return routed;
+  const result = withShortcutTip(routed, input.text);
+  if (result.event) return result;
   const t = normalize(input.text);
   const opened = result.session && result.session.flow !== input.session?.flow && result.session.flow !== 'feedback' && result.session.flow !== 'erase' ? result.session.flow : null;
   const event = EVENT_BY_WORD[t] ?? (opened ? `tool:${opened}` : undefined);
@@ -701,7 +711,10 @@ function route(input: HubInput): HubResult | null {
   if (GOALS_WORDS.test(t)) return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
   if (t.startsWith('goal:')) return startGoal(t.slice(5), input);
   if (GREETING.test(t)) {
-    return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth, greeting: true }), session: null, event: 'greeting' };
+    const out = nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth, greeting: true });
+    // quem já usa o bot: os atalhos das ferramentas que mais usa, pra não passar pelo menu toda vez
+    if (input.shortcuts?.length && diagnosisFrom(profile)) out.push(buttons('⚡ *Seus atalhos:* o que você mais usa.', input.shortcuts));
+    return { out, session: null, event: 'greeting' };
   }
   if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
   if (t === 'plan:start') {
