@@ -12,6 +12,7 @@ import { LEAKS, RIGHTS, relevantRights, leaksMonthlyTotal, type LeakSelection } 
 import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations.js';
 import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
+import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
 import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
@@ -43,7 +44,7 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.`,
+      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.\n🎯 Prefere dizer o que quer resolver? Mande *objetivo*.`,
       button: 'Ver opções',
       rows: [...start, ...save, ...more],
       sections: [
@@ -629,6 +630,29 @@ export function hubStep(input: HubInput): HubResult | null {
   return event ? { ...result, event } : result;
 }
 
+/** O objetivo escolhido: explica em uma frase o que vai acontecer e já abre a ferramenta certa. */
+function startGoal(id: string, input: HubInput): HubResult {
+  const goal = goalById(id);
+  if (!goal) return { out: [EXPIRED], session: null };
+  const { profile, now } = input;
+  const name = firstName(input.name ?? null);
+  const open: Record<GoalId, () => HubResult> = {
+    divida: () => startDividas(profile),
+    guardar: () => startMeta(),
+    gastos: () => ({ out: [GASTOS_HELP], session: null }),
+    sobra: () => startLeaks(),
+    extra: () => startExtra(profile),
+    comprar: () => startCompra(profile),
+    emprestimo: () => startEmprestimo(),
+    direitos: () => ({ out: rightsList(profile, now), session: null }),
+    organizar: () => startQuick(name),
+  };
+  const tool = open[goal.id]();
+  // "organizar" já abre o começo rápido, que tem a própria apresentação: a frase do objetivo vem antes
+  const out = [txt(goal.intro), ...(goal.id === 'organizar' ? tool.out.slice(1) : tool.out)];
+  return withMenuHint({ ...tool, out, event: goal.id === 'organizar' ? 'quick_start' : `goal:${goal.id}` });
+}
+
 function route(input: HubInput): HubResult | null {
   const { text, session, profile, now } = input;
   const name = firstName(input.name ?? null);
@@ -654,6 +678,8 @@ function route(input: HubInput): HubResult | null {
 
   // recepção: quem chega pela primeira vez é apresentado; quem já é de casa vê o próximo passo
   if (MENU_WORDS.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
+  if (GOALS_WORDS.test(t)) return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
+  if (t.startsWith('goal:')) return startGoal(t.slice(5), input);
   if (GREETING.test(t)) {
     return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth, greeting: true }), session: null, event: 'greeting' };
   }
@@ -751,6 +777,13 @@ function route(input: HubInput): HubResult | null {
     if (session.flow === 'leaks') return stepLeaks(session, text, profile, now);
     const tool = toolStep(session, text, profile, now);
     if (tool) return withMenuHint(tool);
+  }
+
+  // o objetivo escrito com as próprias palavras ("quero sair das dívidas"): abre a ferramenta certa
+  if (!session) {
+    const g = goalFromText(t);
+    if (g === 'menu') return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
+    if (g) return startGoal(g, input);
   }
 
   // botões antigos, de uma conversa que já terminou

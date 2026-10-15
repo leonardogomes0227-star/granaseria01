@@ -15,6 +15,7 @@ import { leaksMonthlyTotal } from '../../src/leaks.js';
 import type { CheckinEntry } from '../../src/types.js';
 import { brl, buttons, diagnosisFrom, leaksFrom } from './hubcore.js';
 import { tasksInline } from './planbot.js';
+import { goalsMenu, GOALS_ASK, GOALS_HELLO } from './goals.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CHECKIN_EVERY_DAYS = 25;
@@ -51,14 +52,9 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   const tracking = trackingFrom(profile);
   const extraMonthly = leaksMonthlyTotal(leaksFrom(profile));
 
-  // 1. Ainda não conheço a pessoa
+  // 1. Ainda não conheço a pessoa: pergunta o objetivo dela e já abre a ferramenta certa
   if (!diag) {
-    return [
-      buttons(
-        `${hi}Eu sou o assistente da *Grana Séria*. 🪙\n\nEu ajudo você a organizar o dinheiro, um passo de cada vez, com as ideias do livro *O Homem Mais Rico da Babilônia*. A principal: guarde uma parte de tudo o que você ganha.\n\nPra começar, preciso conhecer a sua situação. Escolha o *começo rápido* (3 perguntas) ou o *completo* (8 perguntas). Suas respostas ficam só entre nós.`,
-        [['menu:rapido', 'Começo rápido (1 min)'], ['menu:diag', 'Completo (2 min)'], ['menu:menu', 'Ver o que faço']]
-      ),
-    ];
+    return [goalsMenu(greeting ? GOALS_HELLO(hi) : GOALS_ASK)];
   }
 
   // 2. Conheço, mas o plano ainda não está andando
