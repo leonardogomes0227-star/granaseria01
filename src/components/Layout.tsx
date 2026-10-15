@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Menu, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LayoutDashboard, Menu, UserRound, X } from 'lucide-react';
 import { TOOLS, ToolId, ToolInfo } from '../tools';
 import { accountsEnabled } from '../supabase';
 
@@ -137,6 +137,7 @@ export function SiteHeader({
             <a className="navlink" href="#duvidas">Dúvidas</a>
             <Link className="navlink" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="navlink" to="/conta">Entrar</Link>}
+            <Link className="navlink nav-admin" to="/admin">Painel</Link>
           </div>
 
           <div className="nav-right">
@@ -178,6 +179,7 @@ export function SiteHeader({
             <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
             <Link className="drawer-link" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="drawer-link" to="/conta">Minha conta</Link>}
+            <Link className="drawer-link" to="/admin" onClick={() => setDrawerOpen(false)}>Painel</Link>
           </aside>
         </>
       )}
@@ -200,6 +202,9 @@ export function AppBar({ onHome }: { onHome: () => void }) {
               <UserRound size={16} /> Conta
             </Link>
           )}
+          <Link className="btn-ghost" to="/admin">
+            <LayoutDashboard size={16} /> Painel
+          </Link>
           <button type="button" className="btn-ghost" onClick={onHome}>
             <ArrowLeft size={16} /> Início
           </button>
