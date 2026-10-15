@@ -94,7 +94,7 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
 
 ## Ferramentas do site no WhatsApp
 
-Mande **oi** ou **menu** e o bot mostra uma lista de opções. Também funcionam palavras digitadas, mesmo no meio de outra conversa:
+Mande **oi** ou **menu** e o bot mostra uma lista de opções, agrupada em *Começar*, *Economizar e proteger* e *Mais*. Depois de cada ferramenta, aparecem os botões *Ver menu*, *Próximo passo* e *Dar opinião*. Também funcionam palavras digitadas, mesmo no meio de outra conversa:
 
 | Ferramenta | Como chamar |
 |---|---|
@@ -131,9 +131,9 @@ quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o 
   (conhecer → seguir o plano → controlar os gastos → proteger → acompanhar). O combinado do plano só aparece quando o mês chega.
 - **Orçamento no dia a dia:** depois do diagnóstico, cada gasto anotado mostra como está a categoria (🟢 🟡 🔴) contra o que a pessoa disse que gasta.
 - **Chama pelo nome** quando o nome do WhatsApp parece um nome (letras, até 20 caracteres); senão segue sem nome.
-- **Pedido de feedback automático:** quando a pessoa já usou de verdade (2 dias diferentes e 8 mensagens, ou 20 mensagens num dia só), o bot pergunta
+- **Pedido de feedback automático:** quando a pessoa já usou de verdade (2 dias diferentes e 6 mensagens, ou 12 mensagens num dia só), o bot pergunta
   "como está sendo usar a Grana Séria?" com os botões 😀 / 😕 (o 😕 pede uma frase do que falta). Só pergunta no fim de uma conversa, nunca no meio de um diagnóstico,
-  nem logo depois de um feedback; no máximo 2 vezes por pessoa, com 21 dias entre elas (a segunda só se a pessoa voltou a usar). Aparece no painel `/admin`.
+  nem logo depois de um feedback; no máximo 3 vezes por pessoa, com 14 dias entre elas (as seguintes só se a pessoa voltou a usar). Aparece no painel `/admin`.
   Quem toca 😀 ou 😕 é convidado a **escrever** o que ajudou ou o que falta (até 600 caracteres, ou *pular*).
 - **Feedback escrito quando quiser:** a pessoa manda *feedback* (ou *sugestão*, *reclamação*, *opinião*) ou escolhe *Mais → 💬 Dar feedback*, e o texto cai no painel `/admin`, em "O que as pessoas escreveram".
 - **`apagar meus dados`** (com confirmação): apaga gastos, perfil, conversa, contadores e métricas daquele número. Se a pessoa tem conta no site, os dados da conta continuam lá (ela apaga em /conta).

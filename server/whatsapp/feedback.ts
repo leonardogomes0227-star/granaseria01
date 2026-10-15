@@ -1,6 +1,6 @@
 // Pedido de feedback automático: depois de alguns dias de uso, o bot pergunta como está sendo.
-// Regra (pura, em shouldAskFeedback): só pergunta quem já usou de verdade, no máximo 2 vezes por pessoa,
-// com 21 dias entre elas, e nunca logo depois de a pessoa ter dado um feedback.
+// Regra (pura, em shouldAskFeedback): só pergunta quem já usou de verdade, no máximo 3 vezes por pessoa,
+// com 14 dias entre elas, e nunca logo depois de a pessoa ter dado um feedback.
 
 import { rest } from './db.js';
 import { personHash } from './hubdb.js';
@@ -14,11 +14,11 @@ export interface FeedbackEvent {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
-const MIN_MESSAGES = 8; // com 2 dias de uso diferentes…
-const MIN_MESSAGES_ONE_DAY = 20; // …ou, se foi tudo num dia só, bem mais mensagens
-const REASK_AFTER_DAYS = 21;
-const MAX_ASKS = 2;
-const QUIET_AFTER_FEEDBACK_DAYS = 3;
+const MIN_MESSAGES = 6; // com 2 dias de uso diferentes…
+const MIN_MESSAGES_ONE_DAY = 12; // …ou, se foi tudo num dia só, mais mensagens
+const REASK_AFTER_DAYS = 14;
+const MAX_ASKS = 3;
+const QUIET_AFTER_FEEDBACK_DAYS = 2;
 
 const dayOf = (ms: number) => new Date(ms - BRT_OFFSET_MS).toISOString().slice(0, 10);
 

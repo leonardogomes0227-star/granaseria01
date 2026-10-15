@@ -24,26 +24,46 @@ export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 /* ---------- menu ---------- */
 
 export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
-  const rows = [
-    { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'O que eu devo fazer agora' },
-    { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar este mês' },
-    { id: 'menu:diag', title: '📊 Fazer diagnóstico', description: 'Nota, plano e datas em uns 2 minutos' },
+  const start = [
+    { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Não sabe por onde começar? Toque aqui' },
+    { id: 'menu:diag', title: '📊 Fazer meu diagnóstico', description: 'Veja onde você está e receba um plano' },
+    { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
+  ];
+  const save = [
+    { id: 'menu:vazamentos', title: '🔎 Achar dinheiro perdido', description: 'Assinaturas e tarifas que você nem percebe' },
     { id: 'menu:13o', title: '🎁 13º e dinheiro extra', description: 'Onde colocar cada real' },
-    { id: 'menu:vazamentos', title: '🔎 Caça-vazamentos', description: 'Dinheiro que escapa todo mês' },
     { id: 'menu:direitos', title: '⚖️ Meus direitos', description: 'O que a lei garante com banco e dívida' },
-    { id: 'menu:calc', title: '🧮 Calculadoras', description: 'Compra, meta, longo prazo, empréstimo, dívidas' },
-    { id: 'menu:checkin', title: '📅 Check-in do mês', description: 'Acompanhe sua evolução' },
-    ...(faturaEnabled ? [{ id: 'menu:fatura', title: '🧾 Ler minha fatura', description: 'Acho cobranças escondidas' }] : []),
-    { id: 'menu:mais', title: '✨ Selos e frase do dia', description: 'Suas conquistas e uma frase' },
+    ...(faturaEnabled ? [{ id: 'menu:fatura', title: '🧾 Ler minha fatura', description: 'Mande a foto ou o PDF e eu acho cobranças escondidas' }] : []),
+  ];
+  const more = [
+    { id: 'menu:calc', title: '🧮 Calculadoras', description: 'Comprar, juntar dinheiro, empréstimo, dívidas' },
+    { id: 'menu:mais', title: '✨ Mais', description: 'Check-in do mês, selos e frase do dia' },
+    { id: 'mais:feedback', title: '💬 Dar feedback', description: 'Conte o que gostou ou o que melhorar' },
   ];
   return [
     {
       kind: 'list',
-      text: `Escolha uma opção${name ? `, ${name}` : ''}. 🪙\n\nPra anotar um gasto, é só me mandar, tipo *gastei 35 no mercado*.`,
+      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.`,
       button: 'Ver opções',
-      rows,
+      rows: [...start, ...save, ...more],
+      sections: [
+        { title: 'Começar', rows: start },
+        { title: 'Economizar e proteger', rows: save },
+        { title: 'Mais', rows: more },
+      ],
     },
   ];
+}
+
+/** Depois de uma ferramenta, sempre um caminho de volta: menu, próximo passo ou opinião. */
+const MENU_HINT = buttons('O que você quer fazer agora?', [
+  ['menu:menu', '📋 Ver menu'],
+  ['menu:proximo', '🧭 Próximo passo'],
+  ['mais:feedback', '💬 Dar opinião'],
+]);
+function withMenuHint(r: HubResult): HubResult {
+  const last = r.out[r.out.length - 1];
+  return r.session === null && last && last.kind === 'text' ? { ...r, out: [...r.out, MENU_HINT] } : r;
 }
 
 /** "Isso te ajudou?": mede se a ferramenta presta e pega o que faltou, na voz de quem pergunta de coração. */
@@ -669,7 +689,7 @@ function route(input: HubInput): HubResult | null {
   }
 
   // ids de botões e listas
-  if (t.startsWith('dir:')) return { out: rightDetail(t.slice(4)), session: null };
+  if (t.startsWith('dir:')) return withMenuHint({ out: rightDetail(t.slice(4)), session: null });
   if (t === 'menu:gastos') return { out: [GASTOS_HELP], session: null };
   if (t === 'menu:diag') return startDiag(name);
   if (t === 'menu:rapido') return startQuick(name);
@@ -685,7 +705,7 @@ function route(input: HubInput): HubResult | null {
   if (t === 'calc:longo') return startLongo(profile);
   if (t === 'calc:emprestimo') return startEmprestimo();
   if (t === 'calc:dividas') return startDividas(profile);
-  if (t === 'mais:selos') return { out: selosOut(profile), session: null };
+  if (t === 'mais:selos') return withMenuHint({ out: selosOut(profile), session: null });
   if (t === 'mais:frase') return { out: fraseOut(null, now), session: null };
   if (t.startsWith('frase:')) return { out: fraseOut(Number(t.slice(6)), now), session: null };
   if (t === 'menu:fatura') {
@@ -697,7 +717,7 @@ function route(input: HubInput): HubResult | null {
 
   // palavras exatas trocam de assunto, mesmo no meio de outra conversa
   const shortcut = shortcutStart(t, profile, now, name);
-  if (shortcut) return shortcut;
+  if (shortcut) return withMenuHint(shortcut);
 
   if (session && session.flow === 'fatura') {
     // só vale pros botões da leitura da fatura; qualquer outra coisa segue o fluxo normal
@@ -730,7 +750,7 @@ function route(input: HubInput): HubResult | null {
     if (session.flow === 'extra') return stepExtra(session, text, profile, now, name);
     if (session.flow === 'leaks') return stepLeaks(session, text, profile, now);
     const tool = toolStep(session, text, profile, now);
-    if (tool) return tool;
+    if (tool) return withMenuHint(tool);
   }
 
   // botões antigos, de uma conversa que já terminou

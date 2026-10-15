@@ -72,6 +72,7 @@ export function maisMenu(): Outgoing[] {
       text: '✨ *Mais:*',
       button: 'Ver opções',
       rows: [
+        { id: 'menu:checkin', title: '📅 Check-in do mês', description: 'Veja como foi seu mês, em 1 minuto' },
         { id: 'mais:selos', title: '🏅 Meus selos', description: 'Suas conquistas e seu perfil' },
         { id: 'mais:frase', title: '✨ Frase do dia', description: 'Uma frase pra começar o dia' },
         { id: 'mais:feedback', title: '💬 Dar feedback', description: 'Conte o que gostou ou o que melhorar' },
