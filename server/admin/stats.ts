@@ -21,7 +21,7 @@ export interface AdminStats {
   };
   funnel: { key: string; label: string; people: number }[];
   tools: { tool: string; people: number; times: number }[];
-  feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down'; tool: string; note: string | null }[] };
+  feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down' | 'note'; tool: string; note: string | null }[] };
 }
 
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -84,15 +84,15 @@ export function buildStats(rows: EventRow[], now = Date.now(), days = 14): Admin
     }
 
     if (r.event === 'fb_ask') feedback.asked++;
-    const fb = /^feedback:(up|down):(.+)$/.exec(r.event);
+    const fb = /^feedback:(up|down|note):(.+)$/.exec(r.event);
     if (fb) {
-      feedback[fb[1] as 'up' | 'down']++;
+      if (fb[1] !== 'note') feedback[fb[1] as 'up' | 'down']++;
       if (fb[2] === 'geral') answeredGeral.add(r.person);
-      feedback.recent.push({ at: r.created_at, kind: fb[1] as 'up' | 'down', tool: fb[2], note: r.note });
+      feedback.recent.push({ at: r.created_at, kind: fb[1] as 'up' | 'down' | 'note', tool: fb[2], note: r.note });
     }
   }
   feedback.answeredAsk = answeredGeral.size;
-  feedback.recent = feedback.recent.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 30);
+  feedback.recent = feedback.recent.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 100);
 
   const list = [...people.values()];
   const activeSince = (ms: number) => list.filter((p) => p.last >= now - ms).length;

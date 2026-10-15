@@ -60,15 +60,15 @@ const EXPIRED = txt('Essa opção já expirou. Mande *menu* pra ver as opções 
 type DiagStep = 'income' | 'moradia' | 'alimentacao' | 'transporte' | 'lazer' | 'debts' | 'reserve' | 'savings';
 
 const DIAG_QUESTION: Record<DiagStep, string> = {
-  income: '💰 *1 de 8.* Quanto você recebe por mês, já líquido (o que cai na conta)?\n\nResponda só o valor, ex.: *3500*',
-  moradia: '🏠 *2 de 8.* Agora, pra onde ele vai. Com a casa, quanto você gasta por mês? Aluguel ou prestação, condomínio, luz, água e internet.',
+  income: '💰 *1 de 8.* Quanto você recebe por mês? Pode ser o que cai na sua conta, já com os descontos.\n\nResponda só o valor, ex.: *3500*',
+  moradia: '🏠 *2 de 8.* Agora vamos ver pra onde o dinheiro vai. Quanto você gasta por mês com a casa? Aluguel ou prestação, condomínio, luz, água e internet.',
   alimentacao: '🍽️ *3 de 8.* E com comida? Mercado, restaurante, delivery…',
   transporte: '🚗 *4 de 8.* Transporte: combustível, ônibus, aplicativo, manutenção…',
   lazer: '🎉 *5 de 8.* Lazer: saídas, streaming, viagens, compras de prazer…',
   debts:
     '💳 *6 de 8.* Dívidas. Sem medo: a gente só precisa enxergar. Mande uma por mensagem, com o tipo e o valor que ainda falta pagar.\n\nEx.: *cartão 4500*\nEx.: *empréstimo 3000 parcela 250*\nSe souber os juros: *cheque especial 800 juros 8*\n\nSe não tem dívida, mande *não tenho*.',
-  reserve: '🛟 *7 de 8.* Quanto você tem guardado só pra imprevistos, em dinheiro de fácil saque? Se ainda não tem, *0*, e tudo bem.',
-  savings: '🐖 *8 de 8.* Última: em média, quanto você consegue guardar por mês? Se não sobra nada, *0*.',
+  reserve: '🛟 *7 de 8.* Quanto você tem guardado pra emergências (dinheiro que dá pra pegar rápido, se precisar)? Se ainda não tem nada, mande *0*, e tudo bem.',
+  savings: '🐖 *8 de 8.* Última pergunta: em média, quanto você consegue guardar por mês? Se não sobra nada, mande *0*.',
 };
 
 const MONEY_HINT = 'Não entendi o valor. 🤔 Responda só o número, ex.: *1200* (ou *cancelar* pra sair).';
@@ -87,9 +87,9 @@ function startDiag(name?: string | null, then?: 'extra'): HubResult {
 /* ---------- começo rápido (3 perguntas) ---------- */
 
 const QUICK_QUESTION = {
-  q_income: '💰 *1 de 3.* Quanto você recebe por mês, já líquido (o que cai na conta)?\n\nResponda só o valor, ex.: *3500*',
-  q_spend: '🧾 *2 de 3.* E quanto sai por mês, somando tudo? Pode ser aproximado: casa, comida, transporte, lazer, contas…',
-  q_debt: '💳 *3 de 3.* Você deve alguma coisa (cartão, empréstimo, cheque especial)? Mande o valor total aproximado, ou *não tenho*.',
+  q_income: '💰 *1 de 3.* Quanto você recebe por mês? Pode ser o que cai na sua conta, já com os descontos.\n\nResponda só o valor, ex.: *3500*',
+  q_spend: '🧾 *2 de 3.* E quanto você gasta por mês, somando tudo? Pode ser aproximado: casa, comida, transporte, lazer, contas…',
+  q_debt: '💳 *3 de 3.* Você deve alguma coisa (cartão, empréstimo, cheque especial)? Mande o valor total, mesmo aproximado. Se não deve nada, mande *não tenho*.',
 } as const;
 
 function startQuick(name?: string | null): HubResult {
@@ -115,14 +115,14 @@ function quickResult(income: number, spend: number, debt: number, name?: string 
   if (free > 0) {
     lines.push(`Sobra ${brl(free)} por mês, ${pctOf(free, income)} do que você ganha.`);
     lines.push('', free >= tenth
-      ? '👏 Você já consegue guardar o que a primeira lei do ouro pede: pelo menos 10% de tudo que ganha. O desafio é guardar de verdade, antes de gastar.'
-      : `A primeira lei do ouro pede guardar pelo menos 10% do que se ganha, ou seja, ${brl(tenth)}. Falta pouco: dá pra chegar lá cortando ${brl(tenth - free)} de algum gasto.`);
+      ? '👏 Você já consegue guardar pelo menos 10% do que ganha, o primeiro hábito do livro. O desafio agora é guardar de verdade, logo que o dinheiro cai, antes de gastar.'
+      : `O primeiro hábito do livro é guardar pelo menos 10% do que se ganha, ou seja, ${brl(tenth)} por mês. Falta pouco: dá pra chegar lá gastando ${brl(tenth - free)} a menos em alguma coisa.`);
     const reserve = spend * 6;
     const months = Math.ceil(reserve / free);
-    lines.push(`🛟 A reserva ideal é 6 meses de gastos, ${brl(reserve)}. Guardando ${brl(free)} por mês, você chega em cerca de ${months} ${months === 1 ? 'mês' : 'meses'}.`);
+    lines.push(`🛟 A reserva de emergência ideal cobre 6 meses de gastos: ${brl(reserve)}. É um dinheiro guardado pra imprevistos, como ficar sem trabalho. Guardando ${brl(free)} por mês, você chega lá em cerca de ${months} ${months === 1 ? 'mês' : 'meses'}.`);
   } else {
     lines.push(free === 0 ? 'Não sobra nada no fim do mês.' : `Falta ${brl(-free)} por mês pra fechar a conta.`);
-    lines.push('', 'Isso é mais comum do que parece, e tem saída. O primeiro passo é enxergar pra onde o dinheiro vai: anote cada gasto aqui (*gastei 35 no mercado*) por uns dias.');
+    lines.push('', 'Isso é mais comum do que parece, e tem saída. O primeiro passo é ver pra onde o dinheiro vai: anote cada gasto aqui, mandando por exemplo *gastei 35 no mercado*, por uns dias.');
   }
   if (debt > 0) {
     lines.push('', `💳 Dívidas de ${brl(debt)}: ${debt > income * 3 ? 'é bastante, mas ' : ''}o jeito certo é atacar primeiro a que tem juros mais altos. No diagnóstico completo eu calculo a ordem e a data de ficar livre.`);
@@ -162,7 +162,7 @@ function whatIsGood(data: WizardData, plan: ReturnType<typeof buildPlan>, d: Ret
   const debtTotal = plan.debts.reduce((s, x) => s + x.balance, 0);
   if (plan.debts.length === 0) good.push('Você não tem dívidas. Isso já é meio caminho andado.');
   else if (!plan.stuck && debtTotal < data.monthlyIncome) good.push(`Suas dívidas (${brl(debtTotal)}) são menores que um salário seu. Dá pra resolver, e rápido.`);
-  if (d.savingsRate >= 10) good.push(`Você já guarda ${Math.round(d.savingsRate)}% da renda: a primeira lei do ouro, cumprida.`);
+  if (d.savingsRate >= 10) good.push(`Você já guarda ${Math.round(d.savingsRate)}% da renda: o primeiro hábito do livro, cumprido.`);
   else if (data.currentSavings > 0) good.push('Você já guarda alguma coisa todo mês. É o começo de tudo.');
   if (data.emergencyFund > 0) good.push('Você já começou uma reserva pra imprevistos.');
   const keys = Object.keys(d.idealExpenses) as (keyof typeof d.idealExpenses)[];
@@ -328,14 +328,14 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
 
   if (d.then === 'extra') {
     return {
-      out: [summary, txt('🎁 Agora sim! Quanto de dinheiro extra vai entrar (13º, restituição do IR, FGTS, bônus)? Responda só o valor, ex.: *3000*')],
+      out: [summary, txt('🎁 Agora sim! Quanto de dinheiro extra vai entrar (13º, restituição do imposto de renda, FGTS, bônus)? Responda só o valor, ex.: *3000*')],
       session: { flow: 'extra', step: 'amount', data: {} },
       profile: saved,
       event: 'diag_done',
     };
   }
   return {
-    out: [summary, buttons('Quer que eu acompanhe seu plano mês a mês e te lembre do que fazer? É a primeira lei do ouro: pague-se primeiro.', [['diag:follow', 'Sim, acompanhar'], ['diag:skip', 'Agora não']])],
+    out: [summary, buttons('Quer que eu acompanhe seu plano mês a mês e te lembre do que fazer? Guardar logo que o dinheiro cai, antes de gastar, é o primeiro hábito do livro.', [['diag:follow', 'Sim, acompanhar'], ['diag:skip', 'Agora não']])],
     session: { flow: 'diag', step: 'follow', data: { ready: data } },
     profile: saved,
     event: 'diag_done',
@@ -347,10 +347,10 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
 const GENERIC_ORDER = [
   '*A ordem que mais rende pra qualquer dinheiro extra:*',
   '',
-  '1. *Dívidas caras* — cartão, cheque especial, empréstimo pessoal cobram de 5% a 15% ao mês. Quitar é o melhor "investimento" que existe.',
-  '2. *Reserva de emergência* — até ter 6 meses dos seus gastos num CDB de liquidez diária ou no Tesouro Selic.',
-  '3. *Dívidas baratas* — financiamento e consignado: amortizar antes reduz os juros (é seu direito pedir o desconto).',
-  '4. *Investir* — só depois disso: Tesouro IPCA+, fundos de índice.',
+  '1. *Dívidas com juros altos* — cartão, cheque especial e empréstimo pessoal cobram de 5% a 15% ao mês. Pagar essas primeiro rende mais do que qualquer investimento.',
+  '2. *Reserva de emergência* — guardar o equivalente a 6 meses dos seus gastos, num lugar seguro de onde você saca quando quiser (como o Tesouro Selic ou um CDB com liquidez diária).',
+  '3. *Dívidas com juros menores* — financiamento e consignado. Pagar parcelas antes do prazo reduz os juros, e você tem direito a esse desconto.',
+  '4. *Investir* — só depois dos passos acima, e aí vale estudar com calma, por exemplo o Tesouro IPCA+.',
   '',
   'Pra eu dizer exatamente quanto vai em cada dívida e quantos meses você adianta, mande *diagnóstico*.',
 ].join('\n');
@@ -376,13 +376,13 @@ function extraHeadline(r: LumpResult, amount: number): string {
 function startExtra(profile: StateSnapshot): HubResult {
   if (diagnosisFrom(profile)) {
     return {
-      out: [txt('🎁 *Dinheiro extra* é a chance de pular meses do seu plano. Quanto vai entrar (13º, restituição do IR, FGTS, bônus)?\n\nResponda só o valor, ex.: *3000*')],
+      out: [txt('🎁 *Dinheiro extra* é a chance de pular meses do seu plano. Quanto vai entrar (13º, restituição do imposto de renda, FGTS, bônus)?\n\nResponda só o valor, ex.: *3000*')],
       session: { flow: 'extra', step: 'amount', data: {} },
     };
   }
   return {
     out: [
-      buttons('🎁 Pra eu dizer onde colocar cada real e quantos meses você adianta, preciso conhecer sua situação (renda, gastos e dívidas). Leva uns 2 minutos aqui mesmo.', [
+      buttons('🎁 Pra eu dizer onde colocar cada real e quantos meses você adianta, preciso conhecer sua situação (quanto você ganha, gasta e deve). Leva uns 2 minutos aqui mesmo.', [
         ['extra:diag', 'Fazer agora'],
         ['extra:generic', 'Só a regra geral'],
       ]),
@@ -418,7 +418,7 @@ function stepExtra(session: Session, text: string, profile: StateSnapshot, now: 
 function startLeaks(): HubResult {
   const list = LEAKS.map((l, i) => `${i + 1}. *${l.title}* (~${brl(l.typical)}/mês)\n   ${l.what}`).join('\n\n');
   return {
-    out: [txt(`🔎 *Caça-vazamentos* — dinheiro que sai todo mês sem você perceber.\n\nResponda com os números do que acontece com você (ex.: *1, 3, 4*), ou *nenhum*:\n\n${list}`)],
+    out: [txt(`🔎 *Caça-vazamentos* — dinheiro que sai todo mês sem você perceber (assinaturas esquecidas, tarifas, seguros).\n\nResponda com os números do que acontece com você (ex.: *1, 3, 4*), ou *nenhum*:\n\n${list}`)],
     session: { flow: 'leaks', step: 'pick', data: {} },
   };
 }
@@ -568,8 +568,17 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: stri
   if (/^check[ -]?in( do mes)?$/.test(t)) return startCheckin(profile);
   if (/^(selos|meus selos|perfil|meu perfil)$/.test(t)) return { out: selosOut(profile), session: null };
   if (/^(frase|frase do dia)$/.test(t)) return { out: fraseOut(null, now), session: null };
+  if (/^(feedback|sugestao|sugestoes|reclamacao|opiniao|elogio|dar feedback|deixar feedback)$/.test(t)) return startFreeFeedback();
 
   return null;
+}
+
+/** A pessoa quer falar com o dono por conta própria: o texto cai no painel. */
+function startFreeFeedback(): HubResult {
+  return {
+    out: [txt('Quero ouvir você! 🙏 Escreva do seu jeito: o que está bom, o que está ruim ou o que você gostaria que eu fizesse. Quem lê é o criador da Grana Séria. (ou *cancelar*)')],
+    session: { flow: 'feedback', step: 'note', data: { tool: 'livre', kind: 'note' } },
+  };
 }
 
 // Pra medir o uso: qual ferramenta a pessoa abriu
@@ -644,8 +653,14 @@ function route(input: HubInput): HubResult | null {
   const fb = t.match(/^fb:(up|down):([a-z0-9]+)$/);
   if (fb) {
     if (fb[1] === 'up') {
-      const thanks = fb[2] === 'geral' ? 'Que bom! 🙏 Fico feliz de estar ajudando. Se tiver uma ideia do que eu poderia fazer melhor, é só mandar aqui.' : 'Que bom! 🙏 Fico feliz de ter ajudado.';
-      return { out: [txt(thanks)], session: null, event: `feedback:up:${fb[2]}` };
+      if (fb[2] === 'geral') {
+        // pedido do bot: quem gostou também escreve o que mais ajudou e o que melhorar
+        return {
+          out: [txt('Que bom! 🙏 Me conta com suas palavras: o que mais te ajudou e o que eu poderia fazer melhor? (ou *pular*)')],
+          session: { flow: 'feedback', step: 'note', data: { tool: 'geral', kind: 'up' } },
+        };
+      }
+      return { out: [txt('Que bom! 🙏 Fico feliz de ter ajudado.')], session: null, event: `feedback:up:${fb[2]}` };
     }
     return {
       out: [txt('Obrigado por contar. 🙏 Me diz em uma frase o que faltou ou o que ficou ruim? (ou *pular*)')],
@@ -663,6 +678,7 @@ function route(input: HubInput): HubResult | null {
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
   if (t === 'menu:calc') return { out: calcMenu(), session: null };
   if (t === 'menu:mais') return { out: maisMenu(), session: null };
+  if (t === 'mais:feedback') return startFreeFeedback();
   if (t === 'menu:checkin') return startCheckin(profile);
   if (t === 'calc:compra') return startCompra(profile);
   if (t === 'calc:meta') return startMeta();
@@ -704,13 +720,11 @@ function route(input: HubInput): HubResult | null {
       return { out: [txt('Combinado, não apaguei nada. 🙂')], session: null };
     }
     if (session.flow === 'feedback') {
-      const note = /^(pular|nada|nao|depois)$/.test(t) ? undefined : text.trim().slice(0, 280);
-      return {
-        out: [txt(note ? 'Anotado, de coração. Isso me ajuda a melhorar. 🙏' : 'Tudo bem. Obrigado mesmo assim. 🙏')],
-        session: null,
-        event: `feedback:down:${String(session.data.tool ?? 'geral')}`,
-        note,
-      };
+      const note = /^(pular|nada|nao|depois)$/.test(t) ? undefined : text.trim().slice(0, 600);
+      const kind = session.data.kind === 'up' || session.data.kind === 'note' ? session.data.kind : 'down';
+      const out = [txt(note ? 'Anotado, de coração. Isso me ajuda a melhorar. 🙏' : 'Tudo bem. Obrigado mesmo assim. 🙏')];
+      if (kind === 'note' && !note) return { out, session: null }; // mensagem livre sem texto: não há o que registrar
+      return { out, session: null, event: `feedback:${kind}:${String(session.data.tool ?? 'geral')}`, note };
     }
     if (session.flow === 'diag') return stepDiag(session, text, profile, now, name);
     if (session.flow === 'extra') return stepExtra(session, text, profile, now, name);

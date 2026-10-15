@@ -82,6 +82,7 @@ export const HELP_TEXT = [
   '• *semana* — total da semana',
   '• *mês* — resumo do mês por categoria',
   '• *apagar* — desfaz o último registro',
+  '• *menu* — tudo o que eu sei fazer',
 ].join('\n');
 
 export async function handleText(

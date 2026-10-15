@@ -134,6 +134,8 @@ quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o 
 - **Pedido de feedback automático:** quando a pessoa já usou de verdade (2 dias diferentes e 8 mensagens, ou 20 mensagens num dia só), o bot pergunta
   "como está sendo usar a Grana Séria?" com os botões 😀 / 😕 (o 😕 pede uma frase do que falta). Só pergunta no fim de uma conversa, nunca no meio de um diagnóstico,
   nem logo depois de um feedback; no máximo 2 vezes por pessoa, com 21 dias entre elas (a segunda só se a pessoa voltou a usar). Aparece no painel `/admin`.
+  Quem toca 😀 ou 😕 é convidado a **escrever** o que ajudou ou o que falta (até 600 caracteres, ou *pular*).
+- **Feedback escrito quando quiser:** a pessoa manda *feedback* (ou *sugestão*, *reclamação*, *opinião*) ou escolhe *Mais → 💬 Dar feedback*, e o texto cai no painel `/admin`, em "O que as pessoas escreveram".
 - **`apagar meus dados`** (com confirmação): apaga gastos, perfil, conversa, contadores e métricas daquele número. Se a pessoa tem conta no site, os dados da conta continuam lá (ela apaga em /conta).
 - **"Isso te ajudou?"** (👍/👎) depois do diagnóstico, do 13º e dos vazamentos. O 👎 pede uma frase do que faltou.
 

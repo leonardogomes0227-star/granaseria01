@@ -76,7 +76,7 @@ export async function trackEvent(phone: string, event: string, note?: string): P
     const res = await rest('wa_events', {
       method: 'POST',
       headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ person: personHash(phone), event, ...(note ? { note: note.slice(0, 280) } : {}) }),
+      body: JSON.stringify({ person: personHash(phone), event, ...(note ? { note: note.slice(0, 600) } : {}) }),
     });
     if (!res.ok) console.warn(`WhatsApp: evento não registrado (${res.status})`);
   } catch (err) {

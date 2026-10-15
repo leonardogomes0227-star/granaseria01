@@ -74,6 +74,7 @@ export function maisMenu(): Outgoing[] {
       rows: [
         { id: 'mais:selos', title: '🏅 Meus selos', description: 'Suas conquistas e seu perfil' },
         { id: 'mais:frase', title: '✨ Frase do dia', description: 'Uma frase pra começar o dia' },
+        { id: 'mais:feedback', title: '💬 Dar feedback', description: 'Conte o que gostou ou o que melhorar' },
       ],
     },
   ];
@@ -91,7 +92,7 @@ export function startCompra(profile: StateSnapshot, firstPrice?: number): HubRes
     };
   }
   return {
-    out: [txt('🛍️ *Vale a pena comprar?* Primeiro: quanto você recebe por mês, líquido? Ex.: *3500*')],
+    out: [txt('🛍️ *Vale a pena comprar?* Primeiro: quanto você recebe por mês (o que cai na sua conta)? Ex.: *3500*')],
     session: { flow: 'compra', step: 'income', data: firstPrice ? { price: firstPrice } : {} },
   };
 }
@@ -114,11 +115,11 @@ function compraResult(income: number, price: number): Outgoing[] {
         `🛍️ *${brl(price)} são ${workdays < 1 ? 'menos de 1 dia' : `${num(workdays)} dias`} de trabalho* (${num(hours, 0)} horas)`,
         '',
         `• ${pct(share)} da sua renda mensal`,
-        `• Atrasa sua meta de poupança em ${delay < 1 ? 'menos de 1 mês' : `${num(delay)} meses`} (guardando 10% da renda, ${brl(goal)}/mês)`,
+        `• Equivale a ${delay < 1 ? 'menos de 1 mês' : `${num(delay)} meses`} guardando 10% da sua renda (${brl(goal)} por mês)`,
         '',
         verdict,
         '',
-        'Se for parcelar no cartão, lembre: o rotativo cobra em média 14% ao mês. E a lei do ouro é simples: gaste menos do que ganha, e deixe a vontade esfriar antes de decidir. 🪙',
+        'Se for parcelar no cartão, lembre: se você não pagar a fatura inteira, o cartão cobra juros (o rotativo), em média 14% ao mês. A regra é simples: gaste menos do que ganha e deixe a vontade esfriar antes de decidir. 🪙',
       ].join('\n')
     ),
   ];
@@ -155,12 +156,12 @@ function stepMeta(session: Session, text: string): HubResult {
     const y = parseYears(text);
     if (y === null) return { out: [txt('Não entendi o prazo. 🤔 Ex.: *2 anos* ou *18 meses* (até 50 anos).')], session };
     return {
-      out: [txt(`Qual a taxa de juros ao ano? Use *${DEFAULT_RATE}%* (parecido com CDB ou Tesouro) mandando *ok*, ou me diga a sua.`)],
+      out: [txt(`Quanto seu dinheiro rende por ano? Se você não sabe, mande *ok* que eu uso *${DEFAULT_RATE}% ao ano*, um valor parecido com o de aplicações seguras (Tesouro ou CDB). Ou me diga o seu.`)],
       session: { ...session, step: 'rate', data: { ...session.data, years: y } },
     };
   }
   const rate = parseAnnualRate(t);
-  if (rate === null) return { out: [txt('Não entendi a taxa. 🤔 Mande *ok* pra usar 10% ao ano, ou um número, ex.: *12*')], session };
+  if (rate === null) return { out: [txt('Não entendi. 🤔 Mande *ok* pra usar 10% ao ano, ou um número, ex.: *12*')], session };
   const { target, years } = session.data as { target: number; years: number };
   const required = computeRequiredContribution(target, rate, years);
   const own = required * years * 12;
@@ -173,10 +174,10 @@ function stepMeta(session: Session, text: string): HubResult {
           `*${brl(required)}*`,
           '',
           `• Do seu bolso: ${brl(own)}`,
-          `• Vem dos juros: ${brl(interest)} (a ${pct(rate)} ao ano)`,
-          ...(years >= 2 ? ['', `⚠️ Com inflação de ~${num(INFLATION_PCT)}% ao ano, ${brl(target)} daqui a ${num(years)} anos compram o que ${brl(inTodaysMoney(target, years))} compram hoje. Se a meta é em reais de hoje, aumente o valor.`] : []),
+          `• Vem do rendimento (juros): ${brl(interest)}, a ${pct(rate)} ao ano`,
+          ...(years >= 2 ? ['', `⚠️ Os preços sobem uns ${num(INFLATION_PCT)}% ao ano (é a inflação). Por isso ${brl(target)} daqui a ${num(years)} anos compram só o que ${brl(inTodaysMoney(target, years))} compram hoje. Se você quer comprar o mesmo que compraria hoje, aumente a meta.`] : []),
           '',
-          'Dica: deixe o aporte automático no dia em que o salário cai. Pague-se primeiro. 🪙',
+          'Dica: separe esse valor no dia em que o salário cai, antes de gastar com qualquer outra coisa. 🪙',
         ].join('\n')
       ),
     ],
@@ -206,12 +207,12 @@ function stepLongo(session: Session, text: string): HubResult {
     const y = parseYears(text);
     if (y === null) return { out: [txt('Não entendi o prazo. 🤔 Ex.: *20* (até 50 anos).')], session };
     return {
-      out: [txt(`Taxa de juros ao ano? Mande *ok* pra usar *${DEFAULT_RATE}%* ou me diga a sua.`)],
+      out: [txt(`Quanto o dinheiro rende por ano? Mande *ok* pra usar *${DEFAULT_RATE}%* (valor típico de aplicações seguras) ou me diga o seu.`)],
       session: { ...session, step: 'rate', data: { ...session.data, years: y } },
     };
   }
   const rate = parseAnnualRate(t);
-  if (rate === null) return { out: [txt('Não entendi a taxa. 🤔 Mande *ok* pra usar 10% ao ano, ou um número, ex.: *12*')], session };
+  if (rate === null) return { out: [txt('Não entendi. 🤔 Mande *ok* pra usar 10% ao ano, ou um número, ex.: *12*')], session };
   const { contribution, years } = session.data as { contribution: number; years: number };
   const total = computeProjection(contribution, rate, years);
   const own = contribution * years * 12;
@@ -223,9 +224,9 @@ function stepLongo(session: Session, text: string): HubResult {
           `*${brl(total)}*`,
           '',
           `• Do seu bolso: ${brl(own)}`,
-          `• Só de juros: ${brl(Math.max(total - own, 0))} (a ${pct(rate)} ao ano)`,
+          `• Só de rendimento (juros): ${brl(Math.max(total - own, 0))}, a ${pct(rate)} ao ano`,
           '',
-          `Em reais de hoje (descontando ~${num(INFLATION_PCT)}% de inflação ao ano), isso compraria o que *${brl(inTodaysMoney(total, years))}* compram agora.`,
+          `Como os preços sobem uns ${num(INFLATION_PCT)}% ao ano (inflação), esse dinheiro compraria só o que *${brl(inTodaysMoney(total, years))}* compram hoje.`,
           '',
           'O tempo faz mais que o valor: quanto antes você começa, menos precisa guardar.',
         ].join('\n')
@@ -326,7 +327,7 @@ function loanReport(a: Loan, b: Loan | null): string {
       loanLine('Proposta', a),
       `• Você paga no total: *${brl(ra.total)}*`,
       `• Só de juros: *${brl(ra.totalInterest)}* (${pct(extra, 0)} a mais do que pegou)`,
-      a.rate >= 8 ? '\n⚠️ Taxa muito alta. Antes de assinar, cote em pelo menos 2 bancos e veja a portabilidade (mande *direitos*).' : '',
+      a.rate >= 8 ? '\n⚠️ Taxa muito alta. Antes de assinar, pergunte em pelo menos 2 bancos e veja se vale trocar de banco levando a dívida (a portabilidade; mande *direitos* pra saber mais).' : '',
     ]
       .join('\n')
       .trim();
@@ -378,7 +379,7 @@ function stepEmprestimo(session: Session, text: string): HubResult {
 
 function debtLine(d: DebtItem, i: number): string {
   const { rate, assumed } = effectiveRate(d);
-  return `${i + 1}. ${d.description || 'Dívida'} — ${brl(d.value)} (${num(rate)}% a.m.${assumed ? ', típica' : ''})`;
+  return `${i + 1}. ${d.description || 'Dívida'} — ${brl(d.value)} (juros de ${num(rate)}% ao mês${assumed ? ', típicos' : ''})`;
 }
 
 function dividasResult(debts: DebtItem[]): Outgoing[] {
@@ -391,13 +392,13 @@ function dividasResult(debts: DebtItem[]): Outgoing[] {
       [
         '❄️ *Qual dívida pagar primeiro?* Pague o mínimo de todas e jogue o que sobrar na primeira da lista.',
         '',
-        '🏔️ *Avalanche* — maior juros primeiro (economiza mais dinheiro):',
+        '🏔️ *Avalanche* — começa pela dívida com os juros mais altos (você gasta menos no total):',
         ...avalanche.map(debtLine),
         '',
-        '⛄ *Bola de neve* — menor saldo primeiro (quita mais rápido e motiva):',
+        '⛄ *Bola de neve* — começa pela menor dívida (você quita mais rápido e se motiva):',
         ...snowball.map(debtLine),
         '',
-        same ? 'Nas suas dívidas, as duas ordens coincidem: sem dúvida, começa por aí. 👏' : 'Se os juros são bem diferentes, vá de avalanche. Se você precisa de motivação, bola de neve.',
+        same ? 'Nas suas dívidas, as duas ordens coincidem: sem dúvida, começa por aí. 👏' : 'Se os juros são bem diferentes, escolha a avalanche. Se você precisa de motivação, escolha a bola de neve.',
         assumed ? '\nOnde você não informou os juros, usei a taxa típica do tipo de dívida.' : '',
       ]
         .join('\n')
@@ -486,15 +487,15 @@ function stepCheckin(session: Session, text: string, profile: StateSnapshot, now
   const all = [...checkinsFrom(profile), entry];
   const prev = all.length > 1 ? all[all.length - 2] : null;
   const rateNow = rateOf(entry);
-  const lines = ['✅ *Check-in salvo!*', '', `🐖 Taxa de poupança: *${num(rateNow, 0)}%*`];
+  const lines = ['✅ *Check-in salvo!*', '', `🐖 Você guardou *${num(rateNow, 0)}%* da sua renda`];
   if (prev) {
     const diff = rateNow - rateOf(prev);
-    lines[2] += ` ${diff >= 0 ? '▲' : '▼'} ${num(Math.abs(diff), 0)} pontos vs. o mês anterior`;
+    lines[2] += ` (${diff >= 0 ? '▲' : '▼'} ${num(Math.abs(diff), 0)} ponto${Math.round(Math.abs(diff)) === 1 ? '' : 's'} ${diff >= 0 ? 'a mais' : 'a menos'} que no mês passado)`;
     lines.splice(3, 0, diff > 0 ? '👏 Subiu! É assim que a riqueza cresce: devagar e sempre.' : diff < 0 ? 'Caiu um pouco, e tudo bem. O importante é entender o que mudou neste mês.' : 'Ficou igual: constância também é conquista.');
   }
   if (all.length > 1) {
     const max = Math.max(10, ...all.map(rateOf));
-    lines.push('', '📈 *Histórico de poupança*');
+    lines.push('', '📈 *Quanto você guardou nos últimos meses*');
     for (const e of all.slice(-6)) {
       const label = new Date(e.date).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'America/Sao_Paulo' }).replace('.', '');
       lines.push(`${label} ${'█'.repeat(Math.max(0, Math.round((rateOf(e) / max) * 8)))} ${num(rateOf(e), 0)}%`);
