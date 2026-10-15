@@ -1,4 +1,4 @@
-# Onde paramos (15/10/2026) e o que vem a seguir
+# Onde paramos (15/10/2026) e o que fazer amanhã
 
 ## Estado atual: FASE DE TESTE (sem gastar nada ainda)
 - Bot do WhatsApp no ar no **número oficial** (+55 67 99608-5267, "Grana Séria"), registrado na Meta, com a verificação da empresa **aprovada** e o webhook ligado.
@@ -6,6 +6,18 @@
 - **Modo aberto ligado** (`WHATSAPP_OPEN=true`, PR #20): qualquer número que mandar mensagem é atendido. Como ainda é teste, só divulgar pra amigos e família.
 - 14 ferramentas, coach (próximo passo, voz da Babilônia, orçamento 🟢🟡🔴, feedback 👍/👎, "apagar meus dados"), começo rápido de 3 perguntas e diagnóstico. Testado pelo dono e pela namorada: tudo respondeu certo.
 - O número de teste antigo (+1 555 650-7892) não é mais usado.
+- **Banco completo no Supabase:** os 4 SQLs rodaram com sucesso (`expenses`, `user_state`, `wa_processed`, `wa_sessions`, `wa_profiles`, `wa_usage`, `wa_events`).
+- **Foto de perfil do número já colocada.** Logo do site (moeda dourada) disponível em `public/favicon.svg`.
+- Testado em uso real: o dono e a namorada conversaram com o bot sobre salário, contas e gastos do dia, e tudo respondeu certo.
+- O dono vai avisar no story pessoal que o assistente está no ar (sem venda), com link `https://wa.me/5567996085267?text=oi`.
+
+## Plano pra amanhã (em ordem)
+1. **Usar o bot de verdade** o dia todo: registrar os gastos reais, rodar `check-in` e `próximo passo`.
+2. **Anotar tudo que estranhar** (conta errada, pergunta que não entendeu, texto longo) e trazer pra ajustar o bot.
+3. **Ver os logs da Vercel** (`/api/whatsapp`) pra ver se apareceu erro depois do story, e a tabela `wa_events` no Supabase pra ver onde as pessoas travam.
+4. **Conferir o 👎** com nota do que faltou, se alguém clicar.
+5. Passar pelo roteiro de testes abaixo com as pessoas que chamarem.
+6. Se quiser: atualizar o texto do plano no **site** (ainda diz "Libere R$ X nos gastos").
 
 ## O que não custa nada (dá pra testar à vontade)
 - Responder quem escreveu primeiro no WhatsApp é gratuito (janela de 24h).
@@ -33,7 +45,7 @@
 - **Trocar as chaves expostas no chat:** chave `service_role` do Supabase, token do WhatsApp, segredo do app e token de verificação. Atualizar na Vercel e no webhook da Meta (token de verificação), e fazer Redeploy.
 - **IA:** `ANTHROPIC_API_KEY` (créditos em platform.claude.com) com `WHATSAPP_AI_MODEL=claude-haiku-5-5` e `WHATSAPP_AI_DAILY_LIMIT` pra segurar o custo. Liga a IA nas frases soltas e a leitura de fatura.
 - **Lembrete mensal:** criar o modelo `lembrete_plano` (Utilidade, pt_BR) no WhatsApp Manager, adicionar forma de pagamento na Meta, e definir `CRON_SECRET`, `WHATSAPP_REMINDER_TEMPLATE` e `SITE_URL`.
-- **Perfil do número:** subir a foto (640x640) e a descrição; corrigir o telefone do MEI na Receita.
+- **Perfil do número:** conferir a descrição e a categoria; corrigir o telefone do MEI na Receita.
 - **Vercel Pro** (o Hobby é só uso não comercial), **LGPD** (política e termos), regras da CVM e limites do MEI.
 - Decidir preço (grátis ou R$ 27) e cobrança; e-mail de contato; analytics.
 - Se quiser voltar ao modo fechado: apagar `WHATSAPP_OPEN` e usar `ALLOWED_NUMBERS`.
