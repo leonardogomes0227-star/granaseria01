@@ -69,6 +69,30 @@ export function budgetLine(category: string, rows: Expense[], budgets?: Record<s
   return `${dot} ${categoryEmoji(category)} ${category}: ${brl(spent)} de ${brl(budget)} no mês (${pct}%).${tail}`;
 }
 
+/** "Quanto ainda dá pra gastar": o que a pessoa planejou no diagnóstico, o que já gastou e quanto sobra por dia até o fim do mês. */
+function budgetText(rows: Expense[], budgets: Record<string, number> | undefined, now: Date): string {
+  const entries = Object.entries(budgets ?? {}).filter(([, v]) => v > 0);
+  if (entries.length === 0) {
+    return 'Pra eu mostrar quanto ainda dá pra gastar, preciso saber quanto você planejou gastar em cada coisa. 🙂 Mande *diagnóstico* (leva uns 2 minutos) e depois me pergunte de novo.';
+  }
+  const local = new Date(now.getTime() - BRT_OFFSET_MS);
+  const lastDay = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 0)).getUTCDate();
+  const daysLeft = Math.max(1, lastDay - local.getUTCDate() + 1); // conta hoje
+  const lines = [`🎯 *Quanto ainda dá pra gastar neste mês* (faltam ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}, contando hoje)`, ''];
+  for (const [category, budget] of entries) {
+    const spent = sum(rows.filter((r) => r.category === category));
+    const left = budget - spent;
+    const pct = Math.round((spent / budget) * 100);
+    const dot = pct >= 100 ? '🔴' : pct >= 70 ? '🟡' : '🟢';
+    const head = `${dot} ${categoryEmoji(category)} *${category}*: gastou ${brl(spent)} de ${brl(budget)}`;
+    if (left <= 0) lines.push(`${head}. Passou ${brl(-left)}.`);
+    else if (category === 'Moradia') lines.push(`${head}. Ainda faltam ${brl(left)} (contas fixas, como aluguel e luz).`);
+    else lines.push(`${head}. Ainda dá pra gastar ${brl(left)}, uns ${brl(Math.floor(left / daysLeft))} por dia.`);
+  }
+  lines.push('', '_Esses limites são o que você me contou no diagnóstico._');
+  return lines.join('\n');
+}
+
 export const HELP_TEXT = [
   '👋 *Assistente de gastos Grana Séria*',
   '',
@@ -79,8 +103,11 @@ export const HELP_TEXT = [
   '',
   'Comandos:',
   '• *hoje* — gastos de hoje',
+  '• *ontem* — gastos de ontem',
   '• *semana* — total da semana',
   '• *mês* — resumo do mês por categoria',
+  '• *últimos* — os últimos gastos anotados',
+  '• *quanto ainda posso gastar* — o que sobra do que você planejou',
   '• *apagar* — desfaz o último registro',
   '• *menu* — tudo o que eu sei fazer',
 ].join('\n');
@@ -135,6 +162,22 @@ export async function handleText(
       const lines = rows.map((r) => `• ${brl(r.amount)} — ${r.description}`);
       return [`📅 *Hoje*: ${brl(sum(rows))}`, '', ...lines].join('\n');
     }
+
+    case 'yesterday': {
+      const todayStart = startOfDayBRT(now);
+      const rows = (await deps.listExpensesSince(msg.phone, new Date(todayStart.getTime() - DAY_MS))).filter((r) => new Date(r.created_at).getTime() < todayStart.getTime());
+      if (rows.length === 0) return 'Nenhum gasto registrado ontem.';
+      return [`📅 *Ontem*: ${brl(sum(rows))}`, '', ...rows.map((r) => `• ${brl(r.amount)} — ${r.description}`)].join('\n');
+    }
+
+    case 'recent': {
+      const rows = [...(await deps.listExpensesSince(msg.phone, startOfMonthBRT(now)))].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);
+      if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda. Pra anotar, mande por exemplo *gastei 35 no mercado*.';
+      return ['🧾 *Seus últimos gastos*', '', ...rows.map((r) => `• ${dayLabel(new Date(r.created_at), now)} · ${brl(r.amount)} — ${r.description}`), '', 'Errou um? Mande *apagar* pra desfazer o último.'].join('\n');
+    }
+
+    case 'budget':
+      return budgetText(await deps.listExpensesSince(msg.phone, startOfMonthBRT(now)), deps.budgets, now);
 
     case 'week': {
       const rows = await deps.listExpensesSince(msg.phone, startOfWeekBRT(now));

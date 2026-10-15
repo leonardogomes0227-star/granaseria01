@@ -27,6 +27,7 @@ export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   const start = [
     { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Não sabe por onde começar? Toque aqui' },
+    { id: 'menu:gastos', title: '💸 Gastos do dia a dia', description: 'Anote o que gasta e veja quanto ainda pode gastar' },
     { id: 'menu:diag', title: '📊 Fazer meu diagnóstico', description: 'Veja onde você está e receba um plano' },
     { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
   ];
@@ -38,13 +39,12 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   ];
   const more = [
     { id: 'menu:calc', title: '🧮 Calculadoras', description: 'Comprar, juntar dinheiro, empréstimo, dívidas' },
-    { id: 'menu:mais', title: '✨ Mais', description: 'Check-in do mês, selos e frase do dia' },
-    { id: 'mais:feedback', title: '💬 Dar feedback', description: 'Conte o que gostou ou o que melhorar' },
+    { id: 'menu:mais', title: '✨ Mais', description: 'Check-in, selos, frase do dia e dar feedback' },
   ];
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.\n🎯 Prefere dizer o que quer resolver? Mande *objetivo*.`,
+      text: `${name ? `${name}, como` : 'Como'} posso ajudar? 🪙 Toque em *Ver opções*.\n\n💸 Pra *anotar um gasto*, é só escrever, por exemplo: *gastei 35 no mercado*.\n🎯 Prefere dizer o que quer resolver? Mande *objetivo*.\n💬 Pra dar sua opinião, mande *feedback*.`,
       button: 'Ver opções',
       rows: [...start, ...save, ...more],
       sections: [
@@ -54,6 +54,25 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
       ],
     },
   ];
+}
+
+/** Gastos do dia a dia: anotar e consultar. Os botões "gastos:*" viram os comandos de sempre (hoje, semana, mês…). */
+export function gastosMenu(): Outgoing {
+  return {
+    kind: 'list',
+    text: '💸 *Gastos do dia a dia.* Pra anotar, é só escrever o que gastou, por exemplo:\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nOu escolha uma opção:',
+    button: 'Ver opções',
+    rows: [
+      { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Veja como é fácil: é só escrever' },
+      { id: 'gastos:hoje', title: '📅 Gastos de hoje', description: 'O que você gastou hoje' },
+      { id: 'gastos:ontem', title: '⏪ Gastos de ontem', description: 'O que você gastou ontem' },
+      { id: 'gastos:semana', title: '🗓️ Gastos da semana', description: 'Total desde segunda, por categoria' },
+      { id: 'gastos:mes', title: '📊 Gastos do mês', description: 'Resumo do mês por categoria' },
+      { id: 'gastos:sobra', title: '🎯 Quanto posso gastar', description: 'Por categoria, até o fim do mês' },
+      { id: 'gastos:ultimos', title: '🧾 Últimos gastos', description: 'Os últimos que você anotou' },
+      { id: 'gastos:desfazer', title: '↩️ Desfazer o último', description: 'Apaga o último gasto anotado' },
+    ],
+  };
 }
 
 /** Depois de uma ferramenta, sempre um caminho de volta: menu, próximo passo ou opinião. */
@@ -566,11 +585,12 @@ export const wantsNextStep = (raw: string): boolean => {
 const ERASE_WORDS = /^(apagar|excluir|deletar) (meus |todos os )?dados$/;
 
 const GASTOS_HELP = txt(
-  '💸 *Registrar gastos* é só me mandar o que gastou:\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nComandos: *hoje*, *semana*, *mês* (resumo por categoria) e *apagar* (desfaz o último).'
+  '✍️ *Pra anotar um gasto, é só me mandar o que gastou:*\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nPode escrever do seu jeito. Eu entendo o valor, separo por categoria (mercado, transporte, lazer…) e já digo quanto você gastou hoje e no mês.\n\nPra ver depois: *hoje*, *ontem*, *semana*, *mês*, *últimos* ou *quanto ainda posso gastar*. Errou? Mande *apagar* pra desfazer o último.'
 );
 
 /** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
 function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult | null {
+  if (/^(gastos|meus gastos|gastos diarios|gastos do dia a dia|gastos do dia|despesas)$/.test(t)) return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
   if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?)$/.test(t)) return startLeaks();
   if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
@@ -639,7 +659,7 @@ function startGoal(id: string, input: HubInput): HubResult {
   const open: Record<GoalId, () => HubResult> = {
     divida: () => startDividas(profile),
     guardar: () => startMeta(),
-    gastos: () => ({ out: [GASTOS_HELP], session: null }),
+    gastos: () => ({ out: [gastosMenu()], session: null }),
     sobra: () => startLeaks(),
     extra: () => startExtra(profile),
     comprar: () => startCompra(profile),
@@ -716,7 +736,8 @@ function route(input: HubInput): HubResult | null {
 
   // ids de botões e listas
   if (t.startsWith('dir:')) return withMenuHint({ out: rightDetail(t.slice(4)), session: null });
-  if (t === 'menu:gastos') return { out: [GASTOS_HELP], session: null };
+  if (t === 'menu:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
+  if (t === 'gastos:anotar') return { out: [GASTOS_HELP], session: null };
   if (t === 'menu:diag') return startDiag(name);
   if (t === 'menu:rapido') return startQuick(name);
   if (t === 'menu:13o') return startExtra(profile);
