@@ -106,6 +106,13 @@ Quem preferir escrever com as próprias palavras também é entendido, quando a 
 A palavra *objetivo* abre a lista a qualquer hora. As escolhas aparecem no painel `/admin`, em "O que as pessoas querem resolver".
 O código está em `server/whatsapp/goals.ts`.
 
+## Atalhos: sem passar pelo menu toda vez
+
+- **O bot ensina o atalho na hora:** ao abrir uma ferramenta pelo menu, ele manda antes uma linha como "Da próxima vez, é só mandar *meta* que eu abro direto". As palavras estão em `server/whatsapp/shortcuts.ts`.
+- **Mais jeitos de escrever:** *juntar dinheiro* ou *poupar* abrem a meta; *assinaturas* ou *dinheiro perdido*, o caça-vazamentos; *minhas dívidas*, as dívidas; *posso comprar 2000*, o vale a pena comprar.
+- **Atalhos de cada pessoa:** no "oi" de quem já fez o diagnóstico, o bot mostra até 3 botões com as ferramentas que ela mais usa (pelo histórico de uso da própria pessoa, sem guardar o telefone).
+- O menu também lembra: "você pode escrever direto o que quer, tipo *meta*, *dívidas* ou *gastos*".
+
 ## Ferramentas do site no WhatsApp
 
 Mande **oi** ou **menu** e o bot mostra uma lista de opções, agrupada em *Começar*, *Economizar e proteger* e *Mais*. Depois de cada ferramenta, aparecem os botões *Ver menu*, *Próximo passo* e *Dar opinião*. Também funcionam palavras digitadas, mesmo no meio de outra conversa:
