@@ -18,12 +18,11 @@ import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, getFlag, setFlag, takeHandoff, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
-import { siteLink } from '../server/whatsapp/site.js';
+import { siteLink, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
 
-const SITE_URL = (process.env.SITE_URL || 'https://granaseria.com.br').replace(/\/$/, '');
 
 const AI_DAILY_LIMIT = Number(process.env.WHATSAPP_AI_DAILY_LIMIT || 40);
 const text = (t: string): Outgoing[] => [{ kind: 'text', text: t }];
