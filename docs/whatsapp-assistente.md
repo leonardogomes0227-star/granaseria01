@@ -20,6 +20,7 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | `saldo` | Entrou, saiu e saldo do mês |
 | `formas de pagamento` | Quanto saiu no mês em cada forma de pagamento (o `mês` também mostra) |
 | `apagar entrada` | Desfaz a última entrada |
+| `nova dívida cartão 2000` | Acrescenta uma dívida às que já estão salvas no diagnóstico e mostra a ordem de pagamento de novo (também em *Sair das dívidas → Nova dívida*) |
 | `posso comprar 300` | Faz a conta com o saldo real do mês (entrou − saiu) e diz quanto sobra por dia depois da compra |
 | 📸 foto do cupom, nota ou comprovante de pix | A IA lê o valor, o lugar, a categoria e a forma de pagamento e anota o gasto (ou a entrada, se o pix foi recebido). Precisa de `ANTHROPIC_API_KEY` |
 | `resumo semanal` | Mostra a semana e liga o resumo automático (domingo de manhã) e o do mês (dia 1). `parar resumo` desliga |

@@ -435,6 +435,7 @@ function dividasResult(debts: DebtItem[]): Outgoing[] {
         '',
         same ? 'Nas suas dívidas, as duas ordens coincidem: sem dúvida, começa por aí. 👏' : 'Se os juros são bem diferentes, escolha a avalanche. Se você precisa de motivação, escolha a bola de neve.',
         assumed ? '\nOnde você não informou os juros, usei a taxa típica do tipo de dívida.' : '',
+        '\nEsqueceu alguma? Mande, por exemplo, *nova dívida cartão 2000*.',
       ]
         .join('\n')
         .trim()
@@ -452,6 +453,52 @@ export function startDividas(profile: StateSnapshot): HubResult {
       ),
     ],
     session: { flow: 'dividas', step: 'debts', data: { debts: [] } },
+  };
+}
+
+const ADD_DEBT_ASK = '➕ *Nova dívida.* Mande o tipo e o valor que ainda falta pagar, ex.: *cartão 2000* ou *empréstimo 3000 parcela 250*. (ou *cancelar*)';
+
+/** "nova dívida cartão 2000": junta às dívidas do diagnóstico salvo e mostra a ordem de pagamento de novo. */
+export function startAddDebt(profile: StateSnapshot, raw?: string): HubResult {
+  if (!raw) return { out: [txt(ADD_DEBT_ASK)], session: { flow: 'dividas', step: 'add', data: {} } };
+  return addDebt(profile, raw);
+}
+
+function addDebt(profile: StateSnapshot, raw: string): HubResult {
+  const diag = diagnosisFrom(profile);
+  const current = (diag?.debts ?? []).filter((d) => d.value > 0);
+  const debt = current.length < 12 ? parseDebt(raw, `wa-${Date.now().toString(36)}`) : null;
+  if (!debt) {
+    const msg = current.length >= 12 ? 'Já tenho 12 dívidas anotadas, é o máximo por aqui.' : `Não entendi. 🤔 ${ADD_DEBT_ASK}`;
+    return { out: [txt(msg)], session: current.length >= 12 ? null : { flow: 'dividas', step: 'add', data: {} } };
+  }
+  const added = `✅ Adicionei: *${debt.description}*, ${brl(debt.value)}${debt.installment ? `, parcela de ${brl(debt.installment)}` : ''}.`;
+  if (!diag) {
+    // sem diagnóstico não há onde guardar: segue a lista da calculadora de dívidas
+    return {
+      out: [txt(`${added} Tem outra? Mande agora, ou *pronto* pra ver qual pagar primeiro.`)],
+      session: { flow: 'dividas', step: 'debts', data: { debts: [debt] } },
+    };
+  }
+  const all = [...current, debt];
+  let progress: { data?: unknown; step?: number } = {};
+  try {
+    progress = JSON.parse(profile['selos-wizard-progress'] ?? '{}');
+  } catch {
+    // perfil corrompido: grava só os dados do diagnóstico
+  }
+  const saved: StateSnapshot = { ...profile, 'selos-wizard-progress': JSON.stringify({ ...progress, data: { ...diag, debts: all } }) };
+  const total = all.reduce((t, d) => t + d.value, 0);
+  const following = Boolean(profile['selos-tracking']);
+  return {
+    out: [
+      txt(
+        `${added} Agora são ${all.length} ${all.length === 1 ? 'dívida' : 'dívidas'}, somando ${brl(total)}.${following ? '\n\n_O plano do mês continua com as contas de quando você começou. Pra recalcular com essa dívida, mande *refazer diagnóstico*._' : ''}`
+      ),
+      ...dividasResult(all),
+    ],
+    session: null,
+    profile: saved,
   };
 }
 
@@ -671,7 +718,7 @@ export function toolStep(session: Session, text: string, profile: StateSnapshot,
     case 'emprestimo':
       return stepEmprestimo(session, text);
     case 'dividas':
-      return stepDividas(session, text);
+      return session.step === 'add' ? addDebt(profile, text) : stepDividas(session, text);
     case 'checkin':
       return stepCheckin(session, text, profile, now);
     default:
