@@ -5,7 +5,8 @@
 import type { Outgoing } from './meta.js';
 import { buttons, txt } from './hubcore.js';
 
-export const SITE_URL = (process.env.SITE_URL?.trim() || 'https://granaseria.com.br').replace(/\/$/, '');
+// Fixo de propósito: a variável SITE_URL da Vercel já mandou link com domínio errado. O site é este.
+export const SITE_URL = 'https://granaseria.com.br';
 
 type SiteKey = 'diag' | 'plano' | 'dividas' | 'emprestimo' | 'meta' | 'longo' | 'extra' | 'vazamentos' | 'direitos' | 'fatura' | 'checkin' | 'selos' | 'frase';
 
