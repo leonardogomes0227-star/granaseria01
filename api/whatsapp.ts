@@ -5,17 +5,18 @@
 // POST → mensagens recebidas
 
 import { downloadMedia, extractMessages, isAllowed, MediaTooBigError, normalizeBrPhone, sendOutgoing, sendText, verifySignature, type IncomingMedia, type Outgoing } from '../server/whatsapp/meta.js';
-import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
-import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense } from '../server/whatsapp/db.js';
+import { handleText, recordReceipt, HELP_TEXT, type BotDeps } from '../server/whatsapp/bot.js';
+import { analyzeReceipt } from '../server/receipt.js';
+import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
+import { hubStep, wantsNextStep, wantsBalance, wantsHistory, type History } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { faturaOut } from '../server/whatsapp/tools.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -45,6 +46,43 @@ function limitedSmart(phone: string): typeof askClaude {
     const allowed = await bumpUsage(phone, `ai:${day}`, AI_DAILY_LIMIT).catch(() => true);
     return allowed ? askClaude(msgText, ctx) : null;
   };
+}
+
+/** Entradas e gastos dos últimos 30 dias, pra pré-preencher o diagnóstico. Qualquer falha: segue sem (perguntas normais). */
+async function loadHistory(phone: string, now: Date): Promise<History | undefined> {
+  try {
+    const since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const [incomes, expenses] = await Promise.all([listIncomesSince(phone, since), listExpensesSince(phone, since)]);
+    const first = Math.min(...[...incomes, ...expenses].map((r) => new Date(r.created_at).getTime()));
+    if (!Number.isFinite(first)) return undefined;
+    const byCategory: Record<string, number> = {};
+    for (const e of expenses) byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
+    return {
+      income: incomes.reduce((t, r) => t + r.amount, 0),
+      spent: expenses.reduce((t, r) => t + r.amount, 0),
+      byCategory,
+      days: Math.min(30, Math.max(1, Math.ceil((now.getTime() - first) / (24 * 60 * 60 * 1000)))),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+const SUMMARY_FLAG = 'resumo'; // wa_usage: quem pediu o resumo semanal
+
+/** Cada tipo de oferta só uma vez por mês por pessoa (usa o mesmo contador dos limites de uso). */
+const offerOnce = (phone: string, key: string) => bumpUsage(phone, `offer:${key}:${new Date().toISOString().slice(0, 7)}`, 1);
+
+/** Entradas e gastos do mês. Sem entradas anotadas (ou sem a tabela), devolve undefined e a ferramenta pergunta a renda. */
+async function loadBalance(phone: string, now: Date): Promise<{ income: number; spent: number } | undefined> {
+  try {
+    const since = startOfMonthBRT(now);
+    const [incomes, expenses] = await Promise.all([listIncomesSince(phone, since), listExpensesSince(phone, since)]);
+    const income = incomes.reduce((t, r) => t + r.amount, 0);
+    return income > 0 ? { income, spent: expenses.reduce((t, r) => t + r.amount, 0) } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -86,7 +124,11 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi
     const expensesThisMonth = wantsNextStep(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
     const shortcuts = wantsNextStep(incoming) && !hub.session ? await loadShortcuts(phone, smartConfigured()).catch(() => []) : undefined;
-    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth, shortcuts });
+    // "posso comprar 300?" usa o saldo real do mês (entradas e gastos que a pessoa já anotou)
+    const balance = wantsBalance(incoming) ? await loadBalance(phone, now) : undefined;
+    // diagnóstico e começo rápido já vêm preenchidos com o que a pessoa anotou nos últimos 30 dias
+    const history = wantsHistory(incoming) && !hub.session ? await loadHistory(phone, now) : undefined;
+    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth, shortcuts, balance, history });
     if (step) {
       if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não avança a conversa duas vezes
       if (step.erase) {
@@ -126,13 +168,28 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   // ajuda mostra também os comandos do plano pra quem tem conta
   if (user && parseMessage(incoming).kind === 'help') return text(HELP_TEXT + '\n' + PLAN_HELP);
 
-  const diag = diagnosisFrom(hub?.profile ?? user?.state ?? {});
-  const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
-  const answer = await handleText(
-    { id: msg.id, phone, text: incoming },
-    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
-  );
+  const answer = await handleText({ id: msg.id, phone, text: incoming }, botDeps(phone, hub?.profile ?? user?.state ?? {}));
   return answer ? text(answer) : null;
+}
+
+/** As funções de banco do registro de gastos, com o orçamento do diagnóstico (se tiver) e a IA (se ligada). */
+function botDeps(phone: string, profile: StateSnapshot): BotDeps {
+  const diag = diagnosisFrom(profile);
+  const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
+  return {
+    insertExpense,
+    listExpensesSince,
+    deleteLastExpense,
+    updateLastExpense,
+    insertIncome,
+    listIncomesSince,
+    deleteLastIncome,
+    offerOnce,
+    setSummary: (p, on) => setFlag(p, SUMMARY_FLAG, on),
+    summaryOn: (p) => getFlag(p, SUMMARY_FLAG),
+    budgets,
+    smart: smartConfigured() ? limitedSmart(phone) : undefined,
+  };
 }
 
 /**
@@ -154,9 +211,16 @@ async function maybeAskFeedback(from: string, sent: Outgoing[]): Promise<void> {
 }
 
 const FATURA_MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
+const RECEIPT_MONTHLY_LIMIT = Number(process.env.RECEIPT_MONTHLY_LIMIT || 60);
 const MAX_FILE_BYTES = Math.floor((MAX_BASE64 * 3) / 4); // ~3 MB, o mesmo limite do site
 
-/** PDF ou foto: lê a fatura com a IA e responde com as cobranças escondidas. */
+const FATURA_HINT = /fatura|extrato/i;
+const RECEIPT_HINT = /cupom|comprovante|nota|recibo|pix|paguei|gastei/i;
+
+/**
+ * PDF ou foto. Foto (ou PDF com legenda "comprovante") é lida como cupom/comprovante e vira um gasto.
+ * Fatura e extrato (PDF, legenda "fatura", ou uma foto que a leitura reconhece como fatura) vão pro leitor de fatura.
+ */
 async function handleMedia(m: IncomingMedia): Promise<void> {
   const phone = normalizeBrPhone(m.from);
   const user = accountsConfigured() ? await findUserByPhone(phone) : null;
@@ -164,17 +228,61 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
   if (!(await markProcessed(m.id))) return; // reenvio da Meta: já estamos lendo
 
   const say = (t: string) => sendText(m.from, t);
-  if (!smartConfigured()) return say('O leitor de fatura ainda não foi ativado por aqui. 🙏');
-  if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande a fatura em *PDF* ou em *foto* (JPG ou PNG). 🧾');
+  if (!smartConfigured()) return say('Ler fotos ainda não foi ativado por aqui. 🙏 Me manda por escrito, ex.: *mercado 45,90 no pix*.');
+  if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande em *foto* (JPG ou PNG) ou em *PDF*. 📸');
 
-  const period = `fatura:${new Date().toISOString().slice(0, 7)}`;
-  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => true))) {
-    return say(`Você já usou as ${FATURA_MONTHLY_LIMIT} leituras deste mês. Volta no mês que vem! 🙂`);
-  }
-  await say('🧾 Recebi! Estou lendo sua fatura… leva uns 30 segundos.');
+  const caption = m.caption ?? '';
+  const asReceipt = !FATURA_HINT.test(caption) && (m.mime !== 'application/pdf' || RECEIPT_HINT.test(caption));
+  let file: { mime: string; base64: string } | null = null;
+  const download = async () => (file ??= await downloadMedia(m.mediaId, MAX_FILE_BYTES));
 
   try {
-    const file = await downloadMedia(m.mediaId, MAX_FILE_BYTES);
+    if (asReceipt) {
+      const period = `cupom:${new Date().toISOString().slice(0, 7)}`;
+      if (!(await bumpUsage(phone, period, RECEIPT_MONTHLY_LIMIT).catch(() => true))) {
+        return say(`Você já mandou ${RECEIPT_MONTHLY_LIMIT} fotos neste mês. Me manda por escrito, ex.: *mercado 45,90 no pix*. 🙂`);
+      }
+      await say('📸 Recebi! Lendo…');
+      const f = await download();
+      const outcome = await analyzeReceipt(f.mime as MediaType, f.base64);
+      if (!outcome.ok) {
+        await refundUsage(phone, period).catch(() => undefined);
+        return say(`${outcome.error} Ou me manda por escrito, ex.: *mercado 45,90 no pix*.`);
+      }
+      if (outcome.receipt.tipo === 'outro') {
+        await refundUsage(phone, period).catch(() => undefined);
+        return say('Não achei um pagamento nessa imagem. 🤔 Mande a foto do cupom, da nota ou do comprovante do pix (ou a fatura do cartão).');
+      }
+      if (outcome.receipt.tipo !== 'fatura_extrato') {
+        const hub = await loadHub(user, phone);
+        const answer = await recordReceipt(phone, outcome.receipt, m.id, botDeps(phone, hub?.profile ?? user?.state ?? {}), new Date());
+        if (answer && answer !== 'not-receipt') await say(answer);
+        return;
+      }
+      await refundUsage(phone, period).catch(() => undefined); // era fatura: conta no limite da fatura
+    }
+    await readFatura(m, phone, user, download, say);
+  } catch (err) {
+    if (err instanceof MediaTooBigError) return say('Arquivo grande demais (máximo 3 MB). Tenta uma foto menor ou só as páginas dos lançamentos. 🙏');
+    throw err;
+  }
+}
+
+/** Fatura ou extrato: procura assinaturas, tarifas e juros escondidos. */
+async function readFatura(
+  m: IncomingMedia,
+  phone: string,
+  user: Awaited<ReturnType<typeof findUserByPhone>>,
+  download: () => Promise<{ mime: string; base64: string }>,
+  say: (t: string) => Promise<void>
+): Promise<void> {
+  const period = `fatura:${new Date().toISOString().slice(0, 7)}`;
+  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => true))) {
+    return say(`Você já usou as ${FATURA_MONTHLY_LIMIT} leituras de fatura deste mês. Volta no mês que vem! 🙂`);
+  }
+  await say('🧾 Estou lendo sua fatura… leva uns 30 segundos.');
+  try {
+    const file = await download();
     const outcome = await analyzeFatura(file.mime as MediaType, file.base64);
     if ('error' in outcome) {
       await refundUsage(phone, period).catch(() => undefined);
@@ -189,7 +297,6 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
     for (const o of out) await sendOutgoing(m.from, o);
   } catch (err) {
     await refundUsage(phone, period).catch(() => undefined);
-    if (err instanceof MediaTooBigError) return say('Arquivo grande demais (máximo 3 MB). Tenta mandar só as páginas dos lançamentos. 🙏');
     throw err;
   }
 }
@@ -246,7 +353,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       await handleMedia(m);
     } catch (err) {
-      console.error('Erro ao ler a fatura', m.id, err);
+      console.error('Erro ao ler o arquivo', m.id, err);
       try {
         await sendText(m.from, '⚠️ Tive um problema pra ler esse arquivo. Tenta de novo em alguns minutos.');
       } catch {
@@ -259,7 +366,12 @@ export async function POST(request: Request): Promise<Response> {
     const linked = accountsConfigured() ? await findUserByPhone(normalizeBrPhone(msg.from)).catch(() => null) : null;
     if (!linked && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) continue;
     try {
-      await sendText(msg.from, 'Por enquanto eu só entendo texto. ✍️ Ex.: "gastei 35 no mercado"');
+      await sendText(
+        msg.from,
+        msg.type === 'audio'
+          ? '🎧 Ainda não consigo ouvir áudio. Me manda por escrito (ex.: *gastei 35 no mercado no pix*) ou a *foto do cupom* que eu anoto.'
+          : 'Por enquanto eu entendo texto e foto. ✍️ Ex.: *gastei 35 no mercado no pix*, ou mande a foto do cupom.'
+      );
     } catch (err) {
       console.error('Erro ao responder mensagem não-texto', msg.id, err);
     }

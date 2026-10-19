@@ -49,11 +49,11 @@ function rawMessages(payload: unknown): WithName[] {
 export function extractMessages(payload: unknown): {
   texts: IncomingText[];
   media: IncomingMedia[];
-  others: { id: string; from: string }[];
+  others: { id: string; from: string; type?: string }[];
 } {
   const texts: IncomingText[] = [];
   const media: IncomingMedia[] = [];
-  const others: { id: string; from: string }[] = [];
+  const others: { id: string; from: string; type?: string }[] = [];
   for (const msg of rawMessages(payload)) {
     const picked = msg.interactive?.button_reply?.id ?? msg.interactive?.list_reply?.id;
     if (msg.type === 'text' && msg.text?.body) texts.push({ id: msg.id, from: msg.from, text: msg.text.body, profileName: msg.profileName });
@@ -61,7 +61,7 @@ export function extractMessages(payload: unknown): {
     else if (msg.type === 'document' && msg.document?.id)
       media.push({ id: msg.id, from: msg.from, mediaId: msg.document.id, mime: msg.document.mime_type ?? '', filename: msg.document.filename, caption: msg.document.caption });
     else if (msg.type === 'image' && msg.image?.id) media.push({ id: msg.id, from: msg.from, mediaId: msg.image.id, mime: msg.image.mime_type ?? '', caption: msg.image.caption });
-    else others.push({ id: msg.id, from: msg.from });
+    else others.push({ id: msg.id, from: msg.from, type: msg.type });
   }
   return { texts, media, others };
 }

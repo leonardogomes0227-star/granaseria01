@@ -16,6 +16,14 @@ export interface Session {
   data: Record<string, unknown>;
 }
 
+/** O que a pessoa anotou nos últimos 30 dias (entradas e gastos), pra pré-preencher o diagnóstico. */
+export interface History {
+  income: number;
+  spent: number;
+  byCategory: Record<string, number>; // gastos por categoria do registro (Alimentação, Moradia…)
+  days: number; // quantos dias os registros cobrem (1 a 30)
+}
+
 export interface HubInput {
   text: string; // texto digitado, ou o id do botão/linha tocado
   session: Session | null;
@@ -23,6 +31,8 @@ export interface HubInput {
   now: Date;
   faturaEnabled?: boolean; // mostra "Ler minha fatura" no menu
   name?: string | null; // primeiro nome da pessoa, se der pra usar
+  history?: History; // só carregado quando a pessoa abre o diagnóstico ou o começo rápido
+  balance?: { income: number; spent: number }; // entradas e gastos do mês (só carregado quando a pessoa pergunta se pode comprar)
   expensesThisMonth?: number; // quantos gastos ela já anotou no mês (pra sugerir o próximo passo)
   shortcuts?: [string, string][]; // as ferramentas que ela mais usa (id, título), pra oferecer no "oi"
 }
@@ -58,6 +68,9 @@ export const GASTOS_BUTTON_TEXT: Record<string, string> = {
   'gastos:sobra': 'quanto ainda posso gastar',
   'gastos:ultimos': 'últimos',
   'gastos:desfazer': 'apagar',
+  'gastos:entradas': 'entradas',
+  'gastos:saldo': 'saldo',
+  'gastos:formas': 'formas de pagamento',
 };
 
 export const txt = (text: string): Outgoing => ({ kind: 'text', text });

@@ -65,6 +65,25 @@ export async function refundUsage(phone: string, period: string): Promise<void> 
   if (row && row.count > 0) await check(await upsert('wa_usage', 'phone,period', { phone, period, count: row.count - 1 }), 'upsert');
 }
 
+/** Liga/desliga uma preferência da pessoa (ex.: receber o resumo semanal). Fica na wa_usage: count 1 = ligado. */
+export async function setFlag(phone: string, key: string, on: boolean): Promise<void> {
+  await check(await upsert('wa_usage', 'phone,period', { phone, period: key, count: on ? 1 : 0 }), 'upsert');
+}
+
+export async function getFlag(phone: string, key: string): Promise<boolean> {
+  const res = await rest(`wa_usage?${new URLSearchParams({ phone: `eq.${phone}`, period: `eq.${key}`, select: 'count', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { count: number }[];
+  return (row?.count ?? 0) > 0;
+}
+
+/** Todos os números com a preferência ligada (ex.: quem pediu o resumo semanal). */
+export async function listFlagged(key: string): Promise<string[]> {
+  const res = await rest(`wa_usage?${new URLSearchParams({ period: `eq.${key}`, count: 'gt.0', select: 'phone' })}`);
+  await check(res, 'select');
+  return ((await res.json()) as { phone: string }[]).map((r) => r.phone);
+}
+
 /** Impressão digital do telefone: dá pra contar pessoas distintas sem guardar o número nas métricas. */
 export function personHash(phone: string): string {
   return createHash('sha256').update(`${process.env.METRICS_SALT ?? 'grana-seria'}:${phone}`).digest('hex').slice(0, 24);
@@ -86,10 +105,10 @@ export async function trackEvent(phone: string, event: string, note?: string): P
 
 /** "Apagar meus dados" (LGPD): gastos, perfil, conversa em andamento, contadores e métricas deste número. */
 export async function eraseWhatsAppData(phone: string): Promise<void> {
-  const targets = [`expenses?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
+  const targets = [`expenses?phone=eq.${phone}`, `incomes?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
   for (const t of targets) {
     const res = await rest(t, { method: 'DELETE' });
-    // wa_events pode não existir ainda (SQL de métricas não rodado): não é motivo pra deixar de apagar o resto
-    if (!res.ok && !t.startsWith('wa_events')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
+    // wa_events e incomes podem não existir ainda (SQL não rodado): não é motivo pra deixar de apagar o resto
+    if (!res.ok && !t.startsWith('wa_events') && !t.startsWith('incomes')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
   }
 }

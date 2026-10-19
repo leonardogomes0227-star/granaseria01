@@ -23,12 +23,19 @@
     },
     "api/whatsapp.ts": {
       "maxDuration": 60
+    },
+    "api/resumo.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/lembretes",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/resumo",
+      "schedule": "0 13 * * *"
     }
   ]
 }

@@ -9,6 +9,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { CATEGORIES, OTHER_CATEGORY, type Command } from './parse.js';
 
+const METHOD_NAMES = ['Pix', 'Débito', 'Crédito', 'Dinheiro', 'Boleto', 'Vale', 'Cartão'];
+
 // Modelo configurável: WHATSAPP_AI_MODEL=claude-haiku-5-5 deixa cada resposta bem mais barata.
 const MODEL = process.env.WHATSAPP_AI_MODEL?.trim() || 'claude-opus-5-5';
 const CATEGORY_NAMES = [...CATEGORIES.map((c) => c.name), OTHER_CATEGORY.name];
@@ -31,6 +33,7 @@ export interface SmartExpense {
   description: string;
   category: string;
   daysAgo: number;
+  method?: string; // forma de pagamento, se a pessoa disse
 }
 
 export interface SmartResult {
@@ -73,12 +76,13 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['amount', 'description', 'category', 'days_ago'],
+        required: ['amount', 'description', 'category', 'days_ago', 'payment_method'],
         properties: {
           amount: { type: 'number', description: 'valor em reais' },
           description: { type: 'string', description: 'o que foi, curto, ex.: "mercado"' },
           category: { type: 'string', enum: CATEGORY_NAMES },
           days_ago: { type: 'integer', description: '0 = hoje, 1 = ontem, 2 = anteontem…' },
+          payment_method: { type: 'string', enum: [...METHOD_NAMES, ''], description: 'como pagou; vazio se a pessoa não disse' },
         },
       },
     },
@@ -102,7 +106,7 @@ const SYSTEM = `Você é o assistente de gastos da Grana Séria, no WhatsApp. Fa
 
 Regras:
 1. Se a pessoa conta que gastou, pagou ou comprou algo, coloque cada gasto em "expenses". Valor em reais ("2 mil" = 2000, "1,5k" = 1500). Vários gastos na mesma frase viram vários itens. days_ago: 0 = hoje, 1 = ontem, 2 = anteontem; para "segunda", "sexta" etc., conte há quantos dias foi a última vez (máximo 31).
-2. Dinheiro que ENTROU (salário, venda, presente recebido) não é gasto: "expenses" vazio e "reply" curto dizendo que você registra só gastos.
+2. Dinheiro que ENTROU (salário, venda, presente recebido) não é gasto: "expenses" vazio e "reply" curto ensinando a anotar, por exemplo *recebi 200 de freela*. Se a pessoa disse como pagou (pix, débito, crédito, dinheiro, boleto, vale, cartão), preencha payment_method; senão deixe vazio.
 3. Pergunta sobre os próprios gastos ("pq deu 155?", "quanto gastei com comida?", "qual meu maior gasto?"): responda em "reply" usando só os dados do contexto, mostrando a conta quando ajudar. Nunca invente valor. Se o dado não está no contexto, diga que não tem (você vê só o mês atual).
 4. Correção do último gasto ("era 40, não 35", "muda pra transporte"): fix_last com apply=true e só o que mudou (o resto: amount 0, description "", category ""). "Apaga o último": undo_last=true.
 5. Dúvida de finanças em geral: responda em "reply" com no máximo 3 frases, útil e educativo, sem indicar produto ou investimento específico, e lembre que o site granaseria.com.br tem as ferramentas. Se o assunto não tem relação com dinheiro, diga que só ajuda com gastos e finanças.
@@ -135,7 +139,7 @@ function validCategory(c: unknown): c is string {
 export function sanitize(raw: unknown): SmartResult | null {
   const r = raw as {
     reply?: unknown;
-    expenses?: { amount?: unknown; description?: unknown; category?: unknown; days_ago?: unknown }[];
+    expenses?: { amount?: unknown; description?: unknown; category?: unknown; days_ago?: unknown; payment_method?: unknown }[];
     undo_last?: unknown;
     fix_last?: { apply?: unknown; amount?: unknown; description?: unknown; category?: unknown };
   };
@@ -150,6 +154,7 @@ export function sanitize(raw: unknown): SmartResult | null {
       description: (typeof e.description === 'string' && e.description.trim().slice(0, 80)) || 'Sem descrição',
       category: validCategory(e.category) ? e.category : OTHER_CATEGORY.name,
       daysAgo: Math.min(31, Math.max(0, days)),
+      ...(typeof e.payment_method === 'string' && METHOD_NAMES.includes(e.payment_method) ? { method: e.payment_method } : {}),
     });
   }
 
