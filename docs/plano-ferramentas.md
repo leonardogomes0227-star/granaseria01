@@ -63,3 +63,6 @@ Selos e frase do dia deixam de ser ferramentas: viram o fechamento da mensagem s
 ## Decisões que são suas
 - O que fica grátis e o que é pago (ex.: anotar grátis; plano do mês, resumos e leitura de fatura no pago).
 - Se vale ligar a IA (`ANTHROPIC_API_KEY`) já: ela entende frases soltas e áudio transcrito, mas tem custo.
+
+## Andamento
+- **Semana 1 (feito):** "posso comprar X?" usa o saldo real do mês (sem perguntar renda quando a pessoa já anotou entradas); ofertas no contexto (13º/bônus → *13º*, salário → *plano*, Netflix/tarifa → *vazamentos*, fatura/juros → *dívidas*), no máximo uma por mensagem e cada tipo uma vez por mês.

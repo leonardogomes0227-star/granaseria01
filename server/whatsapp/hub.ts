@@ -14,7 +14,7 @@ import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
 import { TIP_WORD } from './shortcuts.js';
 import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
-import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep } from './tools.js';
+import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startCheckin, selosOut, fraseOut, toolStep, type MonthBalance } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
 import { parseAmount } from './parse.js';
@@ -604,6 +604,12 @@ export const wantsNextStep = (raw: string): boolean => {
   return GREETING.test(t) || NEXT_STEP_WORDS.test(t);
 };
 
+/** A mensagem pergunta se pode comprar (ou abre a ferramenta de compra)? Quem chama busca o saldo do mês só nesse caso. */
+export const wantsBalance = (raw: string): boolean => {
+  const t = normalize(raw);
+  return /^(vale a pena|vale comprar|posso comprar|devo comprar)\b/.test(t) || t === 'calc:compra' || t === 'goal:comprar';
+};
+
 const ERASE_WORDS = /^(apagar|excluir|deletar) (meus |todos os )?dados$/;
 
 const GASTOS_HELP = txt(
@@ -615,7 +621,7 @@ const ENTRADA_HELP = txt(
 );
 
 /** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
-function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult | null {
+function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null, balance?: MonthBalance): HubResult | null {
   if (/^(gastos|meus gastos|gastos diarios|gastos do dia a dia|gastos do dia|despesas)$/.test(t)) return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
   if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?|assinaturas|tarifas|dinheiro perdido|dinheiro que sobra)$/.test(t)) return startLeaks();
@@ -625,7 +631,7 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: stri
   const buy = t.match(/^(?:vale a pena|vale comprar|posso comprar|devo comprar)( comprar)?(?: (.*))?$/);
   if (buy) {
     const price = buy[2] ? parseMoney(buy[2]) : null;
-    return startCompra(profile, price && price > 0 ? price : undefined);
+    return startCompra(profile, price && price > 0 ? price : undefined, balance, now);
   }
   if (/^(meta|minha meta|calculadora de meta|juntar dinheiro|guardar dinheiro|poupar|quanto guardar)$/.test(t)) return startMeta();
   if (/^(longo prazo|simulador|aposentadoria|simulador de longo prazo)$/.test(t)) return startLongo(profile);
@@ -697,7 +703,7 @@ function startGoal(id: string, input: HubInput): HubResult {
     gastos: () => ({ out: [gastosMenu()], session: null }),
     sobra: () => startLeaks(),
     extra: () => startExtra(profile),
-    comprar: () => startCompra(profile),
+    comprar: () => startCompra(profile, undefined, input.balance, now),
     emprestimo: () => startEmprestimo(),
     direitos: () => ({ out: rightsList(profile, now), session: null }),
     organizar: () => startQuick(name),
@@ -787,7 +793,7 @@ function route(input: HubInput): HubResult | null {
   if (t === 'menu:mais') return { out: maisMenu(), session: null };
   if (t === 'mais:feedback') return startFreeFeedback();
   if (t === 'menu:checkin') return startCheckin(profile);
-  if (t === 'calc:compra') return startCompra(profile);
+  if (t === 'calc:compra') return startCompra(profile, undefined, input.balance, now);
   if (t === 'calc:meta') return startMeta();
   if (t === 'calc:longo') return startLongo(profile);
   if (t === 'calc:emprestimo') return startEmprestimo();
@@ -803,7 +809,7 @@ function route(input: HubInput): HubResult | null {
   }
 
   // palavras exatas trocam de assunto, mesmo no meio de outra conversa
-  const shortcut = shortcutStart(t, profile, now, name);
+  const shortcut = shortcutStart(t, profile, now, name, input.balance);
   if (shortcut) return withMenuHint(shortcut);
 
   if (session && session.flow === 'fatura') {

@@ -135,12 +135,18 @@ export function detectCategory(text: string): string {
   return OTHER_CATEGORY.name;
 }
 
+/** "13º", "13o salário", "1ª parcela": o número de ordem não é valor. "13º" vira "décimo terceiro". */
+export function stripOrdinals(text: string): string {
+  return text.replace(/\b13\s*(?:[º°]|o\b)(?:\s*sal[aá]rio)?|\b13\s+sal[aá]rio/gi, ' décimo terceiro ').replace(/\b\d+\s*[º°ª]/g, ' ');
+}
+
 const PAID_WORDS = /\b(gastei|paguei|comprei|pago|pagamento de)\b/;
 const INCOME_WORDS = /\b(recebi|recebido|ganhei|entrou|caiu|salario|renda extra|freela(?:nce|s)?|bico|vendi|me pagaram|me depositaram|depositaram|reembolso|reembolsaram)\b/;
 const INCOME_FILLER = new Set(['recebi', 'recebido', 'ganhei', 'entrou', 'caiu', 'me', 'pagaram', 'depositaram', 'reembolsaram', 'que', 'meu', 'minha', 'mais', 'um', 'uma', 'o', 'a', 'de', 'do', 'da', 'no', 'na', 'em', 'com', 'e', 'pra', 'para', 'r$', 'reais', 'real', 'conto', 'contos', 'pila', 'hoje', 'agora']);
 
 const INCOME_SOURCES: [string, RegExp][] = [
   ['Salário', /\bsalario\b/],
+  ['Renda extra', /\b(decimo terceiro|bonus|ferias|plr|premio|participacao)\b/],
   ['Renda extra', /\b(freela(nce|s)?|bico|extra|servico|trabalho)\b/],
   ['Venda', /\b(vendi|venda|vendas)\b/],
   ['Reembolso', /\b(reembolso|reembolsaram|devolucao|restituicao)\b/],
@@ -154,7 +160,8 @@ export function detectIncomeSource(text: string): string {
 }
 
 /** "recebi 200 de freela", "caiu 1500 no pix", "salário 3000": dinheiro que entrou, não gasto. */
-function parseIncome(text: string): Command | null {
+function parseIncome(rawText: string): Command | null {
+  const text = stripOrdinals(rawText);
   const t = normalize(text);
   if (PAID_WORDS.test(t) || !INCOME_WORDS.test(t)) return null;
   const { method, text: noMethod } = extractMethod(text);
@@ -194,7 +201,7 @@ export function parseMessage(input: string): Command {
   const income = parseIncome(text);
   if (income) return income;
 
-  const { method, text: noMethod } = extractMethod(text);
+  const { method, text: noMethod } = extractMethod(stripOrdinals(text));
   const m = pickAmount(noMethod);
   if (!m) return { kind: 'unknown' };
   const amount = parseAmount(m[2]);

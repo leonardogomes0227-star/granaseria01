@@ -1,5 +1,6 @@
 import { parseMessage, categoryEmoji } from './parse.js';
 import type { Expense, Income } from './db.js';
+import { offerForExpense, offerForIncome, type Offer } from './offers.js';
 import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
@@ -19,6 +20,8 @@ export interface BotDeps {
   budgets?: Record<string, number>;
   // IA opcional: sem ela o bot usa só as regras
   smart?: (text: string, ctx: SmartContext) => Promise<SmartResult | null>;
+  // true na primeira vez do mês que este tipo de oferta é feito pra pessoa (sem isso, não há ofertas)
+  offerOnce?: (phone: string, key: string) => Promise<boolean>;
   now?: () => Date;
 }
 
@@ -101,6 +104,12 @@ function balanceLines(expenses: Expense[], incomes: Income[], now: Date): string
     left >= 0 ? `🟢 Saldo do mês: ${brl(left)}` : `🔴 Saldo do mês: -${brl(-left)} (saiu mais do que entrou)`,
     ...(left > 0 ? [`🎯 Dá pra gastar uns ${brl(Math.floor(left / daysLeft))} por dia até o fim do mês.`] : []),
   ];
+}
+
+/** A oferta como linha final da resposta, só se ainda não foi feita neste mês. */
+async function offerLine(phone: string, offer: Offer | null, deps: BotDeps): Promise<string> {
+  if (!offer || !deps.offerOnce) return '';
+  return (await deps.offerOnce(phone, offer.key).catch(() => false)) ? `\n\n${offer.text}` : '';
 }
 
 const INCOMES_OFF = 'As entradas de dinheiro ainda não estão ativas por aqui. Tente de novo daqui a pouco. 🙏';
@@ -214,7 +223,8 @@ export async function handleText(
         !cmd.method && !monthRows.some((r) => r.payment_method) ? '\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._' : '',
       ]
         .join('\n')
-        .trim();
+        .trim()
+        .concat(await offerLine(msg.phone, offerForExpense(cmd.description), deps));
     }
 
     case 'today': {
@@ -280,7 +290,9 @@ export async function handleText(
           ...balanceLines(expenses, incomes, now),
           '',
           'Errou? Mande *apagar entrada*.',
-        ].join('\n');
+        ]
+          .join('\n')
+          .concat(await offerLine(msg.phone, offerForIncome(cmd.source, cmd.description), deps));
       } catch (err) {
         console.error('WhatsApp: entradas indisponíveis (rodou supabase/entradas.sql?)', err);
         return INCOMES_OFF;

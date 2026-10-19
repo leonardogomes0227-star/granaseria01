@@ -23,6 +23,7 @@ export interface HubInput {
   now: Date;
   faturaEnabled?: boolean; // mostra "Ler minha fatura" no menu
   name?: string | null; // primeiro nome da pessoa, se der pra usar
+  balance?: { income: number; spent: number }; // entradas e gastos do mês (só carregado quando a pessoa pergunta se pode comprar)
   expensesThisMonth?: number; // quantos gastos ela já anotou no mês (pra sugerir o próximo passo)
   shortcuts?: [string, string][]; // as ferramentas que ela mais usa (id, título), pra oferecer no "oi"
 }

@@ -10,7 +10,7 @@ import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense,
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep, wantsNextStep } from '../server/whatsapp/hub.js';
+import { hubStep, wantsNextStep, wantsBalance } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
@@ -45,6 +45,21 @@ function limitedSmart(phone: string): typeof askClaude {
     const allowed = await bumpUsage(phone, `ai:${day}`, AI_DAILY_LIMIT).catch(() => true);
     return allowed ? askClaude(msgText, ctx) : null;
   };
+}
+
+/** Cada tipo de oferta só uma vez por mês por pessoa (usa o mesmo contador dos limites de uso). */
+const offerOnce = (phone: string, key: string) => bumpUsage(phone, `offer:${key}:${new Date().toISOString().slice(0, 7)}`, 1);
+
+/** Entradas e gastos do mês. Sem entradas anotadas (ou sem a tabela), devolve undefined e a ferramenta pergunta a renda. */
+async function loadBalance(phone: string, now: Date): Promise<{ income: number; spent: number } | undefined> {
+  try {
+    const since = startOfMonthBRT(now);
+    const [incomes, expenses] = await Promise.all([listIncomesSince(phone, since), listExpensesSince(phone, since)]);
+    const income = incomes.reduce((t, r) => t + r.amount, 0);
+    return income > 0 ? { income, spent: expenses.reduce((t, r) => t + r.amount, 0) } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
@@ -86,7 +101,9 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi
     const expensesThisMonth = wantsNextStep(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
     const shortcuts = wantsNextStep(incoming) && !hub.session ? await loadShortcuts(phone, smartConfigured()).catch(() => []) : undefined;
-    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth, shortcuts });
+    // "posso comprar 300?" usa o saldo real do mês (entradas e gastos que a pessoa já anotou)
+    const balance = wantsBalance(incoming) ? await loadBalance(phone, now) : undefined;
+    const step = hubStep({ text: incoming, session: hub.session, profile: hub.profile, now, faturaEnabled: smartConfigured(), name: msg.profileName, expensesThisMonth, shortcuts, balance });
     if (step) {
       if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não avança a conversa duas vezes
       if (step.erase) {
@@ -130,7 +147,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
   const answer = await handleText(
     { id: msg.id, phone, text: incoming },
-    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
+    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome, offerOnce, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
   return answer ? text(answer) : null;
 }

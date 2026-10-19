@@ -83,7 +83,40 @@ export function maisMenu(): Outgoing[] {
 
 /* ---------- vale a pena comprar ---------- */
 
-export function startCompra(profile: StateSnapshot, firstPrice?: number): HubResult {
+export interface MonthBalance {
+  income: number;
+  spent: number;
+}
+
+/** "Posso comprar?" com o saldo real do mês: o que entrou, o que saiu e quanto sobra por dia depois da compra. */
+function afford(bal: MonthBalance, price: number, now: Date): Outgoing[] {
+  const left = bal.income - bal.spent;
+  const local = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+  const lastDay = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 0)).getUTCDate();
+  const daysLeft = Math.max(1, lastDay - local.getUTCDate() + 1); // conta hoje
+  const after = left - price;
+  const perDay = (v: number) => brl(Math.max(0, Math.floor(v / daysLeft)));
+  const head = [`🛍️ *${brl(price)} no seu mês*`, '', `📥 Entrou ${brl(bal.income)} · 📤 saiu ${brl(bal.spent)}`, `Saldo de hoje: ${brl(left)} (uns ${perDay(left)} por dia)`];
+  let verdict: string;
+  if (after < 0) {
+    verdict = `🔴 *Não cabe no saldo deste mês.* Faltam ${brl(-after)}. Se parcelar no cartão e não pagar a fatura inteira, entram juros do rotativo (em média 14% ao mês).`;
+  } else if (price >= left * 0.5) {
+    verdict = `🟡 *Cabe, mas leva mais da metade do que sobrou.* Depois da compra restam ${brl(after)}, uns ${perDay(after)} por dia por ${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}. Vale esperar 48 horas pra ver se a vontade continua.`;
+  } else {
+    verdict = `🟢 *Cabe sem apertar.* Depois da compra restam ${brl(after)}, uns ${perDay(after)} por dia até o fim do mês.`;
+  }
+  return [txt([...head, '', verdict].join('\n'))];
+}
+
+export function startCompra(profile: StateSnapshot, firstPrice?: number, balance?: MonthBalance, now: Date = new Date()): HubResult {
+  // quem já anota entradas e gastos não precisa responder nada: a conta sai do mês dela
+  if (balance && balance.income > 0) {
+    if (firstPrice) return { out: afford(balance, firstPrice, now), session: null };
+    return {
+      out: [txt('🛍️ *Posso comprar?* Quanto custa o que você quer comprar? Responda só o valor, ex.: *300*')],
+      session: { flow: 'compra', step: 'price', data: { bal: balance } },
+    };
+  }
   const income = diagnosisFrom(profile)?.monthlyIncome ?? 0;
   if (income > 0) {
     if (firstPrice) return { out: compraResult(income, firstPrice), session: null };
@@ -126,9 +159,10 @@ function compraResult(income: number, price: number): Outgoing[] {
   ];
 }
 
-function stepCompra(session: Session, text: string): HubResult {
+function stepCompra(session: Session, text: string, now: Date): HubResult {
   const v = parseMoney(text);
   if (v === null || v <= 0) return { out: [txt(BAD_NUMBER)], session };
+  if (session.data.bal) return { out: afford(session.data.bal as MonthBalance, v, now), session: null };
   if (session.step === 'income') {
     const price = session.data.price as number | undefined;
     if (price) return { out: compraResult(v, price), session: null };
@@ -629,7 +663,7 @@ export function faturaOut(r: FaturaResult, profile: StateSnapshot): { out: Outgo
 export function toolStep(session: Session, text: string, profile: StateSnapshot, now: Date): HubResult | null {
   switch (session.flow) {
     case 'compra':
-      return stepCompra(session, text);
+      return stepCompra(session, text, now);
     case 'meta':
       return stepMeta(session, text);
     case 'longo':
