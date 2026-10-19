@@ -1,7 +1,7 @@
 import { useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
-import { DebtItem } from '../types';
-import { effectiveRate } from '../plan';
+import { DebtItem, DebtKind } from '../types';
+import { effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment, inTodaysMoney, INFLATION_PCT } from '../calculations';
 import { TOOLS, ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
@@ -256,32 +256,81 @@ function DebtOrderList({ title, note, debts }: { title: string; note: string; de
 }
 
 export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; onStart: () => void } & ToolNavProps) {
-  if (debts.length === 0) {
-    return (
-      <ToolShell id="debts" {...nav}>
-        <p className="wizard-sub">
-          Esse simulador usa as dívidas que você cadastra no diagnóstico. Faça o diagnóstico primeiro — leva uns 10 minutos.
-        </p>
-        <button className="btn-primary" type="button" onClick={onStart}>
-          Fazer diagnóstico <ArrowRight size={16} className="arrow" />
-        </button>
-      </ToolShell>
-    );
-  }
+  // com diagnóstico, usa as dívidas de lá; sem, a pessoa digita aqui mesmo (não precisa fazer o diagnóstico antes)
+  const fromDiag = debts.filter((d) => d.value > 0);
+  const [own, setOwn] = useState<DebtItem[]>([]);
+  const [kind, setKind] = useState<DebtKind>('cartao');
+  const [value, setValue] = useState(0);
+  const [rate, setRate] = useState(0);
+  const list = fromDiag.length > 0 ? fromDiag : own;
+
+  const add = () => {
+    if (value <= 0) return;
+    const label = getDebtKind(kind).label.split(' (')[0];
+    const n = own.filter((d) => d.kind === kind).length;
+    setOwn([...own, { id: `t-${Date.now()}`, description: n > 0 ? `${label} ${n + 1}` : label, value, kind, ...(rate > 0 ? { interestRate: rate } : {}) }]);
+    setValue(0);
+    setRate(0);
+  };
 
   return (
     <ToolShell id="debts" {...nav}>
       <p className="wizard-sub">Duas ordens pra decidir qual dívida atacar primeiro, mantendo o mínimo nas outras.</p>
-      {debts.some((d) => effectiveRate(d).assumed) && (
-        <p className="field-hint" style={{ marginTop: -8, marginBottom: 16 }}>
-          Onde você não informou os juros, usamos a taxa típica do tipo de dívida. O plano completo, com valores e datas, está no resultado do diagnóstico.
-        </p>
+
+      {fromDiag.length === 0 && (
+        <div className="stat-card" style={{ marginBottom: 16 }}>
+          <p className="field-label" style={{ color: 'var(--ink)', fontWeight: 600 }}>Suas dívidas</p>
+          <label className="field-label" htmlFor="debt-kind" style={{ marginTop: 6 }}>Tipo</label>
+          <select id="debt-kind" className="field-input" value={kind} onChange={(e) => setKind(e.target.value as DebtKind)}>
+            {DEBT_KINDS.map((k) => (
+              <option key={k.id} value={k.id}>{k.label}</option>
+            ))}
+          </select>
+          <MoneyField label="Quanto falta pagar" value={value} onChange={setValue} />
+          <div className="field-group">
+            <label className="field-label" htmlFor="debt-rate">Juros ao mês (se souber)</label>
+            <div className="input-suffix">
+              <DecimalInput id="debt-rate" placeholder={`${getDebtKind(kind).typicalRate.toLocaleString('pt-BR')} (típico)`} value={rate} onChange={setRate} />
+              <span>% a.m.</span>
+            </div>
+          </div>
+          <button type="button" className="btn-primary" onClick={add} disabled={value <= 0}>
+            <Check size={16} /> Adicionar dívida
+          </button>
+          {own.length > 0 && (
+            <ul className="debt-quick-list">
+              {own.map((d) => (
+                <li key={d.id}>
+                  {d.description} — {formatBRL(d.value)}
+                  <button type="button" className="plan-more" onClick={() => setOwn(own.filter((x) => x.id !== d.id))}>tirar</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
-      <div className="loan-grid">
-        <DebtOrderList title="Avalanche — maior juros primeiro" note="Economiza mais dinheiro em juros no total." debts={sortAvalanche(debts)} />
-        <DebtOrderList title="Bola de neve — menor saldo primeiro" note="Quita dívidas mais rápido e mantém a motivação." debts={sortSnowball(debts)} />
-      </div>
+      {list.length === 0 ? (
+        <div className="result-empty">Adicione suas dívidas acima pra ver qual pagar primeiro.</div>
+      ) : (
+        <>
+          {list.some((d) => effectiveRate(d).assumed) && (
+            <p className="field-hint" style={{ marginTop: -8, marginBottom: 16 }}>
+              Onde você não informou os juros, usamos a taxa típica do tipo de dívida. Confira no seu contrato.
+            </p>
+          )}
+          <div className="loan-grid">
+            <DebtOrderList title="Avalanche — maior juros primeiro" note="Economiza mais dinheiro em juros no total." debts={sortAvalanche(list)} />
+            <DebtOrderList title="Bola de neve — menor saldo primeiro" note="Quita dívidas mais rápido e mantém a motivação." debts={sortSnowball(list)} />
+          </div>
+          {fromDiag.length === 0 && (
+            <p className="field-hint" style={{ marginTop: 14 }}>
+              Quer saber <b>quando</b> você fica livre e quanto pagar por mês?{' '}
+              <button type="button" className="plan-more" onClick={onStart}>Faça o diagnóstico <ArrowRight size={13} /></button>
+            </p>
+          )}
+        </>
+      )}
     </ToolShell>
   );
 }
