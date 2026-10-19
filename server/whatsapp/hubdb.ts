@@ -86,10 +86,10 @@ export async function trackEvent(phone: string, event: string, note?: string): P
 
 /** "Apagar meus dados" (LGPD): gastos, perfil, conversa em andamento, contadores e métricas deste número. */
 export async function eraseWhatsAppData(phone: string): Promise<void> {
-  const targets = [`expenses?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
+  const targets = [`expenses?phone=eq.${phone}`, `incomes?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
   for (const t of targets) {
     const res = await rest(t, { method: 'DELETE' });
-    // wa_events pode não existir ainda (SQL de métricas não rodado): não é motivo pra deixar de apagar o resto
-    if (!res.ok && !t.startsWith('wa_events')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
+    // wa_events e incomes podem não existir ainda (SQL não rodado): não é motivo pra deixar de apagar o resto
+    if (!res.ok && !t.startsWith('wa_events') && !t.startsWith('incomes')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
   }
 }

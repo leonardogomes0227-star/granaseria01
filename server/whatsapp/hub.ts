@@ -28,7 +28,7 @@ export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   const start = [
     { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Não sabe por onde começar? Toque aqui' },
-    { id: 'menu:gastos', title: '💸 Gastos do dia a dia', description: 'Anote o que gasta e veja quanto ainda pode gastar' },
+    { id: 'menu:gastos', title: '💸 Gastos e entradas', description: 'Anote o que gasta e o que recebe, e veja o saldo' },
     { id: 'menu:diag', title: '📊 Fazer meu diagnóstico', description: 'Veja onde você está e receba um plano' },
     { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
   ];
@@ -61,17 +61,19 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
 export function gastosMenu(): Outgoing {
   return {
     kind: 'list',
-    text: '💸 *Gastos do dia a dia.* Pra anotar, é só escrever o que gastou, por exemplo:\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nOu escolha uma opção:',
+    text: '💸 *Gastos e entradas.* Pra anotar, é só escrever, por exemplo:\n• *gastei 35 no mercado no pix*\n• *uber 18,50 débito*\n• *recebi 200 de freela*\n\nOu escolha uma opção:',
     button: 'Ver opções',
     rows: [
-      { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Veja como é fácil: é só escrever' },
+      { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Com a forma de pagamento: pix, cartão…' },
+      { id: 'gastos:entrada', title: '💰 Anotar uma entrada', description: 'Salário, freela, venda, dinheiro extra' },
       { id: 'gastos:hoje', title: '📅 Gastos de hoje', description: 'O que você gastou hoje' },
-      { id: 'gastos:ontem', title: '⏪ Gastos de ontem', description: 'O que você gastou ontem' },
       { id: 'gastos:semana', title: '🗓️ Gastos da semana', description: 'Total desde segunda, por categoria' },
       { id: 'gastos:mes', title: '📊 Gastos do mês', description: 'Resumo do mês por categoria' },
+      { id: 'gastos:formas', title: '💳 Formas de pagamento', description: 'Quanto saiu no pix, débito, crédito…' },
+      { id: 'gastos:entradas', title: '📥 Entradas do mês', description: 'O dinheiro que entrou, por origem' },
+      { id: 'gastos:saldo', title: '⚖️ Saldo do mês', description: 'O que entrou menos o que saiu' },
       { id: 'gastos:sobra', title: '🎯 Quanto posso gastar', description: 'Por categoria, até o fim do mês' },
       { id: 'gastos:ultimos', title: '🧾 Últimos gastos', description: 'Os últimos que você anotou' },
-      { id: 'gastos:desfazer', title: '↩️ Desfazer o último', description: 'Apaga o último gasto anotado' },
     ],
   };
 }
@@ -586,7 +588,11 @@ export const wantsNextStep = (raw: string): boolean => {
 const ERASE_WORDS = /^(apagar|excluir|deletar) (meus |todos os )?dados$/;
 
 const GASTOS_HELP = txt(
-  '✍️ *Pra anotar um gasto, é só me mandar o que gastou:*\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\nPode escrever do seu jeito. Eu entendo o valor, separo por categoria (mercado, transporte, lazer…) e já digo quanto você gastou hoje e no mês.\n\nPra ver depois: *hoje*, *ontem*, *semana*, *mês*, *últimos* ou *quanto ainda posso gastar*. Errou? Mande *apagar* pra desfazer o último.'
+  '✍️ *Pra anotar um gasto, é só me mandar o que gastou:*\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\n💳 Diga também *como pagou* (pix, débito, crédito, dinheiro, boleto) pra eu separar por forma de pagamento: *mercado 80 no pix*, *tênis 250 crédito*.\n\nPode escrever do seu jeito. Eu entendo o valor, separo por categoria (mercado, transporte, lazer…) e já digo quanto você gastou hoje e no mês.\n\nPra ver depois: *hoje*, *ontem*, *semana*, *mês*, *formas de pagamento*, *últimos* ou *quanto ainda posso gastar*. Errou? Mande *apagar* pra desfazer o último.'
+);
+
+const ENTRADA_HELP = txt(
+  '💰 *Pra anotar dinheiro que entrou, é só me contar:*\n\n• *recebi 200 de freela*\n• *caiu 3000 salário*\n• *vendi o fogão 400 pix*\n• *ganhei 100 de presente*\n\nEu guardo a origem (salário, renda extra, venda…) e mostro o saldo do mês: o que entrou menos o que saiu.\n\nPra ver: *entradas* (o que entrou) e *saldo*. Errou? Mande *apagar entrada*.'
 );
 
 /** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
@@ -751,6 +757,7 @@ function route(input: HubInput): HubResult | null {
   if (t.startsWith('dir:')) return withMenuHint({ out: rightDetail(t.slice(4)), session: null });
   if (t === 'menu:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (t === 'gastos:anotar') return { out: [GASTOS_HELP], session: null };
+  if (t === 'gastos:entrada') return { out: [ENTRADA_HELP], session: null };
   if (t === 'menu:diag') return startDiag(name);
   if (t === 'menu:rapido') return startQuick(name);
   if (t === 'menu:13o') return startExtra(profile);

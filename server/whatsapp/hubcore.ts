@@ -58,6 +58,9 @@ export const GASTOS_BUTTON_TEXT: Record<string, string> = {
   'gastos:sobra': 'quanto ainda posso gastar',
   'gastos:ultimos': 'últimos',
   'gastos:desfazer': 'apagar',
+  'gastos:entradas': 'entradas',
+  'gastos:saldo': 'saldo',
+  'gastos:formas': 'formas de pagamento',
 };
 
 export const txt = (text: string): Outgoing => ({ kind: 'text', text });

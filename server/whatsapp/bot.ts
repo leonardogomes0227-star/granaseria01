@@ -1,16 +1,20 @@
 import { parseMessage, categoryEmoji } from './parse.js';
-import type { Expense } from './db.js';
+import type { Expense, Income } from './db.js';
 import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
 export interface BotDeps {
-  insertExpense: (e: { phone: string; amount: number; category: string; description: string; waMessageId: string; createdAt?: string }) => Promise<boolean>;
+  insertExpense: (e: { phone: string; amount: number; category: string; description: string; waMessageId: string; createdAt?: string; method?: string }) => Promise<boolean>;
   listExpensesSince: (phone: string, since: Date) => Promise<Expense[]>;
   deleteLastExpense: (phone: string) => Promise<Expense | null>;
   updateLastExpense?: (
     phone: string,
     patch: { amount?: number; description?: string; category?: string }
   ) => Promise<{ before: Expense; after: Expense } | null>;
+  // entradas de dinheiro: sem elas (SQL de supabase/entradas.sql não rodado) o bot segue só com gastos
+  insertIncome?: (i: { phone: string; amount: number; source: string; description: string; method?: string; waMessageId: string }) => Promise<boolean>;
+  listIncomesSince?: (phone: string, since: Date) => Promise<Income[]>;
+  deleteLastIncome?: (phone: string) => Promise<Income | null>;
   // quanto a pessoa disse que gasta por mês em cada categoria (do diagnóstico): vira o orçamento do dia a dia
   budgets?: Record<string, number>;
   // IA opcional: sem ela o bot usa só as regras
@@ -58,6 +62,41 @@ function byCategory(rows: Expense[]): string {
     .join('\n');
 }
 
+const METHOD_EMOJI: Record<string, string> = { Pix: '⚡', Débito: '💳', Crédito: '💳', Dinheiro: '💵', Boleto: '🧾', Vale: '🎫', Cartão: '💳' };
+const methodTag = (r: { payment_method?: string | null }) => (r.payment_method ? ` · ${r.payment_method}` : '');
+
+/** Gastos separados por como foram pagos. Quem não disse a forma entra em "Não informado". */
+function byMethod(rows: Expense[]): string {
+  const totals = new Map<string, number>();
+  for (const r of rows) {
+    const k = r.payment_method || 'Não informado';
+    totals.set(k, (totals.get(k) ?? 0) + r.amount);
+  }
+  const total = sum(rows) || 1;
+  return [...totals.entries()]
+    .sort((a, b) => (a[0] === 'Não informado' ? 1 : b[0] === 'Não informado' ? -1 : b[1] - a[1]))
+    .map(([m, v]) => `${METHOD_EMOJI[m] ?? '▫️'} ${m}: ${brl(v)} (${Math.round((v / total) * 100)}%)`)
+    .join('\n');
+}
+
+function bySource(rows: Income[]): string {
+  const totals = new Map<string, number>();
+  for (const r of rows) totals.set(r.source, (totals.get(r.source) ?? 0) + r.amount);
+  return [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([src, v]) => `💰 ${src}: ${brl(v)}`).join('\n');
+}
+
+const sumIncome = (rows: Income[]) => rows.reduce((t, r) => t + r.amount, 0);
+
+/** "Entrou X, saiu Y, sobrou Z": a conta do mês em uma linha por item. */
+function balanceLines(expenses: Expense[], incomes: Income[]): string[] {
+  const inc = sumIncome(incomes);
+  const out = sum(expenses);
+  const left = inc - out;
+  return [`📥 Entrou: ${brl(inc)}`, `📤 Saiu: ${brl(out)}`, left >= 0 ? `🟢 Saldo do mês: ${brl(left)}` : `🔴 Saldo do mês: -${brl(-left)} (saiu mais do que entrou)`];
+}
+
+const INCOMES_OFF = 'As entradas de dinheiro ainda não estão ativas por aqui. Tente de novo daqui a pouco. 🙏';
+
 /** "🟡 Alimentação: R$ 320 de R$ 400 no mês (80%)": liga o gasto do dia ao que a pessoa planejou no diagnóstico. */
 export function budgetLine(category: string, rows: Expense[], budgets?: Record<string, number>): string | null {
   const budget = budgets?.[category];
@@ -100,6 +139,11 @@ export const HELP_TEXT = [
   '• gastei 35 no mercado',
   '• uber 18,50',
   '• farmácia 42',
+  '• mercado 80 no pix (ou débito, crédito, dinheiro)',
+  '',
+  'Dinheiro que entrou:',
+  '• recebi 200 de freela',
+  '• caiu 3000 salário',
   '',
   'Comandos:',
   '• *hoje* — gastos de hoje',
@@ -107,8 +151,11 @@ export const HELP_TEXT = [
   '• *semana* — total da semana',
   '• *mês* — resumo do mês por categoria',
   '• *últimos* — os últimos gastos anotados',
+  '• *entradas* — o dinheiro que entrou no mês',
+  '• *saldo* — o que entrou menos o que saiu',
+  '• *formas de pagamento* — como você pagou (pix, cartão…)',
   '• *quanto ainda posso gastar* — o que sobra do que você planejou',
-  '• *apagar* — desfaz o último registro',
+  '• *apagar* — desfaz o último gasto (*apagar entrada* desfaz a última entrada)',
   '• *menu* — tudo o que eu sei fazer',
 ].join('\n');
 
@@ -139,18 +186,21 @@ export async function handleText(
         category: cmd.category,
         description: cmd.description,
         waMessageId: msg.id,
+        method: cmd.method,
       });
       if (!inserted) return null; // mensagem repetida pela Meta — já respondemos antes
       const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
       const todayStart = startOfDayBRT(now).getTime();
       const today = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart));
       return [
-        `✅ ${brl(cmd.amount)} em ${categoryEmoji(cmd.category)} *${cmd.category}*`,
+        `✅ ${brl(cmd.amount)} em ${categoryEmoji(cmd.category)} *${cmd.category}*${cmd.method ? ` · ${METHOD_EMOJI[cmd.method] ?? ''} ${cmd.method}` : ''}`,
         `_${cmd.description}_`,
         '',
         `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
         ...(budgetLine(cmd.category, monthRows, deps.budgets) ? [budgetLine(cmd.category, monthRows, deps.budgets) as string] : []),
         cmd.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
+        // quem nunca disse como pagou neste mês ganha a dica uma vez por gasto novo, até experimentar
+        !cmd.method && !monthRows.some((r) => r.payment_method) ? '\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._' : '',
       ]
         .join('\n')
         .trim();
@@ -159,7 +209,7 @@ export async function handleText(
     case 'today': {
       const rows = await deps.listExpensesSince(msg.phone, startOfDayBRT(now));
       if (rows.length === 0) return 'Nenhum gasto registrado hoje. 🙌';
-      const lines = rows.map((r) => `• ${brl(r.amount)} — ${r.description}`);
+      const lines = rows.map((r) => `• ${brl(r.amount)} — ${r.description}${methodTag(r)}`);
       return [`📅 *Hoje*: ${brl(sum(rows))}`, '', ...lines].join('\n');
     }
 
@@ -167,13 +217,13 @@ export async function handleText(
       const todayStart = startOfDayBRT(now);
       const rows = (await deps.listExpensesSince(msg.phone, new Date(todayStart.getTime() - DAY_MS))).filter((r) => new Date(r.created_at).getTime() < todayStart.getTime());
       if (rows.length === 0) return 'Nenhum gasto registrado ontem.';
-      return [`📅 *Ontem*: ${brl(sum(rows))}`, '', ...rows.map((r) => `• ${brl(r.amount)} — ${r.description}`)].join('\n');
+      return [`📅 *Ontem*: ${brl(sum(rows))}`, '', ...rows.map((r) => `• ${brl(r.amount)} — ${r.description}${methodTag(r)}`)].join('\n');
     }
 
     case 'recent': {
       const rows = [...(await deps.listExpensesSince(msg.phone, startOfMonthBRT(now)))].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);
       if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda. Pra anotar, mande por exemplo *gastei 35 no mercado*.';
-      return ['🧾 *Seus últimos gastos*', '', ...rows.map((r) => `• ${dayLabel(new Date(r.created_at), now)} · ${brl(r.amount)} — ${r.description}`), '', 'Errou um? Mande *apagar* pra desfazer o último.'].join('\n');
+      return ['🧾 *Seus últimos gastos*', '', ...rows.map((r) => `• ${dayLabel(new Date(r.created_at), now)} · ${brl(r.amount)} — ${r.description}${methodTag(r)}`), '', 'Errou um? Mande *apagar* pra desfazer o último.'].join('\n');
     }
 
     case 'budget':
@@ -188,7 +238,91 @@ export async function handleText(
     case 'month': {
       const rows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
       if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda.';
-      return [`📊 *Mês*: ${brl(sum(rows))} em ${rows.length} registro(s)`, '', byCategory(rows)].join('\n');
+      return [
+        `📊 *Mês*: ${brl(sum(rows))} em ${rows.length} registro(s)`,
+        '',
+        byCategory(rows),
+        ...(rows.some((r) => r.payment_method) ? ['', '*Como você pagou*', byMethod(rows)] : []),
+      ].join('\n');
+    }
+
+    case 'methods': {
+      const rows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
+      if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda.';
+      if (!rows.some((r) => r.payment_method)) {
+        return 'Ainda não tenho a forma de pagamento de nenhum gasto deste mês. 🙂 Ao anotar, diga como pagou, por exemplo: *mercado 80 no pix*, *uber 18,50 débito*, *tênis 250 crédito* ou *padaria 12 dinheiro*.';
+      }
+      return [`💳 *Como você pagou neste mês*: ${brl(sum(rows))}`, '', byMethod(rows)].join('\n');
+    }
+
+    case 'income': {
+      if (!deps.insertIncome || !deps.listIncomesSince) return INCOMES_OFF;
+      try {
+        const inserted = await deps.insertIncome({ phone: msg.phone, amount: cmd.amount, source: cmd.source, description: cmd.description, method: cmd.method, waMessageId: msg.id });
+        if (!inserted) return null; // mensagem repetida pela Meta
+        const since = startOfMonthBRT(now);
+        const [incomes, expenses] = await Promise.all([deps.listIncomesSince(msg.phone, since), deps.listExpensesSince(msg.phone, since)]);
+        return [
+          `💰 Entrada anotada: ${brl(cmd.amount)} · *${cmd.source}*${cmd.method ? ` · ${cmd.method}` : ''}`,
+          ...(cmd.description !== cmd.source ? [`_${cmd.description}_`] : []),
+          '',
+          ...balanceLines(expenses, incomes),
+          '',
+          'Errou? Mande *apagar entrada*.',
+        ].join('\n');
+      } catch (err) {
+        console.error('WhatsApp: entradas indisponíveis (rodou supabase/entradas.sql?)', err);
+        return INCOMES_OFF;
+      }
+    }
+
+    case 'incomes': {
+      if (!deps.listIncomesSince) return INCOMES_OFF;
+      try {
+        const rows = await deps.listIncomesSince(msg.phone, startOfMonthBRT(now));
+        if (rows.length === 0) return 'Nenhuma entrada anotada neste mês. Pra anotar, mande por exemplo *recebi 200 de freela* ou *caiu 3000 salário*.';
+        const last = [...rows].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 10);
+        return [
+          `📥 *Entradas do mês*: ${brl(sumIncome(rows))} em ${rows.length} registro(s)`,
+          '',
+          bySource(rows),
+          '',
+          '*Últimas*',
+          ...last.map((r) => `• ${dayLabel(new Date(r.created_at), now)} · ${brl(r.amount)} — ${r.description}${r.method ? ` · ${r.method}` : ''}`),
+        ].join('\n');
+      } catch (err) {
+        console.error('WhatsApp: entradas indisponíveis', err);
+        return INCOMES_OFF;
+      }
+    }
+
+    case 'balance': {
+      if (!deps.listIncomesSince) return INCOMES_OFF;
+      try {
+        const since = startOfMonthBRT(now);
+        const [incomes, expenses] = await Promise.all([deps.listIncomesSince(msg.phone, since), deps.listExpensesSince(msg.phone, since)]);
+        if (incomes.length === 0 && expenses.length === 0) return 'Ainda não tem nada anotado neste mês. Mande, por exemplo, *recebi 200 de freela* ou *gastei 35 no mercado*.';
+        return [
+          '⚖️ *Saldo do mês*',
+          '',
+          ...balanceLines(expenses, incomes),
+          ...(incomes.length === 0 ? ['', '_Ainda não anotou nenhuma entrada. Mande por exemplo *recebi 200 de freela* pra conta ficar completa._'] : []),
+        ].join('\n');
+      } catch (err) {
+        console.error('WhatsApp: entradas indisponíveis', err);
+        return INCOMES_OFF;
+      }
+    }
+
+    case 'undoIncome': {
+      if (!deps.deleteLastIncome) return INCOMES_OFF;
+      try {
+        const removed = await deps.deleteLastIncome(msg.phone);
+        return removed ? `🗑️ Apaguei a entrada: ${brl(removed.amount)} — ${removed.description}` : 'Não encontrei nenhuma entrada pra apagar.';
+      } catch (err) {
+        console.error('WhatsApp: entradas indisponíveis', err);
+        return INCOMES_OFF;
+      }
     }
 
     case 'undo': {
@@ -279,6 +413,7 @@ async function handleSmart(
         description: e.description,
         waMessageId: `${msg.id}#${i}`,
         createdAt: created,
+        method: e.method,
       });
       if (!inserted) {
         if (i === 0) return { handled: true, text: null }; // reenvio da Meta: já respondemos antes

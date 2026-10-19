@@ -6,7 +6,7 @@
 
 import { downloadMedia, extractMessages, isAllowed, MediaTooBigError, normalizeBrPhone, sendOutgoing, sendText, verifySignature, type IncomingMedia, type Outgoing } from '../server/whatsapp/meta.js';
 import { handleText, HELP_TEXT } from '../server/whatsapp/bot.js';
-import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense } from '../server/whatsapp/db.js';
+import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
@@ -130,7 +130,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
   const answer = await handleText(
     { id: msg.id, phone, text: incoming },
-    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
+    { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome, budgets, smart: smartConfigured() ? limitedSmart(phone) : undefined }
   );
   return answer ? text(answer) : null;
 }

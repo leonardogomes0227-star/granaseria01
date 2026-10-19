@@ -14,7 +14,13 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | Mensagem | O que acontece |
 |---|---|
 | `gastei 35 no mercado`, `uber 18,50`, `R$ 1.234,56 aluguel` | Registra o gasto e já categoriza |
-| `gastos` (ou *Gastos do dia a dia* no menu) | Abre as opções de gastos: anotar, hoje, ontem, semana, mês, quanto ainda posso gastar, últimos e desfazer |
+| `mercado 80 no pix`, `uber 18,50 débito`, `tênis 250 crédito`, `padaria 12 dinheiro` | Registra o gasto e guarda a **forma de pagamento** (Pix, Débito, Crédito, Dinheiro, Boleto, Vale ou Cartão) |
+| `recebi 200 de freela`, `caiu 3000 salário`, `vendi o fogão 400 pix` | Registra uma **entrada** de dinheiro, com a origem (Salário, Renda extra, Venda, Reembolso, Presente, Rendimento) e mostra o saldo do mês |
+| `entradas` | O dinheiro que entrou no mês, por origem, e as últimas entradas |
+| `saldo` | Entrou, saiu e saldo do mês |
+| `formas de pagamento` | Quanto saiu no mês em cada forma de pagamento (o `mês` também mostra) |
+| `apagar entrada` | Desfaz a última entrada |
+| `gastos` (ou *Gastos e entradas* no menu) | Abre as opções de gastos: anotar, hoje, ontem, semana, mês, quanto ainda posso gastar, últimos e desfazer |
 | `hoje` | Lista os gastos de hoje |
 | `ontem` | Lista os gastos de ontem |
 | `semana` | Total desde segunda, por categoria |
@@ -27,6 +33,8 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 Categorias automáticas: Alimentação, Transporte, Moradia, Saúde, Lazer, Compras, Educação e Outros.
 
 ---
+
+> **Entradas e forma de pagamento:** rode também, uma vez, `supabase/entradas.sql` (cria a tabela `incomes` e a coluna `expenses.payment_method`). Sem o SQL o bot continua anotando gastos normalmente, só não guarda a forma de pagamento e avisa que as entradas ainda não estão ativas.
 
 ## Passo 1 — Banco de dados (Supabase)
 

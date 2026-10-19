@@ -2,7 +2,12 @@
 // Sem IA de propósito: regras simples resolvem "gastei 35 no mercado" e não custam nada por mensagem.
 
 export type Command =
-  | { kind: 'expense'; amount: number; category: string; description: string }
+  | { kind: 'expense'; amount: number; category: string; description: string; method?: string }
+  | { kind: 'income'; amount: number; source: string; description: string; method?: string }
+  | { kind: 'incomes' }
+  | { kind: 'balance' }
+  | { kind: 'methods' }
+  | { kind: 'undoIncome' }
   | { kind: 'today' }
   | { kind: 'yesterday' }
   | { kind: 'recent' }
@@ -93,8 +98,27 @@ export function parseAmount(raw: string): number | null {
   return Math.round(n * 100) / 100;
 }
 
+// Como foi pago (ou como o dinheiro caiu). Ordem importa: "cartão de crédito" vale como Crédito, só "cartão" como Cartão.
+const METHODS: { name: string; re: RegExp }[] = [
+  { name: 'Crédito', re: /\b(?:cart[aã]o\s+(?:de\s+)?)?cr[eé]dito\b/i },
+  { name: 'Débito', re: /\b(?:cart[aã]o\s+(?:de\s+)?)?d[eé]bito\b/i },
+  { name: 'Pix', re: /\bpix\b/i },
+  { name: 'Dinheiro', re: /\b(?:dinheiro|esp[eé]cie|cash)\b/i },
+  { name: 'Boleto', re: /\bboleto\b/i },
+  { name: 'Vale', re: /\bvale[\s-]?(?:refei[cç][aã]o|alimenta[cç][aã]o)\b|\b(?:vr|vt)\b/i },
+  { name: 'Cartão', re: /\bcart[aã]o\b/i },
+];
+
+/** Tira "no pix", "cartão de crédito", "em dinheiro"… do texto e diz qual foi. */
+export function extractMethod(text: string): { method?: string; text: string } {
+  for (const m of METHODS) {
+    if (m.re.test(text)) return { method: m.name, text: text.replace(m.re, ' ') };
+  }
+  return { text };
+}
+
 const FILLER = new Set([
-  'gastei', 'gasto', 'paguei', 'pago', 'comprei', 'compra', 'foi', 'deu', 'custou', 'saiu',
+  'gastei', 'gasto', 'paguei', 'pago', 'comprei', 'compra', 'foi', 'deu', 'custou', 'saiu', 'via',
   'de', 'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas', 'em', 'com', 'pra', 'para', 'pro', 'um', 'uma', 'o', 'a', 'e',
   'r$', 'reais', 'real', 'conto', 'contos', 'pila', 'hoje', 'agora',
 ]);
@@ -111,6 +135,42 @@ export function detectCategory(text: string): string {
   return OTHER_CATEGORY.name;
 }
 
+const PAID_WORDS = /\b(gastei|paguei|comprei|pago|pagamento de)\b/;
+const INCOME_WORDS = /\b(recebi|recebido|ganhei|entrou|caiu|salario|renda extra|freela(?:nce|s)?|bico|vendi|me pagaram|me depositaram|depositaram|reembolso|reembolsaram)\b/;
+const INCOME_FILLER = new Set(['recebi', 'recebido', 'ganhei', 'entrou', 'caiu', 'me', 'pagaram', 'depositaram', 'reembolsaram', 'que', 'meu', 'minha', 'mais', 'um', 'uma', 'o', 'a', 'de', 'do', 'da', 'no', 'na', 'em', 'com', 'e', 'pra', 'para', 'r$', 'reais', 'real', 'conto', 'contos', 'pila', 'hoje', 'agora']);
+
+const INCOME_SOURCES: [string, RegExp][] = [
+  ['Salário', /\bsalario\b/],
+  ['Renda extra', /\b(freela(nce|s)?|bico|extra|servico|trabalho)\b/],
+  ['Venda', /\b(vendi|venda|vendas)\b/],
+  ['Reembolso', /\b(reembolso|reembolsaram|devolucao|restituicao)\b/],
+  ['Presente', /\b(presente|mesada)\b/],
+  ['Rendimento', /\b(rendimento|juros|dividendos?|cashback)\b/],
+];
+
+export function detectIncomeSource(text: string): string {
+  const t = normalize(text);
+  return INCOME_SOURCES.find(([, re]) => re.test(t))?.[0] ?? 'Outros';
+}
+
+/** "recebi 200 de freela", "caiu 1500 no pix", "salário 3000": dinheiro que entrou, não gasto. */
+function parseIncome(text: string): Command | null {
+  const t = normalize(text);
+  if (PAID_WORDS.test(t) || !INCOME_WORDS.test(t)) return null;
+  const { method, text: noMethod } = extractMethod(text);
+  const m = pickAmount(noMethod);
+  const amount = m ? parseAmount(m[2]) : null;
+  if (!m || amount === null) return null;
+  const rest = (noMethod.slice(0, m.index) + ' ' + noMethod.slice((m.index ?? 0) + m[0].length))
+    .split(/\s+/)
+    .filter((w) => w && !INCOME_FILLER.has(normalize(w)))
+    .join(' ')
+    .replace(/^[-–:,\s]+|[-–:,\s]+$/g, '')
+    .slice(0, 80);
+  const source = detectIncomeSource(text);
+  return { kind: 'income', amount, source, description: rest || source, ...(method ? { method } : {}) };
+}
+
 export function parseMessage(input: string): Command {
   const text = input.trim();
   const t = normalize(text).replace(/[!?.]+$/, '');
@@ -123,16 +183,24 @@ export function parseMessage(input: string): Command {
   if (/^(semana|essa semana|esta semana|gastos da semana)$/.test(t)) return { kind: 'week' };
   if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total)$/.test(t)) return { kind: 'month' };
   if (/^(apagar|apaga|desfazer|desfaz|cancelar|apagar ultimo|apaga o ultimo|errei)$/.test(t)) return { kind: 'undo' };
+  if (/^(apagar|apaga|desfazer|desfaz) (a )?(ultima )?(entrada|receita)( anotada)?$/.test(t)) return { kind: 'undoIncome' };
+  if (/^(entradas|minhas entradas|entradas do mes|receitas|minhas receitas|receitas do mes|ganhos|quanto recebi|quanto entrou|dinheiro que entrou)$/.test(t)) return { kind: 'incomes' };
+  if (/^(saldo|meu saldo|saldo do mes|balanco|balanco do mes|entrou e saiu|quanto sobrou)$/.test(t)) return { kind: 'balance' };
+  if (/^(formas de pagamento|forma de pagamento|gastos por forma de pagamento|gastos por pagamento|como paguei|pagamentos|por pagamento)$/.test(t)) return { kind: 'methods' };
 
   // pergunta ("pq 155?") não é gasto, mesmo que tenha número
   if (text.includes('?')) return { kind: 'unknown' };
 
-  const m = pickAmount(text);
+  const income = parseIncome(text);
+  if (income) return income;
+
+  const { method, text: noMethod } = extractMethod(text);
+  const m = pickAmount(noMethod);
   if (!m) return { kind: 'unknown' };
   const amount = parseAmount(m[2]);
   if (amount === null) return { kind: 'unknown' };
 
-  const rest = (text.slice(0, m.index) + ' ' + text.slice((m.index ?? 0) + m[0].length))
+  const rest = (noMethod.slice(0, m.index) + ' ' + noMethod.slice((m.index ?? 0) + m[0].length))
     .split(/\s+/)
     .filter((w) => w && !FILLER.has(normalize(w)))
     .join(' ')
@@ -144,5 +212,6 @@ export function parseMessage(input: string): Command {
     amount,
     category: detectCategory(rest || text),
     description: rest || 'Sem descrição',
+    ...(method ? { method } : {}),
   };
 }
