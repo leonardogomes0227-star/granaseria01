@@ -21,5 +21,5 @@ function connect(): SupabaseClient | null {
 export const supabase: SupabaseClient | null = connect();
 export const accountsEnabled = supabase !== null;
 
-// Número do WhatsApp da Grana Séria, só dígitos com 55 + DDD (pro link wa.me de vincular)
-export const WHATSAPP_NUMBER = (import.meta.env.VITE_WHATSAPP_NUMBER ?? '').replace(/\D/g, '');
+// Número do WhatsApp da Grana Séria, só dígitos com 55 + DDD (pros links wa.me). Sem a variável, vale o número oficial.
+export const WHATSAPP_NUMBER = (import.meta.env.VITE_WHATSAPP_NUMBER || '5567996085267').replace(/\D/g, '');
