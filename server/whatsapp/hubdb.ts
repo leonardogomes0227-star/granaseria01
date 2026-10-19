@@ -142,6 +142,18 @@ export async function getProfileWithDate(phone: string): Promise<{ state: StateS
   return { state: row?.state ?? {}, updated_at: row?.updated_at ?? null };
 }
 
+/** Última mensagem que a pessoa mandou (em minutos desde 1970), pra saber se a janela de 24h da Meta está aberta. */
+export async function setLastInbound(phone: string): Promise<void> {
+  await check(await upsert('wa_usage', 'phone,period', { phone, period: 'ultima:msg', count: Math.floor(Date.now() / 60000) }), 'upsert');
+}
+
+export async function getLastInbound(phone: string): Promise<Date | null> {
+  const res = await rest(`wa_usage?${new URLSearchParams({ phone: `eq.${phone}`, period: 'eq.ultima:msg', select: 'count', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { count: number }[];
+  return row ? new Date(row.count * 60000) : null;
+}
+
 /** Aviso de que as ferramentas foram pro site: uma vez por pessoa (no chat ou pelo modelo da Meta). */
 export const NOTICE_FLAG = 'aviso:site-v1';
 

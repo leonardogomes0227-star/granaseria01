@@ -3,8 +3,10 @@
 
 import { rest } from '../server/whatsapp/db.js';
 import { buildStats, type EventRow } from '../server/admin/stats.js';
-import { getFlag, listKnownPhones, listProfiles, personHash, setFlag, NOTICE_FLAG } from '../server/whatsapp/hubdb.js';
-import { sendTemplate } from '../server/whatsapp/meta.js';
+import { createWebLink, getFlag, getLastInbound, getProfile, listKnownPhones, listProfiles, personHash, setFlag, NOTICE_FLAG } from '../server/whatsapp/hubdb.js';
+import { sendTemplate, sendText } from '../server/whatsapp/meta.js';
+import { siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
+import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 
 const PAGE = 1000;
 const MAX_ROWS = 100_000;
@@ -84,8 +86,9 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 /**
- * POST /api/admin?acao=avisar: manda pra todo mundo que já usou o bot o aviso de que as ferramentas estão no site.
- * Fora da janela de 24h só vai modelo aprovado na Meta (WHATSAPP_NEWS_TEMPLATE, padrão "novidade_site", sem variáveis).
+ * POST /api/admin?acao=avisar: avisa todo mundo que já usou o bot que as ferramentas agora ficam no site, cada um com o
+ * seu link de acesso (já logado). Quem mandou mensagem nas últimas 24h recebe o texto completo direto (a Meta deixa);
+ * os outros, o modelo aprovado WHATSAPP_NEWS_TEMPLATE (padrão "novidade_site", com o link em {{1}}).
  * Cada pessoa recebe uma vez só; quem recebe não vê o aviso de novo no chat.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -93,7 +96,8 @@ export async function POST(request: Request): Promise<Response> {
   if (new URL(request.url).searchParams.get('acao') !== 'avisar') return Response.json({ error: 'ação desconhecida' }, { status: 400 });
   const template = process.env.WHATSAPP_NEWS_TEMPLATE || 'novidade_site';
   const language = process.env.WHATSAPP_REMINDER_LANGUAGE || 'pt_BR';
-  let sent = 0;
+  let direct = 0;
+  let viaTemplate = 0;
   let skipped = 0;
   const errors: string[] = [];
   for (const phone of await listKnownPhones()) {
@@ -102,13 +106,21 @@ export async function POST(request: Request): Promise<Response> {
       continue;
     }
     try {
-      await sendTemplate(phone, template, language, []);
+      const profile = await getProfile(phone).catch(() => ({}) as Record<string, string>);
+      const link = `${SITE_URL}/${diagnosisFrom(profile) ? 'painel' : ''}?t=${await createWebLink(phone)}`;
+      const last = await getLastInbound(phone).catch(() => null);
+      if (last && Date.now() - last.getTime() < 23 * 60 * 60 * 1000) {
+        await sendText(phone, siteNoticeText(link, profile['gs-nome'] ?? null));
+        direct++;
+      } else {
+        await sendTemplate(phone, template, language, [link]);
+        viaTemplate++;
+      }
       await setFlag(phone, 'aviso:modelo-v1', true);
       await setFlag(phone, NOTICE_FLAG, true);
-      sent++;
     } catch (err) {
       if (errors.length < 3) errors.push(String(err).slice(0, 200));
     }
   }
-  return Response.json({ sent, skipped, failed: errors.length > 0 ? 'veja os erros' : 0, errors });
+  return Response.json({ sent: direct + viaTemplate, direct, viaTemplate, skipped, errors });
 }

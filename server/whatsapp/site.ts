@@ -82,19 +82,60 @@ export function toSite(t: string): Outgoing[] | null {
   return hit[1] === 'all' ? siteToolsOut() : toolOut(hit[1]);
 }
 
-/** O "oi": o que o assistente faz, em poucas linhas, e o caminho pro diagnóstico no site pra quem ainda não fez. */
+/**
+ * O "oi": a maioria chega sem saber que as ferramentas foram pro site. Então o oi explica a novidade primeiro,
+ * manda o link (o webhook põe o login nele, então é só tocar) e só depois lembra o que continua aqui.
+ * Sem diagnóstico, o link leva à página inicial (a apresentação e o "O que você quer resolver?"); com, ao painel.
+ */
 export function welcomeOut(name: string | null, hasDiagnosis: boolean): Outgoing[] {
   const hi = name ? `Oi, ${name}! 👋` : 'Oi! 👋';
-  const diagLine = hasDiagnosis
-    ? ''
-    : `\n\n📊 Quer um plano completo? Faça o diagnóstico grátis no site (uns 5 minutos) e toque em *Continuar no WhatsApp* no fim:\n${siteLink('diag')}`;
+  const link = hasDiagnosis ? `${SITE_URL}/painel` : `${SITE_URL}/`;
   return [
+    txt(
+      [
+        `${hi} Eu sou o assistente da *Grana Séria*. 🪙`,
+        '',
+        hasDiagnosis
+          ? '📣 *Novidade:* agora seu plano de ação, seus gastos do mês e todas as ferramentas ficam juntos no nosso site, salvos na sua conta.'
+          : '📣 *Novidade:* agora tudo fica no nosso site, mais fácil de usar e com passo a passo: o diagnóstico (sua nota e o seu plano de ação), dívidas, 13º, metas, seus direitos e mais.',
+        '',
+        `👉 *Toque aqui pra entrar* (já com a sua conta, sem senha):`,
+        link,
+        '',
+        hasDiagnosis
+          ? 'Lá, quando quiser voltar pra cá, é só tocar em *Anotar no WhatsApp*.'
+          : 'Comece pelo *diagnóstico* (uns 10 minutos). No fim, toque em *Continuar no WhatsApp* que eu trago tudo pra cá e passo a te mostrar quanto ainda dá pra gastar em cada coisa.',
+      ].join('\n')
+    ),
     buttons(
-      `${hi} Eu sou o assistente da *Grana Séria*. 🪙 Você me conta o dinheiro que entra e o que sai, e eu mostro quanto sobra.\n\n✍️ É só escrever:\n• *gastei 35 no mercado no pix*\n• *recebi 200 de freela*\n• ou mande a foto do cupom\n\nEu somo tudo e digo o saldo do mês e quanto dá pra gastar por dia. Pra ver tudo no site, mande *painel*.${diagLine}`,
+      '✍️ *Aqui no WhatsApp* você anota o dia a dia: *mercado 80 no pix*, *recebi 3000 salário* ou a foto do cupom. Eu somo e mostro o saldo e quanto ainda dá pra gastar por dia.',
       [
         ['gastos:saldo', '⚖️ Ver meu mês'],
+        ['job:anotar', '✍️ Como anotar'],
         ['menu:menu', '📋 Mais opções'],
       ]
     ),
   ];
+}
+
+/**
+ * O aviso das ferramentas no site, pra quem já usava o bot. O link é pessoal (já entra com a conta da pessoa).
+ * Vai no chat (uma vez, na próxima mensagem) e no "Avisar todo mundo" do painel do dono.
+ */
+export function siteNoticeText(link: string, name?: string | null): string {
+  return [
+    `📣 *${name ? `${name}, temos` : 'Temos'} novidade na Grana Séria!*`,
+    '',
+    'Pra ficar mais fácil, agora tudo fica no nosso site, com passo a passo e salvo na sua conta: 📊 diagnóstico e plano de ação, ❄️ qual dívida pagar primeiro, 🎁 13º, 🎯 metas, ⚖️ seus direitos e mais.',
+    '',
+    '👉 *Toque aqui pra entrar* (já com a sua conta, sem senha):',
+    link,
+    '',
+    '*Como fica:*',
+    '1️⃣ No site você vê seu plano e usa as ferramentas.',
+    '2️⃣ Aqui no WhatsApp você continua anotando o dia a dia: *mercado 80 no pix*, *recebi 3000 salário* ou a foto do cupom.',
+    '3️⃣ Tudo fica junto: o que você anota aqui aparece no site.',
+    '',
+    'No site, pra voltar pra cá, é só tocar em *Anotar no WhatsApp*. 🪙',
+  ].join('\n');
 }

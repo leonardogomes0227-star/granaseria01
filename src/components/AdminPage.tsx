@@ -285,8 +285,10 @@ function Broadcast({ secret }: { secret: string }) {
     setState('sending');
     try {
       const res = await fetch('/api/admin?acao=avisar', { method: 'POST', headers: { Authorization: `Bearer ${secret}` } });
-      const r = (await res.json()) as { sent: number; skipped: number; errors: string[] };
-      setResult(`Enviado pra ${r.sent} pessoa(s). ${r.skipped} já tinham recebido.${r.errors.length ? ` Erro: ${r.errors[0]}` : ''}`);
+      const r = (await res.json()) as { sent: number; direct: number; viaTemplate: number; skipped: number; errors: string[] };
+      setResult(
+        `Enviado pra ${r.sent} pessoa(s): ${r.direct} direto (falaram com o bot nas últimas 24h) e ${r.viaTemplate} pelo modelo da Meta. ${r.skipped} já tinham recebido.${r.errors.length ? ` Não foi pra ${r.errors.length}+: ${r.errors[0]}` : ''}`
+      );
       setState(res.ok ? 'done' : 'error');
     } catch {
       setState('error');
@@ -297,8 +299,9 @@ function Broadcast({ secret }: { secret: string }) {
     <div className="admin-card admin-broadcast">
       <div className="admin-label"><Megaphone size={14} style={{ verticalAlign: '-2px' }} /> Avisar quem já usa</div>
       <p className="admin-note">
-        Manda no WhatsApp o aviso de que as ferramentas agora ficam no site (com o passo a passo de como entrar). Precisa do modelo
-        <b> novidade_site</b> aprovado na Meta. Quem não receber por aqui vê o aviso na próxima mensagem que mandar.
+        Manda no WhatsApp, pra cada pessoa, o aviso de que as ferramentas agora ficam no site, com o passo a passo e o <b>link de acesso dela</b> (já
+        logado). Quem falou com o bot nas últimas 24h recebe na hora; os outros, pelo modelo <b>novidade_site</b> aprovado na Meta. Quem não receber
+        vê o aviso na próxima mensagem que mandar.
       </p>
       <button className="btn-primary" type="button" onClick={() => void send()} disabled={state === 'sending'}>
         {state === 'sending' ? 'Enviando…' : 'Avisar todo mundo'}
