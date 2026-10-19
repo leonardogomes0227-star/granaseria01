@@ -21,6 +21,8 @@ import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
+import { resetIfOld } from '../src/reset.js';
+import { planBudgets } from '../src/plan.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
 
 
@@ -30,7 +32,11 @@ const text = (t: string): Outgoing[] => [{ kind: 'text', text: t }];
 /** Conversa em andamento + dados da pessoa. Se as tabelas novas ainda não existem, o hub fica desligado e o resto segue. */
 async function loadHub(user: UserRow | null, phone: string): Promise<{ session: Awaited<ReturnType<typeof getSession>>; profile: StateSnapshot } | null> {
   try {
-    const [session, profile] = await Promise.all([getSession(phone), user ? Promise.resolve(user.state ?? {}) : getProfile(phone)]);
+    const [session, loaded] = await Promise.all([getSession(phone), user ? Promise.resolve(user.state ?? {}) : getProfile(phone)]);
+    // recomeço do plano (src/reset.ts): o diagnóstico antigo não vale mais nem pros limites do dia a dia
+    const reset = resetIfOld(loaded);
+    if (reset.changed) await (user ? saveState(user.user_id, reset.state) : saveProfile(phone, reset.state)).catch(() => undefined);
+    const profile = reset.state;
     return { session, profile };
   } catch (err) {
     console.error('WhatsApp: ferramentas indisponíveis (rodou o SQL supabase/whatsapp-hub.sql?)', err);
@@ -268,7 +274,8 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
 /** As funções de banco do registro de gastos, com o orçamento do diagnóstico (se tiver) e a IA (se ligada). */
 function botDeps(phone: string, profile: StateSnapshot): BotDeps {
   const diag = diagnosisFrom(profile);
-  const budgets = diag ? { Moradia: diag.expenses.moradia, Alimentação: diag.expenses.alimentacao, Transporte: diag.expenses.transporte, Lazer: diag.expenses.lazer } : undefined;
+  // os limites do dia a dia são os do plano de ação (com os cortes), os mesmos do painel do site
+  const budgets = diag ? planBudgets(diag) : undefined;
   return {
     insertExpense,
     listExpensesSince,

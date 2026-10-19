@@ -15,6 +15,7 @@ import { getArchetype } from '../archetypes';
 import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
 import { leaksMonthlyTotal } from '../leaks';
+import { getGoals } from '../results';
 import { getTracking, startTracking } from '../tracking';
 import { track } from '../analytics';
 
@@ -510,7 +511,7 @@ export function DiagnosisStep({
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
-  const plan = useMemo(() => buildPlan(data, { extraMonthly: leaksMonthlyTotal() }), [data]);
+  const plan = useMemo(() => buildPlan(data, { extraMonthly: leaksMonthlyTotal(), goals: getGoals() }), [data]);
   const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;

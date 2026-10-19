@@ -7,9 +7,11 @@ import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { buildPlan } from '../plan';
 import { leaksMonthlyTotal } from '../leaks';
+import { getGoals, getResults, type ToolResult } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
-import { SITE_GOALS } from '../goals';
+import { getTool } from '../tools';
+import { ToolIcon } from './Layout';
 import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
@@ -81,7 +83,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
   }, []);
 
   const hasDiag = data.monthlyIncome > 0;
-  const plan = useMemo(() => (hasDiag ? buildPlan(data, { extraMonthly: leaksMonthlyTotal() }) : null), [data, hasDiag]);
+  const plan = useMemo(() => (hasDiag ? buildPlan(data, { extraMonthly: leaksMonthlyTotal(), goals: getGoals() }) : null), [data, hasDiag]);
   const unlocked = isUnlocked() || !CHECKOUT_READY;
 
   const expenses = painel?.month.expenses ?? [];
@@ -95,6 +97,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
   const name = getName();
+  const done = (Object.entries(getResults()) as [ToolId, ToolResult][]).sort((x, y) => y[1].at.localeCompare(x[1].at));
 
   // para onde foi o dinheiro: o que foi anotado no mês e, com diagnóstico, os limites de cada coisa
   const byCategory = new Map<string, number>();
@@ -103,7 +106,9 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
   const biggest = Math.max(1, ...byCategory.values());
   const where = [...byCategory.entries()]
     .map(([cat, used]) => {
-      const limit = hasDiag ? data.expenses[CATS.find((c) => c.name === cat)?.key ?? ('' as keyof WizardData['expenses'])] ?? 0 : 0;
+      const key = CATS.find((c) => c.name === cat)?.key;
+      // o limite é o do plano (já com o corte), o mesmo que o WhatsApp usa
+      const limit = hasDiag && key ? (plan?.cuts.find((c) => c.key === key)?.ceiling ?? data.expenses[key]) : 0;
       return { cat, used, limit, label: CATS.find((c) => c.name === cat)?.label ?? cat };
     })
     .sort((a, b) => b.used - a.used || b.limit - a.limit);
@@ -218,7 +223,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
                   })}
                 </ul>
               )}
-              {hasDiag && <p className="field-hint where-foot">Os limites são o que você contou no diagnóstico.</p>}
+              {hasDiag && <p className="field-hint where-foot">Os limites são os do seu plano de ação (com os cortes).</p>}
             </section>
 
             <section className="painel-section stat-card painel-recent">
@@ -260,19 +265,29 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
       </section>
 
       <section className="painel-section painel-anchor" id="ferramentas" style={{ marginTop: 28 }}>
-        <p className="diag-label">O que você quer fazer agora?</p>
-        <div className="goals-grid painel-goals">
-          {SITE_GOALS.filter((g) => g.action.kind === 'tool').map((g) => {
-            const Icon = g.icon;
-            return (
-              <button type="button" key={g.id} className="goal-card" onClick={() => g.action.kind === 'tool' && onOpenTool(g.action.tool)}>
-                <span className={`tool-icon tone-${g.tone}`}><Icon size={20} strokeWidth={1.9} /></span>
-                <span className="goal-copy"><b>{g.title}</b><span>{g.description}</span></span>
-                <ArrowRight size={16} className="goal-arrow" />
-              </button>
-            );
-          })}
-        </div>
+        <p className="diag-label">O que você já fez nas ferramentas</p>
+        {done.length === 0 ? (
+          <p className="field-hint">Ainda nada. Cada ferramenta que você usar fica salva aqui e conversa com o seu plano.</p>
+        ) : (
+          <ul className="done-list">
+            {done.map(([id, r]) => {
+              const t = getTool(id);
+              return (
+                <li key={id}>
+                  <button type="button" onClick={() => onOpenTool(id)}>
+                    <ToolIcon tool={t} size="sm" />
+                    <span>
+                      <b>{t.title}</b>
+                      <small>{r.summary}</small>
+                    </span>
+                    <ArrowRight size={15} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <Link className="btn-outline" to="/#ferramentas" style={{ marginTop: 14 }}>Ver todas as ferramentas <ArrowRight size={15} /></Link>
       </section>
     </div>
   );

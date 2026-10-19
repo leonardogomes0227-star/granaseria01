@@ -34,6 +34,17 @@ import { LoginGate } from './components/LoginGate';
 import { SiteFeedback } from './components/SiteFeedback';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
+import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
+
+// recomeço do plano (src/reset.ts): o plano antigo deste navegador sai uma vez, antes de qualquer coisa ler ele
+try {
+  if (localStorage.getItem(RESET_KEY) !== RESET_ID) {
+    for (const k of PLAN_KEYS) localStorage.removeItem(k);
+    localStorage.setItem(RESET_KEY, RESET_ID);
+  }
+} catch {
+  // navegador sem localStorage: não há plano guardado
+}
 
 // o link do WhatsApp (?t=…) vira login antes de o roteador ler o endereço
 captureLoginFromUrl();
