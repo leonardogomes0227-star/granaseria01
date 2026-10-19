@@ -20,6 +20,10 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | `saldo` | Entrou, saiu e saldo do mês |
 | `formas de pagamento` | Quanto saiu no mês em cada forma de pagamento (o `mês` também mostra) |
 | `apagar entrada` | Desfaz a última entrada |
+| `posso comprar 300` | Faz a conta com o saldo real do mês (entrou − saiu) e diz quanto sobra por dia depois da compra |
+| 📸 foto do cupom, nota ou comprovante de pix | A IA lê o valor, o lugar, a categoria e a forma de pagamento e anota o gasto (ou a entrada, se o pix foi recebido). Precisa de `ANTHROPIC_API_KEY` |
+| `resumo semanal` | Mostra a semana e liga o resumo automático (domingo de manhã) e o do mês (dia 1). `parar resumo` desliga |
+| `anotar` | Tudo o que dá pra mandar: gasto, entrada e foto |
 | `gastos` (ou *Gastos e entradas* no menu) | Abre as opções de gastos: anotar, hoje, ontem, semana, mês, quanto ainda posso gastar, últimos e desfazer |
 | `hoje` | Lista os gastos de hoje |
 | `ontem` | Lista os gastos de ontem |
@@ -103,6 +107,56 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - **401** → `WHATSAPP_APP_SECRET` errado
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada
+
+## Menu em 5 trabalhos
+
+`menu` mostra só: ✍️ Anotar · ⚖️ Meu mês · 📋 Meu plano · 💳 Sair das dívidas · 🛟 Guardar e proteger. Cada um abre só as ferramentas dele. A lista antiga, com tudo, continua em `ferramentas`.
+
+O diagnóstico e o começo rápido já vêm **preenchidos com o que a pessoa anotou** nos últimos 30 dias (com pelo menos 7 dias de registro). Ela só confirma ("Sim, usar") e responde dívidas, reserva e quanto guarda. Gastos do dia a dia de menos de 30 dias são projetados pro mês; renda e casa não.
+
+## Ofertas no contexto
+
+Depois de uma anotação, o assistente sugere a ferramenta certa, no máximo uma por mensagem e cada tipo uma vez por mês: 13º/bônus → *13º*; salário → *plano*; Netflix/tarifa → *vazamentos*; fatura/juros → *dívidas*; quem já anotou 5 gastos no mês e não recebe o resumo → *resumo semanal*.
+
+## Resumo automático (semana e mês)
+
+A rota `/api/resumo` roda todo dia às 10h (Brasília) pelo cron da Vercel. No **domingo** manda o resumo da semana; no **dia 1**, o do mês que fechou. Só pra quem pediu (`resumo semanal`) e só se tiver algo anotado. Pra testar na hora: `GET /api/resumo?tipo=semana` (ou `tipo=mes`) com o cabeçalho `Authorization: Bearer <CRON_SECRET>`.
+
+Fora da janela de 24h a Meta só entrega **modelos aprovados**. Crie dois no WhatsApp Manager (categoria **Utilidade**, idioma **Português (BR)**):
+
+**`resumo_semanal`**
+```
+📊 Sua semana na Grana Séria
+
+💸 Gastou {{1}}.
+O que mais pesou: {{2}}.
+No mês: {{3}}.
+
+💡 {{4}}
+
+Pra parar de receber, responda: parar resumo
+```
+Exemplos pra Meta: {{1}} `R$ 450,00 em 12 anotações`, {{2}} `Alimentação (R$ 200,00)`, {{3}} `saldo do mês R$ 1.200,00, uns R$ 90,00 por dia até o fim do mês`, {{4}} `Mande *vazamentos* e eu mostro quais assinaturas pesam.`
+
+**`resumo_mensal`**
+```
+🗓️ Seu {{1}} na Grana Séria
+
+📥 Entrou: {{2}}
+📤 Saiu: {{3}}
+⚖️ Resultado: {{4}}
+
+Pra parar de receber, responda: parar resumo
+```
+Exemplos: {{1}} `outubro`, {{2}} `R$ 3.000,00`, {{3}} `R$ 2.500,00, mais em Moradia`, {{4}} `sobraram R$ 500,00 (16% do que entrou).`
+
+Variáveis (opcionais): `WHATSAPP_WEEKLY_TEMPLATE` (padrão `resumo_semanal`), `WHATSAPP_MONTHLY_TEMPLATE` (padrão `resumo_mensal`), `CRON_SECRET` (o mesmo dos lembretes). Cada mensagem de modelo tem custo na Meta (categoria utilidade).
+
+## Fotos: cupom, comprovante e fatura
+
+- **Foto** (ou PDF com legenda "comprovante") → leitura de cupom: vira gasto, com a data do documento se for dos últimos 31 dias. Limite `RECEIPT_MONTHLY_LIMIT` (padrão 60 por mês por pessoa).
+- **PDF**, legenda "fatura"/"extrato", ou foto que a leitura reconhece como fatura → leitor de fatura (limite `FATURA_MONTHLY_LIMIT`, padrão 5).
+- **Áudio** ainda não: a API do Claude não recebe áudio. O bot responde pedindo texto ou foto.
 
 ## Começar pelo objetivo da pessoa
 

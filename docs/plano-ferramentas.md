@@ -66,3 +66,7 @@ Selos e frase do dia deixam de ser ferramentas: viram o fechamento da mensagem s
 
 ## Andamento
 - **Semana 1 (feito):** "posso comprar X?" usa o saldo real do mês (sem perguntar renda quando a pessoa já anotou entradas); ofertas no contexto (13º/bônus → *13º*, salário → *plano*, Netflix/tarifa → *vazamentos*, fatura/juros → *dívidas*), no máximo uma por mensagem e cada tipo uma vez por mês.
+- **Semana 2 (feito):** diagnóstico e começo rápido pré-preenchidos com os registros (a pessoa só confirma); menu em 5 trabalhos.
+- **Semana 3 (feito, falta a Meta):** resumo semanal (domingo) e mensal (dia 1), só pra quem pediu com *resumo semanal*. Falta criar e aprovar os modelos `resumo_semanal` e `resumo_mensal` (texto em `docs/whatsapp-assistente.md`).
+- **Fotos (feito):** foto do cupom ou comprovante vira gasto (ou entrada, se o pix foi recebido). Precisa de `ANTHROPIC_API_KEY`.
+- **Áudio (pendente, decisão do dono):** a API do Claude não recebe áudio; precisa de um serviço de transcrição à parte.

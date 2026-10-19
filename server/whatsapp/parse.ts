@@ -8,6 +8,8 @@ export type Command =
   | { kind: 'balance' }
   | { kind: 'methods' }
   | { kind: 'undoIncome' }
+  | { kind: 'weekly' }
+  | { kind: 'weeklyOff' }
   | { kind: 'today' }
   | { kind: 'yesterday' }
   | { kind: 'recent' }
@@ -193,6 +195,8 @@ export function parseMessage(input: string): Command {
   if (/^(apagar|apaga|desfazer|desfaz) (a )?(ultima )?(entrada|receita)( anotada)?$/.test(t)) return { kind: 'undoIncome' };
   if (/^(entradas|minhas entradas|entradas do mes|receitas|minhas receitas|receitas do mes|ganhos|quanto recebi|quanto entrou|dinheiro que entrou)$/.test(t)) return { kind: 'incomes' };
   if (/^(saldo|meu saldo|saldo do mes|balanco|balanco do mes|entrou e saiu|quanto sobrou)$/.test(t)) return { kind: 'balance' };
+  if (/^(resumo semanal|resumo da semana|minha semana|ligar resumo|ligar o resumo|receber resumo|quero o resumo|quero resumo)$/.test(t)) return { kind: 'weekly' };
+  if (/^(parar resumo|parar o resumo|desligar resumo|desligar o resumo|sem resumo|nao quero resumo|cancelar resumo)$/.test(t)) return { kind: 'weeklyOff' };
   if (/^(formas de pagamento|forma de pagamento|gastos por forma de pagamento|gastos por pagamento|como paguei|pagamentos|por pagamento)$/.test(t)) return { kind: 'methods' };
 
   // pergunta ("pq 155?") não é gasto, mesmo que tenha número

@@ -39,3 +39,9 @@ export function offerForExpense(description: string): Offer | null {
   }
   return null;
 }
+
+/** Convite pro resumo semanal (o resumo só é mandado pra quem pediu). */
+export const SUMMARY_OFFER: Offer = {
+  key: 'resumo',
+  text: '💡 Quer que eu te mande um resumo da semana todo domingo, aqui no WhatsApp? Mande *resumo semanal*.',
+};

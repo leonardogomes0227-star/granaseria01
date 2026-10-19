@@ -1,6 +1,7 @@
-import { parseMessage, categoryEmoji } from './parse.js';
+import { parseMessage, categoryEmoji, detectIncomeSource } from './parse.js';
 import type { Expense, Income } from './db.js';
-import { offerForExpense, offerForIncome, type Offer } from './offers.js';
+import { offerForExpense, offerForIncome, SUMMARY_OFFER, type Offer } from './offers.js';
+import { weeklySummary } from './summary.js';
 import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
@@ -22,6 +23,9 @@ export interface BotDeps {
   smart?: (text: string, ctx: SmartContext) => Promise<SmartResult | null>;
   // true na primeira vez do mês que este tipo de oferta é feito pra pessoa (sem isso, não há ofertas)
   offerOnce?: (phone: string, key: string) => Promise<boolean>;
+  // resumo semanal: liga, desliga e diz se está ligado
+  setSummary?: (phone: string, on: boolean) => Promise<void>;
+  summaryOn?: (phone: string) => Promise<boolean>;
   now?: () => Date;
 }
 
@@ -176,6 +180,106 @@ export const HELP_TEXT = [
   '• *menu* — tudo o que eu sei fazer',
 ].join('\n');
 
+export interface NewExpense {
+  amount: number;
+  category: string;
+  description: string;
+  method?: string;
+  createdAt?: string; // ISO; sem isso vale a hora do registro
+}
+
+/** Grava o gasto e monta a confirmação (total do dia e do mês, saldo, orçamento, dicas e uma oferta). null = reenvio da Meta. */
+export async function recordExpense(phone: string, e: NewExpense, waMessageId: string, deps: BotDeps, now: Date, intro?: string): Promise<string | null> {
+  const inserted = await deps.insertExpense({ phone, amount: e.amount, category: e.category, description: e.description, waMessageId, method: e.method, createdAt: e.createdAt });
+  if (!inserted) return null; // mensagem repetida pela Meta — já respondemos antes
+  const monthRows = await deps.listExpensesSince(phone, startOfMonthBRT(now));
+  const todayStart = startOfDayBRT(now).getTime();
+  const today = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart));
+  // quem anota entradas vê, a cada gasto, o saldo e quanto ainda dá por dia
+  const incomes = await deps.listIncomesSince?.(phone, startOfMonthBRT(now)).catch(() => [] as Income[]);
+  const when = e.createdAt && new Date(e.createdAt).getTime() < todayStart ? ` _(${dayLabel(new Date(e.createdAt), now)})_` : '';
+  return [
+    ...(intro ? [intro] : []),
+    `✅ ${brl(e.amount)} em ${categoryEmoji(e.category)} *${e.category}*${e.method ? ` · ${METHOD_EMOJI[e.method] ?? ''} ${e.method}` : ''}${when}`,
+    `_${e.description}_`,
+    '',
+    `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
+    ...(incomes?.length ? balanceLines(monthRows, incomes, now).slice(2) : []),
+    ...(budgetLine(e.category, monthRows, deps.budgets) ? [budgetLine(e.category, monthRows, deps.budgets) as string] : []),
+    e.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
+    // quem nunca disse como pagou neste mês ganha a dica, até experimentar
+    !e.method && !monthRows.some((r) => r.payment_method) ? '\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._' : '',
+  ]
+    .join('\n')
+    .trim()
+    .concat(await offerLine(phone, offerForExpense(e.description) ?? (await summaryOffer(phone, monthRows.length, deps)), deps));
+}
+
+/** Quem já anotou uns gastos no mês e ainda não recebe o resumo semanal é convidado a ligar (uma vez por mês). */
+async function summaryOffer(phone: string, monthCount: number, deps: BotDeps): Promise<Offer | null> {
+  if (monthCount < 5 || !deps.summaryOn || !deps.setSummary) return null;
+  return (await deps.summaryOn(phone).catch(() => true)) ? null : SUMMARY_OFFER;
+}
+
+/** Grava a entrada e responde com o saldo do mês e quanto dá por dia. null = reenvio da Meta. */
+export async function recordIncome(
+  phone: string,
+  i: { amount: number; source: string; description: string; method?: string },
+  waMessageId: string,
+  deps: BotDeps,
+  now: Date,
+  intro?: string
+): Promise<string | null> {
+  if (!deps.insertIncome || !deps.listIncomesSince) return INCOMES_OFF;
+  try {
+    const inserted = await deps.insertIncome({ phone, amount: i.amount, source: i.source, description: i.description, method: i.method, waMessageId });
+    if (!inserted) return null; // mensagem repetida pela Meta
+    const since = startOfMonthBRT(now);
+    const [incomes, expenses] = await Promise.all([deps.listIncomesSince(phone, since), deps.listExpensesSince(phone, since)]);
+    return [
+      ...(intro ? [intro] : []),
+      `💰 Entrada anotada: ${brl(i.amount)} · *${i.source}*${i.method ? ` · ${i.method}` : ''}`,
+      ...(i.description !== i.source ? [`_${i.description}_`] : []),
+      '',
+      ...balanceLines(expenses, incomes, now),
+      '',
+      'Errou? Mande *apagar entrada*.',
+    ]
+      .join('\n')
+      .concat(await offerLine(phone, offerForIncome(i.source, i.description), deps));
+  } catch (err) {
+    console.error('WhatsApp: entradas indisponíveis (rodou supabase/entradas.sql?)', err);
+    return INCOMES_OFF;
+  }
+}
+
+/**
+ * Foto/PDF de cupom ou comprovante já lido pela IA: vira gasto (ou entrada, se o pix foi recebido).
+ * Devolve null quando não é um pagamento (aí quem chama tenta ler como fatura).
+ */
+export async function recordReceipt(
+  phone: string,
+  r: { tipo: string; valor: number; descricao: string; categoria: string; forma_pagamento: string; data: string },
+  waMessageId: string,
+  deps: BotDeps,
+  now: Date
+): Promise<string | null | 'not-receipt'> {
+  if (r.tipo !== 'pagamento' && r.tipo !== 'recebimento') return 'not-receipt';
+  if (r.valor <= 0) return 'Li o documento, mas não achei o valor. 🤔 Me manda por escrito, ex.: *mercado 45,90 no pix*.';
+  // data do documento: só vale se for dos últimos 31 dias (meio-dia, horário de Brasília)
+  let createdAt: string | undefined;
+  if (r.data) {
+    const at = new Date(`${r.data}T15:00:00Z`);
+    const age = startOfDayBRT(now).getTime() - startOfDayBRT(at).getTime();
+    if (age > 0 && age <= 31 * DAY_MS) createdAt = at.toISOString();
+  }
+  const method = r.forma_pagamento || undefined;
+  if (r.tipo === 'recebimento') {
+    return recordIncome(phone, { amount: r.valor, source: detectIncomeSource(r.descricao), description: r.descricao, method }, waMessageId, deps, now, '📸 Li o comprovante:');
+  }
+  return recordExpense(phone, { amount: r.valor, category: r.categoria, description: r.descricao, method, createdAt }, waMessageId, deps, now, '📸 Li o comprovante:');
+}
+
 export async function handleText(
   msg: { id: string; phone: string; text: string },
   deps: BotDeps
@@ -196,36 +300,8 @@ export async function handleText(
     case 'help':
       return HELP_TEXT;
 
-    case 'expense': {
-      const inserted = await deps.insertExpense({
-        phone: msg.phone,
-        amount: cmd.amount,
-        category: cmd.category,
-        description: cmd.description,
-        waMessageId: msg.id,
-        method: cmd.method,
-      });
-      if (!inserted) return null; // mensagem repetida pela Meta — já respondemos antes
-      const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
-      const todayStart = startOfDayBRT(now).getTime();
-      const today = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart));
-      // quem anota entradas vê, a cada gasto, o saldo e quanto ainda dá por dia
-      const incomes = await deps.listIncomesSince?.(msg.phone, startOfMonthBRT(now)).catch(() => [] as Income[]);
-      return [
-        `✅ ${brl(cmd.amount)} em ${categoryEmoji(cmd.category)} *${cmd.category}*${cmd.method ? ` · ${METHOD_EMOJI[cmd.method] ?? ''} ${cmd.method}` : ''}`,
-        `_${cmd.description}_`,
-        '',
-        `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
-        ...(incomes?.length ? balanceLines(monthRows, incomes, now).slice(2) : []),
-        ...(budgetLine(cmd.category, monthRows, deps.budgets) ? [budgetLine(cmd.category, monthRows, deps.budgets) as string] : []),
-        cmd.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
-        // quem nunca disse como pagou neste mês ganha a dica uma vez por gasto novo, até experimentar
-        !cmd.method && !monthRows.some((r) => r.payment_method) ? '\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._' : '',
-      ]
-        .join('\n')
-        .trim()
-        .concat(await offerLine(msg.phone, offerForExpense(cmd.description), deps));
-    }
+    case 'expense':
+      return recordExpense(msg.phone, cmd, msg.id, deps, now);
 
     case 'today': {
       const rows = await deps.listExpensesSince(msg.phone, startOfDayBRT(now));
@@ -276,28 +352,8 @@ export async function handleText(
       return [`💳 *Como você pagou neste mês*: ${brl(sum(rows))}`, '', byMethod(rows)].join('\n');
     }
 
-    case 'income': {
-      if (!deps.insertIncome || !deps.listIncomesSince) return INCOMES_OFF;
-      try {
-        const inserted = await deps.insertIncome({ phone: msg.phone, amount: cmd.amount, source: cmd.source, description: cmd.description, method: cmd.method, waMessageId: msg.id });
-        if (!inserted) return null; // mensagem repetida pela Meta
-        const since = startOfMonthBRT(now);
-        const [incomes, expenses] = await Promise.all([deps.listIncomesSince(msg.phone, since), deps.listExpensesSince(msg.phone, since)]);
-        return [
-          `💰 Entrada anotada: ${brl(cmd.amount)} · *${cmd.source}*${cmd.method ? ` · ${cmd.method}` : ''}`,
-          ...(cmd.description !== cmd.source ? [`_${cmd.description}_`] : []),
-          '',
-          ...balanceLines(expenses, incomes, now),
-          '',
-          'Errou? Mande *apagar entrada*.',
-        ]
-          .join('\n')
-          .concat(await offerLine(msg.phone, offerForIncome(cmd.source, cmd.description), deps));
-      } catch (err) {
-        console.error('WhatsApp: entradas indisponíveis (rodou supabase/entradas.sql?)', err);
-        return INCOMES_OFF;
-      }
-    }
+    case 'income':
+      return recordIncome(msg.phone, cmd, msg.id, deps, now);
 
     case 'incomes': {
       if (!deps.listIncomesSince) return INCOMES_OFF;
@@ -335,6 +391,30 @@ export async function handleText(
         console.error('WhatsApp: entradas indisponíveis', err);
         return INCOMES_OFF;
       }
+    }
+
+    case 'weekly': {
+      if (!deps.setSummary) return 'O resumo semanal ainda não está ativo por aqui. 🙏';
+      const since = new Date(now.getTime() - 14 * DAY_MS);
+      const monthStart = startOfMonthBRT(now);
+      const [recent, monthExpenses, monthIncomes] = await Promise.all([
+        deps.listExpensesSince(msg.phone, since < monthStart ? since : monthStart),
+        deps.listExpensesSince(msg.phone, monthStart),
+        deps.listIncomesSince?.(msg.phone, monthStart).catch(() => [] as Income[]) ?? Promise.resolve([] as Income[]),
+      ]);
+      await deps.setSummary(msg.phone, true);
+      const summary = weeklySummary({ recent, monthExpenses, monthIncomes, now });
+      return [
+        summary?.text ?? 'Ainda não tem gasto anotado nos últimos 7 dias. Anote os próximos (ex.: *mercado 80 no pix*) e no domingo eu te mostro como foi.',
+        '',
+        '✅ Combinado: todo *domingo de manhã* eu te mando o resumo da semana, e no *dia 1* o do mês que fechou. Pra parar, mande *parar resumo*.',
+      ].join('\n');
+    }
+
+    case 'weeklyOff': {
+      if (!deps.setSummary) return 'O resumo semanal ainda não está ativo por aqui. 🙏';
+      await deps.setSummary(msg.phone, false);
+      return 'Pronto, desliguei os resumos. 🙂 Pra voltar, mande *resumo semanal*.';
     }
 
     case 'undoIncome': {

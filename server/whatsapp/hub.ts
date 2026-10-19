@@ -18,36 +18,67 @@ import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
 import { parseAmount } from './parse.js';
-import { diagnosisFrom, firstName, leaksFrom, normalize, parseDebt, parseMoney, txt, buttons, brl, type Session, type HubInput, type HubResult } from './hubcore.js';
+import { diagnosisFrom, firstName, leaksFrom, normalize, parseDebt, parseMoney, txt, buttons, brl, type Session, type HubInput, type HubResult, type History } from './hubcore.js';
 
 export { parseMoney, parseDebt, diagnosisFrom, normalize, firstName } from './hubcore.js';
-export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
+export type { Session, HubInput, HubResult, Flow, History } from './hubcore.js';
 
 /* ---------- menu ---------- */
 
-/** O menu de todo dia: o assistente na frente, o resto atrás de "Mais ferramentas". */
+/** O menu de todo dia: o assistente na frente e as ferramentas em 5 trabalhos, não em 14 opções. */
 export function simpleMenu(name?: string | null): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha uma opção:`,
+      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha o que você quer resolver:`,
       button: 'Ver opções',
       rows: [
-        { id: 'gastos:entrada', title: '💰 Anotar uma entrada', description: 'Salário, freela, venda, dinheiro extra' },
-        { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Com a forma de pagamento: pix, cartão…' },
-        { id: 'gastos:saldo', title: '⚖️ Meu mês', description: 'Entrou, saiu, saldo e quanto dá por dia' },
-        { id: 'menu:gastos', title: '📊 Ver meus gastos', description: 'Hoje, semana, mês e formas de pagamento' },
-        { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
-        { id: 'menu:tudo', title: '🧰 Mais ferramentas', description: 'Diagnóstico, dívidas, calculadoras, direitos…' },
+        { id: 'job:anotar', title: '✍️ Anotar', description: 'Gastos, entradas e forma de pagamento' },
+        { id: 'menu:gastos', title: '⚖️ Meu mês', description: 'Saldo, quanto dá por dia, gastos e entradas' },
+        { id: 'job:plano', title: '📋 Meu plano', description: 'Próximo passo, diagnóstico e plano do mês' },
+        { id: 'job:dividas', title: '💳 Sair das dívidas', description: 'Qual pagar primeiro, empréstimos, direitos' },
+        { id: 'job:guardar', title: '🛟 Guardar e proteger', description: 'Meta, 13º, compras e dinheiro perdido' },
       ],
     },
   ];
 }
 
+/** Cada trabalho do menu abre só as ferramentas dele. */
+export function jobMenu(job: string, faturaEnabled = false): Outgoing[] | null {
+  const list = (text: string, rows: { id: string; title: string; description: string }[]): Outgoing[] => [{ kind: 'list', text, button: 'Ver opções', rows }];
+  if (job === 'plano') {
+    return list('📋 *Meu plano.* O que você quer ver?', [
+      { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Uma coisa só pra fazer agora' },
+      { id: 'menu:plano', title: '📋 Plano do mês', description: 'O que pagar e guardar neste mês' },
+      { id: 'menu:rapido', title: '⚡ Começo rápido', description: 'Onde você está, em 1 minuto' },
+      { id: 'menu:diag', title: '📊 Diagnóstico completo', description: 'Nota, plano e datas, usando o que você anotou' },
+      { id: 'menu:checkin', title: '📅 Check-in do mês', description: 'Como foi seu mês, em 1 minuto' },
+    ]);
+  }
+  if (job === 'dividas') {
+    return list('💳 *Sair das dívidas.* Por onde começamos?', [
+      { id: 'calc:dividas', title: '❄️ Qual pagar primeiro', description: 'A ordem certa e a data de ficar livre' },
+      { id: 'calc:emprestimo', title: '🏦 Comparar empréstimos', description: 'Qual proposta sai mais barata no total' },
+      ...(faturaEnabled ? [{ id: 'menu:fatura', title: '🧾 Ler minha fatura', description: 'Juros, tarifas e cobranças escondidas' }] : []),
+      { id: 'menu:direitos', title: '⚖️ Meus direitos', description: 'O que a lei garante com banco e dívida' },
+    ]);
+  }
+  if (job === 'guardar') {
+    return list('🛟 *Guardar e proteger.* O que você quer fazer?', [
+      { id: 'calc:meta', title: '🎯 Juntar pra uma meta', description: 'Quanto guardar por mês pra chegar lá' },
+      { id: 'menu:13o', title: '🎁 13º e dinheiro extra', description: 'Onde colocar cada real' },
+      { id: 'calc:compra', title: '🛍️ Posso comprar?', description: 'Com o seu saldo de verdade' },
+      { id: 'menu:vazamentos', title: '🔎 Dinheiro perdido', description: 'Assinaturas e tarifas que você nem vê' },
+      { id: 'calc:longo', title: '📈 Longo prazo', description: 'Quanto seu dinheiro vira com os anos' },
+    ]);
+  }
+  return null;
+}
+
 export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   const start = [
     { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Não sabe por onde começar? Toque aqui' },
-    { id: 'menu:gastos', title: '💸 Gastos e entradas', description: 'Anote o que gasta e o que recebe, e veja o saldo' },
+    { id: 'menu:gastos', title: '⚖️ Meu mês', description: 'Saldo, gastos, entradas e formas de pagamento' },
     { id: 'menu:diag', title: '📊 Fazer meu diagnóstico', description: 'Veja onde você está e receba um plano' },
     { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
   ];
@@ -80,19 +111,19 @@ export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
 export function gastosMenu(): Outgoing {
   return {
     kind: 'list',
-    text: '💸 *Gastos e entradas.* Pra anotar, é só escrever, por exemplo:\n• *gastei 35 no mercado no pix*\n• *uber 18,50 débito*\n• *recebi 200 de freela*\n\nOu escolha uma opção:',
+    text: '⚖️ *Meu mês.* Pra anotar, é só escrever, por exemplo:\n• *gastei 35 no mercado no pix*\n• *uber 18,50 débito*\n• *recebi 200 de freela*\n\nOu escolha o que ver:',
     button: 'Ver opções',
     rows: [
-      { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Com a forma de pagamento: pix, cartão…' },
-      { id: 'gastos:entrada', title: '💰 Anotar uma entrada', description: 'Salário, freela, venda, dinheiro extra' },
+      { id: 'gastos:saldo', title: '⚖️ Saldo do mês', description: 'Entrou, saiu e quanto dá por dia' },
       { id: 'gastos:hoje', title: '📅 Gastos de hoje', description: 'O que você gastou hoje' },
       { id: 'gastos:semana', title: '🗓️ Gastos da semana', description: 'Total desde segunda, por categoria' },
       { id: 'gastos:mes', title: '📊 Gastos do mês', description: 'Resumo do mês por categoria' },
       { id: 'gastos:formas', title: '💳 Formas de pagamento', description: 'Quanto saiu no pix, débito, crédito…' },
       { id: 'gastos:entradas', title: '📥 Entradas do mês', description: 'O dinheiro que entrou, por origem' },
-      { id: 'gastos:saldo', title: '⚖️ Saldo do mês', description: 'O que entrou menos o que saiu' },
       { id: 'gastos:sobra', title: '🎯 Quanto posso gastar', description: 'Por categoria, até o fim do mês' },
       { id: 'gastos:ultimos', title: '🧾 Últimos gastos', description: 'Os últimos que você anotou' },
+      { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Com a forma de pagamento: pix, cartão…' },
+      { id: 'gastos:entrada', title: '💰 Anotar uma entrada', description: 'Salário, freela, venda, dinheiro extra' },
     ],
   };
 }
@@ -135,7 +166,67 @@ const DIAG_QUESTION: Record<DiagStep, string> = {
 
 const MONEY_HINT = 'Não entendi o valor. 🤔 Responda só o número, ex.: *1200* (ou *cancelar* pra sair).';
 
-function startDiag(name?: string | null, then?: 'extra'): HubResult {
+/* ---------- pré-preenchido com o que a pessoa já anotou ---------- */
+
+const PRE_MIN_DAYS = 7; // menos que uma semana de registro não diz muito sobre o mês
+
+interface Prefill {
+  income: number;
+  spend: number;
+  moradia: number;
+  alimentacao: number;
+  transporte: number;
+  lazer: number;
+  other: number; // saúde, educação e outros: não entram nas 4 contas do diagnóstico
+  projected: boolean; // os gastos foram projetados pro mês inteiro
+}
+
+/**
+ * Entradas e gastos dos últimos 30 dias viram números de um mês. Com poucos dias de registro, os gastos do dia a dia
+ * são projetados pro mês inteiro; a renda e a casa (aluguel, luz, água: uma vez por mês) não.
+ */
+export function prefillFrom(h?: History): Prefill | null {
+  if (!h || h.income <= 0 || h.spent <= 0 || h.days < PRE_MIN_DAYS) return null;
+  const days = Math.min(30, h.days);
+  const month = (v: number) => Math.round((v * 30) / days);
+  const raw = (...names: string[]) => names.reduce((t, n) => t + (h.byCategory[n] ?? 0), 0);
+  const moradia = Math.round(raw('Moradia'));
+  const alimentacao = month(raw('Alimentação'));
+  const transporte = month(raw('Transporte'));
+  const lazer = month(raw('Lazer', 'Compras'));
+  const other = month(Math.max(0, h.spent - raw('Moradia', 'Alimentação', 'Transporte', 'Lazer', 'Compras')));
+  return { income: Math.round(h.income), spend: moradia + alimentacao + transporte + lazer + other, moradia, alimentacao, transporte, lazer, other, projected: days < 30 };
+}
+
+const PRE_BUTTONS: [string, string][] = [
+  ['pre:yes', '✅ Sim, usar'],
+  ['pre:no', '✍️ Eu respondo'],
+];
+
+const preWhen = (p: Prefill) => (p.projected ? 'Pelo que você anotou até agora (projetando os gastos do dia a dia pro mês inteiro)' : 'Pelo que você anotou nos últimos 30 dias');
+
+function startDiag(name?: string | null, then?: 'extra', history?: History): HubResult {
+  const pre = prefillFrom(history);
+  if (pre) {
+    // quem já anota não precisa responder 5 perguntas: confere os números e segue pras dívidas
+    const lines = [
+      `${name ? `${name}, vamos` : 'Vamos'} olhar pro seu ouro juntos. 🪙 Já tenho boa parte das respostas. ${preWhen(pre)}:`,
+      '',
+      `💰 Renda: ${brl(pre.income)}`,
+      `🏠 Casa: ${brl(pre.moradia)}`,
+      `🍽️ Comida: ${brl(pre.alimentacao)}`,
+      `🚗 Transporte: ${brl(pre.transporte)}`,
+      `🎉 Lazer e compras: ${brl(pre.lazer)}`,
+      ...(pre.other > 0 ? [`📌 Saúde, educação e outros: ${brl(pre.other)}`] : []),
+      '',
+      'Uso esses números? Depois faltam só 3 perguntas (dívidas, reserva e quanto você guarda).',
+    ];
+    return {
+      out: [buttons(lines.join('\n'), PRE_BUTTONS)],
+      session: { flow: 'diag', step: 'pre', data: { pre, ...(then ? { then } : {}) } },
+      event: 'diag_start',
+    };
+  }
   return {
     out: [
       txt(`${name ? `${name}, vamos` : 'Vamos'} olhar pro seu ouro juntos. 🪙 São 8 perguntas, uns 2 minutos, e os números ficam só entre nós. Pra parar, é só mandar *cancelar*.`),
@@ -154,7 +245,20 @@ const QUICK_QUESTION = {
   q_debt: '💳 *3 de 3.* Você deve alguma coisa (cartão, empréstimo, cheque especial)? Mande o valor total, mesmo aproximado. Se não deve nada, mande *não tenho*.',
 } as const;
 
-function startQuick(name?: string | null): HubResult {
+function startQuick(name?: string | null, history?: History): HubResult {
+  const pre = prefillFrom(history);
+  if (pre) {
+    return {
+      out: [
+        buttons(
+          `${name ? `${name}, bora` : 'Bora'} começar leve. 🪙 ${preWhen(pre)}: entrou *${brl(pre.income)}* e saiu *${brl(pre.spend)}* por mês.\n\nUso esses números? Aí falta só uma pergunta.`,
+          PRE_BUTTONS
+        ),
+      ],
+      session: { flow: 'diag', step: 'q_pre', data: { income: pre.income, spend: pre.spend } },
+      event: 'quick_start',
+    };
+  }
   return {
     out: [
       txt(`${name ? `${name}, bora` : 'Bora'} começar leve. 🪙 São só 3 perguntas, 1 minuto, e já te mostro onde você está. Pra parar, mande *cancelar*.`),
@@ -202,6 +306,10 @@ function quickResult(income: number, spend: number, debt: number, name?: string 
 function stepQuick(session: Session, text: string, name?: string | null): HubResult {
   const d = session.data as { income?: number; spend?: number };
   const t = normalize(text);
+  if (session.step === 'q_pre') {
+    if (PRE_YES.test(t)) return { out: [txt(`Combinado, usei seus registros. 👍\n\n${QUICK_QUESTION.q_debt}`)], session: { flow: 'diag', step: 'q_debt', data: d } };
+    return { out: [txt(QUICK_QUESTION.q_income)], session: { flow: 'diag', step: 'q_income', data: {} } };
+  }
   if (session.step === 'q_debt') {
     const none = /^(nao tenho|nao|nenhuma|nenhum|sem dividas?|zero|0)$/.test(t);
     const v = none ? 0 : parseMoney(text);
@@ -215,6 +323,8 @@ function stepQuick(session: Session, text: string, name?: string | null): HubRes
   }
   return { out: [txt(`Gastos: ${brl(v)}. Certo.\n\n${QUICK_QUESTION.q_debt}`)], session: { flow: 'diag', step: 'q_debt', data: { ...session.data, spend: v } } };
 }
+
+const PRE_YES = /^(pre:yes|sim|s|pode|pode usar|usar|isso|ok|certo|esta certo|ta certo)$/;
 
 const kinderLabel = (score: number) => (score >= 70 ? 'saúde financeira forte' : score >= 40 ? 'no caminho, com ajustes' : 'hora de cuidar com carinho, e tem saída');
 
@@ -304,8 +414,20 @@ function startTracking(profile: StateSnapshot, data: WizardData, now: Date): Sta
 function stepDiag(session: Session, text: string, profile: StateSnapshot, now: Date, name?: string | null): HubResult {
   if (session.step.startsWith('q_')) return stepQuick(session, text, name);
   const step = session.step as DiagStep | 'follow';
-  const d = session.data as { income?: number; moradia?: number; alimentacao?: number; transporte?: number; lazer?: number; debts?: DebtItem[]; reserve?: number; savings?: number; then?: 'extra'; ready?: WizardData };
+  const d = session.data as { income?: number; moradia?: number; alimentacao?: number; transporte?: number; lazer?: number; debts?: DebtItem[]; reserve?: number; savings?: number; then?: 'extra'; ready?: WizardData; pre?: Prefill };
   const t = normalize(text);
+
+  if (session.step === 'pre') {
+    const base = d.then ? { then: d.then } : {};
+    if (PRE_YES.test(t) && d.pre) {
+      const p = d.pre;
+      return {
+        out: [txt(`Combinado, usei seus registros. 👍\n\n${DIAG_QUESTION.debts}`)],
+        session: { flow: 'diag', step: 'debts', data: { ...base, income: p.income, moradia: p.moradia, alimentacao: p.alimentacao, transporte: p.transporte, lazer: p.lazer } },
+      };
+    }
+    return { out: [txt(`Tudo bem, você me diz. 🙂\n\n${DIAG_QUESTION.income}`)], session: { flow: 'diag', step: 'income', data: base } };
+  }
 
   if (step === 'follow') {
     const data = d.ready;
@@ -604,6 +726,15 @@ export const wantsNextStep = (raw: string): boolean => {
   return GREETING.test(t) || NEXT_STEP_WORDS.test(t);
 };
 
+const DIAG_WORDS = /^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/;
+const QUICK_WORDS = /^(rapido|comeco rapido|inicio rapido|comecar rapido|diagnostico rapido)$/;
+
+/** A mensagem abre o diagnóstico ou o começo rápido? Quem chama busca os registros dos últimos 30 dias só nesse caso. */
+export const wantsHistory = (raw: string): boolean => {
+  const t = normalize(raw);
+  return DIAG_WORDS.test(t) || QUICK_WORDS.test(t) || ['menu:diag', 'menu:rapido', 'goal:organizar', 'plan:start'].includes(t);
+};
+
 /** A mensagem pergunta se pode comprar (ou abre a ferramenta de compra)? Quem chama busca o saldo do mês só nesse caso. */
 export const wantsBalance = (raw: string): boolean => {
   const t = normalize(raw);
@@ -616,18 +747,33 @@ const GASTOS_HELP = txt(
   '✍️ *Pra anotar um gasto, é só me mandar o que gastou:*\n\n• *gastei 35 no mercado*\n• *uber 18,50*\n• *ontem gastei 50 na farmácia*\n\n💳 Diga também *como pagou* (pix, débito, crédito, dinheiro, boleto) pra eu separar por forma de pagamento: *mercado 80 no pix*, *tênis 250 crédito*.\n\nPode escrever do seu jeito. Eu entendo o valor, separo por categoria (mercado, transporte, lazer…) e já digo quanto você gastou hoje e no mês.\n\nPra ver depois: *hoje*, *ontem*, *semana*, *mês*, *formas de pagamento*, *últimos* ou *quanto ainda posso gastar*. Errou? Mande *apagar* pra desfazer o último.'
 );
 
+/** "Anotar": tudo o que dá pra mandar, num lugar só. */
+function anotarHelp(photos = false): Outgoing {
+  return txt(
+    [
+      '✍️ *Anotar é só escrever, do seu jeito:*',
+      '',
+      '💸 *Gasto:* *gastei 35 no mercado no pix*, *uber 18,50 débito*, *tênis 250 crédito*',
+      '💰 *Entrada:* *recebi 200 de freela*, *caiu 3000 salário*, *vendi o fogão 400*',
+      ...(photos ? ['📸 *Foto:* mande a foto do cupom ou do comprovante do pix e eu anoto sozinho'] : []),
+      '',
+      'A cada anotação eu mostro o saldo do mês e quanto dá pra gastar por dia. Errou? *apagar* (ou *apagar entrada*).',
+    ].join('\n')
+  );
+}
+
 const ENTRADA_HELP = txt(
   '💰 *Pra anotar dinheiro que entrou, é só me contar:*\n\n• *recebi 200 de freela*\n• *caiu 3000 salário*\n• *vendi o fogão 400 pix*\n• *ganhei 100 de presente*\n\nEu guardo a origem (salário, renda extra, venda…) e mostro o saldo do mês: o que entrou menos o que saiu.\n\nPra ver: *entradas* (o que entrou) e *saldo*. Errou? Mande *apagar entrada*.'
 );
 
 /** Palavras exatas que abrem uma ferramenta. Valem mesmo no meio de outra conversa (troca de assunto). */
-function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null, balance?: MonthBalance): HubResult | null {
-  if (/^(gastos|meus gastos|gastos diarios|gastos do dia a dia|gastos do dia|despesas)$/.test(t)) return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
+function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: string | null, balance?: MonthBalance, history?: History): HubResult | null {
+  if (/^(gastos|meus gastos|gastos diarios|gastos do dia a dia|gastos do dia|despesas|meu mes)$/.test(t)) return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (/^(13o|13 salario|decimo terceiro|dinheiro extra|restituicao( do ir)?|extra)$/.test(t)) return startExtra(profile);
   if (/^(vazamentos?|caca vazamentos?|cacar vazamentos?|assinaturas|tarifas|dinheiro perdido|dinheiro que sobra)$/.test(t)) return startLeaks();
   if (/^(direitos?|meus direitos|seus direitos)$/.test(t)) return { out: rightsList(profile, now), session: null };
-  if (/^(diagnostico|fazer diagnostico|meu diagnostico|refazer diagnostico)$/.test(t)) return startDiag(name);
-  if (/^(rapido|comeco rapido|inicio rapido|comecar rapido|diagnostico rapido)$/.test(t)) return startQuick(name);
+  if (DIAG_WORDS.test(t)) return startDiag(name, undefined, history);
+  if (QUICK_WORDS.test(t)) return startQuick(name, history);
   const buy = t.match(/^(?:vale a pena|vale comprar|posso comprar|devo comprar)( comprar)?(?: (.*))?$/);
   if (buy) {
     const price = buy[2] ? parseMoney(buy[2]) : null;
@@ -706,7 +852,7 @@ function startGoal(id: string, input: HubInput): HubResult {
     comprar: () => startCompra(profile, undefined, input.balance, now),
     emprestimo: () => startEmprestimo(),
     direitos: () => ({ out: rightsList(profile, now), session: null }),
-    organizar: () => startQuick(name),
+    organizar: () => startQuick(name, input.history),
   };
   const tool = open[goal.id]();
   // "organizar" já abre o começo rápido, que tem a própria apresentação: a frase do objetivo vem antes
@@ -751,7 +897,7 @@ function route(input: HubInput): HubResult | null {
   if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
   if (t === 'plan:start') {
     const data = diagnosisFrom(profile);
-    if (!data) return startDiag(name);
+    if (!data) return startDiag(name, undefined, input.history);
     return {
       out: [txt('✅ Combinado! Todo mês eu te lembro do que fazer. Mande *plano* pra ver o mês atual e *paguei* quando cumprir. Sem culpa se atrasar: eu recalculo com você.'), feedbackAsk('plan')],
       session: null,
@@ -784,8 +930,13 @@ function route(input: HubInput): HubResult | null {
   if (t === 'menu:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (t === 'gastos:anotar') return { out: [GASTOS_HELP], session: null };
   if (t === 'gastos:entrada') return { out: [ENTRADA_HELP], session: null };
-  if (t === 'menu:diag') return startDiag(name);
-  if (t === 'menu:rapido') return startQuick(name);
+  if (t === 'job:anotar' || /^(anotar|como anoto|como anotar|como registro)$/.test(t)) return { out: [anotarHelp(input.faturaEnabled)], session: null, event: 'tool:anotar' };
+  if (t.startsWith('job:')) {
+    const jm = jobMenu(t.slice(4), input.faturaEnabled);
+    if (jm) return { out: jm, session: null, event: `job:${t.slice(4)}` };
+  }
+  if (t === 'menu:diag') return startDiag(name, undefined, input.history);
+  if (t === 'menu:rapido') return startQuick(name, input.history);
   if (t === 'menu:13o') return startExtra(profile);
   if (t === 'menu:vazamentos') return startLeaks();
   if (t === 'menu:direitos') return { out: rightsList(profile, now), session: null };
@@ -809,7 +960,7 @@ function route(input: HubInput): HubResult | null {
   }
 
   // palavras exatas trocam de assunto, mesmo no meio de outra conversa
-  const shortcut = shortcutStart(t, profile, now, name, input.balance);
+  const shortcut = shortcutStart(t, profile, now, name, input.balance, input.history);
   if (shortcut) return withMenuHint(shortcut);
 
   if (session && session.flow === 'fatura') {
@@ -854,7 +1005,7 @@ function route(input: HubInput): HubResult | null {
   }
 
   // botões antigos, de uma conversa que já terminou
-  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura|plan|fb|erase):\S+$/.test(t)) return { out: [EXPIRED], session: null };
+  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura|plan|fb|erase|pre|job):\S+$/.test(t)) return { out: [EXPIRED], session: null };
 
   return null;
 }
