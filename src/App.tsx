@@ -27,6 +27,7 @@ import { useSession } from './account';
 import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
+import { WhatsAppStrip } from './components/ContinueWhatsApp';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 
@@ -379,6 +380,7 @@ function ToolRoute({
         {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
         {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
       </div>
+      <WhatsAppStrip />
     </>
   );
 }
