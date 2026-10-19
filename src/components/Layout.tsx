@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LayoutGrid, Menu, UserRound, X } from 'lucide-react';
 import { TOOLS, ToolId, ToolInfo } from '../tools';
 import { accountsEnabled } from '../supabase';
+import { painelToken } from '../painel';
+
+/** Conectado pelo WhatsApp: "Meu painel". Ainda não: "Entrar" (o login é pelo WhatsApp, sem senha). */
+const painelLabel = () => (painelToken() ? 'Meu painel' : 'Entrar');
 
 export function BrandMark({ className = 'brand-mark' }: { className?: string }) {
   return (
@@ -136,8 +140,7 @@ export function SiteHeader({
             <a className="navlink" href="#principios">Princípios</a>
             <a className="navlink" href="#duvidas">Dúvidas</a>
             <Link className="navlink" to="/guias">Guias</Link>
-            {accountsEnabled && <Link className="navlink" to="/conta">Entrar</Link>}
-            <Link className="navlink" to="/painel">Meu painel</Link>
+            <Link className="navlink" to="/painel">{painelLabel()}</Link>
           </div>
 
           <div className="nav-right">
@@ -179,7 +182,7 @@ export function SiteHeader({
             <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
             <Link className="drawer-link" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="drawer-link" to="/conta">Minha conta</Link>}
-            <Link className="drawer-link" to="/painel" onClick={() => setDrawerOpen(false)}>Meu painel</Link>
+            <Link className="drawer-link" to="/painel" onClick={() => setDrawerOpen(false)}>{painelToken() ? 'Meu painel' : 'Entrar com WhatsApp'}</Link>
             <a className="drawer-link" href="#whatsapp" onClick={() => setDrawerOpen(false)}>No WhatsApp</a>
           </aside>
         </>
@@ -199,13 +202,8 @@ export function AppBar({ onHome }: { onHome: () => void }) {
         </button>
         <div className="nav-right">
           <Link className="btn-ghost" to="/painel">
-            <LayoutGrid size={16} /> Painel
+            {painelToken() ? <LayoutGrid size={16} /> : <UserRound size={16} />} {painelToken() ? 'Painel' : 'Entrar'}
           </Link>
-          {accountsEnabled && (
-            <Link className="btn-ghost" to="/conta">
-              <UserRound size={16} /> Conta
-            </Link>
-          )}
           <button type="button" className="btn-ghost" onClick={onHome}>
             <ArrowLeft size={16} /> Início
           </button>

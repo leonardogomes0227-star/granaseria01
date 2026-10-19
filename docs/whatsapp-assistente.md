@@ -35,8 +35,16 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | `quanto ainda posso gastar` | Por categoria (casa, comida, transporte, lazer): quanto já gastou do que planejou no diagnóstico, quanto ainda dá e uns quantos reais por dia até o fim do mês. Sem diagnóstico, convida a fazer |
 | `apagar` | Desfaz o último registro |
 | `oi` / `ajuda` | Mostra os comandos |
+| `gastei 2 mil no conserto`, `celular 1,5k` | Entende "mil" e "k" |
+| `tênis 300 parcelado em 3x` | Anota R$ 300 (o "3x" não vira valor) |
+| `40 na feira e 20 na padaria` | Anota os dois gastos de uma vez |
+| `gastei 30 ontem no mercado` | Anota com a data de ontem (também `anteontem`) |
+| `guardei 200`, `investi 500 no tesouro` | Categoria 🐖 Guardado, com elogio: sai do saldo, mas não é desperdício |
+| `quanto gastei com mercado?`, `quanto gastei no mês` | Total da categoria (ou da palavra) no mês, com os maiores gastos |
+| `mercado` (sem valor) | Pergunta quanto foi |
+| `obrigado`, `valeu`, 👍 | Responde com simpatia, em vez de "não entendi" |
 
-Categorias automáticas: Alimentação, Transporte, Moradia, Saúde, Lazer, Compras, Educação e Outros.
+Categorias automáticas: Alimentação, Transporte, Moradia, Saúde, Lazer, Compras, Educação, Pets, Cuidados pessoais, Doações, Guardado e Outros.
 
 ---
 

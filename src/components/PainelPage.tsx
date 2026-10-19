@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { accountsEnabled } from '../supabase';
 import { MessageCircle, LogOut, RefreshCw, ArrowRight } from 'lucide-react';
 import type { ToolId } from '../tools';
 import type { WizardData } from '../types';
@@ -85,14 +86,19 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
 
       {status === 'none' && (
         <div className="stat-card painel-connect">
-          <p className="diag-label"><MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Conecte seu WhatsApp</p>
+          <p className="diag-label"><MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Entrar com seu WhatsApp</p>
           <p className="account-line">
-            Pra ver aqui os gastos e entradas que você anota no WhatsApp, e deixar seu plano salvo nos dois lugares, peça seu link pessoal. É só mandar
-            <b> painel</b> pro assistente. Sem cadastro e sem senha.
+            Seu login é o seu WhatsApp: sem senha e sem e-mail. Toque no botão, envie a mensagem que já vem escrita e o assistente te responde com o seu
+            link de acesso. Abrindo o link, seu plano, seus gastos e suas entradas ficam salvos aqui e no WhatsApp.
           </p>
           <a className="btn-primary btn-shine" href={waLink('painel')}>
-            <MessageCircle size={16} /> Pedir meu link no WhatsApp
+            <MessageCircle size={16} /> Entrar com WhatsApp
           </a>
+          {accountsEnabled && (
+            <p className="field-hint" style={{ marginTop: 10 }}>
+              Prefere e-mail? <Link to="/conta">Entrar com e-mail</Link>
+            </p>
+          )}
         </div>
       )}
       {status === 'loading' && <p className="field-hint">Carregando seu painel…</p>}

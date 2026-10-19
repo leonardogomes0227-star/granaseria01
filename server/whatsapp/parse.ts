@@ -2,7 +2,10 @@
 // Sem IA de propósito: regras simples resolvem "gastei 35 no mercado" e não custam nada por mensagem.
 
 export type Command =
-  | { kind: 'expense'; amount: number; category: string; description: string; method?: string }
+  | { kind: 'expense'; amount: number; category: string; description: string; method?: string; daysAgo?: number }
+  | { kind: 'multi'; items: { amount: number; category: string; description: string; method?: string }[]; daysAgo?: number }
+  | { kind: 'categoryQuery'; term: string }
+  | { kind: 'thanks' }
   | { kind: 'income'; amount: number; source: string; description: string; method?: string }
   | { kind: 'incomes' }
   | { kind: 'balance' }
@@ -35,6 +38,7 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
     keywords: [
       'uber', 'gasolina', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
       'estacionamento', 'pedágio', 'pedagio', 'taxi', 'táxi', 'passagem', 'oficina', 'mecânico', 'mecanico', 'ipva', 'posto',
+      'carro', 'moto', 'pneu', 'revisão', 'revisao', 'lava jato', 'lavagem', '99', 'bilhete único', 'cartão de transporte',
     ],
   },
   {
@@ -66,13 +70,32 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
   },
 ];
 
+// depois das categorias principais: "reserva do hotel" é Lazer, "reserva" sozinha é dinheiro guardado
+CATEGORIES.push(
+  { name: 'Pets', emoji: '🐾', keywords: ['pet', 'pet shop', 'petshop', 'ração', 'racao', 'veterinário', 'veterinario', 'banho e tosa', 'areia do gato'] },
+  {
+    name: 'Cuidados pessoais',
+    emoji: '💇',
+    keywords: ['cabelo', 'cabeleireiro', 'cabeleireira', 'barbearia', 'barbeiro', 'salão', 'salao', 'manicure', 'unha', 'unhas', 'sobrancelha', 'depilação', 'depilacao', 'perfume', 'maquiagem', 'skincare'],
+  },
+  { name: 'Doações', emoji: '🤲', keywords: ['dízimo', 'dizimo', 'oferta', 'doação', 'doacao', 'vaquinha', 'caridade'] },
+  {
+    name: 'Guardado',
+    emoji: '🐖',
+    keywords: ['guardei', 'guardar', 'investi', 'investimento', 'poupança', 'poupanca', 'reserva', 'tesouro', 'tesouro direto', 'cdb', 'caixinha', 'aplicação', 'aplicacao', 'apliquei'],
+  }
+);
+
+/** Dinheiro guardado sai da conta, mas não é gasto: entra no saldo, e o bot comemora em vez de contar como despesa. */
+export const SAVED_CATEGORY = 'Guardado';
+
 export const OTHER_CATEGORY = { name: 'Outros', emoji: '📌' };
 
 export function categoryEmoji(name: string): string {
   return CATEGORIES.find((c) => c.name === name)?.emoji ?? OTHER_CATEGORY.emoji;
 }
 
-function normalize(text: string): string {
+export function normalize(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
@@ -122,7 +145,7 @@ export function extractMethod(text: string): { method?: string; text: string } {
 const FILLER = new Set([
   'gastei', 'gasto', 'paguei', 'pago', 'comprei', 'compra', 'foi', 'deu', 'custou', 'saiu', 'via',
   'de', 'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas', 'em', 'com', 'pra', 'para', 'pro', 'um', 'uma', 'o', 'a', 'e',
-  'r$', 'reais', 'real', 'conto', 'contos', 'pila', 'hoje', 'agora',
+  'r$', 'reais', 'real', 'conto', 'contos', 'pila', 'hoje', 'agora', 'por', 'na', 'num', 'numa',
 ]);
 
 export function detectCategory(text: string): string {
@@ -135,6 +158,31 @@ export function detectCategory(text: string): string {
     }
   }
   return OTHER_CATEGORY.name;
+}
+
+/** "2 mil" → "2000", "1,5k" → "1500": o valor por extenso vira número antes de procurar o valor. */
+export function expandThousands(text: string): string {
+  return text.replace(/(\d+(?:[.,]\d{1,3})?)\s*(mil|k)\b/gi, (_, n: string) => {
+    const v = parseFloat(n.replace(/\./g, '').replace(',', '.'));
+    if (!isFinite(v)) return n;
+    return String(Math.round(v * 1000));
+  });
+}
+
+/** "parcelado em 3x", "em 10 vezes": o número de parcelas não é valor. Devolve o texto sem ele e quantas parcelas. */
+export function extractInstallments(text: string): { text: string; installments?: number } {
+  const m = text.match(/\b(?:parcelad[oa]\s+)?(?:em\s+)?(\d{1,2})\s*(?:x|vezes)\b/i);
+  if (!m) return { text };
+  const n = Number(m[1]);
+  return n >= 2 && n <= 48 ? { text: text.replace(m[0], ' '), installments: n } : { text };
+}
+
+/** "ontem", "anteontem": quantos dias atrás foi, e o texto sem a palavra. */
+export function extractDaysAgo(text: string): { text: string; daysAgo?: number } {
+  const t = normalize(text);
+  if (/\banteontem\b/.test(t)) return { text: text.replace(/\banteontem\b/i, ' '), daysAgo: 2 };
+  if (/\bontem\b/.test(t)) return { text: text.replace(/\bontem\b/i, ' '), daysAgo: 1 };
+  return { text };
 }
 
 /** "13º", "13o salário", "1ª parcela": o número de ordem não é valor. "13º" vira "décimo terceiro". */
@@ -177,20 +225,23 @@ function parseIncome(rawText: string): Command | null {
     .replace(/^[-–:,\s]+|[-–:,\s]+$/g, '')
     .slice(0, 80);
   const source = detectIncomeSource(text);
-  return { kind: 'income', amount, source, description: rest || source, ...(method ? { method } : {}) };
+  return { kind: 'income', amount, source, description: rest || (source === 'Outros' ? 'Entrada' : source), ...(method ? { method } : {}) };
 }
 
 export function parseMessage(input: string): Command {
   const text = input.trim();
   const t = normalize(text).replace(/[!?.]+$/, '');
 
-  if (/^(oi|ola|menu|ajuda|help|comandos|inicio|comecar|\?)$/.test(t)) return { kind: 'help' };
+  if (/^(oi|ola|menu|ajuda|help|comandos|inicio|comecar|como funciona|como usar|\?)$/.test(t)) return { kind: 'help' };
+  if (/^(obrigad[oa]|muito obrigad[oa]|brigad[oa]|valeu|vlw|show|top|massa|beleza|blz|ok|okay|certo|perfeito|otimo|tmj|👍|🙏|❤️|😊|🙂|👏)+$/u.test(t)) return { kind: 'thanks' };
   if (/^(hoje|gastos de hoje|quanto gastei hoje)$/.test(t)) return { kind: 'today' };
   if (/^(ontem|gastos de ontem|quanto gastei ontem)$/.test(t)) return { kind: 'yesterday' };
   if (/^(ultimos|ultimos gastos|meus ultimos gastos|lista|listar)$/.test(t)) return { kind: 'recent' };
   if (/^(quanto (ainda )?(posso|da pra|sobra pra) gastar|quanto (ainda )?(sobra|falta)|orcamento|meu orcamento|quanto ainda posso gastar neste mes)$/.test(t)) return { kind: 'budget' };
-  if (/^(semana|essa semana|esta semana|gastos da semana)$/.test(t)) return { kind: 'week' };
-  if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total)$/.test(t)) return { kind: 'month' };
+  if (/^(semana|essa semana|esta semana|gastos da semana|quanto (eu )?gastei (na|nesta|nessa|essa|esta) semana)$/.test(t)) return { kind: 'week' };
+  if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total|quanto (eu )?gastei( no| neste| nesse| esse| este)? mes|quanto (eu )?gastei no total|quanto (eu )?gastei ate agora)$/.test(t)) return { kind: 'month' };
+  const cq = t.match(/^quanto (?:eu )?(?:ja )?gastei (?:com|de|em|no|na|nos|nas) (.+?)( (neste|nesse|esse|este|no) mes)?$/);
+  if (cq) return { kind: 'categoryQuery', term: cq[1] };
   if (/^(apagar|apaga|desfazer|desfaz|cancelar|apagar ultimo|apaga o ultimo|errei)$/.test(t)) return { kind: 'undo' };
   if (/^(apagar|apaga|desfazer|desfaz) (a )?(ultima )?(entrada|receita)( anotada)?$/.test(t)) return { kind: 'undoIncome' };
   if (/^(entradas|minhas entradas|entradas do mes|receitas|minhas receitas|receitas do mes|ganhos|quanto recebi|quanto entrou|dinheiro que entrou)$/.test(t)) return { kind: 'incomes' };
@@ -202,14 +253,33 @@ export function parseMessage(input: string): Command {
   // pergunta ("pq 155?") não é gasto, mesmo que tenha número
   if (text.includes('?')) return { kind: 'unknown' };
 
-  const income = parseIncome(text);
+  const income = parseIncome(expandThousands(text));
   if (income) return income;
 
-  const { method, text: noMethod } = extractMethod(stripOrdinals(text));
+  // vários gastos numa frase: "40 na feira e 20 na padaria", "uber 20, almoço 35"
+  const prepared = extractDaysAgo(expandThousands(stripOrdinals(text)));
+  const parts = prepared.text.split(/\s*(?:,|;|\+|\be\b|\bmais\b)\s*/i).filter((p) => p.trim());
+  if (parts.length >= 2 && parts.every((p) => (p.match(/\d/g) ? [...p.matchAll(AMOUNT_RE)].length === 1 : false))) {
+    const items = parts.map((p) => parseOneExpense(p)).filter((x): x is NonNullable<typeof x> => x !== null);
+    if (items.length === parts.length) {
+      const shared = extractMethod(prepared.text).method;
+      return { kind: 'multi', items: items.map((it) => ({ ...it, method: it.method ?? shared })), ...(prepared.daysAgo ? { daysAgo: prepared.daysAgo } : {}) };
+    }
+  }
+
+  const one = parseOneExpense(prepared.text);
+  if (!one) return { kind: 'unknown' };
+  return { kind: 'expense', ...one, ...(prepared.daysAgo ? { daysAgo: prepared.daysAgo } : {}) };
+}
+
+/** Um gasto: valor, categoria, descrição, forma de pagamento e parcelas. null se não achar valor. */
+function parseOneExpense(raw: string): { amount: number; category: string; description: string; method?: string } | null {
+  const inst = extractInstallments(raw);
+  const { method, text: noMethod } = extractMethod(inst.text);
   const m = pickAmount(noMethod);
-  if (!m) return { kind: 'unknown' };
+  if (!m) return null;
   const amount = parseAmount(m[2]);
-  if (amount === null) return { kind: 'unknown' };
+  if (amount === null) return null;
 
   const rest = (noMethod.slice(0, m.index) + ' ' + noMethod.slice((m.index ?? 0) + m[0].length))
     .split(/\s+/)
@@ -218,11 +288,11 @@ export function parseMessage(input: string): Command {
     .replace(/^[-–:,\s]+|[-–:,\s]+$/g, '')
     .slice(0, 80);
 
+  const what = rest || 'Sem descrição';
   return {
-    kind: 'expense',
     amount,
-    category: detectCategory(rest || text),
-    description: rest || 'Sem descrição',
+    category: detectCategory(rest || raw),
+    description: inst.installments ? `${what} (${inst.installments}x)` : what,
     ...(method ? { method } : {}),
   };
 }

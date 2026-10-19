@@ -992,6 +992,9 @@ function route(input: HubInput): HubResult | null {
     };
   }
 
+  // "ajuda" é pedido dos comandos: quem responde é o registro de gastos (lista do que dá pra mandar)
+  if (!session && /^(ajuda|help|comandos|como funciona|como usar)$/.test(t)) return null;
+
   // ferramentas maiores ficam no site: a palavra ou o botão de antes responde com o link
   const site = toSite(t);
   if (site) return { out: site, session: null, event: 'site_link' };

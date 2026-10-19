@@ -1,4 +1,4 @@
-import { parseMessage, categoryEmoji, detectIncomeSource } from './parse.js';
+import { parseMessage, categoryEmoji, detectIncomeSource, detectCategory, normalize as normalizeText, SAVED_CATEGORY, OTHER_CATEGORY, CATEGORIES } from './parse.js';
 import type { Expense, Income } from './db.js';
 import { offerForExpense, offerForIncome, SUMMARY_OFFER, type Offer } from './offers.js';
 import { weeklySummary } from './summary.js';
@@ -181,6 +181,12 @@ export const HELP_TEXT = [
   '• *ferramentas* — diagnóstico, dívidas, 13º e mais, no site',
 ].join('\n');
 
+/** "ontem" vira meio-dia de ontem no horário de Brasília (assim cai no dia certo em qualquer resumo). */
+function daysAgoISO(daysAgo: number | undefined, now: Date): string | undefined {
+  if (!daysAgo) return undefined;
+  return new Date(startOfDayBRT(now).getTime() - daysAgo * DAY_MS + 12 * 60 * 60 * 1000).toISOString();
+}
+
 export interface NewExpense {
   amount: number;
   category: string;
@@ -207,9 +213,10 @@ export async function recordExpense(phone: string, e: NewExpense, waMessageId: s
     `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
     ...(incomes?.length ? balanceLines(monthRows, incomes, now).slice(2) : []),
     ...(budgetLine(e.category, monthRows, deps.budgets) ? [budgetLine(e.category, monthRows, deps.budgets) as string] : []),
-    e.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
+    ...(e.category === 'Outros' ? ['\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.'] : []),
+    ...(e.category === SAVED_CATEGORY ? ['\n👏 Guardar antes de gastar é o primeiro hábito do livro. Isso sai do saldo do mês, mas é dinheiro seu.'] : []),
     // quem nunca disse como pagou neste mês ganha a dica, até experimentar
-    !e.method && !monthRows.some((r) => r.payment_method) ? '\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._' : '',
+    ...(!e.method && !monthRows.some((r) => r.payment_method) && e.category !== SAVED_CATEGORY ? ['\n_Dica: diga como pagou (pix, débito, crédito, dinheiro) e eu separo por forma de pagamento._'] : []),
   ]
     .join('\n')
     .trim()
@@ -302,7 +309,49 @@ export async function handleText(
       return HELP_TEXT;
 
     case 'expense':
-      return recordExpense(msg.phone, cmd, msg.id, deps, now);
+      return recordExpense(msg.phone, { ...cmd, createdAt: daysAgoISO(cmd.daysAgo, now) }, msg.id, deps, now);
+
+    case 'multi': {
+      // um id por gasto: a Meta às vezes reenvia a mesma mensagem
+      const createdAt = daysAgoISO(cmd.daysAgo, now);
+      const lines: string[] = [];
+      for (const [i, it] of cmd.items.entries()) {
+        const ok = await deps.insertExpense({ phone: msg.phone, amount: it.amount, category: it.category, description: it.description, waMessageId: `${msg.id}#${i}`, method: it.method, createdAt });
+        if (!ok && i === 0) return null;
+        if (ok) lines.push(`• ${brl(it.amount)} ${categoryEmoji(it.category)} *${it.category}* — ${it.description}${it.method ? ` · ${it.method}` : ''}`);
+      }
+      const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
+      const todayStart = startOfDayBRT(now).getTime();
+      const incomes = await deps.listIncomesSince?.(msg.phone, startOfMonthBRT(now)).catch(() => [] as Income[]);
+      return [
+        `✅ Anotei ${lines.length} gastos${cmd.daysAgo ? ` (${cmd.daysAgo === 1 ? 'ontem' : 'anteontem'})` : ''}:`,
+        ...lines,
+        '',
+        `Hoje: ${brl(sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart)))} · Mês: ${brl(sum(monthRows))}`,
+        ...(incomes?.length ? balanceLines(monthRows, incomes, now).slice(2) : []),
+      ].join('\n');
+    }
+
+    case 'categoryQuery': {
+      const rows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
+      const term = normalizeText(cmd.term);
+      // pelo nome da categoria ("alimentação", "transporte") ou por uma palavra dela ("mercado", "uber")
+      const byName = [...CATEGORIES, OTHER_CATEGORY].find((c) => normalizeText(c.name).startsWith(term) || term.startsWith(normalizeText(c.name)));
+      const cat = byName?.name ?? detectCategory(cmd.term);
+      const hits = cat !== OTHER_CATEGORY.name ? rows.filter((r) => r.category === cat) : rows.filter((r) => normalizeText(r.description).includes(term));
+      const label = cat !== OTHER_CATEGORY.name ? `${categoryEmoji(cat)} *${cat}*` : `*${cmd.term}*`;
+      if (hits.length === 0) return `Neste mês não tem nada anotado em ${label}. 🙂`;
+      const top = [...hits].sort((a, b) => b.amount - a.amount).slice(0, 5);
+      return [
+        `${label} neste mês: *${brl(sum(hits))}* em ${hits.length} ${hits.length === 1 ? 'anotação' : 'anotações'} (${Math.round((sum(hits) / (sum(rows) || 1)) * 100)}% dos seus gastos)`,
+        '',
+        ...top.map((r) => `• ${dayLabel(new Date(r.created_at), now)} · ${brl(r.amount)} — ${r.description}`),
+        ...(budgetLine(cat, rows, deps.budgets) ? ['', budgetLine(cat, rows, deps.budgets) as string] : []),
+      ].join('\n');
+    }
+
+    case 'thanks':
+      return 'Por nada! 🙂 Tô por aqui. É só mandar o próximo gasto (ex.: *mercado 80 no pix*) ou *saldo* pra ver como está o mês.';
 
     case 'today': {
       const rows = await deps.listExpensesSince(msg.phone, startOfDayBRT(now));
@@ -435,8 +484,21 @@ export async function handleText(
       return `🗑️ Apaguei: ${brl(removed.amount)} — ${removed.description}`;
     }
 
-    default:
-      return 'Não entendi. 🤔 Mande o gasto com o valor, tipo *"gastei 35 no mercado"*, ou *ajuda* pra ver os comandos.';
+    default: {
+      // fala de um gasto sem dizer o valor ("mercado", "paguei a luz"): pergunta quanto foi
+      const cat = detectCategory(msg.text);
+      if (cat !== OTHER_CATEGORY.name && !/\d/.test(msg.text) && !msg.text.includes('?')) {
+        return `Quanto foi? 🙂 Mande com o valor, por exemplo: *${msg.text.trim().slice(0, 30)} 50*.`;
+      }
+      return [
+        'Não entendi. 🤔 Me mande assim:',
+        '• um gasto: *mercado 80 no pix*',
+        '• uma entrada: *recebi 3000 salário*',
+        '• ou *saldo*, *hoje*, *mês*, *quanto posso gastar*',
+        '',
+        'Mande *menu* pra ver tudo.',
+      ].join('\n');
+    }
   }
 }
 

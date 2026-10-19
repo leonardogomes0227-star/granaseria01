@@ -1,5 +1,5 @@
 import type { WizardData, DebtItem, DebtKind } from './types.js';
-import { formatBRL, computeProjection } from './calculations.js';
+import { formatBRL, computeProjection, idealShares } from './calculations.js';
 
 // Plano de ação de verdade: o que fazer, quanto, onde e até quando.
 // Tudo sai dos números que a pessoa já digitou no diagnóstico — nada de "revise seus gastos".
@@ -213,11 +213,12 @@ export interface ActionPlan {
   negotiation: { debtName: string; message: string } | null;
 }
 
-const CEILINGS: { key: keyof WizardData['expenses']; label: string; pct: number }[] = [
-  { key: 'moradia', label: 'Moradia', pct: 0.3 },
-  { key: 'alimentacao', label: 'Alimentação', pct: 0.15 },
-  { key: 'transporte', label: 'Transporte', pct: 0.1 },
-  { key: 'lazer', label: 'Lazer', pct: 0.1 },
+// o teto de cada um depende da renda (idealShares, em calculations.ts)
+const CEILINGS: { key: keyof WizardData['expenses']; label: string }[] = [
+  { key: 'moradia', label: 'Moradia' },
+  { key: 'alimentacao', label: 'Alimentação' },
+  { key: 'transporte', label: 'Transporte' },
+  { key: 'lazer', label: 'Lazer' },
 ];
 
 const fmtRate = (r: number) => `${r.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês`;
@@ -235,17 +236,18 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
 
   // 1. Cortes: o que passa do teto de cada categoria vira dinheiro pro plano.
   // Moradia não entra no corte automático: mudar de casa não é coisa de um mês.
+  const share = idealShares(income);
   const cuts: PlanCut[] = CEILINGS.filter((c) => c.key !== 'moradia')
     .map((c) => ({
       key: c.key,
       label: c.label,
       current: data.expenses[c.key],
-      ceiling: income * c.pct,
-      amount: Math.max(0, data.expenses[c.key] - income * c.pct),
+      ceiling: Math.round(income * share[c.key]),
+      amount: Math.max(0, Math.round(data.expenses[c.key] - income * share[c.key])),
     }))
     .filter((c) => c.amount >= 1);
   const cutsTotal = cuts.reduce((s, c) => s + c.amount, 0);
-  const moradiaOver = Math.max(0, data.expenses.moradia - income * 0.3);
+  const moradiaOver = Math.max(0, Math.round(data.expenses.moradia - income * share.moradia));
 
   // 2. Dívidas com taxa (real ou típica) e parcela
   const debts = data.debts
@@ -476,14 +478,14 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     steps.push({
       tone: 'info',
       title: `Descubra pra onde vão ${formatBRL(unaccounted)} por mês`,
-      detail: 'Esse valor da sua renda não aparece em nenhuma categoria (contas, compras, assinaturas, delivery…). Anote tudo por 30 dias: cada R$ 100 que voltar pro plano encurta o caminho.',
+      detail: 'Esse valor da sua renda não aparece em nenhuma categoria (contas, compras, assinaturas, delivery…). Anote tudo por 30 dias, é só mandar no WhatsApp da Grana Séria (ex.: "mercado 80 no pix"): cada R$ 100 que voltar pro plano encurta o caminho.',
     });
   }
 
   if (moradiaOver >= 1) {
     steps.push({
       tone: 'info',
-      title: 'Moradia está acima de 30% da renda',
+      title: `Moradia está acima de ${Math.round(share.moradia * 100)}% da renda`,
       detail: `São ${formatBRL(moradiaOver)} acima do teto. Não precisa mudar amanhã, mas na renovação do aluguel vale negociar o valor ou considerar dividir/trocar de imóvel.`,
     });
   }

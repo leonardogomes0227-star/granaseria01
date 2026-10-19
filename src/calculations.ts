@@ -16,12 +16,17 @@ export interface Diagnosis {
   projection10y: number;
 }
 
-const IDEAL_PCT = {
-  moradia: 0.3,
-  alimentacao: 0.15,
-  transporte: 0.1,
-  lazer: 0.1,
-};
+/**
+ * Teto saudável de cada gasto, em fração da renda. Quem ganha menos gasta uma parte maior com comida e casa
+ * (é assim no Brasil: na POF/IBGE, alimentação passa de 20% nas faixas de renda mais baixas). Um teto fixo de
+ * 15% pra quem ganha R$ 1.500 mandaria cortar a comida pela metade, e ninguém cumpre um plano assim.
+ */
+export function idealShares(income: number): Record<'moradia' | 'alimentacao' | 'transporte' | 'lazer', number> {
+  if (income <= 2000) return { moradia: 0.35, alimentacao: 0.28, transporte: 0.12, lazer: 0.05 };
+  if (income <= 4000) return { moradia: 0.32, alimentacao: 0.22, transporte: 0.11, lazer: 0.08 };
+  if (income <= 7000) return { moradia: 0.3, alimentacao: 0.18, transporte: 0.1, lazer: 0.1 };
+  return { moradia: 0.3, alimentacao: 0.15, transporte: 0.1, lazer: 0.1 };
+}
 
 export function calculateDiagnosis(data: WizardData): Diagnosis {
   const income = data.monthlyIncome || 0;
@@ -29,11 +34,12 @@ export function calculateDiagnosis(data: WizardData): Diagnosis {
 
   const totalExpenses = Object.values(data.expenses).reduce((a, b) => a + b, 0);
 
+  const share = idealShares(income);
   const idealExpenses = {
-    moradia: income * IDEAL_PCT.moradia,
-    alimentacao: income * IDEAL_PCT.alimentacao,
-    transporte: income * IDEAL_PCT.transporte,
-    lazer: income * IDEAL_PCT.lazer,
+    moradia: income * share.moradia,
+    alimentacao: income * share.alimentacao,
+    transporte: income * share.transporte,
+    lazer: income * share.lazer,
   };
 
   const totalDebt = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);

@@ -64,7 +64,7 @@ const KEYWORDS: [GoalId, RegExp][] = [
 export function goalFromText(normalized: string): GoalId | 'menu' | null {
   if (!GOAL_OPENER.test(normalized)) return null;
   // pedido de ajuda sem dizer o quê: mostra a lista pra a pessoa escolher
-  if (/^(me ajuda|me ajude|ajuda|quero ajuda|preciso de ajuda)( com (o )?dinheiro)?$/.test(normalized)) return 'menu';
+  if (/^(me ajuda|me ajude|quero ajuda|preciso de ajuda)( com (o )?dinheiro)?$/.test(normalized) || /^ajuda com (o )?dinheiro$/.test(normalized)) return 'menu';
   for (const [id, re] of KEYWORDS) {
     if (!re.test(normalized)) continue;
     // "tenho 35 de gasto no mercado" é um gasto a anotar, não um objetivo

@@ -1166,3 +1166,5 @@ html { overflow-x: hidden; }
 @media (max-width: 420px) { .app-bar .nav-right { gap: 2px; } .app-bar .btn-ghost { padding-left: 8px; padding-right: 8px; } }
 .painel .diag-grid { grid-template-columns: 1fr 1fr; }
 @media (max-width: 560px) { .painel .diag-grid .stat-card { padding: 14px; } .painel .diag-grid .diag-number { font-size: 22px; } }
+.debt-quick-list { list-style: none; margin: 14px 0 0; padding: 0; font-family: var(--sans); font-size: 14px; }
+.debt-quick-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--hairline-soft); }
