@@ -116,11 +116,15 @@ No resultado do diagnóstico do site há o botão **Continuar no WhatsApp** (log
 
 O número do link é `VITE_WHATSAPP_NUMBER` na Vercel; sem ela, vale o oficial (5567996085267).
 
-## Menu em 5 trabalhos
+## WhatsApp = dia a dia; ferramentas = site
 
-`menu` mostra só: ✍️ Anotar · ⚖️ Meu mês · 📋 Meu plano · 💳 Sair das dívidas · 🛟 Guardar e proteger. Cada um abre só as ferramentas dele. A lista antiga, com tudo, continua em `ferramentas`.
+O WhatsApp cuida só do dinheiro que entra e sai: anotar gastos e entradas (texto ou foto do cupom), saldo, quanto ainda dá pra gastar, posso comprar, resumo da semana. As ferramentas maiores ficam no site, sem cadastro: qualquer palavra ou botão que antes abria uma delas aqui (*diagnóstico*, *dívidas*, *13º*, *vazamentos*, *direitos*, *renegociar*, *meta*, *empréstimo*, *fatura*, *check-in*…) agora responde com o link certo (`server/whatsapp/site.ts`). *ferramentas* manda todos os links.
 
-O diagnóstico e o começo rápido já vêm **preenchidos com o que a pessoa anotou** nos últimos 30 dias (com pelo menos 7 dias de registro). Ela só confirma ("Sim, usar") e responde dívidas, reserva e quanto guarda. Gastos do dia a dia de menos de 30 dias são projetados pro mês; renda e casa não.
+`menu`: Como anotar · Saldo do mês · Quanto posso gastar · Gastos e entradas · Posso comprar? · Resumo da semana · Ferramentas no site.
+
+O caminho de volta é o botão *Continuar no WhatsApp* do resultado do diagnóstico (seção acima): com o diagnóstico importado, o *quanto posso gastar* passa a usar os limites por categoria.
+
+Fatura (legenda "fatura"/"extrato" ou foto que a leitura reconhece como fatura) recebe o link do leitor do site.
 
 ## Ofertas no contexto
 

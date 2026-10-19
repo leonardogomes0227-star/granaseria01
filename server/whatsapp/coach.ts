@@ -14,6 +14,7 @@ import { trackingView, type Tracking } from '../../src/tracking.js';
 import { leaksMonthlyTotal } from '../../src/leaks.js';
 import type { CheckinEntry } from '../../src/types.js';
 import { brl, buttons, diagnosisFrom, leaksFrom } from './hubcore.js';
+import { welcomeOut } from './site.js';
 import { tasksInline } from './planbot.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -52,15 +53,8 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   const tracking = trackingFrom(profile);
   const extraMonthly = leaksMonthlyTotal(leaksFrom(profile));
 
-  // 1. Ainda não conheço a pessoa: o assistente se explica em três linhas, sem lista de ferramentas
-  if (!diag) {
-    return [
-      buttons(
-        `${hi}Eu sou o assistente da *Grana Séria*. 🪙 Você me conta o dinheiro que entra e o que sai, e eu mostro quanto sobra.\n\n✍️ É só escrever:\n• *gastei 35 no mercado no pix*\n• *recebi 200 de freela*\n\nEu somo tudo e digo o saldo do mês e quanto dá pra gastar por dia.`,
-        [['gastos:saldo', '⚖️ Ver meu mês'], ['menu:menu', '📋 Mais opções']]
-      ),
-    ];
-  }
+  // 1. Ainda não conheço a pessoa: o que o assistente faz, e o diagnóstico no site
+  if (!diag) return welcomeOut(greeting ? (name ?? null) : null, false);
 
   // 2. Conheço, mas o plano ainda não está andando
   if (!tracking) {

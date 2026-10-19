@@ -1,6 +1,9 @@
 // Ofertas no contexto: em vez de a pessoa procurar a ferramenta no menu, o assistente sugere a certa
 // quando o que ela anotou combina (entrou 13º → "onde colocar", entrou salário → "plano do mês"…).
 // No máximo uma oferta por mensagem, e cada tipo só uma vez por mês, pra não virar propaganda.
+// As ferramentas ficam no site: a oferta traz o link.
+
+import { siteLink } from './site.js';
 
 export interface Offer {
   key: string; // identifica o tipo da oferta (o limite de uma por mês é por tipo)
@@ -21,10 +24,10 @@ const DEBT = /\b(fatura|rotativo|juros|emprestimo|consignado|cheque especial|fin
 export function offerForIncome(source: string, description: string): Offer | null {
   const t = normalize(`${source} ${description}`);
   if (EXTRA_INCOME.test(t)) {
-    return { key: 'extra', text: '💡 Dinheiro extra merece um destino. Mande *13º* e eu mostro onde colocar cada real.' };
+    return { key: 'extra', text: `💡 Dinheiro extra merece um destino. Veja onde colocar cada real: ${siteLink('extra')}` };
   }
   if (source === 'Salário') {
-    return { key: 'plano', text: '💡 Caiu o salário! Mande *plano* pra ver o que pagar e o que guardar neste mês.' };
+    return { key: 'plano', text: `💡 Caiu o salário! Separe logo uma parte pra você, antes de gastar. Pra saber quanto, o diagnóstico monta seu plano: ${siteLink('diag')}` };
   }
   return null;
 }
@@ -32,10 +35,10 @@ export function offerForIncome(source: string, description: string): Offer | nul
 export function offerForExpense(description: string): Offer | null {
   const t = normalize(description);
   if (SUBSCRIPTION.test(t)) {
-    return { key: 'vazamentos', text: '💡 Assinaturas e tarifas somem do radar. Mande *vazamentos* e eu mostro quais costumam pesar no mês.' };
+    return { key: 'vazamentos', text: `💡 Assinaturas e tarifas somem do radar. Veja quais costumam pesar e como cancelar: ${siteLink('vazamentos')}` };
   }
   if (DEBT.test(t)) {
-    return { key: 'dividas', text: '💡 Tem dívida pesando? Mande *dívidas* e eu mostro qual pagar primeiro.' };
+    return { key: 'dividas', text: `💡 Tem dívida pesando? Veja qual pagar primeiro: ${siteLink('dividas')}` };
   }
   return null;
 }

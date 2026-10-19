@@ -71,6 +71,7 @@ export const GASTOS_BUTTON_TEXT: Record<string, string> = {
   'gastos:entradas': 'entradas',
   'gastos:saldo': 'saldo',
   'gastos:formas': 'formas de pagamento',
+  'gastos:resumo': 'resumo semanal',
 };
 
 export const txt = (text: string): Outgoing => ({ kind: 'text', text });

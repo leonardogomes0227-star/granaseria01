@@ -17,8 +17,8 @@ import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, getFlag, setFlag, takeHandoff, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
-import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
-import { faturaOut } from '../server/whatsapp/tools.js';
+import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
+import { siteLink } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
@@ -224,16 +224,16 @@ async function maybeAskFeedback(from: string, sent: Outgoing[]): Promise<void> {
   }
 }
 
-const FATURA_MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
 const RECEIPT_MONTHLY_LIMIT = Number(process.env.RECEIPT_MONTHLY_LIMIT || 60);
 const MAX_FILE_BYTES = Math.floor((MAX_BASE64 * 3) / 4); // ~3 MB, o mesmo limite do site
 
 const FATURA_HINT = /fatura|extrato/i;
-const RECEIPT_HINT = /cupom|comprovante|nota|recibo|pix|paguei|gastei/i;
+const FATURA_ON_SITE = () =>
+  `🧾 Pra ler a fatura inteira (juros, tarifas, cobranças escondidas), use o leitor do site, sem cadastro:\n${siteLink('fatura')}\n\nAqui no WhatsApp eu anoto um gasto por foto: mande a foto do *cupom* ou do *comprovante do pix*.`;
 
 /**
- * PDF ou foto. Foto (ou PDF com legenda "comprovante") é lida como cupom/comprovante e vira um gasto.
- * Fatura e extrato (PDF, legenda "fatura", ou uma foto que a leitura reconhece como fatura) vão pro leitor de fatura.
+ * Foto ou PDF de cupom, nota ou comprovante: a IA lê e vira um gasto (ou uma entrada, se o pix foi recebido).
+ * Fatura e extrato ficam com o leitor do site.
  */
 async function handleMedia(m: IncomingMedia): Promise<void> {
   const phone = normalizeBrPhone(m.from);
@@ -242,75 +242,30 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
   if (!(await markProcessed(m.id))) return; // reenvio da Meta: já estamos lendo
 
   const say = (t: string) => sendText(m.from, t);
+  if (FATURA_HINT.test(m.caption ?? '')) return say(FATURA_ON_SITE());
   if (!smartConfigured()) return say('Ler fotos ainda não foi ativado por aqui. 🙏 Me manda por escrito, ex.: *mercado 45,90 no pix*.');
   if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande em *foto* (JPG ou PNG) ou em *PDF*. 📸');
 
-  const caption = m.caption ?? '';
-  const asReceipt = !FATURA_HINT.test(caption) && (m.mime !== 'application/pdf' || RECEIPT_HINT.test(caption));
-  let file: { mime: string; base64: string } | null = null;
-  const download = async () => (file ??= await downloadMedia(m.mediaId, MAX_FILE_BYTES));
-
-  try {
-    if (asReceipt) {
-      const period = `cupom:${new Date().toISOString().slice(0, 7)}`;
-      if (!(await bumpUsage(phone, period, RECEIPT_MONTHLY_LIMIT).catch(() => true))) {
-        return say(`Você já mandou ${RECEIPT_MONTHLY_LIMIT} fotos neste mês. Me manda por escrito, ex.: *mercado 45,90 no pix*. 🙂`);
-      }
-      await say('📸 Recebi! Lendo…');
-      const f = await download();
-      const outcome = await analyzeReceipt(f.mime as MediaType, f.base64);
-      if (!outcome.ok) {
-        await refundUsage(phone, period).catch(() => undefined);
-        return say(`${outcome.error} Ou me manda por escrito, ex.: *mercado 45,90 no pix*.`);
-      }
-      if (outcome.receipt.tipo === 'outro') {
-        await refundUsage(phone, period).catch(() => undefined);
-        return say('Não achei um pagamento nessa imagem. 🤔 Mande a foto do cupom, da nota ou do comprovante do pix (ou a fatura do cartão).');
-      }
-      if (outcome.receipt.tipo !== 'fatura_extrato') {
-        const hub = await loadHub(user, phone);
-        const answer = await recordReceipt(phone, outcome.receipt, m.id, botDeps(phone, hub?.profile ?? user?.state ?? {}), new Date());
-        if (answer && answer !== 'not-receipt') await say(answer);
-        return;
-      }
-      await refundUsage(phone, period).catch(() => undefined); // era fatura: conta no limite da fatura
-    }
-    await readFatura(m, phone, user, download, say);
-  } catch (err) {
-    if (err instanceof MediaTooBigError) return say('Arquivo grande demais (máximo 3 MB). Tenta uma foto menor ou só as páginas dos lançamentos. 🙏');
-    throw err;
+  const period = `cupom:${new Date().toISOString().slice(0, 7)}`;
+  if (!(await bumpUsage(phone, period, RECEIPT_MONTHLY_LIMIT).catch(() => true))) {
+    return say(`Você já mandou ${RECEIPT_MONTHLY_LIMIT} fotos neste mês. Me manda por escrito, ex.: *mercado 45,90 no pix*. 🙂`);
   }
-}
-
-/** Fatura ou extrato: procura assinaturas, tarifas e juros escondidos. */
-async function readFatura(
-  m: IncomingMedia,
-  phone: string,
-  user: Awaited<ReturnType<typeof findUserByPhone>>,
-  download: () => Promise<{ mime: string; base64: string }>,
-  say: (t: string) => Promise<void>
-): Promise<void> {
-  const period = `fatura:${new Date().toISOString().slice(0, 7)}`;
-  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => true))) {
-    return say(`Você já usou as ${FATURA_MONTHLY_LIMIT} leituras de fatura deste mês. Volta no mês que vem! 🙂`);
-  }
-  await say('🧾 Estou lendo sua fatura… leva uns 30 segundos.');
+  await say('📸 Recebi! Lendo…');
   try {
-    const file = await download();
-    const outcome = await analyzeFatura(file.mime as MediaType, file.base64);
-    if ('error' in outcome) {
+    const file = await downloadMedia(m.mediaId, MAX_FILE_BYTES);
+    const outcome = await analyzeReceipt(file.mime as MediaType, file.base64);
+    if (!outcome.ok || outcome.receipt.tipo === 'outro' || outcome.receipt.tipo === 'fatura_extrato') {
       await refundUsage(phone, period).catch(() => undefined);
-      return say(`${outcome.error} Pode mandar de novo.`);
+      if (!outcome.ok) return say(`${outcome.error} Ou me manda por escrito, ex.: *mercado 45,90 no pix*.`);
+      if (outcome.receipt.tipo === 'fatura_extrato') return say(FATURA_ON_SITE());
+      return say('Não achei um pagamento nessa imagem. 🤔 Mande a foto do cupom, da nota ou do comprovante do pix.');
     }
     const hub = await loadHub(user, phone);
-    const { out, session } = faturaOut(outcome.result, hub?.profile ?? user?.state ?? {});
-    if (hub) {
-      if (session) await saveSession(phone, session);
-      else if (hub.session) await clearSession(phone);
-    }
-    for (const o of out) await sendOutgoing(m.from, o);
+    const answer = await recordReceipt(phone, outcome.receipt, m.id, botDeps(phone, hub?.profile ?? user?.state ?? {}), new Date());
+    if (answer && answer !== 'not-receipt') await say(answer);
   } catch (err) {
     await refundUsage(phone, period).catch(() => undefined);
+    if (err instanceof MediaTooBigError) return say('Arquivo grande demais (máximo 3 MB). Tenta uma foto menor. 🙏');
     throw err;
   }
 }
