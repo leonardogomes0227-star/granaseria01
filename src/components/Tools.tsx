@@ -1,9 +1,10 @@
-import { useState, useId, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { useEffect, useState, useId, ReactNode } from 'react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Target } from 'lucide-react';
+import { getResults, saveGoal, saveResult } from '../results';
 import { DebtItem, DebtKind } from '../types';
 import { effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment, inTodaysMoney, INFLATION_PCT } from '../calculations';
-import { TOOLS, ToolId, getTool } from '../tools';
+import { ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { CountUp } from './motion';
 import { DecimalInput } from './DecimalInput';
@@ -18,29 +19,13 @@ export interface ToolNavProps {
 export function ToolShell({
   id,
   onClose,
-  onSwitch,
   children,
 }: ToolNavProps & { id: ToolId; children: ReactNode }) {
   const tool = getTool(id);
+  const [saved] = useState(() => getResults()[id]);
   return (
     <div className="wizard-wrap">
       <div className="tool-page">
-        <nav className="tool-switcher anim-in" aria-label="Outras ferramentas">
-          {TOOLS.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className={t.id === id ? 'active' : ''}
-                aria-current={t.id === id ? 'page' : undefined}
-                onClick={() => t.id !== id && onSwitch(t.id)}
-              >
-                <Icon size={14} /> {t.short}
-              </button>
-            );
-          })}
-        </nav>
         <div className="wizard-card anim-in" key={id} style={{ maxWidth: 'none' }}>
           <div className="tool-head">
             <ToolIcon tool={tool} size="lg" />
@@ -49,7 +34,18 @@ export function ToolShell({
               <h2 className="wizard-h2">{tool.title}</h2>
             </div>
           </div>
+          <dl className="tool-guide">
+            <div><dt><Target size={15} /> Pra que serve</dt><dd>{tool.guide.serve}</dd></div>
+            <div><dt><Clock size={15} /> Quando usar</dt><dd>{tool.guide.quando}</dd></div>
+            <div><dt><CheckCircle2 size={15} /> O que você recebe</dt><dd>{tool.guide.recebe}</dd></div>
+          </dl>
+          {saved && (
+            <p className="tool-saved">
+              <CheckCircle2 size={14} /> Da última vez: {saved.summary}
+            </p>
+          )}
           {children}
+          <p className="tool-saved-note">O resultado fica salvo no seu painel e conversa com o seu plano de ação.</p>
           <div className="wizard-nav">
             <button className="btn-outline" type="button" onClick={onClose}>
               <ArrowLeft size={16} /> Todas as ferramentas
@@ -60,6 +56,15 @@ export function ToolShell({
       </div>
     </div>
   );
+}
+
+/** Guarda o resultado da ferramenta no painel da pessoa, um instante depois de ela parar de mexer. */
+export function useSaveResult(tool: ToolId, summary: string | null) {
+  useEffect(() => {
+    if (!summary) return;
+    const t = window.setTimeout(() => saveResult(tool, summary), 1200);
+    return () => window.clearTimeout(t);
+  }, [tool, summary]);
 }
 
 /* ---------- campos ---------- */
@@ -189,6 +194,7 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
       : pctOfIncome >= 10
         ? { cls: 'status-warn', text: 'Vale esperar 48h e ver se a vontade continua' }
         : { cls: 'status-good', text: 'Cabe no orçamento, se não sair da poupança' };
+  useSaveResult('impulse', income > 0 && price > 0 ? `compra de ${brl(price)} = ${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho (${pctOfIncome.toFixed(0)}% da renda)` : null);
 
   return (
     <ToolShell id="impulse" {...nav}>
@@ -263,6 +269,8 @@ export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; o
   const [value, setValue] = useState(0);
   const [rate, setRate] = useState(0);
   const list = fromDiag.length > 0 ? fromDiag : own;
+  const topDebt = list.length > 0 ? sortAvalanche(list)[0] : null;
+  useSaveResult('debts', topDebt ? `pagar primeiro ${topDebt.description || 'a dívida de juros mais alto'} (${effectiveRate(topDebt).rate.toLocaleString('pt-BR')}% ao mês)` : null);
 
   const add = () => {
     if (value <= 0) return;
@@ -345,6 +353,7 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
   const total = computeProjection(contribution, rate, years);
   const totalContributed = contribution * years * 12;
   const totalInterest = Math.max(total - totalContributed, 0);
+  useSaveResult('longterm', contribution > 0 ? `${brl(contribution)} por mês por ${years} anos viram ${brl(total)}` : null);
 
   return (
     <ToolShell id="longterm" {...nav}>
@@ -390,12 +399,24 @@ export function GoalCalculator(nav: ToolNavProps) {
   const required = computeRequiredContribution(target, rate, years);
   const totalContributed = required * years * 12;
   const fromInterest = Math.max(target - totalContributed, 0);
+  const [name, setName] = useState('');
+  const [savedGoal, setSavedGoal] = useState(false);
+  const saveToPlan = () => {
+    const label = name.trim() || 'minha meta';
+    saveGoal({ name: label, target, monthly: Math.round(required), months: years * 12 });
+    saveResult('goal', `${label}: ${brl(target)} em ${years} ${years === 1 ? 'ano' : 'anos'}, guardando ${brl(required)} por mês`);
+    setSavedGoal(true);
+  };
 
   return (
     <ToolShell id="goal" {...nav}>
       <p className="wizard-sub">Diga aonde você quer chegar, a gente calcula o aporte mensal necessário.</p>
 
-      <MoneyField label="Valor da meta" value={target} onChange={setTarget} autoFocus />
+      <div className="field-group">
+        <label className="field-label" htmlFor="goal-name">Qual é a meta?</label>
+        <input id="goal-name" className="field-input" placeholder="Ex.: viagem, carro, entrada da casa" value={name} maxLength={40} onChange={(e) => { setName(e.target.value); setSavedGoal(false); }} />
+      </div>
+      <MoneyField label="Valor da meta" value={target} onChange={(v) => { setTarget(v); setSavedGoal(false); }} autoFocus />
       <RangeField label="Prazo" suffix="anos" value={years} onChange={(v) => setYears(Math.max(v, 1))} min={1} max={40} />
       <RangeField label="Taxa de juros ao ano" suffix="% a.a." value={rate} onChange={setRate} min={0} max={20} step={0.5} />
 
@@ -414,6 +435,9 @@ export function GoalCalculator(nav: ToolNavProps) {
               <p className="diag-number"><CountUp value={fromInterest} format={brl} /></p>
             </div>
           </div>
+          <button type="button" className="btn-primary" style={{ marginTop: 16 }} onClick={saveToPlan} disabled={savedGoal}>
+            {savedGoal ? <><Check size={16} /> Salvo no seu plano de ação</> : <>Salvar no meu plano <ArrowRight size={16} /></>}
+          </button>
           {years >= 2 && (
             <p className="field-hint" style={{ marginTop: 12 }}>
               Atenção à inflação: daqui a {years} anos, {formatBRL(target)} terão o poder de compra de {formatBRL(inTodaysMoney(target, years))} de hoje. Se a meta é em reais de hoje, aumente o valor.
@@ -487,6 +511,7 @@ export function LoanComparator(nav: ToolNavProps) {
   const bothFilled = pA > 0 && pB > 0;
   const tie = Math.abs(resA.total - resB.total) < 0.5;
   const cheaper = resA.total <= resB.total ? 'A' : 'B';
+  useSaveResult('loan', bothFilled ? (tie ? 'as duas propostas custam quase o mesmo' : `proposta ${cheaper} sai ${brl(Math.abs(resA.total - resB.total))} mais barata no total`) : null);
 
   return (
     <ToolShell id="loan" {...nav}>

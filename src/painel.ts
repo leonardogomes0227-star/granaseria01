@@ -1,4 +1,5 @@
 import { SYNC_KEYS, applySnapshot, snapshot } from './sync';
+import { resetIfOld } from './reset';
 
 // Painel ligado ao WhatsApp. O link pessoal que o bot manda (/painel?t=…) deixa o token neste navegador;
 // com ele, o site lê e grava o mesmo estado que o bot usa (diagnóstico, plano, vazamentos, check-ins).
@@ -137,7 +138,8 @@ async function push(force = false) {
 export async function pullPainel(): Promise<PainelData | null> {
   const data = await fetchPainel();
   if (!data) return null;
-  const remote = onlySynced(data.state);
+  // plano antigo vindo do servidor (antes do recomeço, src/reset.ts) também não volta
+  const remote = onlySynced(resetIfOld(data.state).state);
   const local = snapshot();
   if (json(remote) === json(local)) {
     lastPushed = json(local);

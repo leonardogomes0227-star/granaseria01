@@ -1,5 +1,6 @@
 import type { WizardData, DebtItem, DebtKind } from './types.js';
 import { formatBRL, computeProjection, idealShares } from './calculations.js';
+import type { ToolId } from './tools.js';
 
 // Plano de ação de verdade: o que fazer, quanto, onde e até quando.
 // Tudo sai dos números que a pessoa já digitou no diagnóstico — nada de "revise seus gastos".
@@ -169,8 +170,12 @@ export interface PlanDebt {
 
 export interface PlanStep {
   title: string;
-  detail: string;
+  detail: string; // "como fazer": fica recolhido no site
   tone: 'bad' | 'warn' | 'good' | 'info';
+  why?: string; // pra que serve esse passo, numa frase simples
+  amount?: string; // "R$ 300 por mês"
+  when?: string; // "agora", "até mar/27", "a partir de jan/28"
+  tool?: ToolId; // a ferramenta do site que ajuda a cumprir o passo
 }
 
 export interface PlanPhase {
@@ -192,7 +197,9 @@ export interface ScheduleRow {
 
 export interface ActionPlan {
   start: Date;
-  monthlyPower: number;
+  monthlyPower: number; // quanto vai pro plano por mês: o que já guarda + parcelas + vazamentos + cortes
+  savingNow: number; // o que a pessoa disse que já guarda (pode ser 0)
+  goals: PlanGoal[]; // metas salvas na calculadora de meta
   powerAssumed: boolean; // a pessoa não tinha sobra declarada: o plano assume 10% da renda
   sources: { savings: number; cuts: number; installments: number; leaks: number };
   unaccounted: number; // renda que não aparece em nenhuma categoria
@@ -223,10 +230,22 @@ const CEILINGS: { key: keyof WizardData['expenses']; label: string }[] = [
 
 const fmtRate = (r: number) => `${r.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% ao mês`;
 
+export interface PlanGoal {
+  name: string;
+  target: number;
+  monthly: number;
+  months: number;
+}
+
 export interface PlanOptions {
   start?: Date;
   extraMonthly?: number; // dinheiro achado no caça-vazamentos, somado ao valor mensal do plano
+  goals?: PlanGoal[]; // metas da calculadora de meta: entram no plano depois da reserva
 }
+
+// Corte realista: no máximo 30% do que a categoria custa hoje, mesmo que o teto ideal esteja mais longe.
+// Pedir pra cortar metade do transporte num mês não acontece, e o plano não pode contar com dinheiro que não vem.
+const MAX_CUT_SHARE = 0.3;
 
 export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan {
   const start = opts.start ?? new Date();
@@ -243,8 +262,9 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
       label: c.label,
       current: data.expenses[c.key],
       ceiling: Math.round(income * share[c.key]),
-      amount: Math.max(0, Math.round(data.expenses[c.key] - income * share[c.key])),
+      amount: Math.max(0, Math.min(Math.round(data.expenses[c.key] - income * share[c.key]), Math.round(data.expenses[c.key] * MAX_CUT_SHARE))),
     }))
+    .map((c) => ({ ...c, ceiling: Math.max(c.ceiling, c.current - c.amount) }))
     .filter((c) => c.amount >= 1);
   const cutsTotal = cuts.reduce((s, c) => s + c.amount, 0);
   const moradiaOver = Math.max(0, Math.round(data.expenses.moradia - income * share.moradia));
@@ -268,8 +288,10 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
   // inclui dívidas já zeradas (ex.: quitadas com o 13º): a parcela delas continua indo pro plano
   const installments = data.debts.reduce((s, d) => s + (d.installment || 0), 0);
 
-  // 3. Quanto vai pro plano por mês: o que já guarda + cortes + parcelas que já paga
-  let monthlyPower = data.currentSavings + cutsTotal + installments + extraMonthly;
+  // 3. Quanto vai pro plano por mês: o que já guarda + parcelas que já paga + vazamentos achados + cortes.
+  // O que a pessoa já guarda fica separado (savingNow): o resto só existe se ela fizer os passos do plano.
+  const savingNow = Math.max(0, data.currentSavings);
+  let monthlyPower = savingNow + cutsTotal + installments + extraMonthly;
   let powerAssumed = false;
   if (monthlyPower <= 0 && income > 0) {
     monthlyPower = Math.round(income * 0.1);
@@ -346,7 +368,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
   if (!alreadyDone && target > 0 && debtFreeMonth !== null) {
     phases.push({
       id: 'reserve',
-      title: 'Montar a reserva',
+      title: 'Guardar pra emergências',
       from: debtFreeMonth + 1,
       to: doneMonth,
       amount: monthlyPower,
@@ -356,7 +378,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
   if (investFrom !== null) {
     phases.push({
       id: 'invest',
-      title: 'Fazer o dinheiro trabalhar',
+      title: 'Investir',
       from: investFrom,
       to: null,
       amount: monthlyPower,
@@ -374,25 +396,46 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     debtLeft: row.debtLeft,
   }));
 
-  // 9. Passos concretos, na ordem em que devem ser feitos
+  // 9. Passos concretos, na ordem em que devem ser feitos. Cada um diz pra que serve, quanto, até quando
+  // e qual ferramenta do site ajuda. O "detail" é o como fazer, sem jargão.
   const steps: PlanStep[] = [];
   const first = planDebts[0];
+  const perMonth = (n: number) => `${formatBRL(n)} por mês`;
+  const short = (n: number) => monthShort(start, n);
+
+  if (powerAssumed) {
+    steps.push({
+      tone: 'warn',
+      title: 'Separe 10% do que você ganha',
+      why: 'Hoje não sobra nada. O primeiro hábito é guardar uma parte antes de gastar.',
+      amount: perMonth(monthlyPower),
+      when: 'todo dia de pagamento',
+      tool: 'tracker',
+      detail: `Você disse que hoje não guarda nada e os gastos já ocupam a renda. O plano começa com ${formatBRL(monthlyPower)} por mês (10% da renda). No dia em que o dinheiro cair, transfira esse valor pra outra conta antes de pagar qualquer coisa.`,
+    });
+  }
 
   if (stuck) {
     steps.push({
       tone: 'bad',
-      title: 'Renegocie antes de qualquer coisa',
-      detail: `Suas dívidas geram cerca de ${formatBRL(monthlyInterestNow)} de juros por mês, e o que você consegue pagar hoje (${formatBRL(monthlyPower)}) não cobre isso — a dívida cresce todo mês. Use a mensagem pronta abaixo pra pedir juros menores ou desconto à vista.`,
+      title: 'Renegocie suas dívidas',
+      why: 'Os juros crescem mais rápido do que você consegue pagar.',
+      amount: `juros de ${perMonth(monthlyInterestNow)}`,
+      when: 'agora',
+      tool: 'rights',
+      detail: `Suas dívidas geram cerca de ${formatBRL(monthlyInterestNow)} de juros por mês e o que dá pra pagar hoje é ${formatBRL(monthlyPower)}. Assim a dívida não para de crescer. Ligue ou mande mensagem pro banco pedindo desconto à vista ou parcelamento com juros menores (a mensagem pronta está em "Mais ajuda pro seu plano").`,
     });
   }
 
   if (cuts.length > 0) {
     steps.push({
       tone: 'warn',
-      title: `Libere ${formatBRL(cutsTotal)} por mês nos gastos`,
-      detail: `${cuts
-        .map((c) => `${c.label}: de ${formatBRL(c.current)} para ${formatBRL(c.ceiling)}`)
-        .join('; ')}. É só voltar pro teto recomendado pra sua renda — esse dinheiro entra direto no plano.`,
+      title: `Gaste menos em ${cuts.map((c) => c.label.toLowerCase()).join(' e ')}`,
+      why: 'É de onde sai o dinheiro do plano.',
+      amount: `${perMonth(cutsTotal)} a menos`,
+      when: 'a partir deste mês',
+      tool: 'leaks',
+      detail: `${cuts.map((c) => `${c.label}: de ${formatBRL(c.current)} para ${formatBRL(c.ceiling)}`).join('; ')}. O corte é de no máximo 30% por vez, pra ser possível de verdade. Anote os gastos no WhatsApp pra ver se está conseguindo.`,
     });
   }
 
@@ -400,9 +443,13 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     steps.push({
       tone: 'warn',
       title: `Troque ${swap.names.join(' e ')} por uma dívida mais barata`,
+      why: 'Juros menores: você paga menos e termina antes.',
+      amount: stuck ? undefined : `economia de ${formatBRL(swap.saving)}`,
+      when: 'antes de pagar a próxima parcela',
+      tool: 'loan',
       detail: stuck
-        ? `Com juros de um empréstimo pessoal (~${fmtRate(SWAP_RATE)}) no lugar, a dívida passa a fechar: você fica livre em ${monthLong(start, swap.months ?? 0)}. Se você tem acesso a consignado, a taxa é ainda menor.`
-        : `Pegar um empréstimo pessoal (~${fmtRate(SWAP_RATE)}) ou consignado pra quitar essas dívidas economiza cerca de ${formatBRL(swap.saving)} em juros. Compare o CET (custo efetivo total) antes de fechar.`,
+        ? `Com um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) no lugar, a dívida passa a fechar: você fica livre em ${monthLong(start, swap.months ?? 0)}. Consignado costuma ser ainda mais barato. Antes de assinar, compare o custo total no Comparador de empréstimo.`
+        : `Um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) ou consignado pra quitar essas dívidas economiza cerca de ${formatBRL(swap.saving)} em juros. Antes de assinar, compare o custo total no Comparador de empréstimo.`,
     });
   }
 
@@ -412,7 +459,11 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
       steps.push({
         tone: 'info',
         title: `Use ${formatBRL(usable)} do que está guardado pra abater ${first.name}`,
-        detail: `Seu dinheiro guardado rende perto de 1% ao mês; essa dívida cobra ${fmtRate(first.rate)}. Deixe 1 mês de gastos (${formatBRL(totalExpenses)}) de colchão e use o resto pra quitar — é o investimento que mais rende pra você agora.`,
+        why: 'Essa dívida cobra mais do que o seu dinheiro guardado rende.',
+        amount: formatBRL(usable),
+        when: 'agora',
+        tool: 'debts',
+        detail: `O dinheiro guardado rende perto de 1% ao mês; essa dívida cobra ${fmtRate(first.rate)}. Deixe 1 mês de gastos (${formatBRL(totalExpenses)}) guardado e use o resto pra quitar.`,
       });
     }
   }
@@ -421,72 +472,95 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     const rest = planDebts.slice(1);
     steps.push({
       tone: 'bad',
-      title: `Pague ${formatBRL(first.firstPayment)} por mês em ${first.name}`,
-      detail: `É a dívida com o maior juros (${fmtRate(first.rate)}${first.rateAssumed ? ', taxa típica — confira no seu contrato' : ''}). ${
-        rest.length > 0 ? 'Nas outras, só a parcela mínima. ' : ''
+      title: `Pague primeiro ${first.name}`,
+      why: 'É a dívida de juros mais alto: atacar ela primeiro é o que mais economiza.',
+      amount: perMonth(first.firstPayment),
+      when: `até ${short(first.payoffMonth ?? 0)}`,
+      tool: 'debts',
+      detail: `Juros de ${fmtRate(first.rate)}${first.rateAssumed ? ' (taxa típica, confira no seu contrato)' : ''}. ${
+        rest.length > 0 ? 'Nas outras, pague só a parcela mínima. ' : ''
       }Ela termina em ${monthLong(start, first.payoffMonth ?? 0)}.${
-        rest.length > 0
-          ? ` Depois, o mesmo valor vai pra ${rest.map((d) => `${d.name} (quitada em ${monthLong(start, d.payoffMonth ?? 0)})`).join(', depois ')}.`
-          : ''
+        rest.length > 0 ? ` Depois, o mesmo valor vai pra ${rest.map((d) => `${d.name} (quitada em ${monthLong(start, d.payoffMonth ?? 0)})`).join(', depois ')}.` : ''
       }`,
     });
-    let livre = `Você fica livre de dívidas em ${monthLong(start, debtFreeMonth ?? 0)}, pagando ${formatBRL(result.interest)} de juros no total.`;
+    let livre = `Pagando ${formatBRL(result.interest)} de juros no total.`;
     if (baseline) {
       livre +=
         baseline.months === null
           ? ' Pagando só as parcelas mínimas, essa dívida não acabaria nunca.'
           : baseline.interest - result.interest > 50
-            ? ` Pagando só as parcelas, seria em ${monthLong(start, baseline.months)} e com ${formatBRL(baseline.interest)} de juros — o plano economiza ${formatBRL(baseline.interest - result.interest)}.`
+            ? ` Pagando só as parcelas, seria em ${monthLong(start, baseline.months)} e com ${formatBRL(baseline.interest)} de juros: o plano economiza ${formatBRL(baseline.interest - result.interest)}.`
             : '';
     }
-    steps.push({ tone: 'good', title: 'Livre de dívidas', detail: livre });
+    steps.push({ tone: 'good', title: 'Fique livre das dívidas', why: 'A primeira grande meta do plano.', when: short(debtFreeMonth ?? 0), detail: livre });
   }
 
   if (target > 0) {
     if (alreadyDone) {
       steps.push({
         tone: 'good',
-        title: 'Sua reserva já está completa',
-        detail: `Você tem ${formatBRL(data.emergencyFund)}, mais que 6 meses de gastos. Deixe esse dinheiro num CDB de liquidez diária (100% do CDI) ou no Tesouro Selic — nunca na poupança nem parado na conta.`,
+        title: 'Sua reserva de emergência já está pronta',
+        why: 'Um imprevisto não vira dívida.',
+        amount: formatBRL(data.emergencyFund),
+        detail: 'Você tem mais que 6 meses de gastos guardados. Deixe num lugar que rende e deixa sacar no mesmo dia (CDB de liquidez diária ou Tesouro Selic, no app do seu banco). Nunca parado na conta.',
       });
     } else if (doneMonth !== null) {
       steps.push({
         tone: 'info',
-        title: `Guarde ${formatBRL(monthlyPower)} por mês na reserva${debts.length > 0 ? ` a partir de ${monthLong(start, (debtFreeMonth ?? 0) + 1)}` : ''}`,
-        detail: `Num CDB de liquidez diária (100% do CDI) ou no Tesouro Selic, você completa ${formatBRL(target)} em ${monthLong(start, doneMonth)}. Programe a transferência pro dia em que o salário cai — pague-se primeiro.`,
+        title: 'Guarde pra emergências',
+        why: `Ter 6 meses de gastos guardados (${formatBRL(target)}) faz um imprevisto não virar dívida.`,
+        amount: perMonth(monthlyPower),
+        when: debts.length > 0 ? `de ${short((debtFreeMonth ?? 0) + 1)} até ${short(doneMonth)}` : `até ${short(doneMonth)}`,
+        tool: 'tracker',
+        detail: `Guarde num lugar que rende e deixa sacar no mesmo dia (CDB de liquidez diária ou Tesouro Selic, no app do seu banco). Programe a transferência pro dia em que o salário cai: primeiro você, depois as contas.${data.emergencyFund > 0 ? ` Você já tem ${formatBRL(data.emergencyFund)}.` : ''}`,
       });
     }
+  }
+
+  // metas da calculadora de meta: entram depois da reserva, com o valor que a pessoa definiu
+  const goals = opts.goals ?? [];
+  for (const g of goals) {
+    steps.push({
+      tone: 'info',
+      title: `Junte pra ${g.name}`,
+      why: 'A meta que você definiu na Calculadora de meta.',
+      amount: perMonth(g.monthly),
+      when: `em ${g.months} ${g.months === 1 ? 'mês' : 'meses'}`,
+      tool: 'goal',
+      detail: `Pra chegar em ${formatBRL(g.target)}, guarde ${formatBRL(g.monthly)} por mês numa conta separada da reserva de emergência. ${investFrom !== null ? `Se apertar, comece depois de ${monthLong(start, investFrom - 1)}, quando a reserva fica pronta.` : ''}`.trim(),
+    });
   }
 
   if (investFrom !== null && monthlyPower > 0) {
     steps.push({
       tone: 'good',
-      title: `A partir de ${monthLong(start, investFrom)}: invista ${formatBRL(monthlyPower)} por mês`,
-      detail: `Mantendo o mesmo valor, em 10 anos você chega a cerca de ${formatBRL(invest10y)} (a ~10% ao ano). Tesouro IPCA+ e fundos de índice são bons pontos de partida.`,
-    });
-  }
-
-  if (powerAssumed) {
-    steps.unshift({
-      tone: 'warn',
-      title: `Separe ${formatBRL(monthlyPower)} por mês (10% da renda)`,
-      detail: 'Pelo que você informou, hoje não sobra nada pra guardar ou pagar dívida. O plano parte de 10% da renda — o mínimo do livro. Comece separando esse valor no dia do pagamento, antes de qualquer gasto.',
+      title: 'Comece a investir',
+      why: 'Com a reserva pronta, o dinheiro passa a trabalhar pra você.',
+      amount: perMonth(monthlyPower),
+      when: `a partir de ${short(investFrom)}`,
+      tool: 'longterm',
+      detail: `Mantendo esse valor, em 10 anos você chega perto de ${formatBRL(invest10y)} (contando uns 10% ao ano). Pra começar, Tesouro IPCA+ ou um fundo que segue o índice da bolsa, no app do seu banco ou corretora.`,
     });
   }
 
   if (unaccounted >= Math.max(200, income * 0.1)) {
     steps.push({
       tone: 'info',
-      title: `Descubra pra onde vão ${formatBRL(unaccounted)} por mês`,
-      detail: 'Esse valor da sua renda não aparece em nenhuma categoria (contas, compras, assinaturas, delivery…). Anote tudo por 30 dias, é só mandar no WhatsApp da Grana Séria (ex.: "mercado 80 no pix"): cada R$ 100 que voltar pro plano encurta o caminho.',
+      title: 'Descubra pra onde vai o resto do dinheiro',
+      why: `${formatBRL(unaccounted)} por mês da sua renda não aparecem em nenhum gasto.`,
+      amount: perMonth(unaccounted),
+      when: 'nos próximos 30 dias',
+      detail: 'Anote tudo no WhatsApp da Grana Séria (ex.: "mercado 80 no pix"). Em um mês você vê pra onde esse dinheiro vai, e o que sobrar pode entrar no plano.',
     });
   }
 
   if (moradiaOver >= 1) {
     steps.push({
       tone: 'info',
-      title: `Moradia está acima de ${Math.round(share.moradia * 100)}% da renda`,
-      detail: `São ${formatBRL(moradiaOver)} acima do teto. Não precisa mudar amanhã, mas na renovação do aluguel vale negociar o valor ou considerar dividir/trocar de imóvel.`,
+      title: 'Reveja o valor da moradia',
+      why: `Está ${formatBRL(moradiaOver)} acima do recomendado pra sua renda.`,
+      when: 'na renovação do aluguel',
+      detail: 'Não precisa mudar amanhã. Na renovação, negocie o valor ou pense em dividir ou trocar de imóvel.',
     });
   }
 
@@ -513,6 +587,8 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
   return {
     start,
     monthlyPower,
+    savingNow,
+    goals: opts.goals ?? [],
     powerAssumed,
     sources: { savings: data.currentSavings, cuts: cutsTotal, installments, leaks: extraMonthly },
     unaccounted,
@@ -619,4 +695,11 @@ export function simulateLumpSum(data: WizardData, amount: number, opts: PlanOpti
   const interestSaved = before.stuck ? 0 : Math.max(0, before.totalInterest - after.totalInterest);
 
   return { allocation, before, after, monthsSooner, interestSaved, unstuck: before.stuck && !after.stuck };
+}
+
+/** O limite de cada categoria no dia a dia: o teto do plano (depois do corte) ou, sem corte, o que a pessoa contou. */
+export function planBudgets(data: WizardData): Record<'Moradia' | 'Alimentação' | 'Transporte' | 'Lazer', number> {
+  const cuts = buildPlan(data).cuts;
+  const limit = (key: keyof WizardData['expenses']) => cuts.find((c) => c.key === key)?.ceiling ?? data.expenses[key];
+  return { Moradia: limit('moradia'), Alimentação: limit('alimentacao'), Transporte: limit('transporte'), Lazer: limit('lazer') };
 }

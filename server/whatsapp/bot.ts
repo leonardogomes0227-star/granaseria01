@@ -150,7 +150,7 @@ function budgetText(rows: Expense[], budgets: Record<string, number> | undefined
     else if (category === 'Moradia') lines.push(`${head}. Ainda faltam ${brl(left)} (contas fixas, como aluguel e luz).`);
     else lines.push(`${head}. Ainda dá pra gastar ${brl(left)}, uns ${brl(Math.floor(left / daysLeft))} por dia.`);
   }
-  lines.push('', '_Esses limites são o que você me contou no diagnóstico._');
+  lines.push('', '_Esses limites são os do seu plano de ação, com os cortes._');
   return lines.join('\n');
 }
 

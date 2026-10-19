@@ -6,6 +6,7 @@ import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, HANDOFF_
 import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
+import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 
 const MAX_BYTES = 60_000;
 
@@ -17,9 +18,14 @@ async function auth(request: Request): Promise<string | null> {
 /** Quem vinculou a conta do site guarda o estado na conta; quem não vinculou, no perfil do número. */
 async function loadState(phone: string): Promise<{ state: StateSnapshot; updatedAt: string | null; userId: string | null }> {
   const user = accountsConfigured() ? await findUserByPhone(phone).catch(() => null) : null;
-  if (user) return { state: user.state ?? {}, updatedAt: user.updated_at, userId: user.user_id };
-  const p = await getProfileWithDate(phone);
-  return { state: p.state, updatedAt: p.updated_at, userId: null };
+  const loaded = user
+    ? { state: user.state ?? {}, updatedAt: user.updated_at, userId: user.user_id }
+    : await getProfileWithDate(phone).then((p) => ({ state: p.state, updatedAt: p.updated_at, userId: null }));
+  // recomeço do plano (src/reset.ts): uma vez por pessoa, o plano antigo sai
+  const reset = resetIfOld(loaded.state);
+  if (!reset.changed) return loaded;
+  await (loaded.userId ? saveState(loaded.userId, reset.state) : saveProfile(phone, reset.state));
+  return { state: reset.state, updatedAt: new Date().toISOString(), userId: loaded.userId };
 }
 
 const masked = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phone.slice(-4)}`;
@@ -60,7 +66,10 @@ export async function PUT(request: Request): Promise<Response> {
   const { state, userId } = await loadState(phone);
   // só as chaves do site, só texto; o resto do perfil (coisas do bot) fica como está
   const next: StateSnapshot = { ...state };
+  // navegador que ainda não passou pelo recomeço não devolve o plano antigo
+  const stale = body.state?.[RESET_KEY] !== RESET_ID;
   for (const k of HANDOFF_KEYS) {
+    if (stale && (PLAN_KEYS.includes(k) || k === RESET_KEY)) continue;
     const v = body.state?.[k];
     if (typeof v === 'string') next[k] = v;
     else if (v === null) delete next[k];

@@ -12,6 +12,9 @@ export const SYNC_KEYS = [
   'selos-checkins',
   'selos-diagnosis-completed',
   'gs-nome', // o nome que a pessoa dá ao entrar (login obrigatório nas ferramentas)
+  'gs-resultados', // o que cada ferramenta deixou salvo (src/results.ts)
+  'gs-metas', // metas da calculadora de meta, que entram no plano
+  'gs-reset', // marca do recomeço do plano (src/reset.ts)
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
 

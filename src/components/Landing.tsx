@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { GoalsSection } from './GoalsAndWhatsApp';
+import { DailyTop, ToolsDirectory } from './HomeSections';
 import { Journey } from './Journey';
 import { Plus } from 'lucide-react';
 import { CHECKOUT_READY, PRICE_LABEL } from '../config';
-import { getName, painelToken } from '../painel';
+import { getName } from '../painel';
 import type { ToolId } from '../tools';
 import { Reveal } from './motion';
 import { SiteHeader, SiteFooter, BackToTop } from './Layout';
@@ -128,8 +128,8 @@ export function Landing({
             <Medallion />
           </div>
           <div className="kicker"><span className="wedge" />{name ? `Oi, ${name}!` : 'Grátis · entra com o seu WhatsApp'}</div>
-          <h1>O que você quer fazer com o seu dinheiro?</h1>
-          <p className="lede">Escolha um caminho. Tudo fica salvo no seu painel, e o dia a dia você anota pelo WhatsApp.</p>
+          <h1>Seu dinheiro organizado, sem planilha</h1>
+          <p className="lede">No WhatsApp você anota o dia a dia. Aqui no site ficam o seu plano e as ferramentas.</p>
         </div>
 
         {/* diagnóstico pela metade: dá pra continuar. Pronto: o resultado e o plano ficam no painel. */}
@@ -146,8 +146,10 @@ export function Landing({
           </div>
         )}
 
-        <GoalsSection onStart={onStart} onOpenTool={onOpenTool} first={painelToken() ? 'painel' : 'organizar'} />
+        <DailyTop />
       </section>
+
+      <ToolsDirectory onStart={savedProgress && savedProgress.step >= 7 ? onResume : onStart} onOpenTool={onOpenTool} hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
 
       <Journey onStart={onStart} />
 

@@ -4,7 +4,7 @@ import { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { buildPlan, simulateLumpSum, monthLong } from '../plan';
 import { LEAKS, RIGHTS, LeakSelection, getLeakSelection, saveLeakSelection, leaksMonthlyTotal, relevantRights } from '../leaks';
-import { ToolShell, ToolNavProps, MoneyField } from './Tools';
+import { ToolShell, ToolNavProps, MoneyField, useSaveResult } from './Tools';
 import { CopyMessage } from './CopyMessage';
 import { DecimalInput } from './DecimalInput';
 import { CountUp } from './motion';
@@ -23,7 +23,12 @@ const EXTRA_KINDS = [
 
 export function ExtraMoneyTool({ data, onStart, ...nav }: { data: WizardData; onStart: () => void } & ToolNavProps) {
   const [kind, setKind] = useState<(typeof EXTRA_KINDS)[number]['id']>('13');
-  const [amount, setAmount] = useState(data.monthlyIncome > 0 ? Math.round(data.monthlyIncome) : 0);
+  const [amount, setAmountState] = useState(data.monthlyIncome > 0 ? Math.round(data.monthlyIncome) : 0);
+  const [touched, setTouched] = useState(false);
+  const setAmount = (v: number) => {
+    setAmountState(v);
+    setTouched(true);
+  };
   const diag = hasDiagnosis(data);
 
   const result = useMemo(
@@ -35,6 +40,11 @@ export function ExtraMoneyTool({ data, onStart, ...nav }: { data: WizardData; on
     result && result.before.reserve.doneMonth !== null && result.after.reserve.doneMonth !== null
       ? result.before.reserve.doneMonth - result.after.reserve.doneMonth
       : 0;
+
+  useSaveResult(
+    'extra',
+    touched && result ? `${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'extra'} de ${formatBRL(amount)}: ${result.allocation.map((a) => `${a.label} ${formatBRL(a.amount)}`).join(', ')}` : null
+  );
 
   return (
     <ToolShell id="extra" {...nav}>
@@ -213,6 +223,8 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
     }
     return null;
   }, [data, total, diag]);
+
+  useSaveResult('leaks', total > 0 ? `achou ${formatBRL(total)} por mês (${formatBRL(total * 12)} por ano), já somados no plano` : null);
 
   return (
     <ToolShell id="leaks" {...nav}>
