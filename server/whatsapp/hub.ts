@@ -25,6 +25,25 @@ export type { Session, HubInput, HubResult, Flow } from './hubcore.js';
 
 /* ---------- menu ---------- */
 
+/** O menu de todo dia: o assistente na frente, o resto atrás de "Mais ferramentas". */
+export function simpleMenu(name?: string | null): Outgoing[] {
+  return [
+    {
+      kind: 'list',
+      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha uma opção:`,
+      button: 'Ver opções',
+      rows: [
+        { id: 'gastos:entrada', title: '💰 Anotar uma entrada', description: 'Salário, freela, venda, dinheiro extra' },
+        { id: 'gastos:anotar', title: '✍️ Anotar um gasto', description: 'Com a forma de pagamento: pix, cartão…' },
+        { id: 'gastos:saldo', title: '⚖️ Meu mês', description: 'Entrou, saiu, saldo e quanto dá por dia' },
+        { id: 'menu:gastos', title: '📊 Ver meus gastos', description: 'Hoje, semana, mês e formas de pagamento' },
+        { id: 'menu:plano', title: '📋 Meu plano', description: 'O que pagar e guardar neste mês' },
+        { id: 'menu:tudo', title: '🧰 Mais ferramentas', description: 'Diagnóstico, dívidas, calculadoras, direitos…' },
+      ],
+    },
+  ];
+}
+
 export function menu(faturaEnabled = false, name?: string | null): Outgoing[] {
   const start = [
     { id: 'menu:proximo', title: '🧭 Meu próximo passo', description: 'Não sabe por onde começar? Toque aqui' },
@@ -713,7 +732,8 @@ function route(input: HubInput): HubResult | null {
   }
 
   // recepção: quem chega pela primeira vez é apresentado; quem já é de casa vê o próximo passo
-  if (MENU_WORDS.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
+  if (MENU_WORDS.test(t)) return { out: simpleMenu(name), session: null };
+  if (t === 'menu:tudo' || /^(ferramentas|mais ferramentas|todas as opcoes|todas as ferramentas)$/.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
   if (GOALS_WORDS.test(t)) return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
   if (t.startsWith('goal:')) return startGoal(t.slice(5), input);
   if (GREETING.test(t)) {

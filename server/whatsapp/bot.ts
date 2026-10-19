@@ -88,11 +88,19 @@ function bySource(rows: Income[]): string {
 const sumIncome = (rows: Income[]) => rows.reduce((t, r) => t + r.amount, 0);
 
 /** "Entrou X, saiu Y, sobrou Z": a conta do mês em uma linha por item. */
-function balanceLines(expenses: Expense[], incomes: Income[]): string[] {
+function balanceLines(expenses: Expense[], incomes: Income[], now: Date): string[] {
   const inc = sumIncome(incomes);
   const out = sum(expenses);
   const left = inc - out;
-  return [`📥 Entrou: ${brl(inc)}`, `📤 Saiu: ${brl(out)}`, left >= 0 ? `🟢 Saldo do mês: ${brl(left)}` : `🔴 Saldo do mês: -${brl(-left)} (saiu mais do que entrou)`];
+  const local = new Date(now.getTime() - BRT_OFFSET_MS);
+  const lastDay = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 0)).getUTCDate();
+  const daysLeft = Math.max(1, lastDay - local.getUTCDate() + 1); // conta hoje
+  return [
+    `📥 Entrou: ${brl(inc)}`,
+    `📤 Saiu: ${brl(out)}`,
+    left >= 0 ? `🟢 Saldo do mês: ${brl(left)}` : `🔴 Saldo do mês: -${brl(-left)} (saiu mais do que entrou)`,
+    ...(left > 0 ? [`🎯 Dá pra gastar uns ${brl(Math.floor(left / daysLeft))} por dia até o fim do mês.`] : []),
+  ];
 }
 
 const INCOMES_OFF = 'As entradas de dinheiro ainda não estão ativas por aqui. Tente de novo daqui a pouco. 🙏';
@@ -192,11 +200,14 @@ export async function handleText(
       const monthRows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
       const todayStart = startOfDayBRT(now).getTime();
       const today = sum(monthRows.filter((r) => new Date(r.created_at).getTime() >= todayStart));
+      // quem anota entradas vê, a cada gasto, o saldo e quanto ainda dá por dia
+      const incomes = await deps.listIncomesSince?.(msg.phone, startOfMonthBRT(now)).catch(() => [] as Income[]);
       return [
         `✅ ${brl(cmd.amount)} em ${categoryEmoji(cmd.category)} *${cmd.category}*${cmd.method ? ` · ${METHOD_EMOJI[cmd.method] ?? ''} ${cmd.method}` : ''}`,
         `_${cmd.description}_`,
         '',
         `Hoje: ${brl(today)} · Mês: ${brl(sum(monthRows))}`,
+        ...(incomes?.length ? balanceLines(monthRows, incomes, now).slice(2) : []),
         ...(budgetLine(cmd.category, monthRows, deps.budgets) ? [budgetLine(cmd.category, monthRows, deps.budgets) as string] : []),
         cmd.category === 'Outros' ? '\nDica: inclua o que foi (ex.: "mercado", "uber") pra eu categorizar.' : '',
         // quem nunca disse como pagou neste mês ganha a dica uma vez por gasto novo, até experimentar
@@ -266,7 +277,7 @@ export async function handleText(
           `💰 Entrada anotada: ${brl(cmd.amount)} · *${cmd.source}*${cmd.method ? ` · ${cmd.method}` : ''}`,
           ...(cmd.description !== cmd.source ? [`_${cmd.description}_`] : []),
           '',
-          ...balanceLines(expenses, incomes),
+          ...balanceLines(expenses, incomes, now),
           '',
           'Errou? Mande *apagar entrada*.',
         ].join('\n');
@@ -305,7 +316,7 @@ export async function handleText(
         return [
           '⚖️ *Saldo do mês*',
           '',
-          ...balanceLines(expenses, incomes),
+          ...balanceLines(expenses, incomes, now),
           ...(incomes.length === 0 ? ['', '_Ainda não anotou nenhuma entrada. Mande por exemplo *recebi 200 de freela* pra conta ficar completa._'] : []),
         ].join('\n');
       } catch (err) {
