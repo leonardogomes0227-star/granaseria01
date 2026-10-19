@@ -1,4 +1,5 @@
 import { MouseEvent, useEffect, useState } from 'react';
+import { GoalsSection, WhatsAppSection } from './GoalsAndWhatsApp';
 import { ArrowRight, Check, Clock, Lock, ShieldCheck, TrendingUp, Sparkles, Compass, Plus, Instagram } from 'lucide-react';
 import { CHECKOUT_READY, PRICE_LABEL } from '../config';
 import { ARCHETYPES } from '../archetypes';
@@ -230,8 +231,6 @@ export function Landing({
   onResume: () => void;
   onOpenTool: (id: ToolId) => void;
 }) {
-  const quickTools = TOOLS.filter((t) => !t.needsDiagnosis);
-
   return (
     <div id="topo">
       <SiteHeader onStart={onStart} onOpenTool={onOpenTool} />
@@ -264,8 +263,8 @@ export function Landing({
             <button className="btn-primary btn-shine" onClick={onStart} type="button">
               Fazer meu diagnóstico <ArrowRight size={17} className="arrow" />
             </button>
-            <a className="btn-outline" href="#ferramentas">
-              <Compass size={17} /> Explorar ferramentas
+            <a className="btn-outline" href="#objetivos">
+              <Compass size={17} /> O que você quer resolver?
             </a>
           </div>
           <div className="trust-row">
@@ -301,26 +300,9 @@ export function Landing({
         </div>
       </section>
 
-      <div className="quick-tools">
-        <div className="quick-head">
-          <b>Use agora, sem cadastro</b>
-          <a href="#ferramentas">Ver todas <ArrowRight size={14} /></a>
-        </div>
-        <div className="quick-row">
-          {quickTools.map((t, i) => (
-            <button
-              type="button"
-              className="quick-chip"
-              key={t.id}
-              onClick={() => onOpenTool(t.id)}
-              style={{ animationDelay: `${0.75 + i * 0.08}s` }}
-            >
-              <ToolIcon tool={t} size="sm" />
-              {t.title}
-            </button>
-          ))}
-        </div>
-      </div>
+      <GoalsSection onStart={onStart} onOpenTool={onOpenTool} />
+
+      <WhatsAppSection />
 
       <div className="band">
         <div className="wrap">

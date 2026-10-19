@@ -1,52 +1,55 @@
 import { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { WHATSAPP_NUMBER } from '../supabase';
-import { snapshot } from '../sync';
-import { track } from '../analytics';
+import { openWhatsApp } from '../whatsapp';
 
-/* ---------- Leva o diagnóstico pro WhatsApp, sem cadastro ---------- */
-// O site guarda o que está no navegador por 24h com um código curto (api/continuar.ts) e abre o WhatsApp com a
-// mensagem pronta. O bot lê o código, importa o diagnóstico e já responde com o próximo passo.
+/* ---------- Ponte pro WhatsApp, sem cadastro ---------- */
+// Com diagnóstico no navegador: o site guarda tudo por 24h com um código curto (api/continuar.ts) e abre o WhatsApp
+// com a mensagem pronta; o bot importa e já usa os limites do diagnóstico. Sem diagnóstico: abre o WhatsApp com um "oi".
 
-export function ContinueOnWhatsApp({ compact = false }: { compact?: boolean }) {
+export function WhatsAppButton({ label = 'Continuar no WhatsApp', origin, className = 'btn-primary btn-shine' }: { label?: string; origin: string; className?: string }) {
   const [state, setState] = useState<'idle' | 'sending' | 'error'>('idle');
   if (!WHATSAPP_NUMBER) return null;
-
-  const go = async () => {
+  const go = () => {
     setState('sending');
-    track('whatsapp_continuar');
-    try {
-      const res = await fetch('/api/continuar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: snapshot() }),
-      });
-      if (!res.ok) throw new Error(String(res.status));
-      const { code } = (await res.json()) as { code: string };
-      const text = `Oi! Fiz meu diagnóstico no site e quero continuar por aqui. Código: GS-${code}`;
-      window.location.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
-    } catch {
-      setState('error');
-    }
+    openWhatsApp(origin).catch(() => setState('error'));
   };
-
-  const button = (
-    <button type="button" className="btn-primary btn-shine" onClick={go} disabled={state === 'sending'} style={{ width: '100%' }}>
-      <MessageCircle size={16} /> {state === 'sending' ? 'Abrindo o WhatsApp…' : 'Continuar no WhatsApp'}
-    </button>
+  return (
+    <>
+      <button type="button" className={className} onClick={go} disabled={state === 'sending'}>
+        <MessageCircle size={16} /> {state === 'sending' ? 'Abrindo o WhatsApp…' : label}
+      </button>
+      {state === 'error' && <p className="field-error">Não consegui abrir agora. Tenta de novo em um minuto.</p>}
+    </>
   );
+}
 
-  if (compact) return button;
+/** No resultado do diagnóstico: o card que leva o diagnóstico pro WhatsApp. */
+export function ContinueOnWhatsApp({ compact = false }: { compact?: boolean }) {
+  if (!WHATSAPP_NUMBER) return null;
+  if (compact) return <div className="wa-block"><WhatsAppButton origin="diagnostico_fim" /></div>;
   return (
     <div className="stat-card" style={{ marginTop: 18 }}>
       <p className="diag-label" style={{ marginBottom: 6 }}>
-        <MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Seu plano no WhatsApp
+        <MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Seu dia a dia no WhatsApp
       </p>
       <p className="account-line" style={{ marginBottom: 12 }}>
-        Leve este diagnóstico pro WhatsApp: lá eu te digo o próximo passo, você anota gastos só mandando mensagem e vê quanto ainda pode gastar no mês. <b>Sem cadastro.</b>
+        Leve este diagnóstico pro WhatsApp: você anota gastos e entradas só mandando mensagem e eu mostro quanto ainda pode gastar em cada coisa, com os limites daqui. <b>Sem cadastro.</b>
       </p>
-      {button}
-      {state === 'error' && <p className="field-error">Não consegui abrir agora. Tenta de novo em um minuto.</p>}
+      <div className="wa-block"><WhatsAppButton origin="diagnostico" /></div>
+    </div>
+  );
+}
+
+/** Faixa no fim de cada ferramenta: o dia a dia continua no WhatsApp. */
+export function WhatsAppStrip() {
+  if (!WHATSAPP_NUMBER) return null;
+  return (
+    <div className="wa-strip">
+      <p>
+        <b>O dia a dia fica no WhatsApp.</b> Mande <i>"mercado 80 no pix"</i> ou <i>"recebi 3000 salário"</i> e veja na hora quanto ainda pode gastar no mês.
+      </p>
+      <WhatsAppButton label="Anotar no WhatsApp" origin="ferramenta" className="btn-outline" />
     </div>
   );
 }
