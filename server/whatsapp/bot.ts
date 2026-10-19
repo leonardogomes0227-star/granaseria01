@@ -1,8 +1,9 @@
 import { parseMessage, categoryEmoji, detectIncomeSource, detectCategory, normalize as normalizeText, SAVED_CATEGORY, OTHER_CATEGORY, CATEGORIES } from './parse.js';
 import type { Expense, Income } from './db.js';
-import { offerForExpense, offerForIncome, SUMMARY_OFFER, type Offer } from './offers.js';
+import { SUMMARY_OFFER, type Offer } from './offers.js';
 import { weeklySummary } from './summary.js';
 import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
+import { siteLink } from './site.js';
 
 // Funções de banco recebidas por parâmetro: facilita testar a lógica sem Supabase de verdade.
 export interface BotDeps {
@@ -133,7 +134,7 @@ export function budgetLine(category: string, rows: Expense[], budgets?: Record<s
 function budgetText(rows: Expense[], budgets: Record<string, number> | undefined, now: Date): string {
   const entries = Object.entries(budgets ?? {}).filter(([, v]) => v > 0);
   if (entries.length === 0) {
-    return 'Pra eu mostrar quanto ainda dá pra gastar, preciso saber quanto você planejou gastar em cada coisa. 🙂 Mande *diagnóstico* (leva uns 2 minutos) e depois me pergunte de novo.';
+    return `Pra eu mostrar quanto ainda dá pra gastar em cada coisa, preciso saber quanto você planejou pra cada uma. 🙂 Faça o diagnóstico no site (uns 10 minutos) e depois me pergunte de novo:\n${siteLink('diag')}`;
   }
   const local = new Date(now.getTime() - BRT_OFFSET_MS);
   const lastDay = new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth() + 1, 0)).getUTCDate();
@@ -177,8 +178,8 @@ export const HELP_TEXT = [
   '• *formas de pagamento* — como você pagou (pix, cartão…)',
   '• *quanto ainda posso gastar* — o que sobra do que você planejou',
   '• *apagar* — desfaz o último gasto (*apagar entrada* desfaz a última entrada)',
-  '• *menu* — tudo o que eu sei fazer',
-  '• *ferramentas* — diagnóstico, dívidas, 13º e mais, no site',
+  '• *resumo semanal* — um resumo da semana todo domingo',
+  '• *painel* — seu painel no site (seu mês, seu plano e as ferramentas)',
 ].join('\n');
 
 /** "ontem" vira meio-dia de ontem no horário de Brasília (assim cai no dia certo em qualquer resumo). */
@@ -220,7 +221,7 @@ export async function recordExpense(phone: string, e: NewExpense, waMessageId: s
   ]
     .join('\n')
     .trim()
-    .concat(await offerLine(phone, offerForExpense(e.description) ?? (await summaryOffer(phone, monthRows.length, deps)), deps));
+    .concat(await offerLine(phone, await summaryOffer(phone, monthRows.length, deps), deps));
 }
 
 /** Quem já anotou uns gastos no mês e ainda não recebe o resumo semanal é convidado a ligar (uma vez por mês). */
@@ -252,9 +253,7 @@ export async function recordIncome(
       ...balanceLines(expenses, incomes, now),
       '',
       'Errou? Mande *apagar entrada*.',
-    ]
-      .join('\n')
-      .concat(await offerLine(phone, offerForIncome(i.source, i.description), deps));
+    ].join('\n');
   } catch (err) {
     console.error('WhatsApp: entradas indisponíveis (rodou supabase/entradas.sql?)', err);
     return INCOMES_OFF;

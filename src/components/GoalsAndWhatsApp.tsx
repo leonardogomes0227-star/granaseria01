@@ -1,79 +1,80 @@
-import { ArrowRight } from 'lucide-react';
-import { SITE_GOALS, type SiteGoal } from '../goals';
-import type { ToolId } from '../tools';
-import { Reveal } from './motion';
-import { WhatsAppButton } from './ContinueWhatsApp';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, ChevronDown } from 'lucide-react';
+import { MAIN_GOALS, SITE_GOALS, type SiteGoal } from '../goals';
+import { TOOLS, type ToolId } from '../tools';
 import { openWhatsApp } from '../whatsapp';
 import { track } from '../analytics';
+import { ToolIcon } from './Layout';
 
-/* ---------- "O que você quer resolver?" ---------- */
+/* ---------- "O que você quer fazer?": a primeira coisa do site ---------- */
+// Seis caminhos claros logo de cara. As outras ferramentas ficam guardadas em "Mais ferramentas", pra não poluir.
 
-export function GoalsSection({ onStart, onOpenTool }: { onStart: () => void; onOpenTool: (id: ToolId) => void }) {
+export function GoalsSection({ onStart, onOpenTool, first = 'organizar' }: { onStart: () => void; onOpenTool: (id: ToolId) => void; first?: 'organizar' | 'painel' }) {
+  const navigate = useNavigate();
+  const [more, setMore] = useState(false);
   const pick = (g: SiteGoal) => {
     track('objetivo_escolhido', { objetivo: g.id });
     if (g.action.kind === 'diag') onStart();
+    else if (g.action.kind === 'painel') navigate('/painel');
     else if (g.action.kind === 'tool') onOpenTool(g.action.tool);
     else void openWhatsApp('objetivo').catch(() => undefined);
   };
+  // quem já entrou continua do painel; quem chegou agora começa pelo diagnóstico
+  const top = SITE_GOALS.slice(0, MAIN_GOALS);
+  const main = [...top.filter((g) => g.id === first), ...top.filter((g) => g.id !== first)];
+  const rest = SITE_GOALS.slice(MAIN_GOALS);
+  // as ferramentas que nenhum objetivo abre (plano mês a mês, fatura, longo prazo…) entram em "Mais ferramentas"
+  const covered = new Set(SITE_GOALS.flatMap((g) => (g.action.kind === 'tool' ? [g.action.tool] : [])));
+  const others = TOOLS.filter((t) => !covered.has(t.id));
+
   return (
-    <section className="section goals-section" id="objetivos">
-      <Reveal className="section-head">
-        <div className="kicker"><span className="wedge" />Comece pelo seu objetivo</div>
-        <h2>O que você quer resolver agora?</h2>
-        <p>Escolha e a gente te leva direto pra ferramenta certa. Tudo grátis: você entra com seu WhatsApp, sem senha.</p>
-      </Reveal>
-      <div className="goals-grid">
-        {SITE_GOALS.map((g, i) => {
+    <div className="picker" id="ferramentas">
+      <div className="picker-grid">
+        {main.map((g, i) => {
           const Icon = g.icon;
           return (
-            <Reveal key={g.id} delay={(i % 4) * 70} variant="up">
-              <button type="button" className={`goal-card ${g.action.kind === 'whatsapp' ? 'is-wa' : ''}`} onClick={() => pick(g)}>
-                <span className={`tool-icon tone-${g.tone}`}><Icon size={20} strokeWidth={1.9} /></span>
-                <span className="goal-copy">
-                  <b>{g.title}</b>
-                  <span>{g.description}</span>
-                </span>
-                <ArrowRight size={16} className="goal-arrow" />
-              </button>
-            </Reveal>
+            <button
+              type="button"
+              key={g.id}
+              className={`pick-card ${i === 0 ? 'is-first' : ''}`}
+              style={{ ['--i' as string]: i }}
+              onClick={() => pick(g)}
+            >
+              <span className={`tool-icon tone-${g.tone}`}><Icon size={22} strokeWidth={1.9} /></span>
+              <span className="pick-copy">
+                {i === 0 && <em className="pick-badge">{first === 'painel' ? 'Continue daqui' : 'Comece por aqui'}</em>}
+                <b>{g.title}</b>
+                <span>{g.description}</span>
+              </span>
+              <ArrowRight size={18} className="pick-arrow" />
+            </button>
           );
         })}
       </div>
-    </section>
-  );
-}
 
-/* ---------- O que o WhatsApp faz ---------- */
-
-const CHAT: [('me' | 'bot'), string][] = [
-  ['me', 'mercado 80 no pix'],
-  ['bot', '✅ R$ 80,00 em Alimentação · Pix\nSaldo do mês: R$ 1.420 · uns R$ 109 por dia'],
-  ['me', 'posso comprar um tênis de 300?'],
-  ['bot', '🟢 Cabe sem apertar. Depois da compra restam R$ 1.120, uns R$ 86 por dia.'],
-];
-
-export function WhatsAppSection() {
-  return (
-    <section className="section wa-section" id="whatsapp">
-      <div className="wa-grid">
-        <Reveal className="section-head" variant="left">
-          <div className="kicker"><span className="wedge" />No WhatsApp</div>
-          <h2>O dia a dia do seu dinheiro, por mensagem.</h2>
-          <p>
-            Sem app e sem conectar o banco: você conta o que gastou ou recebeu (até por foto do cupom) e o assistente soma, separa por categoria e
-            forma de pagamento, mostra quanto ainda dá pra gastar e manda um resumo todo domingo.
-          </p>
-          <div className="wa-block" style={{ marginTop: 22 }}>
-            <WhatsAppButton label="Começar no WhatsApp" origin="landing" />
-          </div>
-          <p className="field-hint" style={{ marginTop: 10 }}>Fez o diagnóstico aqui? O botão leva ele junto e o assistente usa seus limites.</p>
-        </Reveal>
-        <Reveal className="wa-phone" variant="up" delay={120}>
-          {CHAT.map(([who, msg], i) => (
-            <p key={i} className={`wa-bubble ${who}`}>{msg}</p>
+      <button type="button" className={`picker-more ${more ? 'open' : ''}`} aria-expanded={more} onClick={() => setMore((v) => !v)}>
+        {more ? 'Menos ferramentas' : 'Mais ferramentas'} <ChevronDown size={16} />
+      </button>
+      {more && (
+        <div className="picker-rest">
+          {rest.map((g) => {
+            const Icon = g.icon;
+            return (
+              <button type="button" key={g.id} className="rest-item" onClick={() => pick(g)}>
+                <span className={`tool-icon sm tone-${g.tone}`}><Icon size={16} strokeWidth={1.9} /></span>
+                <b>{g.title}</b>
+              </button>
+            );
+          })}
+          {others.map((t) => (
+            <button type="button" key={t.id} className="rest-item" onClick={() => onOpenTool(t.id)}>
+              <ToolIcon tool={t} size="sm" />
+              <b>{t.title}</b>
+            </button>
           ))}
-        </Reveal>
-      </div>
-    </section>
+        </div>
+      )}
+    </div>
   );
 }

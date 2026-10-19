@@ -11,7 +11,7 @@ import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense,
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom, firstName } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, isGreeting, SITE_CODE, type History } from '../server/whatsapp/hub.js';
+import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, isGreeting, isLiveFlow, SITE_CODE, type History } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
@@ -205,9 +205,13 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     return [...welcomeFromSite(merged, new Date(), msg.profileName), ...(link ? text(painelText(link)) : [])];
   }
 
-  // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:
-  // no meio de um diagnóstico, "3000" é resposta, não gasto.
+  // O hub responde o oi, o menu, os links do site e as conversas que restaram (apagar dados, feedback, fatura).
   const hub = await loadHub(user, phone);
+  if (hub?.session && !isLiveFlow(hub.session.flow)) {
+    // conversa de uma ferramenta que saiu do WhatsApp (diagnóstico, dívidas…): descarta e a mensagem segue como gasto
+    await clearSession(phone).catch(() => undefined);
+    hub.session = null;
+  }
   if (hub) {
     const now = new Date();
     // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi

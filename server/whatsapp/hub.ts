@@ -13,8 +13,8 @@ import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations
 import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
 import { TIP_WORD } from './shortcuts.js';
-import { toSite, welcomeOut } from './site.js';
-import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
+import { siteToolsOut, toSite, welcomeOut } from './site.js';
+import { goalFromText } from './goals.js';
 import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startAddDebt, startRemoveDebt, startCheckin, selosOut, fraseOut, toolStep, type MonthBalance } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
@@ -31,17 +31,19 @@ export function simpleMenu(name?: string | null): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha uma opção:`,
+      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *mercado 80 no pix* ou *recebi 200 de freela*. 🪙\n\nAqui eu cuido só do que entra e do que sai. O resto fica no site: toque em *Meu painel no site*.`,
       button: 'Ver opções',
       rows: [
         { id: 'job:anotar', title: '✍️ Como anotar', description: 'Gastos, entradas, forma de pagamento e foto' },
         { id: 'gastos:saldo', title: '⚖️ Saldo do mês', description: 'Entrou, saiu e quanto dá por dia' },
         { id: 'gastos:sobra', title: '🎯 Quanto posso gastar', description: 'Por categoria, até o fim do mês' },
-        { id: 'menu:gastos', title: '📊 Gastos e entradas', description: 'Hoje, semana, mês, formas de pagamento' },
-        { id: 'calc:compra', title: '🛍️ Posso comprar?', description: 'A conta com o seu saldo de verdade' },
+        { id: 'gastos:hoje', title: '📅 Gastos de hoje', description: 'O que você gastou hoje' },
+        { id: 'gastos:semana', title: '🗓️ Gastos da semana', description: 'Total desde segunda, por categoria' },
+        { id: 'gastos:mes', title: '📊 Gastos do mês', description: 'Resumo do mês por categoria' },
+        { id: 'gastos:entradas', title: '📥 Entradas do mês', description: 'O dinheiro que entrou, por origem' },
+        { id: 'gastos:formas', title: '💳 Formas de pagamento', description: 'Quanto saiu no pix, débito, crédito…' },
         { id: 'gastos:resumo', title: '📬 Resumo da semana', description: 'Como foi a semana, e todo domingo aqui' },
-        { id: 'site:painel', title: '📲 Meu painel no site', description: 'Seu plano e seus gastos, tudo salvo' },
-        { id: 'site:todas', title: '🌐 Ferramentas no site', description: 'Diagnóstico, dívidas, 13º, direitos e mais' },
+        { id: 'site:painel', title: '📲 Meu painel no site', description: 'Seu mês, seu plano e as ferramentas' },
       ],
     },
   ];
@@ -819,6 +821,13 @@ function rightDetail(id: string): Outgoing[] {
 
 /* ---------- ponto de entrada ---------- */
 
+/**
+ * As únicas conversas que ainda existem no WhatsApp. As de ferramenta (diagnóstico, dívidas, 13º, metas…) saíram
+ * pro site: uma que tenha ficado aberta de antes é descartada por quem chama, e a mensagem segue como gasto.
+ */
+const LIVE_FLOWS = new Set(['erase', 'feedback', 'fatura']);
+export const isLiveFlow = (flow: string): boolean => LIVE_FLOWS.has(flow);
+
 const GREETING = /^(oi+|ola|oie|opa|eai|e ai|eae|salve|hey|hello|hi|inicio|comecar|bom dia|boa tarde|boa noite|tudo bem|oi tudo bem|ola tudo bem)$/;
 /** É um "oi"? (o "oi" já explica a novidade do site; o aviso de uma vez só não precisa vir junto) */
 export const isGreeting = (raw: string): boolean => GREETING.test(normalize(raw));
@@ -940,35 +949,12 @@ function withShortcutTip(r: HubResult, rawText: string): HubResult {
 export function hubStep(input: HubInput): HubResult | null {
   const routed = route(input);
   if (!routed) return routed;
-  const result = withShortcutTip(routed, input.text);
+  const result = routed.event === 'site_link' ? routed : withShortcutTip(routed, input.text);
   if (result.event) return result;
   const t = normalize(input.text);
   const opened = result.session && result.session.flow !== input.session?.flow && result.session.flow !== 'feedback' && result.session.flow !== 'erase' ? result.session.flow : null;
   const event = EVENT_BY_WORD[t] ?? (opened ? `tool:${opened}` : undefined);
   return event ? { ...result, event } : result;
-}
-
-/** O objetivo escolhido: explica em uma frase o que vai acontecer e já abre a ferramenta certa. */
-function startGoal(id: string, input: HubInput): HubResult {
-  const goal = goalById(id);
-  if (!goal) return { out: [EXPIRED], session: null };
-  const { profile, now } = input;
-  const name = firstName(input.name ?? null);
-  const open: Record<GoalId, () => HubResult> = {
-    divida: () => startDividas(profile),
-    guardar: () => startMeta(),
-    gastos: () => ({ out: [gastosMenu()], session: null }),
-    sobra: () => startLeaks(),
-    extra: () => startExtra(profile),
-    comprar: () => startCompra(profile, undefined, input.balance, now),
-    emprestimo: () => startEmprestimo(),
-    direitos: () => ({ out: rightsList(profile, now), session: null }),
-    organizar: () => startQuick(name, input.history),
-  };
-  const tool = open[goal.id]();
-  // "organizar" já abre o começo rápido, que tem a própria apresentação: a frase do objetivo vem antes
-  const out = [txt(goal.intro), ...(goal.id === 'organizar' ? tool.out.slice(1) : tool.out)];
-  return withMenuHint({ ...tool, out, event: goal.id === 'organizar' ? 'quick_start' : `goal:${goal.id}` });
 }
 
 function route(input: HubInput): HubResult | null {
@@ -997,15 +983,14 @@ function route(input: HubInput): HubResult | null {
   // "ajuda" é pedido dos comandos: quem responde é o registro de gastos (lista do que dá pra mandar)
   if (!session && /^(ajuda|help|comandos|como funciona|como usar)$/.test(t)) return null;
 
-  // ferramentas maiores ficam no site: a palavra ou o botão de antes responde com o link
+  // as ferramentas ficam no site: a palavra, o objetivo ou o botão de antes responde com o link (nada roda aqui)
   const site = toSite(t);
   if (site) return { out: site, session: null, event: 'site_link' };
 
   // recepção
   if (MENU_WORDS.test(t)) return { out: simpleMenu(name), session: null };
   if (t === 'menu:tudo' || /^(ferramentas|mais ferramentas|todas as opcoes|todas as ferramentas)$/.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
-  if (GOALS_WORDS.test(t)) return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
-  if (t.startsWith('goal:')) return startGoal(t.slice(5), input);
+  if (t === 'goal:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
   if (GREETING.test(t)) return { out: welcomeOut(name, Boolean(diagnosisFrom(profile))), session: null, event: 'greeting' };
   if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
   if (t === 'plan:start') {
@@ -1124,11 +1109,12 @@ function route(input: HubInput): HubResult | null {
     if (tool) return withMenuHint(tool);
   }
 
-  // o objetivo escrito com as próprias palavras ("quero sair das dívidas"): abre a ferramenta certa
+  // o objetivo escrito com as próprias palavras ("quero sair das dívidas"): o link da ferramenta certa no site
   if (!session) {
     const g = goalFromText(t);
-    if (g === 'menu') return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
-    if (g) return startGoal(g, input);
+    if (g === 'menu') return { out: simpleMenu(name), session: null };
+    if (g === 'gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
+    if (g) return { out: toSite(`goal:${g}`) ?? siteToolsOut(), session: null, event: 'site_link' };
   }
 
   // botões antigos, de uma conversa que já terminou

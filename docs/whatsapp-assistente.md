@@ -20,9 +20,7 @@ WhatsApp ──► Meta (Cloud API) ──► Vercel /api/whatsapp ──► Sup
 | `saldo` | Entrou, saiu e saldo do mês |
 | `formas de pagamento` | Quanto saiu no mês em cada forma de pagamento (o `mês` também mostra) |
 | `apagar entrada` | Desfaz a última entrada |
-| `nova dívida cartão 2000` | Acrescenta uma dívida às que já estão salvas no diagnóstico e mostra a ordem de pagamento de novo (também em *Sair das dívidas → Nova dívida*) |
-| `apagar dívida` ou `quitei o cartão` | Mostra as dívidas numeradas e apaga a escolhida (com `quitei`, comemora); depois mostra a ordem de pagamento de novo |
-| `posso comprar 300` | Faz a conta com o saldo real do mês (entrou − saiu) e diz quanto sobra por dia depois da compra |
+| `nova dívida`, `quitei o cartão`, `posso comprar 300`, `diagnóstico`, `meta`… | Ferramenta: responde com o link dela no site, já logado (nada de ferramenta roda no WhatsApp) |
 | 📸 foto do cupom, nota ou comprovante de pix | A IA lê o valor, o lugar, a categoria e a forma de pagamento e anota o gasto (ou a entrada, se o pix foi recebido). Precisa de `ANTHROPIC_API_KEY` |
 | `resumo semanal` | Mostra a semana e liga o resumo automático (domingo de manhã) e o do mês (dia 1). `parar resumo` desliga |
 | `anotar` | Tudo o que dá pra mandar: gasto, entrada e foto |
@@ -175,9 +173,9 @@ Tudo fica salvo pelo número: o que muda no site (diagnóstico, plano, vazamento
 
 ## WhatsApp = dia a dia; ferramentas = site
 
-O WhatsApp cuida só do dinheiro que entra e sai: anotar gastos e entradas (texto ou foto do cupom), saldo, quanto ainda dá pra gastar, posso comprar, resumo da semana. As ferramentas maiores ficam no site, sem cadastro: qualquer palavra ou botão que antes abria uma delas aqui (*diagnóstico*, *dívidas*, *13º*, *vazamentos*, *direitos*, *renegociar*, *meta*, *empréstimo*, *fatura*, *check-in*…) agora responde com o link certo (`server/whatsapp/site.ts`). *ferramentas* manda todos os links.
+O WhatsApp cuida **só** do dinheiro que entra e sai: anotar gastos e entradas (texto ou foto do cupom), saldo, quanto ainda dá pra gastar, resumo da semana. **Nenhuma ferramenta roda aqui.** Todas ficam no site: qualquer palavra, objetivo escrito (*quero sair das dívidas*) ou botão antigo que abria uma delas (*diagnóstico*, *dívidas*, *nova dívida*, *quitei*, *13º*, *vazamentos*, *direitos*, *renegociar*, *meta*, *empréstimo*, *posso comprar*, *fatura*, *check-in*, *plano*, *próximo passo*…) responde com o link certo, já logado (`server/whatsapp/site.ts`). *ferramentas* ou *site* manda o link da página inicial, onde a pessoa escolhe o que quer fazer. Conversas de ferramenta que tinham ficado abertas antes são descartadas. O bot também não oferece mais ferramentas sozinho depois de um gasto: o único convite é o do resumo semanal.
 
-`menu`: Como anotar · Saldo do mês · Quanto posso gastar · Gastos e entradas · Posso comprar? · Resumo da semana · Ferramentas no site.
+`menu`: Como anotar · Saldo do mês · Quanto posso gastar · Gastos de hoje · da semana · do mês · Entradas do mês · Formas de pagamento · Resumo da semana · Meu painel no site.
 
 O caminho de volta é o botão *Continuar no WhatsApp* do resultado do diagnóstico (seção acima): com o diagnóstico importado, o *quanto posso gastar* passa a usar os limites por categoria.
 
@@ -185,7 +183,7 @@ Fatura (legenda "fatura"/"extrato" ou foto que a leitura reconhece como fatura) 
 
 ## Ofertas no contexto
 
-Depois de uma anotação, o assistente sugere a ferramenta certa, no máximo uma por mensagem e cada tipo uma vez por mês: 13º/bônus → *13º*; salário → *plano*; Netflix/tarifa → *vazamentos*; fatura/juros → *dívidas*; quem já anotou 5 gastos no mês e não recebe o resumo → *resumo semanal*.
+Não há mais oferta de ferramenta depois de um gasto ou entrada. O único convite que o bot faz sozinho é o do resumo semanal (uma vez por mês, pra quem já anotou alguns gastos e ainda não recebe o resumo). Código em `server/whatsapp/offers.ts`.
 
 ## Resumo automático (semana e mês)
 
@@ -227,55 +225,9 @@ Variáveis (opcionais): `WHATSAPP_WEEKLY_TEMPLATE` (padrão `resumo_semanal`), `
 - **PDF**, legenda "fatura"/"extrato", ou foto que a leitura reconhece como fatura → leitor de fatura (limite `FATURA_MONTHLY_LIMIT`, padrão 5).
 - **Áudio** ainda não: a API do Claude não recebe áudio. O bot responde pedindo texto ou foto.
 
-## Começar pelo objetivo da pessoa
+## Objetivos e atalhos
 
-Quem chega pela primeira vez não vê uma lista de ferramentas: o bot pergunta **"o que você quer resolver agora?"** e mostra os objetivos
-(sair das dívidas, juntar dinheiro, controlar os gastos, achar dinheiro que sobra, usar o 13º ou um extra, decidir uma compra, comparar empréstimos,
-conhecer os direitos, organizar tudo). Cada um explica em uma frase o que vai acontecer e já abre a ferramenta certa.
-Quem preferir escrever com as próprias palavras também é entendido, quando a frase começa declarando o objetivo:
-*quero sair das dívidas*, *preciso juntar dinheiro pra viajar*, *como faço pra guardar dinheiro?*, *me ajuda* (mostra a lista).
-A palavra *objetivo* abre a lista a qualquer hora. As escolhas aparecem no painel `/admin`, em "O que as pessoas querem resolver".
-O código está em `server/whatsapp/goals.ts`.
-
-## Atalhos: sem passar pelo menu toda vez
-
-- **O bot ensina o atalho na hora:** ao abrir uma ferramenta pelo menu, ele manda antes uma linha como "Da próxima vez, é só mandar *meta* que eu abro direto". As palavras estão em `server/whatsapp/shortcuts.ts`.
-- **Mais jeitos de escrever:** *juntar dinheiro* ou *poupar* abrem a meta; *assinaturas* ou *dinheiro perdido*, o caça-vazamentos; *minhas dívidas*, as dívidas; *posso comprar 2000*, o vale a pena comprar.
-- **Atalhos de cada pessoa:** no "oi" de quem já fez o diagnóstico, o bot mostra até 3 botões com as ferramentas que ela mais usa (pelo histórico de uso da própria pessoa, sem guardar o telefone).
-- O menu também lembra: "você pode escrever direto o que quer, tipo *meta*, *dívidas* ou *gastos*".
-
-## Ferramentas do site no WhatsApp
-
-Mande **oi** ou **menu** e o bot mostra uma lista de opções, agrupada em *Começar*, *Economizar e proteger* e *Mais*. Depois de cada ferramenta, aparecem os botões *Ver menu*, *Próximo passo* e *Dar opinião*. Também funcionam palavras digitadas, mesmo no meio de outra conversa:
-
-| Ferramenta | Como chamar |
-|---|---|
-| Começo rápido (3 perguntas: renda, gastos, dívidas) | `rápido` |
-| Diagnóstico (8 perguntas) | `diagnóstico` |
-| Meu plano, `paguei`, `não paguei` | `plano` |
-| O que fazer com o 13º / dinheiro extra | `13º` |
-| Caça-vazamentos | `vazamentos` |
-| Seus direitos com o banco | `direitos` |
-| Vale a pena comprar isso? | `vale a pena comprar 2000` |
-| Calculadora de meta | `meta` |
-| Simulador de longo prazo | `longo prazo` |
-| Comparador de empréstimo (aceita "5000 em 12x de 520") | `empréstimo` |
-| Avalanche × bola de neve | `dívidas` |
-| Check-in mensal | `check-in` |
-| Selos e perfil | `selos` |
-| Frase do dia | `frase` |
-| Leitor de fatura | mandar o **PDF ou a foto** da fatura (precisa de `ANTHROPIC_API_KEY`) |
-
-`cancelar` sai de qualquer conversa. Gastos continuam do jeito de sempre: `gastei 35 no mercado`.
-
-**Antes de usar, rode uma vez no Supabase** (SQL Editor → New query → Run) o conteúdo de `supabase/whatsapp-hub.sql`.
-Ele cria três tabelas: `wa_sessions` (em que pergunta a pessoa parou), `wa_profiles` (diagnóstico, plano, vazamentos e check-ins de
-quem usa só o WhatsApp, sem conta) e `wa_usage` (limites de uso). Sem o SQL, o menu fica desligado e o bot segue só com gastos e plano.
-
-- Quem **tem conta** no site e vinculou o número usa os mesmos dados nos dois lugares (o diagnóstico feito no WhatsApp aparece no site).
-- Quem **não tem conta** tem os dados guardados pelo número, em `wa_profiles`.
-- Limites por pessoa: respostas com IA por dia (`WHATSAPP_AI_DAILY_LIMIT`, padrão 40) e leituras de fatura por mês (`FATURA_MONTHLY_LIMIT`, padrão 5). Passou do limite da IA, o bot segue só com as regras.
-- A leitura da fatura pode levar uns 30 segundos; `api/whatsapp.ts` tem `maxDuration` de 60 s no `vercel.json`.
+O objetivo escrito com as próprias palavras (*quero sair das dívidas*, *preciso juntar dinheiro*) ainda é entendido (`server/whatsapp/goals.ts`), mas agora responde com o link da ferramenta certa no site. *Me ajuda* mostra o menu do dia a dia. No site, a página inicial abre com **"O que você quer fazer com o seu dinheiro?"**: seis caminhos (organizar as finanças, ver o mês no painel, anotar gastos, sair das dívidas, juntar dinheiro, decidir uma compra) e o resto em *Mais ferramentas*.
 
 ## O coach: próximo passo, feedback e métricas
 

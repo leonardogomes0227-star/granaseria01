@@ -9,6 +9,8 @@ import { formatBRL } from '../calculations';
 
 /* ---------- Plano de ação: valor mensal, fases, passos, renegociação e calendário ---------- */
 
+const FIRST_STEPS = 3;
+
 export function ActionPlanView({
   plan,
   locked,
@@ -20,7 +22,13 @@ export function ActionPlanView({
   lockedSlot?: React.ReactNode;
   onOpenTool: (id: ToolId) => void;
 }) {
-  const visibleSteps = locked ? plan.steps.slice(0, 1) : plan.steps;
+  // os 3 primeiros passos aparecem; o resto e os extras (mensagem pra renegociar, direitos, calendário) ficam a um toque
+  const [allSteps, setAllSteps] = useState(false);
+  const [extras, setExtras] = useState(false);
+  const visibleSteps = locked ? plan.steps.slice(0, 1) : allSteps ? plan.steps : plan.steps.slice(0, FIRST_STEPS);
+  const hiddenSteps = locked ? 0 : plan.steps.length - visibleSteps.length;
+  const hasRights = relevantRights(plan).length > 0;
+  const hasExtras = !locked && (Boolean(plan.negotiation) || plan.schedule.length > 0 || hasRights);
 
   return (
     <div className="plan">
@@ -42,12 +50,30 @@ export function ActionPlanView({
           {locked && <div className="paywall-fade" />}
         </div>
         {locked && lockedSlot}
+        {hiddenSteps > 0 && (
+          <button type="button" className="plan-more" onClick={() => setAllSteps(true)}>
+            <ChevronDown size={14} /> Ver os outros {hiddenSteps} {hiddenSteps === 1 ? 'passo' : 'passos'}
+          </button>
+        )}
       </div>
 
-      {!locked && plan.negotiation && <NegotiationCard negotiation={plan.negotiation} />}
-      {!locked && <RightsCard plan={plan} onOpenTool={onOpenTool} />}
-      <Boosters plan={plan} onOpenTool={onOpenTool} />
-      {!locked && plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
+      {hasExtras && !extras && (
+        <button type="button" className="plan-extras-btn" onClick={() => setExtras(true)}>
+          <span>
+            <b>Mais ajuda pro seu plano</b>
+            <small>{[plan.negotiation && 'mensagem pronta pra renegociar', hasRights && 'seus direitos', plan.schedule.length > 0 && 'calendário mês a mês', 'como acelerar'].filter(Boolean).join(' · ')}</small>
+          </span>
+          <ChevronDown size={18} />
+        </button>
+      )}
+      {extras && (
+        <>
+          {plan.negotiation && <NegotiationCard negotiation={plan.negotiation} />}
+          <RightsCard plan={plan} onOpenTool={onOpenTool} />
+          <Boosters plan={plan} onOpenTool={onOpenTool} />
+          {plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
+        </>
+      )}
 
       <p className="field-hint" style={{ marginTop: 14 }}>
         Estimativa feita com os seus números e, quando você não informou, com taxas típicas de mercado. Não é recomendação

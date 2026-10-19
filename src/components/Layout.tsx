@@ -136,17 +136,14 @@ export function SiteHeader({
                 </div>
               </div>
             </div>
-            <a className="navlink" href="#como-funciona">Como funciona</a>
-            <a className="navlink" href="#principios">Princípios</a>
-            <a className="navlink" href="#duvidas">Dúvidas</a>
-            <Link className="navlink" to="/guias">Guias</Link>
-            <Link className="navlink" to="/painel">{painelLabel()}</Link>
+            <a className="navlink" href="/#como-funciona">Como funciona</a>
+            <a className="navlink" href="/#duvidas">Dúvidas</a>
           </div>
 
           <div className="nav-right">
-            <button type="button" className="nav-cta" onClick={onStart}>
-              Fazer diagnóstico <ArrowRight size={14} />
-            </button>
+            <Link className="nav-cta" to="/painel">
+              {painelToken() ? <LayoutGrid size={15} /> : <UserRound size={15} />} {painelLabel()}
+            </Link>
             <button type="button" className="menu-btn" aria-label="Abrir menu" onClick={() => setDrawerOpen(true)}>
               <Menu size={20} />
             </button>
@@ -167,8 +164,11 @@ export function SiteHeader({
                 <X size={20} />
               </button>
             </div>
-            <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => { setDrawerOpen(false); onStart(); }}>
-              Fazer meu diagnóstico <ArrowRight size={16} className="arrow" />
+            <Link className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} to="/painel" onClick={() => setDrawerOpen(false)}>
+              {painelToken() ? 'Abrir meu painel' : 'Entrar com WhatsApp'} <ArrowRight size={16} className="arrow" />
+            </Link>
+            <button type="button" className="btn-outline" style={{ width: '100%', marginTop: 10, justifyContent: 'center' }} onClick={() => { setDrawerOpen(false); onStart(); }}>
+              Fazer meu diagnóstico
             </button>
             <p className="drawer-label">Ferramentas</p>
             <div className="stagger">
@@ -176,14 +176,11 @@ export function SiteHeader({
                 <ToolMenuItem key={t.id} tool={t} onClick={() => pickTool(t.id)} />
               ))}
             </div>
-            <p className="drawer-label">Navegação</p>
-            <a className="drawer-link" href="#como-funciona" onClick={() => setDrawerOpen(false)}>Como funciona</a>
-            <a className="drawer-link" href="#principios" onClick={() => setDrawerOpen(false)}>Princípios</a>
-            <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
+            <p className="drawer-label">Mais</p>
+            <a className="drawer-link" href="/#como-funciona" onClick={() => setDrawerOpen(false)}>Como funciona</a>
+            <a className="drawer-link" href="/#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
             <Link className="drawer-link" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="drawer-link" to="/conta">Minha conta</Link>}
-            <Link className="drawer-link" to="/painel" onClick={() => setDrawerOpen(false)}>{painelToken() ? 'Meu painel' : 'Entrar com WhatsApp'}</Link>
-            <a className="drawer-link" href="#whatsapp" onClick={() => setDrawerOpen(false)}>No WhatsApp</a>
           </aside>
         </>
       )}

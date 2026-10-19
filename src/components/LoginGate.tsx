@@ -1,9 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { MessageCircle, Lock, ArrowRight } from 'lucide-react';
 import { useSession } from '../account';
 import { accountsEnabled } from '../supabase';
-import { getName, painelToken, rememberAfterLogin, setName } from '../painel';
+import { fetchPainel, getName, painelToken, rememberAfterLogin, setName } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
 
@@ -16,12 +16,39 @@ export function LoginGate({ what, header, children }: { what: string; header?: R
   const location = useLocation();
   const [name, setNameState] = useState(getName());
   const logged = Boolean(painelToken() || session);
+  // navegador novo: o nome pode já estar guardado pelo WhatsApp. Confere lá antes de perguntar de novo.
+  const [checking, setChecking] = useState(() => Boolean(painelToken()) && !getName());
+  useEffect(() => {
+    if (!checking) return;
+    let alive = true;
+    fetchPainel()
+      .then((d) => {
+        const saved = d?.state['gs-nome'];
+        if (saved && alive) {
+          setName(saved);
+          setNameState(getName());
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => alive && setChecking(false));
+    return () => {
+      alive = false;
+    };
+  }, [checking]);
 
   if (!logged) {
     return (
       <>
         {header}
         <LoginWall what={what} onGo={() => rememberAfterLogin(location.pathname + location.search)} />
+      </>
+    );
+  }
+  if (!name && checking) {
+    return (
+      <>
+        {header}
+        <div className="page-wrap"><p className="field-hint">Carregando sua conta…</p></div>
       </>
     );
   }
