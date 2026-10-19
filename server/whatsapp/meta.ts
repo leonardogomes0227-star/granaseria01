@@ -212,7 +212,8 @@ export async function sendTemplate(to: string, name: string, language: string, b
       template: {
         name,
         language: { code: language },
-        components: [{ type: 'body', parameters: bodyParams.map((text) => ({ type: 'text', text: text.replace(/\s+/g, ' ').trim() })) }],
+        // modelo sem variáveis: sem "components" (a Meta recusa parâmetros que o modelo não tem)
+        ...(bodyParams.length > 0 ? { components: [{ type: 'body', parameters: bodyParams.map((text) => ({ type: 'text', text: text.replace(/\s+/g, ' ').trim() })) }] } : {}),
       },
     }),
   });

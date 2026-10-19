@@ -6,6 +6,8 @@ import { SYNC_KEYS, applySnapshot, snapshot } from './sync';
 // diagnósticos diferentes, a pessoa escolhe; depois disso, ganha a versão mais nova.
 
 const TOKEN_KEY = 'gs-painel-token';
+const NAME_KEY = 'gs-nome';
+const AFTER_LOGIN_KEY = 'gs-depois-do-login'; // a ferramenta que a pessoa queria abrir antes de entrar
 const SEEN_KEY = 'gs-painel-seen'; // updatedAt da última versão do WhatsApp que este navegador viu/mandou
 
 type Snapshot = Record<string, string>;
@@ -49,6 +51,46 @@ export function clearPainelToken() {
   write(SEEN_KEY, null);
   stopPainelSync();
 }
+
+export const getName = () => read(NAME_KEY);
+export const setName = (name: string) => write(NAME_KEY, name.trim().slice(0, 40));
+export const rememberAfterLogin = (path: string) => write(AFTER_LOGIN_KEY, path);
+
+/**
+ * Chamado uma vez ao abrir o site, antes do roteador: o ?t= do link do WhatsApp vira login, some da barra de
+ * endereço, e quem tinha tentado abrir uma ferramenta volta direto pra ela.
+ */
+export function captureLoginFromUrl(): void {
+  try {
+    const url = new URL(window.location.href);
+    const t = url.searchParams.get('t');
+    if (!t || !/^[A-Za-z0-9_-]{20,64}$/.test(t)) return;
+    if (t !== painelToken()) setPainelToken(t);
+    url.searchParams.delete('t');
+    let path = url.pathname + url.search + url.hash;
+    const after = read(AFTER_LOGIN_KEY);
+    if (after && (url.pathname === '/painel' || url.pathname === '/')) {
+      path = after;
+      write(AFTER_LOGIN_KEY, null);
+    }
+    window.history.replaceState(null, '', path);
+    void siteEvent('site_login');
+  } catch {
+    // navegador sem URL/localStorage: segue sem login
+  }
+}
+
+async function post(body: unknown): Promise<void> {
+  const token = painelToken();
+  if (!token) return;
+  await fetch('/api/painel', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => undefined);
+}
+
+/** Registra no painel do dono o que a pessoa fez no site (ex.: "tool:site-debts"). */
+export const siteEvent = (event: string) => post({ event });
+
+/** 👍 / 👎 de uma ferramenta, com o texto opcional do 👎. */
+export const sendFeedback = (tool: string, kind: 'up' | 'down', note?: string) => post({ feedback: { tool, kind, note } });
 
 /** O que está guardado pelo número. null: sem link, ou link que não vale mais (aí o token é esquecido). */
 export async function fetchPainel(): Promise<PainelData | null> {
@@ -123,6 +165,8 @@ export async function pullPainel(): Promise<PainelData | null> {
     window.location.reload();
     return data;
   }
+  // fica o deste navegador, mas o que só existe lá (ex.: o nome guardado pelo WhatsApp) vem junto
+  for (const [k, v] of Object.entries(remote)) if (local[k] === undefined) write(k, v);
   await push(true);
   return data;
 }

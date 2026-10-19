@@ -26,6 +26,9 @@
     },
     "api/resumo.ts": {
       "maxDuration": 60
+    },
+    "api/admin.ts": {
+      "maxDuration": 60
     }
   },
   "crons": [
