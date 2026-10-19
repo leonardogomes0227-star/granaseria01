@@ -42,10 +42,11 @@ export interface NextStepInput {
   name?: string | null;
   expensesThisMonth?: number;
   greeting?: boolean; // é o "oi": começa cumprimentando
+  fresh?: boolean; // o plano acabou de começar: diz o primeiro combinado, sem perguntar se já fez
 }
 
 /** Um passo só, com botões. A prioridade é a ordem das leis: conhecer → seguir o plano → controlar → proteger. */
-export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting = false }: NextStepInput): Outgoing[] {
+export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting = false, fresh = false }: NextStepInput): Outgoing[] {
   const hi = greeting ? (name ? `Oi, ${name}! 👋 ` : 'Oi! 👋 ') : '';
   const diag = diagnosisFrom(profile);
   const tracking = trackingFrom(profile);
@@ -79,6 +80,15 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   const monthLabel = monthShort(created, view.openMonth);
   const monthIndex = (d: Date) => d.getFullYear() * 12 + d.getMonth();
   const due = monthIndex(now) >= monthIndex(created) + view.openMonth - 1;
+  if (view.tasks.length > 0 && fresh && !view.current.stuck) {
+    const inline = tasksInline(tracking, extraMonthly) ?? '';
+    return [
+      buttons(`👉 *Seu primeiro combinado (${monthLabel}): ${inline}.*\n\nLogo que o dinheiro cair, faça isso antes de gastar. Quando fizer, mande *paguei*. Pra rever o combinado a qualquer hora, mande *plano*.`, [
+        ['menu:plano', '📋 Ver o plano'],
+        ['menu:menu', 'Ver opções'],
+      ]),
+    ];
+  }
   if (view.tasks.length > 0 && due) {
     const inline = tasksInline(tracking, extraMonthly) ?? '';
     return [
@@ -92,8 +102,8 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (view.current.stuck) {
     return [
       buttons(
-        `${hi}Hoje o valor do plano ainda não cobre nem os juros das suas dívidas. Não é culpa sua: é matemática. 🤝\n\nO primeiro passo é renegociar. Eu tenho a mensagem pronta e os direitos que a lei te dá.`,
-        [['menu:direitos', 'Ver meus direitos'], ['menu:plano', 'Ver o plano']]
+        `${hi}👉 *Seu próximo passo: renegociar.*\n\nHoje o que dá pra pagar não cobre nem os juros das suas dívidas, então elas crescem todo mês. Não é culpa sua: é matemática. 🤝\n\nEu te dou a mensagem pronta pra mandar pro banco.`,
+        [['next:renegociar', '📝 Mensagem pronta'], ['menu:plano', 'Ver o plano']]
       ),
     ];
   }
@@ -103,8 +113,8 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (plan.unaccounted >= Math.max(200, diag.monthlyIncome * 0.1) && expensesThisMonth < 5) {
     return [
       buttons(
-        `${hi}Tem *${brl(plan.unaccounted)}* da sua renda por mês que eu não sei pra onde vão. 🕵️\n\nSó dá pra controlar o que a gente enxerga. Por uns dias, anote cada gasto aqui do jeito mais simples, por exemplo: *gastei 35 no mercado*.`,
-        [['menu:menu', 'Ver opções']]
+        `${hi}👉 *Seu próximo passo: descobrir pra onde vão ${brl(plan.unaccounted)} por mês.* 🕵️\n\nSó dá pra controlar o que a gente enxerga. Por uns dias, anote cada gasto aqui do jeito mais simples, por exemplo: *gastei 35 no mercado*.`,
+        [['job:anotar', '✍️ Como anotar'], ['menu:menu', 'Ver opções']]
       ),
     ];
   }

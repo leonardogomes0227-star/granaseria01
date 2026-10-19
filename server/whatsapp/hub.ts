@@ -403,6 +403,85 @@ function diagSummary(data: WizardData, now: Date, name?: string | null): string 
   return lines.join('\n').trim();
 }
 
+/** O fim do diagnóstico em poucas linhas: nota, conta do mês, o que está bom e o que mais pesa. O resto fica em "Ver detalhes". */
+function diagShort(data: WizardData, now: Date, name?: string | null): string {
+  const d = calculateDiagnosis(data);
+  const score = calculateHealthScore(data, d);
+  const plan = buildPlan(data, { start: now });
+  const debtTotal = plan.debts.reduce((t, x) => t + x.balance, 0);
+  const good = whatIsGood(data, plan, d)[0];
+  const heavy = whatWeighs(data, plan)[0];
+  return [
+    `${name ? `Pronto, ${name}!` : 'Pronto!'} Olhei seus números com carinho. 🙂`,
+    '',
+    `📊 Nota *${score.score}/100*: ${kinderLabel(score.score)}.`,
+    `Entra ${brl(data.monthlyIncome)} · sai ${brl(d.totalExpenses)}${debtTotal > 0 ? ` · dívidas ${brl(debtTotal)}` : ''}`,
+    '',
+    ...(good ? [`✅ ${good}`] : []),
+    ...(heavy ? [`⚠️ ${heavy}`] : []),
+  ].join('\n');
+}
+
+const FOLLOW_BUTTON: [string, string] = ['plan:start', '📋 Lembrar todo mês'];
+const DETAILS_BUTTON: [string, string] = ['diag:tudo', '🔍 Ver detalhes'];
+
+/** Um passo só, dito em linguagem simples, com o botão que já faz a ação. */
+function firstStepOut(data: WizardData, now: Date): Outgoing {
+  const plan = buildPlan(data, { start: now });
+  const first = plan.steps[0];
+  const sentence = (first?.detail.split(/(?<=[.!?])\s/)[0] ?? '').trim();
+  if (plan.stuck) {
+    return buttons(
+      `👉 *Seu próximo passo: renegociar.*\n\n${sentence || 'Hoje o que você consegue pagar não cobre os juros, então a dívida cresce todo mês.'}\n\nRenegociar baixa os juros e a parcela. Eu te dou a mensagem pronta pra mandar pro banco, é só copiar.`,
+      [['next:renegociar', '📝 Mensagem pronta'], FOLLOW_BUTTON, DETAILS_BUTTON]
+    );
+  }
+  const worstCut = [...plan.cuts].sort((a, b) => b.amount - a.amount)[0];
+  if (first?.title.startsWith('Libere') && worstCut) {
+    return buttons(
+      `👉 *Seu próximo passo: segurar ${worstCut.label.toLowerCase()}.*\n\nHoje vai ${brl(worstCut.current)} por mês. O saudável pra sua renda é até ${brl(worstCut.ceiling)}. Não precisa cortar de uma vez: anote cada gasto aqui esta semana (ex.: *mercado 80 no pix*) e eu te aviso quando chegar perto do limite.`,
+      [['gastos:sobra', '🎯 Ver meu limite'], FOLLOW_BUTTON, DETAILS_BUTTON]
+    );
+  }
+  if (plan.unaccounted >= Math.max(200, data.monthlyIncome * 0.1)) {
+    return buttons(
+      `👉 *Seu próximo passo: descobrir pra onde vão ${brl(plan.unaccounted)} por mês.*\n\nEsse dinheiro não apareceu em nenhum gasto que você me contou. Por uns dias, anote tudo aqui do jeito mais simples (ex.: *gastei 35 no mercado*). No fim da semana eu te mostro pra onde foi.`,
+      [['job:anotar', '✍️ Como anotar'], FOLLOW_BUTTON, DETAILS_BUTTON]
+    );
+  }
+  return buttons(`👉 *Seu próximo passo: ${first ? first.title.charAt(0).toLowerCase() + first.title.slice(1) : 'guardar 10% do que entra'}.*${sentence ? `\n\n${sentence}` : ''}\n\nQuer que eu te lembre disso todo mês?`, [
+    FOLLOW_BUTTON,
+    DETAILS_BUTTON,
+  ]);
+}
+
+/** Renegociar pelo WhatsApp: a mensagem pronta pro banco e o que fazer se não der. */
+export function renegotiateOut(profile: StateSnapshot, now: Date): Outgoing[] {
+  const data = diagnosisFrom(profile);
+  const plan = data ? buildPlan(data, { start: now }) : null;
+  const power = plan && plan.monthlyPower > 0 ? brl(plan.monthlyPower) : 'um valor que caiba no meu orçamento';
+  const worst = plan?.debts[0];
+  return [
+    txt(
+      [
+        `📝 *Como renegociar${worst ? ` (comece por ${worst.name}, a de juros mais altos)` : ''}:*`,
+        '',
+        '1. Mande esta mensagem no app ou no chat do banco (ou leia no telefone):',
+        '',
+        `_Olá! Estou com dificuldade pra pagar minha dívida e quero renegociar. Consigo pagar ${power} por mês no total. Peço uma proposta com juros menores e parcelas que caibam nesse valor, informando o Custo Efetivo Total (CET). Obrigado!_`,
+        '',
+        '2. Não aceite a primeira proposta se a parcela não couber. Peça outra e compare o *CET* (o custo total).',
+        '3. Se nenhuma dívida cabe na sua renda, a *Lei do Superendividamento* permite renegociar tudo de uma vez, pelo Procon, preservando o mínimo pra viver.',
+      ].join('\n')
+    ),
+    buttons('Quer ver mais?', [
+      ['dir:superendividamento', '⚖️ Renegociar tudo'],
+      ['dir:portabilidade', '🏦 Outro banco'],
+      ['calc:dividas', '❄️ Qual pagar 1º'],
+    ]),
+  ];
+}
+
 function withDiagnosis(profile: StateSnapshot, data: WizardData): StateSnapshot {
   // step 6 = tela de revisão do diagnóstico no site; quem abrir o site continua dali
   return { ...profile, 'selos-wizard-progress': JSON.stringify({ data, step: 6 }), 'selos-diagnosis-completed': 'true' };
@@ -510,7 +589,7 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
     emergencyFund: d.reserve ?? 0,
   };
   const saved = withDiagnosis(profile, data);
-  const summary = txt(diagSummary(data, now, name));
+  const summary = txt(diagShort(data, now, name));
 
   if (d.then === 'extra') {
     return {
@@ -520,12 +599,8 @@ function stepDiag(session: Session, text: string, profile: StateSnapshot, now: D
       event: 'diag_done',
     };
   }
-  return {
-    out: [summary, buttons('Quer que eu acompanhe seu plano mês a mês e te lembre do que fazer? Guardar logo que o dinheiro cai, antes de gastar, é o primeiro hábito do livro.', [['diag:follow', 'Sim, acompanhar'], ['diag:skip', 'Agora não']])],
-    session: { flow: 'diag', step: 'follow', data: { ready: data } },
-    profile: saved,
-    event: 'diag_done',
-  };
+  // sem conversa aberta: os botões do passo (limite, anotar, renegociar) funcionam direto
+  return { out: [summary, firstStepOut(data, now)], session: null, profile: saved, event: 'diag_done' };
 }
 
 /* ---------- 13º e dinheiro extra ---------- */
@@ -907,10 +982,14 @@ function route(input: HubInput): HubResult | null {
   if (t === 'plan:start') {
     const data = diagnosisFrom(profile);
     if (!data) return startDiag(name, undefined, input.history);
+    const following = startTracking(profile, data, now);
     return {
-      out: [txt('✅ Combinado! Todo mês eu te lembro do que fazer. Mande *plano* pra ver o mês atual e *paguei* quando cumprir. Sem culpa se atrasar: eu recalculo com você.'), feedbackAsk('plan')],
+      out: [
+        txt('✅ Combinado! Agora eu acompanho seu plano mês a mês. Quando cumprir, é só mandar *paguei*. Sem culpa se atrasar: eu recalculo com você.'),
+        ...nextStep({ profile: following, now, name, fresh: true }),
+      ],
       session: null,
-      profile: startTracking(profile, data, now),
+      profile: following,
       event: 'plan_follow',
     };
   }
@@ -937,6 +1016,14 @@ function route(input: HubInput): HubResult | null {
   // ids de botões e listas
   if (t.startsWith('dir:')) return withMenuHint({ out: rightDetail(t.slice(4)), session: null });
   if (t === 'menu:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
+  if (t === 'diag:tudo') {
+    const data = diagnosisFrom(profile);
+    if (!data) return startDiag(name, undefined, input.history);
+    return { out: [txt(diagSummary(data, now, name)), buttons('E agora?', [['menu:proximo', '🧭 Meu próximo passo'], FOLLOW_BUTTON])], session: null };
+  }
+  if (t === 'next:renegociar' || /^(renegociar|renegociacao|negociar|negociar divida|como renegociar|mensagem pronta)$/.test(t)) {
+    return { out: renegotiateOut(profile, now), session: null, event: 'tool:renegociar' };
+  }
   if (t === 'gastos:anotar') return { out: [GASTOS_HELP], session: null };
   if (t === 'gastos:entrada') return { out: [ENTRADA_HELP], session: null };
   if (t === 'job:anotar' || /^(anotar|como anoto|como anotar|como registro)$/.test(t)) return { out: [anotarHelp(input.faturaEnabled)], session: null, event: 'tool:anotar' };
@@ -1016,7 +1103,7 @@ function route(input: HubInput): HubResult | null {
   }
 
   // botões antigos, de uma conversa que já terminou
-  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura|plan|fb|erase|pre|job):\S+$/.test(t)) return { out: [EXPIRED], session: null };
+  if (/^(menu|dir|extra|diag|calc|mais|frase|fatura|plan|fb|erase|pre|job|next):\S+$/.test(t)) return { out: [EXPIRED], session: null };
 
   return null;
 }

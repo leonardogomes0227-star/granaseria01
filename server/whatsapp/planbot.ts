@@ -73,7 +73,7 @@ export function planStatusText(tracking: Tracking, extraMonthly: number): string
     for (const t of view.tasks) lines.push(`• ${brl(t.suggested)} — ${t.label}`);
   }
   lines.push('');
-  if (view.current.stuck) lines.push('⚠️ O valor do plano ainda não cobre os juros. Renegociar é o próximo passo (a mensagem pronta está no site).');
+  if (view.current.stuck) lines.push('⚠️ O valor do plano ainda não cobre os juros. Renegociar é o próximo passo: mande *renegociar* que eu te dou a mensagem pronta.');
   else if (view.debtFreeAbs !== null && view.original.debts.length > 0 && view.current.debts.length > 0) {
     const shift = view.debtShift ?? 0;
     const when = monthLong(start, view.debtFreeAbs);
