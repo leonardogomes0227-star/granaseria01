@@ -10,9 +10,10 @@ import { leaksMonthlyTotal } from '../leaks';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
 import { SITE_GOALS } from '../goals';
-import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
+import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
+import { CountUp } from './motion';
 
 /* ---------- Meu painel: o app da pessoa, ligado ao WhatsApp ---------- */
 // Mostra o mês (o que ela anotou no WhatsApp), quanto ainda dá pra gastar em cada coisa, o plano de ação do
@@ -29,11 +30,31 @@ const brl = (n: number) => formatBRL(n);
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
-function daysLeftInMonth(): number {
+// mesmos emojis do assistente (server/whatsapp/parse.ts), pra pessoa reconhecer o que anotou lá
+const EMOJI: Record<string, string> = {
+  Alimentação: '🍽️',
+  Transporte: '🚗',
+  Moradia: '🏠',
+  Saúde: '💊',
+  Lazer: '🎉',
+  Compras: '🛍️',
+  Educação: '📚',
+  Pets: '🐾',
+  'Cuidados pessoais': '💇',
+  Doações: '🤲',
+  Guardado: '🐖',
+};
+const emoji = (category: string) => EMOJI[category] ?? '📌';
+
+/** Dia de hoje e último dia do mês, no horário de Brasília. */
+function monthClock(): { today: number; last: number; month: string } {
   const now = new Date(Date.now() - 3 * 60 * 60 * 1000);
   const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
-  return Math.max(1, last - now.getUTCDate() + 1);
+  const month = now.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+  return { today: now.getUTCDate(), last, month };
 }
+
+const lastDigits = (phone: string) => phone.replace(/\D/g, '').slice(-4);
 
 export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
   const [params] = useSearchParams();
@@ -68,10 +89,24 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
   const spent = sum(expenses);
   const income = sum(incomes);
   const left = income - spent;
-  const perDay = left > 0 ? Math.floor(left / daysLeftInMonth()) : 0;
+  const clock = monthClock();
+  const perDay = left > 0 ? Math.floor(left / Math.max(1, clock.last - clock.today + 1)) : 0;
   const recent = [...expenses.map((e) => ({ ...e, kind: 'out' as const, what: e.category })), ...incomes.map((i) => ({ ...i, kind: 'in' as const, what: i.source }))]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
+  const name = getName();
+
+  // para onde foi o dinheiro: o que foi anotado no mês e, com diagnóstico, os limites de cada coisa
+  const byCategory = new Map<string, number>();
+  for (const e of expenses) byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + e.amount);
+  if (hasDiag) for (const c of CATS) if (data.expenses[c.key] && !byCategory.has(c.name)) byCategory.set(c.name, 0);
+  const biggest = Math.max(1, ...byCategory.values());
+  const where = [...byCategory.entries()]
+    .map(([cat, used]) => {
+      const limit = hasDiag ? data.expenses[CATS.find((c) => c.name === cat)?.key ?? ('' as keyof WizardData['expenses'])] ?? 0 : 0;
+      return { cat, used, limit, label: CATS.find((c) => c.name === cat)?.label ?? cat };
+    })
+    .sort((a, b) => b.used - a.used || b.limit - a.limit);
 
   const disconnect = () => {
     clearPainelToken();
@@ -82,7 +117,17 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
   return (
     <div className="page-wrap anim-in painel">
       <div className="kicker"><span className="wedge" />Meu painel</div>
-      <h1>Seu dinheiro, tudo num lugar</h1>
+      <h1>{name ? `Oi, ${name}!` : 'Seu dinheiro, tudo num lugar'}</h1>
+      {status === 'ok' && (
+        <>
+          <p className="painel-sub">Seu plano, seus gastos e o que entrou. O que você anota no WhatsApp aparece aqui na hora.</p>
+          <nav className="painel-tabs" aria-label="Seções do painel">
+            <a href="#mes">Meu mês</a>
+            <a href="#plano">Meu plano</a>
+            <a href="#ferramentas">Ferramentas</a>
+          </nav>
+        </>
+      )}
 
       {status === 'none' && (
         <div className="stat-card painel-connect">
@@ -101,7 +146,11 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
           )}
         </div>
       )}
-      {status === 'loading' && <p className="field-hint">Carregando seu painel…</p>}
+      {status === 'loading' && (
+        <div className="wallet wallet-loading" aria-label="Carregando seu painel">
+          <span /><span /><span />
+        </div>
+      )}
       {status === 'error' && (
         <p className="field-error">
           Não consegui carregar agora. <button type="button" className="plan-more" onClick={() => window.location.reload()}><RefreshCw size={13} /> Tentar de novo</button>
@@ -110,66 +159,92 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
 
       {status === 'ok' && painel && (
         <>
-          <p className="field-hint painel-who">
-            Conectado ao WhatsApp <b>{painel.phone}</b> · tudo o que você muda aqui também vai pra lá.{' '}
-            <button type="button" className="plan-more" onClick={disconnect}><LogOut size={13} /> Desconectar</button>
-          </p>
-
-          <section className="painel-section">
-            <p className="diag-label">Este mês</p>
-            <div className="diag-grid">
-              <div className="stat-card"><p className="diag-label">📥 Entrou</p><p className="diag-number">{brl(income)}</p></div>
-              <div className="stat-card"><p className="diag-label">📤 Saiu</p><p className="diag-number">{brl(spent)}</p></div>
-              <div className="stat-card">
-                <p className="diag-label">⚖️ Saldo</p>
-                <p className={`diag-number ${left < 0 ? 'tone-text-bad' : ''}`}>{brl(left)}</p>
-              </div>
-              <div className="stat-card"><p className="diag-label">🎯 Por dia até o fim do mês</p><p className="diag-number">{income > 0 ? brl(perDay) : '—'}</p></div>
+          <section className="wallet" id="mes" aria-label={`Seu mês de ${clock.month}`}>
+            <div className="wallet-top">
+              <span className="wallet-month">Saldo de {clock.month}</span>
+              <span className="wallet-phone"><MessageCircle size={13} /> WhatsApp final {lastDigits(painel.phone)}</span>
             </div>
-            {income === 0 && <p className="field-hint">Anote o que entrou no WhatsApp (ex.: <i>recebi 3000 salário</i>) pra ver o saldo e quanto dá por dia.</p>}
+            <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
+              {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
+            </p>
+            <div className="wallet-flow">
+              <span><small>📥 Entrou</small><b>{brl(income)}</b></span>
+              <span><small>📤 Saiu</small><b>{brl(spent)}</b></span>
+            </div>
+            <div className="wallet-clock">
+              <div className="wallet-clock-track"><i style={{ width: `${(clock.today / clock.last) * 100}%` }} /></div>
+              <small>Dia {clock.today} de {clock.last}</small>
+            </div>
+            <p className="wallet-perday">
+              {income === 0
+                ? <>Anote o que entrou no WhatsApp (ex.: <i>recebi 3000 salário</i>) pra ver o saldo e quanto dá por dia.</>
+                : left > 0
+                  ? <>🎯 Dá pra gastar uns <b>{brl(perDay)} por dia</b> até o fim do mês.</>
+                  : <>⚠️ O mês passou do que entrou. Antes da próxima compra, mande <i>posso comprar</i> no WhatsApp.</>}
+            </p>
+            <div className="wallet-actions">
+              <a className="wallet-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar no WhatsApp</a>
+              <button type="button" className="wallet-out" onClick={disconnect}><LogOut size={13} /> Sair</button>
+            </div>
           </section>
 
-          {hasDiag && (
-            <section className="painel-section stat-card">
-              <p className="diag-label">Quanto ainda dá pra gastar em cada coisa</p>
-              {CATS.map((c) => {
-                const limit = data.expenses[c.key];
-                const used = sum(expenses.filter((e) => e.category === c.name));
-                if (!limit) return null;
-                const pct = Math.min(100, (used / limit) * 100);
-                return (
-                  <div className="bar-row" key={c.key}>
-                    <span className="bar-label">{c.label}</span>
-                    <div className="bar-track"><div className={`bar-fill ${used > limit ? 'over' : ''}`} style={{ width: `${pct}%` }} /></div>
-                    <span className="painel-bar-val">{used > limit ? `passou ${brl(used - limit)}` : `faltam ${brl(limit - used)}`}</span>
-                  </div>
-                );
-              })}
-              <p className="field-hint" style={{ marginTop: 4 }}>Os limites são o que você contou no diagnóstico.</p>
+          <div className="painel-two">
+            <section className="painel-section stat-card painel-where">
+              <p className="diag-label">{hasDiag ? 'Quanto ainda dá em cada coisa' : 'Para onde foi o dinheiro'}</p>
+              {where.length === 0 ? (
+                <p className="field-hint">Ainda nada neste mês. Cada gasto que você manda no WhatsApp entra aqui, já separado.</p>
+              ) : (
+                <ul className="where-list">
+                  {where.map((w) => {
+                    const over = w.limit > 0 && w.used > w.limit;
+                    const pct = w.limit > 0 ? Math.min(100, (w.used / w.limit) * 100) : (w.used / biggest) * 100;
+                    return (
+                      <li key={w.cat}>
+                        <span className="where-icon" aria-hidden="true">{emoji(w.cat)}</span>
+                        <span className="where-body">
+                          <span className="where-head">
+                            <b>{w.label}</b>
+                            <span>{brl(w.used)}{w.limit > 0 && <small> de {brl(w.limit)}</small>}</span>
+                          </span>
+                          <span className="where-track"><i className={over ? 'over' : w.limit > 0 && pct >= 80 ? 'warn' : ''} style={{ width: `${Math.max(pct, w.used > 0 ? 3 : 0)}%` }} /></span>
+                          {w.limit > 0 && (
+                            <small className={`where-note ${over ? 'tone-text-bad' : ''}`}>
+                              {over ? `passou ${brl(w.used - w.limit)}` : w.used === w.limit ? 'bateu o limite do mês' : `faltam ${brl(w.limit - w.used)}`}
+                            </small>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {hasDiag && <p className="field-hint where-foot">Os limites são o que você contou no diagnóstico.</p>}
             </section>
-          )}
 
-          <section className="painel-section stat-card">
-            <p className="diag-label">Últimos lançamentos</p>
-            {recent.length === 0 ? (
-              <p className="field-hint">Nada anotado neste mês ainda. Mande no WhatsApp, por exemplo: <i>mercado 80 no pix</i>.</p>
-            ) : (
-              <ul className="painel-list">
-                {recent.map((r, i) => (
-                  <li key={i}>
-                    <span className="when">{day(r.created_at)}</span>
-                    <span className="what">{r.description} <small>{r.what}{r.method ? ` · ${r.method}` : ''}</small></span>
-                    <b className={r.kind === 'in' ? 'tone-text-good' : ''}>{r.kind === 'in' ? '+' : '−'}{brl(r.amount)}</b>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <a className="btn-outline" href={waLink('menu')} style={{ marginTop: 14 }}><MessageCircle size={15} /> Anotar no WhatsApp</a>
-          </section>
+            <section className="painel-section stat-card painel-recent">
+              <p className="diag-label">Últimos lançamentos</p>
+              {recent.length === 0 ? (
+                <p className="field-hint">Nada anotado neste mês ainda. Mande no WhatsApp, por exemplo: <i>mercado 80 no pix</i>.</p>
+              ) : (
+                <ul className="painel-list">
+                  {recent.map((r, i) => (
+                    <li key={i}>
+                      <span className={`entry-icon ${r.kind}`} aria-hidden="true">{r.kind === 'in' ? '💰' : emoji(r.what)}</span>
+                      <span className="what">
+                        {r.description}
+                        <small>{r.what}{r.method ? ` · ${r.method}` : ''} · {day(r.created_at)}</small>
+                      </span>
+                      <b className={r.kind === 'in' ? 'tone-text-good' : ''}>{r.kind === 'in' ? '+' : '−'}{brl(r.amount)}</b>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
         </>
       )}
 
-      <section className="painel-section" style={{ marginTop: 28 }}>
+      <section className="painel-section painel-anchor" id="plano" style={{ marginTop: 28 }}>
         <p className="diag-label">Seu plano de ação</p>
         {plan ? (
           <>
@@ -184,8 +259,8 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         )}
       </section>
 
-      <section className="painel-section" style={{ marginTop: 28 }}>
-        <p className="diag-label">Ferramentas pra você</p>
+      <section className="painel-section painel-anchor" id="ferramentas" style={{ marginTop: 28 }}>
+        <p className="diag-label">O que você quer fazer agora?</p>
         <div className="goals-grid painel-goals">
           {SITE_GOALS.filter((g) => g.action.kind === 'tool').map((g) => {
             const Icon = g.icon;

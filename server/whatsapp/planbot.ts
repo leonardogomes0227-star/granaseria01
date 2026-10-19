@@ -6,6 +6,7 @@ import { trackingView, type Tracking } from '../../src/tracking.js';
 import { leaksMonthlyTotal, type LeakSelection } from '../../src/leaks.js';
 import { monthLong, monthShort } from '../../src/plan.js';
 import type { StateSnapshot } from '../account/db.js';
+import { siteLink } from './site.js';
 
 export type PlanCommand =
   | { kind: 'link'; code: string }
@@ -52,8 +53,7 @@ export function readPlanState(state: StateSnapshot) {
   return { tracking, extraMonthly: leaksMonthlyTotal(leaks) };
 }
 
-const NOT_STARTED =
-  'Você ainda não começou a seguir um plano. 📋\nMande *diagnóstico* aqui mesmo (uns 2 minutos) ou faça no site e toque em *Seguir meu plano mês a mês*. Depois é só mandar *plano*.';
+const NOT_STARTED = `Você ainda não começou a seguir um plano. 📋\nO plano de ação fica no site: faça o diagnóstico (uns 10 minutos) e ele aparece no seu painel.\n${siteLink('diag')}`;
 
 /** Texto curto do que pagar no mês em aberto — usado no lembrete (sem quebras de linha, regra do modelo da Meta). */
 export function tasksInline(tracking: Tracking, extraMonthly: number): string | null {

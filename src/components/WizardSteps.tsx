@@ -5,11 +5,11 @@ import { siteEvent } from '../painel';
 import { WizardData, DebtItem, DebtKind } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
-import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck } from 'lucide-react';
+import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck, ChevronDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { CountUp, AnimatedFill } from './motion';
 import { DecimalInput } from './DecimalInput';
-import { TOOLS, ToolId } from '../tools';
-import { ToolIcon } from './Layout';
+import type { ToolId } from '../tools';
 import { ArchetypeShare } from './ArchetypeShare';
 import { getArchetype } from '../archetypes';
 import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
@@ -514,89 +514,16 @@ export function DiagnosisStep({
   const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;
   const emergencyOk = diagnosis.emergencyProgress >= 100;
-  const suggested = TOOLS.filter((t) =>
-    diagnosis.totalDebt > 0 ? ['debts', 'loan', 'longterm'].includes(t.id) : ['longterm', 'goal', 'checkin'].includes(t.id)
-  );
 
   return (
-    <div className="wizard-card" style={{ maxWidth: 720 }}>
+    <div className="wizard-card result" style={{ maxWidth: 720 }}>
       <div className="wizard-kicker"><span className="wedge" />Seu diagnóstico</div>
-      <h2 className="wizard-h2">Aqui está o retrato da sua vida financeira</h2>
-      <p className="wizard-sub">Lido à luz das leis de <i>O Homem Mais Rico da Babilônia</i>.</p>
+      <h2 className="wizard-h2">Sua nota e o seu plano</h2>
+      <p className="wizard-sub">Primeiro a nota, depois o que fazer. Tudo fica salvo no seu painel.</p>
 
       <ScoreHero health={health} />
 
-      <ContinueOnWhatsApp />
-
-      <ArchetypeShare archetype={archetype} score={health.score} />
-
-      <div className="diag-grid stagger">
-        <div className="stat-card">
-          <p className="diag-label">Taxa de poupança · Selo I</p>
-          <span className={`status-pill ${savingsOk ? 'status-good' : 'status-warn'}`}>
-            {savingsOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
-            {savingsOk ? 'Na meta' : 'Abaixo da meta'}
-          </span>
-          <p className="diag-number">
-            <CountUp value={diagnosis.savingsRate} format={(n) => `${n.toFixed(0)}%`} />{' '}
-            <small>de {diagnosis.savingsGoalRate}% ideal</small>
-          </p>
-          <div className="progress-track">
-            <AnimatedFill className="progress-fill" pct={(diagnosis.savingsRate / diagnosis.savingsGoalRate) * 100} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <p className="diag-label">Reserva de emergência · Selo III</p>
-          <span className={`status-pill ${emergencyOk ? 'status-good' : 'status-warn'}`}>
-            {emergencyOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
-            {emergencyOk ? '6 meses garantidos' : `Meta: ${formatBRL(diagnosis.emergencyTarget)}`}
-          </span>
-          <p className="diag-number">
-            <CountUp value={diagnosis.emergencyProgress} format={(n) => `${n.toFixed(0)}%`} /> <small>da meta</small>
-          </p>
-          <div className="progress-track">
-            <AnimatedFill className="progress-fill" pct={diagnosis.emergencyProgress} delay={150} />
-          </div>
-        </div>
-
-        <div className="stat-card">
-          <p className="diag-label">Dívidas · Selo IV</p>
-          <span className={`status-pill ${diagnosis.totalDebt > 0 ? 'status-bad' : 'status-good'}`}>
-            {diagnosis.totalDebt > 0 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
-            {diagnosis.totalDebt > 0 ? `${data.debts.length} em aberto` : 'Sem dívidas'}
-          </span>
-          <p className="diag-number"><CountUp value={diagnosis.totalDebt} format={(n) => formatBRL(n)} /></p>
-        </div>
-
-        <div className="stat-card">
-          <p className="diag-label">Projeção em 10 anos</p>
-          <span className="status-pill status-good">guardando 10% da renda</span>
-          <p className="diag-number"><CountUp value={diagnosis.projection10y} duration={1600} format={(n) => formatBRL(n)} /></p>
-        </div>
-      </div>
-
-      <div className="diag-section stat-card">
-        <p className="diag-label">Gastos por categoria vs. teto ideal · Selo II</p>
-        {categories.map((c, i) => {
-          const over = data.expenses[c.key] > diagnosis.idealExpenses[c.key];
-          return (
-            <div className="bar-row" key={c.key} title={`${c.label}: ${formatBRL(data.expenses[c.key])} (teto ${formatBRL(diagnosis.idealExpenses[c.key])})`}>
-              <span className="bar-label">{c.label}</span>
-              <div className="bar-track">
-                <AnimatedFill className={`bar-fill ${over ? 'over' : ''}`} pct={(data.expenses[c.key] / maxBar) * 100} delay={i * 90} />
-                <div className="bar-ideal-mark" style={{ left: `${(diagnosis.idealExpenses[c.key] / maxBar) * 100}%` }} />
-              </div>
-            </div>
-          );
-        })}
-        <p className="field-hint" style={{ marginTop: 4 }}>
-          Barra dourada: seu gasto real (terracota quando passa do teto). Linha azul: teto ideal recomendado.
-        </p>
-      </div>
-
-
-      <div className="diag-section" style={{ marginTop: 28, marginBottom: 8 }}>
+      <div className="diag-section" id="plano" style={{ marginTop: 28, marginBottom: 8 }}>
         <p className="diag-label">Seu plano de ação</p>
         <h3 className="plan-heading">O que fazer, quanto e até quando</h3>
         <ActionPlanView
@@ -616,32 +543,90 @@ export function DiagnosisStep({
         />
       </div>
 
-      <div className="diag-section" style={{ marginTop: 28 }}>
-        <p className="diag-label">Próximo passo: ferramentas pra você</p>
-        <div className="stagger" style={{ display: 'grid', gap: 4 }}>
-          {suggested.map((t) => (
-            <button type="button" className="mega-item" key={t.id} onClick={() => onOpenTool(t.id)} style={{ border: '1px solid var(--hairline-soft)' }}>
-              <ToolIcon tool={t} size="sm" />
-              <span>
-                <b>{t.title}</b>
-                <span className="desc">{t.description}</span>
-              </span>
-            </button>
-          ))}
+      <p className="diag-label result-next">Agora, o dia a dia</p>
+      <ContinueOnWhatsApp />
+
+      <Fold title="Entender minha nota" hint="Poupança, reserva, dívidas e gastos por categoria">
+        <div className="diag-grid">
+          <div className="stat-card">
+            <p className="diag-label">Taxa de poupança · Selo I</p>
+            <span className={`status-pill ${savingsOk ? 'status-good' : 'status-warn'}`}>
+              {savingsOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+              {savingsOk ? 'Na meta' : 'Abaixo da meta'}
+            </span>
+            <p className="diag-number">
+              <CountUp value={diagnosis.savingsRate} format={(n) => `${n.toFixed(0)}%`} />{' '}
+              <small>de {diagnosis.savingsGoalRate}% ideal</small>
+            </p>
+            <div className="progress-track">
+              <AnimatedFill className="progress-fill" pct={(diagnosis.savingsRate / diagnosis.savingsGoalRate) * 100} />
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <p className="diag-label">Reserva de emergência · Selo III</p>
+            <span className={`status-pill ${emergencyOk ? 'status-good' : 'status-warn'}`}>
+              {emergencyOk ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+              {emergencyOk ? '6 meses garantidos' : `Meta: ${formatBRL(diagnosis.emergencyTarget)}`}
+            </span>
+            <p className="diag-number">
+              <CountUp value={diagnosis.emergencyProgress} format={(n) => `${n.toFixed(0)}%`} /> <small>da meta</small>
+            </p>
+            <div className="progress-track">
+              <AnimatedFill className="progress-fill" pct={diagnosis.emergencyProgress} delay={150} />
+            </div>
+          </div>
+
+          <div className="stat-card">
+            <p className="diag-label">Dívidas · Selo IV</p>
+            <span className={`status-pill ${diagnosis.totalDebt > 0 ? 'status-bad' : 'status-good'}`}>
+              {diagnosis.totalDebt > 0 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+              {diagnosis.totalDebt > 0 ? `${data.debts.length} em aberto` : 'Sem dívidas'}
+            </span>
+            <p className="diag-number"><CountUp value={diagnosis.totalDebt} format={(n) => formatBRL(n)} /></p>
+          </div>
+
+          <div className="stat-card">
+            <p className="diag-label">Projeção em 10 anos</p>
+            <span className="status-pill status-good">guardando 10% da renda</span>
+            <p className="diag-number"><CountUp value={diagnosis.projection10y} duration={1600} format={(n) => formatBRL(n)} /></p>
+          </div>
         </div>
-      </div>
+
+        <div className="diag-section stat-card">
+          <p className="diag-label">Gastos por categoria vs. teto ideal · Selo II</p>
+          {categories.map((c, i) => {
+            const over = data.expenses[c.key] > diagnosis.idealExpenses[c.key];
+            return (
+              <div className="bar-row" key={c.key} title={`${c.label}: ${formatBRL(data.expenses[c.key])} (teto ${formatBRL(diagnosis.idealExpenses[c.key])})`}>
+                <span className="bar-label">{c.label}</span>
+                <div className="bar-track">
+                  <AnimatedFill className={`bar-fill ${over ? 'over' : ''}`} pct={(data.expenses[c.key] / maxBar) * 100} delay={i * 90} />
+                  <div className="bar-ideal-mark" style={{ left: `${(diagnosis.idealExpenses[c.key] / maxBar) * 100}%` }} />
+                </div>
+              </div>
+            );
+          })}
+          <p className="field-hint" style={{ marginTop: 4 }}>
+            Barra dourada: seu gasto real (terracota quando passa do teto). Linha azul: teto ideal recomendado.
+          </p>
+        </div>
+      </Fold>
+
+      <Fold title={`Seu perfil: ${archetype.name}`} hint="E um cartão bonito pra postar nos stories">
+        <ArchetypeShare archetype={archetype} score={health.score} />
+      </Fold>
 
       <div style={{ marginTop: 28 }}>
         <SiteFeedback tool="diagnostico" question="Esse diagnóstico te ajudou?" />
-        <ContinueOnWhatsApp compact />
       </div>
 
-      <div className="wizard-nav">
-        <button className="btn-outline" type="button" onClick={onRestart}>
+      <div className="wizard-nav result-nav">
+        <button className="btn-ghost" type="button" onClick={onRestart}>
           <RotateCcw size={15} /> Refazer
         </button>
         <button
-          className="btn-primary"
+          className="btn-outline"
           type="button"
           onClick={() => {
             if (!getTracking()) {
@@ -651,9 +636,29 @@ export function DiagnosisStep({
             onOpenTool('tracker');
           }}
         >
-          <CalendarCheck size={16} /> Seguir meu plano mês a mês
+          <CalendarCheck size={16} /> Seguir mês a mês
         </button>
+        <Link className="btn-primary" to="/painel">
+          Ir pro meu painel <ArrowRight size={16} />
+        </Link>
       </div>
+    </div>
+  );
+}
+
+/** Uma parte que fica fechada até a pessoa querer ver: deixa o resultado curto e direto. */
+function Fold({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`fold ${open ? 'open' : ''}`}>
+      <button type="button" className="fold-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span>
+          <b>{title}</b>
+          <small>{hint}</small>
+        </span>
+        <ChevronDown size={18} />
+      </button>
+      {open && <div className="fold-body">{children}</div>}
     </div>
   );
 }

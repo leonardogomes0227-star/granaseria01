@@ -46,7 +46,7 @@ export interface Summary {
 /** Uma dica só, a mais útil pro que aconteceu na semana. Sem nada especial, a frase do dia. */
 function weeklyTip(week: Expense[], top: { name: string; total: number } | null, left: number | null, now: Date): string {
   const total = sum(week);
-  if (left !== null && left < 0) return 'Neste mês saiu mais do que entrou. Mande *posso comprar* antes da próxima compra grande e eu faço a conta com você.';
+  if (left !== null && left < 0) return 'Neste mês saiu mais do que entrou. Antes da próxima compra grande, mande *quanto ainda posso gastar* e veja o que cabe.';
   if (top && total > 0 && top.total / total >= 0.4 && top.name !== 'Moradia') {
     return `${top.name} levou ${Math.round((top.total / total) * 100)}% da semana. Mande *quanto ainda posso gastar* pra ver o limite de cada coisa.`;
   }
