@@ -42,7 +42,7 @@ export function snapshot(): Snapshot {
   return s;
 }
 
-function applySnapshot(s: Snapshot) {
+export function applySnapshot(s: Snapshot) {
   for (const k of SYNC_KEYS) write(k, s[k] ?? null);
 }
 

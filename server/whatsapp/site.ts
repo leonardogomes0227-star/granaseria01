@@ -90,7 +90,7 @@ export function welcomeOut(name: string | null, hasDiagnosis: boolean): Outgoing
     : `\n\n📊 Quer um plano completo? Faça o diagnóstico grátis no site (uns 5 minutos) e toque em *Continuar no WhatsApp* no fim:\n${siteLink('diag')}`;
   return [
     buttons(
-      `${hi} Eu sou o assistente da *Grana Séria*. 🪙 Você me conta o dinheiro que entra e o que sai, e eu mostro quanto sobra.\n\n✍️ É só escrever:\n• *gastei 35 no mercado no pix*\n• *recebi 200 de freela*\n• ou mande a foto do cupom\n\nEu somo tudo e digo o saldo do mês e quanto dá pra gastar por dia.${diagLine}`,
+      `${hi} Eu sou o assistente da *Grana Séria*. 🪙 Você me conta o dinheiro que entra e o que sai, e eu mostro quanto sobra.\n\n✍️ É só escrever:\n• *gastei 35 no mercado no pix*\n• *recebi 200 de freela*\n• ou mande a foto do cupom\n\nEu somo tudo e digo o saldo do mês e quanto dá pra gastar por dia. Pra ver tudo no site, mande *painel*.${diagLine}`,
       [
         ['gastos:saldo', '⚖️ Ver meu mês'],
         ['menu:menu', '📋 Mais opções'],

@@ -16,7 +16,7 @@ import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, getFlag, setFlag, takeHandoff, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, takeHandoff, createWebLink, deleteWebLinks, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { siteLink, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -69,6 +69,18 @@ async function loadHistory(phone: string, now: Date): Promise<History | undefine
 
 const SUMMARY_FLAG = 'resumo'; // wa_usage: quem pediu o resumo semanal
 
+/** O link pessoal do painel, com o aviso de que é só da pessoa. */
+function painelText(token: string): string {
+  return [
+    '📲 *Seu painel no site:*',
+    `${SITE_URL}/painel?t=${token}`,
+    '',
+    'Lá ficam salvos seu plano de ação, seus gastos e entradas do mês e as ferramentas, tudo junto com o que você anota aqui.',
+    '',
+    '🔒 O link é só seu, não compartilhe. Pra desconectar, mande *sair do painel*.',
+  ].join('\n');
+}
+
 /** Cada tipo de oferta só uma vez por mês por pessoa (usa o mesmo contador dos limites de uso). */
 const offerOnce = (phone: string, key: string) => bumpUsage(phone, `offer:${key}:${new Date().toISOString().slice(0, 7)}`, 1);
 
@@ -115,6 +127,19 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
 
   await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio
 
+  // painel no site: o WhatsApp é o login. O link é pessoal e liga o navegador a este número.
+  const t = parseMessage(incoming).kind === 'unknown' ? incoming.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[!?.]+$/, '') : '';
+  if (/^(painel|meu painel|site:painel|meu site|abrir painel|abrir o painel|link do painel|meu link|acessar o site|entrar no site)$/.test(t)) {
+    if (!(await markProcessed(msg.id))) return null;
+    await trackEvent(phone, 'painel_link');
+    return text(painelText(await createWebLink(phone)));
+  }
+  if (/^(sair do painel|desconectar painel|desconectar o painel|desconectar site)$/.test(t)) {
+    if (!(await markProcessed(msg.id))) return null;
+    await deleteWebLinks(phone);
+    return text('Pronto, desconectei o painel de todos os navegadores. 🔒 Pra conectar de novo, mande *painel*.');
+  }
+
   // veio do site com "Código: GS-XXXXXX": importa o diagnóstico pro número, sem cadastro
   const siteCode = incoming.match(SITE_CODE)?.[1]?.toUpperCase();
   if (siteCode) {
@@ -126,7 +151,9 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     await (user ? saveState(user.user_id, merged) : saveProfile(phone, merged));
     if (hub?.session) await clearSession(phone);
     await trackEvent(phone, 'site_handoff');
-    return welcomeFromSite(merged, new Date(), msg.profileName);
+    // já manda o link do painel: o site fica ligado a este número e tudo passa a ser salvo nos dois lados
+    const link = await createWebLink(phone).catch(() => null);
+    return [...welcomeFromSite(merged, new Date(), msg.profileName), ...(link ? text(painelText(link)) : [])];
   }
 
   // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:

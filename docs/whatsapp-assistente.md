@@ -116,6 +116,17 @@ No resultado do diagnóstico do site há o botão **Continuar no WhatsApp** (log
 
 O número do link é `VITE_WHATSAPP_NUMBER` na Vercel; sem ela, vale o oficial (5567996085267).
 
+## Meu painel no site (o WhatsApp é o login)
+
+Mandar `painel` no WhatsApp (ou tocar em *Meu painel no site* no menu) gera um **link pessoal**: `granaseria.com.br/painel?t=…`. Ao abrir, o navegador fica ligado ao número, sem e-mail e sem senha, e a página **Meu painel** mostra:
+- o mês: entrou, saiu, saldo e quanto dá por dia (o que a pessoa anotou no WhatsApp);
+- quanto ainda dá pra gastar em cada coisa (limites do diagnóstico);
+- os últimos lançamentos;
+- o plano de ação do diagnóstico;
+- as ferramentas.
+
+Tudo fica salvo pelo número: o que muda no site (diagnóstico, plano, vazamentos, check-ins) vai pro WhatsApp (`/api/painel`, a cada 4s), e o que muda no WhatsApp aparece no site. Quem vem do site pelo *Continuar no WhatsApp* já recebe o link junto. `sair do painel` desconecta todos os navegadores; `apagar meus dados` apaga os links também. O token fica só no navegador; o servidor guarda o hash dele na `wa_sessions` (chave `weblink:<hash>`), válido por 180 dias desde o último uso.
+
 ## WhatsApp = dia a dia; ferramentas = site
 
 O WhatsApp cuida só do dinheiro que entra e sai: anotar gastos e entradas (texto ou foto do cupom), saldo, quanto ainda dá pra gastar, posso comprar, resumo da semana. As ferramentas maiores ficam no site, sem cadastro: qualquer palavra ou botão que antes abria uma delas aqui (*diagnóstico*, *dívidas*, *13º*, *vazamentos*, *direitos*, *renegociar*, *meta*, *empréstimo*, *fatura*, *check-in*…) agora responde com o link certo (`server/whatsapp/site.ts`). *ferramentas* manda todos os links.

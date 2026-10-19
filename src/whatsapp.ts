@@ -1,5 +1,6 @@
 import { WHATSAPP_NUMBER } from './supabase';
 import { snapshot } from './sync';
+import { painelToken } from './painel';
 import { track } from './analytics';
 
 // Ponte site → WhatsApp, sem cadastro. Com diagnóstico no navegador, o site guarda tudo por 24h com um código curto
@@ -10,6 +11,11 @@ export const waLink = (text: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=$
 export async function openWhatsApp(origin: string): Promise<void> {
   track('whatsapp_continuar', { origem: origin });
   const state = snapshot();
+  // navegador já ligado ao WhatsApp pelo painel: os dados já estão lá, é só abrir a conversa
+  if (painelToken()) {
+    window.location.href = waLink('menu');
+    return;
+  }
   if (!state['selos-wizard-progress']) {
     window.location.href = waLink('Oi! Quero anotar meus gastos por aqui.');
     return;

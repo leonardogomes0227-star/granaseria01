@@ -1141,3 +1141,28 @@ html { overflow-x: hidden; }
 .wa-strip p { margin: 0; flex: 1; font-size: 14.5px; color: var(--ink-soft); line-height: 1.5; }
 .wa-strip .btn-outline { white-space: nowrap; }
 @media (max-width: 620px) { .wa-strip { flex-direction: column; align-items: stretch; margin: 8px 16px 40px; } }
+
+/* Meu painel */
+.painel h1 { margin-bottom: 12px; }
+.painel-who { margin-bottom: 22px; }
+.painel-who .plan-more, .painel .field-error .plan-more { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; }
+.painel-section { margin-top: 22px; }
+.painel-section > .diag-label { margin-bottom: 10px; }
+.painel-connect { margin: 6px 0 10px; }
+.painel-connect .account-line { margin: 6px 0 14px; }
+.painel-connect .btn-primary { width: 100%; justify-content: center; }
+.painel-bar-val { flex-shrink: 0; width: 118px; text-align: right; font-family: var(--sans); font-size: 12.5px; color: var(--ink-soft); }
+@media (max-width: 560px) { .painel .bar-row .bar-label { width: 72px; } .painel-bar-val { width: 96px; } }
+.painel-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.painel-list li { display: flex; align-items: baseline; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--hairline-soft); font-family: var(--sans); font-size: 14px; }
+.painel-list li:last-child { border-bottom: 0; }
+.painel-list .when { width: 44px; flex-shrink: 0; color: var(--ink-soft); font-size: 12.5px; }
+.painel-list .what { flex: 1; min-width: 0; color: var(--ink); }
+.painel-list .what small { display: block; color: var(--ink-soft); font-size: 12px; }
+.painel-list b { flex-shrink: 0; font-weight: 600; }
+.painel-goals { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 560px) { .painel-goals { grid-template-columns: 1fr; } }
+.app-bar .logo, .app-bar .btn-ghost { white-space: nowrap; }
+@media (max-width: 420px) { .app-bar .nav-right { gap: 2px; } .app-bar .btn-ghost { padding-left: 8px; padding-right: 8px; } }
+.painel .diag-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 560px) { .painel .diag-grid .stat-card { padding: 14px; } .painel .diag-grid .diag-number { font-size: 22px; } }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, Menu, UserRound, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LayoutGrid, Menu, UserRound, X } from 'lucide-react';
 import { TOOLS, ToolId, ToolInfo } from '../tools';
 import { accountsEnabled } from '../supabase';
 
@@ -137,7 +137,7 @@ export function SiteHeader({
             <a className="navlink" href="#duvidas">Dúvidas</a>
             <Link className="navlink" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="navlink" to="/conta">Entrar</Link>}
-            <a className="navlink" href="#whatsapp">WhatsApp</a>
+            <Link className="navlink" to="/painel">Meu painel</Link>
           </div>
 
           <div className="nav-right">
@@ -179,6 +179,7 @@ export function SiteHeader({
             <a className="drawer-link" href="#duvidas" onClick={() => setDrawerOpen(false)}>Dúvidas frequentes</a>
             <Link className="drawer-link" to="/guias">Guias</Link>
             {accountsEnabled && <Link className="drawer-link" to="/conta">Minha conta</Link>}
+            <Link className="drawer-link" to="/painel" onClick={() => setDrawerOpen(false)}>Meu painel</Link>
             <a className="drawer-link" href="#whatsapp" onClick={() => setDrawerOpen(false)}>No WhatsApp</a>
           </aside>
         </>
@@ -197,6 +198,9 @@ export function AppBar({ onHome }: { onHome: () => void }) {
           <span className="logo">Grana Séria</span>
         </button>
         <div className="nav-right">
+          <Link className="btn-ghost" to="/painel">
+            <LayoutGrid size={16} /> Painel
+          </Link>
           {accountsEnabled && (
             <Link className="btn-ghost" to="/conta">
               <UserRound size={16} /> Conta

@@ -28,6 +28,8 @@ import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
 import { WhatsAppStrip } from './components/ContinueWhatsApp';
+import { PainelPage } from './components/PainelPage';
+import { startPainelSync } from './painel';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 
@@ -150,6 +152,12 @@ function App() {
     void startSync(session);
   }, [session]);
 
+  // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
+  useEffect(() => {
+    if (location.pathname !== '/painel') void startPainelSync().catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez ao abrir o site (o /painel liga sozinho)
+  }, []);
+
   const footer = <SiteFooter onStart={startWizard} onOpenTool={openTool} />;
 
   return (
@@ -205,6 +213,16 @@ function App() {
           }
         />
         <Route path="/guias/:slug" element={<GuideRoute onHome={goHome} onStart={startWizard} footer={footer} />} />
+        <Route
+          path="/painel"
+          element={
+            <Titled title="Meu painel">
+              <AppBar onHome={goHome} />
+              <PainelPage data={data} onStart={startWizard} onOpenTool={openTool} />
+              {footer}
+            </Titled>
+          }
+        />
         <Route
           path="/conta"
           element={
