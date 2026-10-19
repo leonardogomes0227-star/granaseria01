@@ -65,6 +65,37 @@ export async function refundUsage(phone: string, period: string): Promise<void> 
   if (row && row.count > 0) await check(await upsert('wa_usage', 'phone,period', { phone, period, count: row.count - 1 }), 'upsert');
 }
 
+/* ---------- Site → WhatsApp sem cadastro ---------- */
+// O site guarda o diagnóstico por 24h com um código curto; a pessoa manda o código no WhatsApp e o bot importa.
+// Fica na wa_sessions (chave "handoff:<código>") pra não precisar de tabela nova.
+
+const HANDOFF_TTL_MS = 24 * 60 * 60 * 1000;
+export const HANDOFF_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-leaks', 'selos-checkins', 'selos-diagnosis-completed'];
+
+export async function saveHandoff(code: string, state: StateSnapshot): Promise<void> {
+  await check(
+    await upsert('wa_sessions', 'phone', { phone: `handoff:${code}`, flow: 'handoff', step: 'pending', data: { state }, updated_at: new Date().toISOString() }),
+    'upsert'
+  );
+}
+
+/** Lê e apaga (o código vale uma vez só). null se não existe ou passou de 24h. */
+export async function takeHandoff(code: string): Promise<StateSnapshot | null> {
+  const key = `handoff:${code}`;
+  const res = await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}`, select: 'data,updated_at', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { data: { state?: StateSnapshot }; updated_at: string }[];
+  if (!row) return null;
+  await check(await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}` })}`, { method: 'DELETE' }), 'delete');
+  if (Date.now() - new Date(row.updated_at).getTime() > HANDOFF_TTL_MS) return null;
+  const state: StateSnapshot = {};
+  for (const k of HANDOFF_KEYS) {
+    const v = row.data?.state?.[k];
+    if (typeof v === 'string') state[k] = v;
+  }
+  return state;
+}
+
 /** Liga/desliga uma preferência da pessoa (ex.: receber o resumo semanal). Fica na wa_usage: count 1 = ligado. */
 export async function setFlag(phone: string, key: string, on: boolean): Promise<void> {
   await check(await upsert('wa_usage', 'phone,period', { phone, period: key, count: on ? 1 : 0 }), 'upsert');

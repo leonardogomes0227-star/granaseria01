@@ -1,4 +1,5 @@
 import { useState, useEffect, useId, useMemo } from 'react';
+import { ContinueOnWhatsApp } from './ContinueWhatsApp';
 import { WizardData, DebtItem, DebtKind } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
@@ -522,6 +523,8 @@ export function DiagnosisStep({
 
       <ScoreHero health={health} />
 
+      <ContinueOnWhatsApp />
+
       <ArchetypeShare archetype={archetype} score={health.score} />
 
       <div className="diag-grid stagger">
@@ -623,6 +626,10 @@ export function DiagnosisStep({
             </button>
           ))}
         </div>
+      </div>
+
+      <div style={{ marginTop: 28 }}>
+        <ContinueOnWhatsApp compact />
       </div>
 
       <div className="wizard-nav">

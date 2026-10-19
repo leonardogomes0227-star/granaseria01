@@ -455,6 +455,18 @@ function firstStepOut(data: WizardData, now: Date): Outgoing {
   ]);
 }
 
+/** Quem veio do site com o código: boas-vindas, o resumo do diagnóstico e o próximo passo, como se tivesse feito aqui. */
+export function welcomeFromSite(profile: StateSnapshot, now: Date, rawName?: string | null): Outgoing[] {
+  const name = firstName(rawName ?? null);
+  const data = diagnosisFrom(profile);
+  const hello = `${name ? `Oi, ${name}! 👋` : 'Oi! 👋'} Recebi seu diagnóstico do site. Daqui pra frente a gente segue por aqui, e você pode anotar gastos e entradas só mandando mensagem (ex.: *mercado 80 no pix*).`;
+  if (!data) return [txt(hello), ...nextStep({ profile, now, name })];
+  if (profile['selos-tracking']) return [txt(hello), txt(diagShort(data, now, null)), ...nextStep({ profile, now, name })];
+  return [txt(hello), txt(diagShort(data, now, null)), firstStepOut(data, now)];
+}
+
+export const SITE_CODE = /\bGS[-\s]?([A-HJ-NP-Z2-9]{6})\b/i;
+
 /** Renegociar pelo WhatsApp: a mensagem pronta pro banco e o que fazer se não der. */
 export function renegotiateOut(profile: StateSnapshot, now: Date): Outgoing[] {
   const data = diagnosisFrom(profile);

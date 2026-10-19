@@ -11,12 +11,12 @@ import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense,
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep, wantsNextStep, wantsBalance, wantsHistory, type History } from '../server/whatsapp/hub.js';
+import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, SITE_CODE, type History } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, getFlag, setFlag, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, takeHandoff, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { faturaOut } from '../server/whatsapp/tools.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -115,6 +115,20 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   }
 
   await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio
+
+  // veio do site com "Código: GS-XXXXXX": importa o diagnóstico pro número, sem cadastro
+  const siteCode = incoming.match(SITE_CODE)?.[1]?.toUpperCase();
+  if (siteCode) {
+    if (!(await markProcessed(msg.id))) return null;
+    const state = await takeHandoff(siteCode);
+    if (!state) return text('Esse código não vale mais (ele dura 24 horas e só funciona uma vez). 🙏 Volte no site e toque de novo em *Continuar no WhatsApp*, ou mande *diagnóstico* que a gente faz por aqui.');
+    const hub = await loadHub(user, phone);
+    const merged = { ...(hub?.profile ?? user?.state ?? {}), ...state };
+    await (user ? saveState(user.user_id, merged) : saveProfile(phone, merged));
+    if (hub?.session) await clearSession(phone);
+    await trackEvent(phone, 'site_handoff');
+    return welcomeFromSite(merged, new Date(), msg.profileName);
+  }
 
   // Ferramentas do site em conversa (menu, diagnóstico, 13º, vazamentos, direitos). Tem prioridade:
   // no meio de um diagnóstico, "3000" é resposta, não gasto.

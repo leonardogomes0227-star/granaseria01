@@ -110,6 +110,12 @@ Os gastos aparecem no Supabase em **Table Editor → expenses**.
   - chamada 200 mas sem resposta → seu número não está em `ALLOWED_NUMBERS` (confira o formato `55DDD9XXXXXXXX`)
   - `WhatsApp send 401` → token expirado/errado; `Supabase ... 401` → chave do Supabase errada
 
+## Do site pro WhatsApp, sem cadastro
+
+No resultado do diagnóstico do site há o botão **Continuar no WhatsApp** (logo abaixo da nota e no fim da página). Ele manda o que está no navegador (diagnóstico, plano, vazamentos) pra `/api/continuar`, que guarda por **24 horas** com um código curto e abre o WhatsApp com a mensagem pronta: *"Oi! Fiz meu diagnóstico no site e quero continuar por aqui. Código: GS-K7P2Q9"*. O bot importa tudo pro número e já responde com o resumo e o próximo passo. O código vale uma vez só. Não precisa de e-mail nem de SQL novo (fica na `wa_sessions`). O login por e-mail continua existindo pra quem quer o plano salvo em vários aparelhos e o lembrete mensal.
+
+O número do link é `VITE_WHATSAPP_NUMBER` na Vercel; sem ela, vale o oficial (5567996085267).
+
 ## Menu em 5 trabalhos
 
 `menu` mostra só: ✍️ Anotar · ⚖️ Meu mês · 📋 Meu plano · 💳 Sair das dívidas · 🛟 Guardar e proteger. Cada um abre só as ferramentas dele. A lista antiga, com tudo, continua em `ferramentas`.
