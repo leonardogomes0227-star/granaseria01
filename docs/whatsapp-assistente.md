@@ -124,6 +124,37 @@ No resultado do diagnóstico do site há o botão **Continuar no WhatsApp** (log
 
 O número do link é `VITE_WHATSAPP_NUMBER` na Vercel; sem ela, vale o oficial (5567996085267).
 
+## Login obrigatório no site (pelo WhatsApp) e feedback
+
+**Pra abrir qualquer ferramenta ou o diagnóstico, a pessoa precisa entrar.** O login é o WhatsApp:
+1. *Entrar com WhatsApp* abre a conversa com "Quero entrar no site".
+2. O bot responde com o link pessoal.
+3. O link leva de volta direto pra ferramenta que ela queria.
+
+Depois de entrar, o **nome é obrigatório** ("Como você quer ser chamado?"). Ele fica salvo junto com o resto (`gs-nome`), e o bot já sugere o nome do WhatsApp. Quem tem conta por e-mail também passa.
+
+**Todo link do site que o bot manda já vai com o login** (`?t=…`), então quem vem do WhatsApp nem vê a tela de entrar.
+
+**Feedback sem escrever:** no fim de cada ferramenta e do diagnóstico aparece "Isso te ajudou? 👍 Ajudou / 👎 Faltou algo". Só no 👎 abre um campo opcional. Vai pro `/admin` como `site-<ferramenta>`, junto com o feedback do WhatsApp.
+
+**No `/admin`:**
+- a lista **Pessoas**: nome, final do número, último uso, se já entrou no site e o que usou;
+- as ferramentas abertas no site aparecem com 🌐.
+
+**Aviso pra quem já usa o bot:**
+- Na próxima mensagem que a pessoa mandar, o bot avisa uma vez que as ferramentas agora ficam no site, com o passo a passo (*entrar* → link → pronto).
+- Pra avisar todo mundo de uma vez, há o botão **Avisar todo mundo** no `/admin`. Ele precisa de um modelo aprovado na Meta (categoria **Utilidade** ou **Marketing**, pt_BR) chamado `novidade_site` (ou o nome em `WHATSAPP_NEWS_TEMPLATE`), sem variáveis:
+
+```
+📣 Novidade na Grana Séria! Pra ficar mais prático, as ferramentas (diagnóstico, plano de ação, dívidas, 13º, metas) agora ficam no site, com tudo explicado e salvo na sua conta.
+
+Aqui no WhatsApp você continua anotando o dia a dia, tipo "mercado 80 no pix".
+
+Pra entrar no site, responda: entrar
+```
+
+Cada pessoa recebe uma vez só, e quem recebe pelo modelo não vê o aviso de novo no chat.
+
 ## Meu painel no site (o WhatsApp é o login)
 
 Mandar `painel` no WhatsApp (ou tocar em *Meu painel no site* no menu) gera um **link pessoal**: `granaseria.com.br/painel?t=…`. Ao abrir, o navegador fica ligado ao número, sem e-mail e sem senha, e a página **Meu painel** mostra:

@@ -1,5 +1,7 @@
 import { useState, useEffect, useId, useMemo } from 'react';
 import { ContinueOnWhatsApp } from './ContinueWhatsApp';
+import { SiteFeedback } from './SiteFeedback';
+import { siteEvent } from '../painel';
 import { WizardData, DebtItem, DebtKind } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
@@ -502,6 +504,7 @@ export function DiagnosisStep({
   useEffect(() => {
     setUnlocked(isUnlocked() || !CHECKOUT_READY);
     markDiagnosisCompleted();
+    void siteEvent('tool:site-diagnostico');
     track('diagnostico_concluido', { tem_dividas: data.debts.some((d) => d.value > 0) });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez por resultado
   }, []);
@@ -629,6 +632,7 @@ export function DiagnosisStep({
       </div>
 
       <div style={{ marginTop: 28 }}>
+        <SiteFeedback tool="diagnostico" question="Esse diagnóstico te ajudou?" />
         <ContinueOnWhatsApp compact />
       </div>
 

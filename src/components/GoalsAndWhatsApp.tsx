@@ -20,7 +20,7 @@ export function GoalsSection({ onStart, onOpenTool }: { onStart: () => void; onO
       <Reveal className="section-head">
         <div className="kicker"><span className="wedge" />Comece pelo seu objetivo</div>
         <h2>O que você quer resolver agora?</h2>
-        <p>Escolha e a gente te leva direto pra ferramenta certa. Tudo grátis e sem cadastro.</p>
+        <p>Escolha e a gente te leva direto pra ferramenta certa. Tudo grátis: você entra com seu WhatsApp, sem senha.</p>
       </Reveal>
       <div className="goals-grid">
         {SITE_GOALS.map((g, i) => {

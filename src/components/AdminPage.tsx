@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, LogOut } from 'lucide-react';
+import { RefreshCw, LogOut, Megaphone } from 'lucide-react';
+import { TOOLS } from '../tools';
 
 /* ---------- Painel do dono: uso do assistente do WhatsApp (só com a senha ADMIN_SECRET) ---------- */
 
@@ -12,7 +13,16 @@ interface Stats {
   tools: { tool: string; people: number; times: number }[];
   goals: { goal: string; people: number; times: number }[];
   feedback: { up: number; down: number; asked: number; answeredAsk: number; recent: { at: string; kind: 'up' | 'down' | 'note'; tool: string; note: string | null }[] };
+  people?: { name: string | null; phone: string; lastSeen: string | null; site: boolean; tools: string[] }[];
 }
+
+/** "site-debts" → "🌐 Avalanche vs. bola de neve"; o resto fica como veio do bot. */
+const toolLabel = (t: string) => {
+  const site = /^site-(.+)$/.exec(t);
+  if (!site) return t;
+  if (site[1] === 'diagnostico') return '🌐 Diagnóstico';
+  return `🌐 ${TOOLS.find((x) => x.id === site[1])?.title ?? site[1]}`;
+};
 
 const KEY = 'gs_admin';
 const readKey = () => {
@@ -127,6 +137,7 @@ export function AdminPage() {
   const maxFunnel = Math.max(1, ...stats.funnel.map((f) => f.people));
   const maxBucket = Math.max(1, ...stats.usage.buckets.map((b) => b.people));
   const asked = stats.feedback.up + stats.feedback.down;
+  const people = stats.people ?? [];
   const written = stats.feedback.recent.filter((f) => f.note);
 
   return (
@@ -203,6 +214,30 @@ export function AdminPage() {
         </table>
       )}
 
+      <h2 className="admin-h2">Pessoas</h2>
+      {people.length === 0 ? (
+        <p className="admin-note">Ainda ninguém. Aparece aqui quem já usou o bot; o nome vem do login no site.</p>
+      ) : (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead><tr><th>Nome</th><th>WhatsApp</th><th>Último uso</th><th>Site</th><th>Usou</th></tr></thead>
+            <tbody>
+              {people.slice(0, 200).map((p) => (
+                <tr key={p.phone + (p.lastSeen ?? '')}>
+                  <td>{p.name ?? '—'}</td>
+                  <td>{p.phone}</td>
+                  <td>{p.lastSeen ? when(p.lastSeen) : '—'}</td>
+                  <td>{p.site ? '✅' : '—'}</td>
+                  <td className="admin-tools">{p.tools.map(toolLabel).join(', ') || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Broadcast secret={secret} />
+
       <h2 className="admin-h2">Ferramentas mais abertas</h2>
       {stats.tools.length === 0 ? (
         <p className="admin-note">Ainda sem registros.</p>
@@ -211,7 +246,7 @@ export function AdminPage() {
           <thead><tr><th>Ferramenta</th><th>Pessoas</th><th>Vezes</th></tr></thead>
           <tbody>
             {stats.tools.map((t) => (
-              <tr key={t.tool}><td>{t.tool}</td><td>{t.people}</td><td>{t.times}</td></tr>
+              <tr key={t.tool}><td>{toolLabel(t.tool)}</td><td>{t.people}</td><td>{t.times}</td></tr>
             ))}
           </tbody>
         </table>
@@ -231,12 +266,44 @@ export function AdminPage() {
         <ul className="admin-feed">
           {written.map((f, i) => (
             <li key={`${f.at}-${i}`}>
-              <b>{ICON[f.kind]}</b> <span className="admin-tool">{SOURCE[f.tool] ?? f.tool}</span> · {when(f.at)}
+              <b>{ICON[f.kind]}</b> <span className="admin-tool">{SOURCE[f.tool] ?? toolLabel(f.tool)}</span> · {when(f.at)}
               <div className="admin-quote">“{f.note}”</div>
             </li>
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Avisar todo mundo que já usou o bot de que as ferramentas foram pro site (modelo da Meta, uma vez por pessoa). */
+function Broadcast({ secret }: { secret: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle');
+  const [result, setResult] = useState('');
+  const send = async () => {
+    if (!window.confirm('Mandar o aviso "as ferramentas agora estão no site" pra todo mundo que já usou o bot? Cada pessoa recebe uma vez só.')) return;
+    setState('sending');
+    try {
+      const res = await fetch('/api/admin?acao=avisar', { method: 'POST', headers: { Authorization: `Bearer ${secret}` } });
+      const r = (await res.json()) as { sent: number; skipped: number; errors: string[] };
+      setResult(`Enviado pra ${r.sent} pessoa(s). ${r.skipped} já tinham recebido.${r.errors.length ? ` Erro: ${r.errors[0]}` : ''}`);
+      setState(res.ok ? 'done' : 'error');
+    } catch {
+      setState('error');
+      setResult('Não consegui enviar agora.');
+    }
+  };
+  return (
+    <div className="admin-card admin-broadcast">
+      <div className="admin-label"><Megaphone size={14} style={{ verticalAlign: '-2px' }} /> Avisar quem já usa</div>
+      <p className="admin-note">
+        Manda no WhatsApp o aviso de que as ferramentas agora ficam no site (com o passo a passo de como entrar). Precisa do modelo
+        <b> novidade_site</b> aprovado na Meta. Quem não receber por aqui vê o aviso na próxima mensagem que mandar.
+      </p>
+      <button className="btn-primary" type="button" onClick={() => void send()} disabled={state === 'sending'}>
+        {state === 'sending' ? 'Enviando…' : 'Avisar todo mundo'}
+      </button>
+      {result && <p className={state === 'error' ? 'field-error' : 'field-hint'}>{result}</p>}
     </div>
   );
 }

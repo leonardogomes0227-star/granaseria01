@@ -29,9 +29,14 @@ import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
 import { WhatsAppStrip } from './components/ContinueWhatsApp';
 import { PainelPage } from './components/PainelPage';
-import { startPainelSync } from './painel';
+import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
+import { LoginGate } from './components/LoginGate';
+import { SiteFeedback } from './components/SiteFeedback';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
+
+// o link do WhatsApp (?t=…) vira login antes de o roteador ler o endereço
+captureLoginFromUrl();
 
 const STORAGE_KEY = 'selos-wizard-progress';
 const TOTAL_STEPS = 7;
@@ -175,6 +180,7 @@ function App() {
         <Route
           path="/diagnostico"
           element={
+            <LoginGate what="o diagnóstico" header={<AppBar onHome={goHome} />}>
             <WizardRoute
               data={data}
               setData={setData}
@@ -185,6 +191,7 @@ function App() {
               onRestart={onRestart}
               onOpenTool={openTool}
             />
+            </LoginGate>
           }
         />
         <Route
@@ -218,7 +225,9 @@ function App() {
           element={
             <Titled title="Meu painel">
               <AppBar onHome={goHome} />
-              <PainelPage data={data} onStart={startWizard} onOpenTool={openTool} />
+              <LoginGate what="o seu painel">
+                <PainelPage data={data} onStart={startWizard} onOpenTool={openTool} />
+              </LoginGate>
               {footer}
             </Titled>
           }
@@ -382,6 +391,8 @@ function ToolRoute({
   return (
     <>
       <AppBar onHome={onHome} />
+      <LoginGate what={tool.title.charAt(0).toLowerCase() + tool.title.slice(1)}>
+      <ToolOpened id={tool.id} />
       {/* key: trocar de ferramenta zera os campos da anterior */}
       <div key={tool.id} style={{ display: 'contents' }}>
         {tool.id === 'quote' && <QuoteTool {...toolProps} />}
@@ -398,9 +409,19 @@ function ToolRoute({
         {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
         {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
       </div>
+      <SiteFeedback key={`fb-${tool.id}`} tool={tool.id} />
       <WhatsAppStrip />
+      </LoginGate>
     </>
   );
+}
+
+/** Conta no painel do dono que a pessoa abriu esta ferramenta no site. */
+function ToolOpened({ id }: { id: ToolId }) {
+  useEffect(() => {
+    void siteEvent(`tool:site-${id}`);
+  }, [id]);
+  return null;
 }
 
 export default App;

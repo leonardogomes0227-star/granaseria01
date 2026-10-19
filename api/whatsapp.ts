@@ -9,14 +9,14 @@ import { handleText, recordReceipt, HELP_TEXT, type BotDeps } from '../server/wh
 import { analyzeReceipt } from '../server/receipt.js';
 import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense, insertIncome, listIncomesSince, deleteLastIncome } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
-import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
+import { diagnosisFrom, firstName } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
 import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, SITE_CODE, type History } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, getFlag, setFlag, takeHandoff, createWebLink, deleteWebLinks, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, takeHandoff, createWebLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
 import { siteLink, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -68,6 +68,68 @@ async function loadHistory(phone: string, now: Date): Promise<History | undefine
 }
 
 const SUMMARY_FLAG = 'resumo'; // wa_usage: quem pediu o resumo semanal
+
+/** Guarda o primeiro nome do WhatsApp no perfil (o site usa como sugestão quando pede o nome no login). */
+async function rememberName(user: UserRow | null, phone: string, profileName?: string): Promise<void> {
+  const name = firstName(profileName ?? null);
+  if (!name) return;
+  try {
+    const hub = await loadHub(user, phone);
+    const state = hub?.profile ?? user?.state ?? {};
+    if (state['gs-nome']) return;
+    await (user ? saveState(user.user_id, { ...state, 'gs-nome': name }) : saveProfile(phone, { ...state, 'gs-nome': name }));
+  } catch (err) {
+    console.warn('WhatsApp: nome não guardado', err);
+  }
+}
+
+const LINK_RE = new RegExp(`${SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(/[\\w\\-/]*)?(?![\\w/?])`, 'g');
+
+/**
+ * Todo link do site que o bot manda já vai com o login da pessoa (o site exige login pra usar as ferramentas):
+ * quem toca no link do WhatsApp entra direto, sem precisar pedir o acesso.
+ */
+async function withLoginLinks(out: Outgoing[], phone: string): Promise<Outgoing[]> {
+  if (!out.some((o) => 'text' in o && LINK_RE.test(o.text))) return out;
+  LINK_RE.lastIndex = 0;
+  let token: string;
+  try {
+    token = await createWebLink(phone);
+  } catch {
+    return out; // sem token, o link continua funcionando (o site pede o login)
+  }
+  const fix = (t: string) => t.replace(LINK_RE, (_, path?: string) => `${SITE_URL}${path || '/'}?t=${token}`);
+  return out.map((o) => ('text' in o ? { ...o, text: fix(o.text) } : o));
+}
+
+const SITE_NOTICE: Outgoing = {
+  kind: 'text',
+  text: [
+    '📣 *Novidade na Grana Séria!*',
+    '',
+    'Pra ficar mais prático, as ferramentas (diagnóstico, plano de ação, dívidas, 13º, vazamentos, direitos, metas…) agora ficam *no site*, com tudo explicado passo a passo e salvo na sua conta.',
+    '',
+    '*Como fica:*',
+    '1️⃣ Aqui no WhatsApp você continua anotando o dia a dia: *mercado 80 no pix*, *recebi 3000 salário*, foto do cupom.',
+    '2️⃣ Pra usar as ferramentas, mande *entrar*: eu te mando seu link de acesso.',
+    '3️⃣ Toque no link e pronto: você entra no site já logado, com seu plano e seus gastos juntos.',
+    '',
+    'Mande *ferramentas* pra ver a lista. 🪙',
+  ].join('\n'),
+};
+
+/** Quem já usava o bot recebe o aviso das ferramentas no site uma vez, na próxima mensagem que mandar. */
+async function siteNotice(phone: string): Promise<Outgoing[]> {
+  try {
+    if (await getFlag(phone, NOTICE_FLAG)) return [];
+    await setFlag(phone, NOTICE_FLAG, true);
+    const [profile, recent] = await Promise.all([getProfile(phone).catch(() => ({})), listExpensesSince(phone, new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).catch(() => [])]);
+    return Object.keys(profile).length > 0 || recent.length > 0 ? [SITE_NOTICE] : [];
+  } catch {
+    return [];
+  }
+}
+
 
 /** O link pessoal do painel, com o aviso de que é só da pessoa. */
 function painelText(token: string): string {
@@ -129,9 +191,10 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
 
   // painel no site: o WhatsApp é o login. O link é pessoal e liga o navegador a este número.
   const t = parseMessage(incoming).kind === 'unknown' ? incoming.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[!?.]+$/, '') : '';
-  if (/^(painel|meu painel|site:painel|meu site|abrir painel|abrir o painel|link do painel|meu link|acessar o site|entrar no site)$/.test(t)) {
+  if (/^(painel|meu painel|site:painel|meu site|abrir painel|abrir o painel|link do painel|meu link|acessar o site|entrar no site|quero entrar no site|entrar|login|logar|fazer login)$/.test(t)) {
     if (!(await markProcessed(msg.id))) return null;
     await trackEvent(phone, 'painel_link');
+    await rememberName(user, phone, msg.profileName);
     return text(painelText(await createWebLink(phone)));
   }
   if (/^(sair do painel|desconectar painel|desconectar o painel|desconectar site)$/.test(t)) {
@@ -255,7 +318,7 @@ const MAX_FILE_BYTES = Math.floor((MAX_BASE64 * 3) / 4); // ~3 MB, o mesmo limit
 
 const FATURA_HINT = /fatura|extrato/i;
 const FATURA_ON_SITE = () =>
-  `🧾 Pra ler a fatura inteira (juros, tarifas, cobranças escondidas), use o leitor do site, sem cadastro:\n${siteLink('fatura')}\n\nAqui no WhatsApp eu anoto um gasto por foto: mande a foto do *cupom* ou do *comprovante do pix*.`;
+  `🧾 Pra ler a fatura inteira (juros, tarifas, cobranças escondidas), use o leitor do site (o link já abre com a sua conta):\n${siteLink('fatura')}\n\nAqui no WhatsApp eu anoto um gasto por foto: mande a foto do *cupom* ou do *comprovante do pix*.`;
 
 /**
  * Foto ou PDF de cupom, nota ou comprovante: a IA lê e vira um gasto (ou uma entrada, se o pix foi recebido).
@@ -268,7 +331,12 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
   if (!(await markProcessed(m.id))) return; // reenvio da Meta: já estamos lendo
 
   const say = (t: string) => sendText(m.from, t);
-  if (FATURA_HINT.test(m.caption ?? '')) return say(FATURA_ON_SITE());
+  // o link do leitor de fatura vai com o login da pessoa, como os outros links do bot
+  const sayLinked = async (t: string) => {
+    const [o] = await withLoginLinks([{ kind: 'text', text: t }], phone);
+    return say(o.kind === 'text' ? o.text : t);
+  };
+  if (FATURA_HINT.test(m.caption ?? '')) return sayLinked(FATURA_ON_SITE());
   if (!smartConfigured()) return say('Ler fotos ainda não foi ativado por aqui. 🙏 Me manda por escrito, ex.: *mercado 45,90 no pix*.');
   if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande em *foto* (JPG ou PNG) ou em *PDF*. 📸');
 
@@ -283,7 +351,7 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
     if (!outcome.ok || outcome.receipt.tipo === 'outro' || outcome.receipt.tipo === 'fatura_extrato') {
       await refundUsage(phone, period).catch(() => undefined);
       if (!outcome.ok) return say(`${outcome.error} Ou me manda por escrito, ex.: *mercado 45,90 no pix*.`);
-      if (outcome.receipt.tipo === 'fatura_extrato') return say(FATURA_ON_SITE());
+      if (outcome.receipt.tipo === 'fatura_extrato') return sayLinked(FATURA_ON_SITE());
       return say('Não achei um pagamento nessa imagem. 🤔 Mande a foto do cupom, da nota ou do comprovante do pix.');
     }
     const hub = await loadHub(user, phone);
@@ -326,7 +394,9 @@ export async function POST(request: Request): Promise<Response> {
 
   for (const msg of texts) {
     try {
-      const out = await reply(msg);
+      const answer = await reply(msg);
+      const phoneN = normalizeBrPhone(msg.from);
+      const out = answer ? await withLoginLinks([...(await siteNotice(phoneN)), ...answer], phoneN) : null;
       if (out) {
         for (const o of out) await sendOutgoing(msg.from, o);
         console.log(`WhatsApp: ${out.length} resposta(s) enviada(s) para o número final ${msg.from.slice(-4)}`);

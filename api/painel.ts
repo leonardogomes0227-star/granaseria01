@@ -2,7 +2,7 @@
 // ("Authorization: Bearer <token>") e recebe o que está guardado pelo número: diagnóstico, plano e vazamentos (o mesmo
 // estado que o bot usa) e os gastos e entradas do mês. O que a pessoa muda no site volta por aqui (PUT).
 
-import { phoneFromWebLink, getProfileWithDate, saveProfile, HANDOFF_KEYS } from '../server/whatsapp/hubdb.js';
+import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, HANDOFF_KEYS } from '../server/whatsapp/hubdb.js';
 import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
@@ -67,4 +67,29 @@ export async function PUT(request: Request): Promise<Response> {
   }
   await (userId ? saveState(userId, next) : saveProfile(phone, next));
   return Response.json({ updatedAt: new Date().toISOString() });
+}
+
+/**
+ * O que a pessoa faz no site, pro painel do dono (mesma tabela de eventos do WhatsApp, só com o hash do número):
+ * { event: "tool:site-debts" } quando abre uma ferramenta, e { feedback: { tool, kind: "up"|"down", note? } }.
+ */
+export async function POST(request: Request): Promise<Response> {
+  const phone = await auth(request);
+  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  let body: { event?: unknown; feedback?: { tool?: unknown; kind?: unknown; note?: unknown } };
+  try {
+    body = JSON.parse((await request.text()).slice(0, 4000));
+  } catch {
+    return Response.json({ error: 'JSON inválido' }, { status: 400 });
+  }
+  const safe = (v: unknown) => (typeof v === 'string' && /^[a-z0-9:_-]{1,48}$/.test(v) ? v : null);
+  const event = safe(body.event);
+  if (event) await trackEvent(phone, event);
+  const fb = body.feedback;
+  const tool = safe(fb?.tool);
+  if (tool && (fb?.kind === 'up' || fb?.kind === 'down')) {
+    const note = typeof fb.note === 'string' && fb.note.trim() ? fb.note.trim().slice(0, 600) : undefined;
+    await trackEvent(phone, `feedback:${fb.kind}:site-${tool}`, note);
+  }
+  return Response.json({ ok: true });
 }

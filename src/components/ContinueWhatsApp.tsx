@@ -34,7 +34,7 @@ export function ContinueOnWhatsApp({ compact = false }: { compact?: boolean }) {
         <MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Seu dia a dia no WhatsApp
       </p>
       <p className="account-line" style={{ marginBottom: 12 }}>
-        Leve este diagnóstico pro WhatsApp: você anota gastos e entradas só mandando mensagem e eu mostro quanto ainda pode gastar em cada coisa, com os limites daqui. <b>Sem cadastro.</b>
+        Leve este diagnóstico pro WhatsApp: você anota gastos e entradas só mandando mensagem e eu mostro quanto ainda pode gastar em cada coisa, com os limites daqui. <b>Tudo fica salvo nos dois lugares.</b>
       </p>
       <div className="wa-block"><WhatsAppButton origin="diagnostico" /></div>
     </div>

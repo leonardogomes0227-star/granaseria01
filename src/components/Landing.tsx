@@ -61,7 +61,7 @@ function Medallion() {
 const FAQ: { q: string; a: string }[] = [
   {
     q: 'O diagnóstico é de graça mesmo?',
-    a: 'Sim. O diagnóstico completo e todas as ferramentas são gratuitos e não pedem cadastro. Você responde, vê seu retrato financeiro e sua nota na hora.',
+    a: 'Sim. O diagnóstico completo e todas as ferramentas são gratuitos. Você só entra com seu WhatsApp (sem senha e sem e-mail), pra que seu plano e seus gastos fiquem salvos. Você responde, vê seu retrato financeiro e sua nota na hora.',
   },
   ...(CHECKOUT_READY
     ? [
@@ -269,7 +269,7 @@ export function Landing({
           </div>
           <div className="trust-row">
             <span><Clock size={15} /> 10 minutos</span>
-            <span><Check size={15} /> Sem cadastro</span>
+            <span><Check size={15} /> Entra com seu WhatsApp, sem senha</span>
             <span><Lock size={15} /> Dados ficam no seu navegador</span>
           </div>
         </div>
@@ -329,7 +329,7 @@ export function Landing({
         <Reveal className="section-head">
           <div className="kicker"><span className="wedge" />Ferramentas</div>
           <h2>Tudo que te ajuda a decidir melhor, num só lugar.</h2>
-          <p>Calculadoras e simuladores pra usar antes de comprar, contratar ou investir. Abra qualquer uma — sem cadastro.</p>
+          <p>Calculadoras e simuladores pra usar antes de comprar, contratar ou investir. Abra qualquer uma: você entra com seu WhatsApp, sem senha, e tudo fica salvo.</p>
         </Reveal>
         <div className="tools-grid">
           {TOOLS.map((t, i) => (

@@ -70,7 +70,7 @@ export async function refundUsage(phone: string, period: string): Promise<void> 
 // Fica na wa_sessions (chave "handoff:<código>") pra não precisar de tabela nova.
 
 const HANDOFF_TTL_MS = 24 * 60 * 60 * 1000;
-export const HANDOFF_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-leaks', 'selos-checkins', 'selos-diagnosis-completed'];
+export const HANDOFF_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-leaks', 'selos-checkins', 'selos-diagnosis-completed', 'gs-nome'];
 
 export async function saveHandoff(code: string, state: StateSnapshot): Promise<void> {
   await check(
@@ -140,6 +140,26 @@ export async function getProfileWithDate(phone: string): Promise<{ state: StateS
   await check(res, 'select');
   const [row] = (await res.json()) as { state: StateSnapshot; updated_at: string }[];
   return { state: row?.state ?? {}, updated_at: row?.updated_at ?? null };
+}
+
+/** Aviso de que as ferramentas foram pro site: uma vez por pessoa (no chat ou pelo modelo da Meta). */
+export const NOTICE_FLAG = 'aviso:site-v1';
+
+/** Todos os números que já usaram o bot (perfil salvo ou algum gasto/entrada), pra avisos e pro painel do dono. */
+export async function listKnownPhones(): Promise<string[]> {
+  const phones = new Set<string>();
+  for (const [table, extra] of [['wa_profiles', ''], ['expenses', ''], ['incomes', '']] as const) {
+    const res = await rest(`${table}?${new URLSearchParams({ select: 'phone', limit: '10000' })}${extra}`);
+    if (res.ok) for (const r of (await res.json()) as { phone: string }[]) if (/^\d{10,15}$/.test(r.phone)) phones.add(r.phone);
+  }
+  return [...phones];
+}
+
+/** Perfis com nome (o nome que a pessoa deu ao entrar no site), pro painel do dono. */
+export async function listProfiles(): Promise<{ phone: string; state: StateSnapshot; updated_at: string }[]> {
+  const res = await rest(`wa_profiles?${new URLSearchParams({ select: 'phone,state,updated_at', limit: '10000' })}`);
+  await check(res, 'select');
+  return (await res.json()) as { phone: string; state: StateSnapshot; updated_at: string }[];
 }
 
 /** Liga/desliga uma preferência da pessoa (ex.: receber o resumo semanal). Fica na wa_usage: count 1 = ligado. */

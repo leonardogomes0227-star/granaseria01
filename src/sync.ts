@@ -11,6 +11,7 @@ export const SYNC_KEYS = [
   'selos-leaks',
   'selos-checkins',
   'selos-diagnosis-completed',
+  'gs-nome', // o nome que a pessoa dá ao entrar (login obrigatório nas ferramentas)
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
 

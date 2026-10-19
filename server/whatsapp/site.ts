@@ -1,5 +1,5 @@
 // O WhatsApp cuida do dia a dia (gastos, dinheiro que entra, saldo, quanto ainda dá pra gastar).
-// As ferramentas maiores (diagnóstico, dívidas, 13º, vazamentos, direitos, metas…) ficam no site, sem cadastro:
+// As ferramentas maiores (diagnóstico, dívidas, 13º, vazamentos, direitos, metas…) ficam no site (login pelo WhatsApp):
 // aqui o bot só manda o link certo. No fim do diagnóstico do site, "Continuar no WhatsApp" traz tudo de volta.
 
 import type { Outgoing } from './meta.js';
@@ -35,7 +35,7 @@ function toolOut(key: SiteKey): Outgoing[] {
   const back =
     key === 'diag'
       ? '\n\nNo fim, toque em *Continuar no WhatsApp*: eu trago seu diagnóstico pra cá e passo a te mostrar quanto ainda dá pra gastar em cada coisa.'
-      : '\n\nNão precisa de cadastro.';
+      : '\n\nO link já abre com a sua conta: é só tocar.';
   return [txt(`🌐 *${t.title}*: ${t.why}. Fica no site:\n${siteLink(key)}${back}\n\n${DAY_TO_DAY}`)];
 }
 
@@ -45,7 +45,7 @@ export function siteToolsOut(): Outgoing[] {
   return [
     txt(
       [
-        '🌐 *Ferramentas da Grana Séria*, no site e sem cadastro:',
+        '🌐 *Ferramentas da Grana Séria*, no site (os links já abrem com a sua conta):',
         '',
         ...order.map((k) => `• *${TOOLS[k].title}*: ${siteLink(k)}`),
         '',

@@ -1168,3 +1168,32 @@ html { overflow-x: hidden; }
 @media (max-width: 560px) { .painel .diag-grid .stat-card { padding: 14px; } .painel .diag-grid .diag-number { font-size: 22px; } }
 .debt-quick-list { list-style: none; margin: 14px 0 0; padding: 0; font-family: var(--sans); font-size: 14px; }
 .debt-quick-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--hairline-soft); }
+
+/* login obrigatório */
+.login-wall h1 { margin-bottom: 12px; }
+.login-steps { margin: 18px 0 22px; padding: 0; list-style: none; counter-reset: passo; display: grid; gap: 12px; font-size: 16px; color: var(--ink-soft); line-height: 1.5; }
+.login-steps li { position: relative; padding-left: 40px; counter-increment: passo; }
+.login-steps li::before {
+  content: counter(passo); position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; background: var(--gold); color: #fff;
+  font-family: var(--sans); font-size: 14px; font-weight: 700;
+}
+.login-steps b { color: var(--ink); }
+.login-cta { width: 100%; justify-content: center; }
+@media (min-width: 640px) { .login-cta { width: auto; } }
+.login-safe { margin-top: 18px; }
+.login-safe svg { vertical-align: -2px; margin-right: 4px; }
+.login-wall .account-form .btn-primary { margin-top: 12px; }
+
+/* feedback sem escrever */
+.site-feedback { max-width: 760px; margin: 0 auto 16px; padding: 16px 20px; border: 1px dashed var(--hairline); border-radius: 14px; background: var(--white); text-align: center; }
+.site-feedback p { margin: 0 0 10px; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+.site-feedback p small { font-weight: 400; color: var(--ink-soft); }
+.site-feedback textarea { margin-bottom: 10px; resize: vertical; }
+.site-feedback-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.site-feedback.done { font-family: var(--sans); font-size: 14.5px; color: #3F6849; border-style: solid; border-color: #B9CFB8; background: #F3F8F1; }
+@media (max-width: 620px) { .site-feedback { margin: 0 16px 16px; } }
+.admin-table-wrap { overflow-x: auto; }
+.admin-tools { font-size: 12.5px; color: var(--ink-soft); }
+.admin-broadcast { margin: 18px 0 8px; }
+.admin-broadcast .admin-note { margin: 6px 0 12px; }
