@@ -13,6 +13,7 @@ import { calculateDiagnosis, calculateHealthScore } from '../../src/calculations
 import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
 import { TIP_WORD } from './shortcuts.js';
+import { toSite, welcomeOut } from './site.js';
 import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
 import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startAddDebt, startRemoveDebt, startCheckin, selosOut, fraseOut, toolStep, type MonthBalance } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
@@ -25,19 +26,21 @@ export type { Session, HubInput, HubResult, Flow, History } from './hubcore.js';
 
 /* ---------- menu ---------- */
 
-/** O menu de todo dia: o assistente na frente e as ferramentas em 5 trabalhos, não em 14 opções. */
+/** O menu de todo dia: o WhatsApp cuida do dinheiro que entra e sai; as ferramentas maiores ficam no site. */
 export function simpleMenu(name?: string | null): Outgoing[] {
   return [
     {
       kind: 'list',
-      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha o que você quer resolver:`,
+      text: `${name ? `${name}, é` : 'É'} só me mandar o que gastou ou recebeu, por exemplo: *gastei 35 no mercado no pix* ou *recebi 200 de freela*. 🪙\n\nOu escolha uma opção:`,
       button: 'Ver opções',
       rows: [
-        { id: 'job:anotar', title: '✍️ Anotar', description: 'Gastos, entradas e forma de pagamento' },
-        { id: 'menu:gastos', title: '⚖️ Meu mês', description: 'Saldo, quanto dá por dia, gastos e entradas' },
-        { id: 'job:plano', title: '📋 Meu plano', description: 'Próximo passo, diagnóstico e plano do mês' },
-        { id: 'job:dividas', title: '💳 Sair das dívidas', description: 'Qual pagar primeiro, empréstimos, direitos' },
-        { id: 'job:guardar', title: '🛟 Guardar e proteger', description: 'Meta, 13º, compras e dinheiro perdido' },
+        { id: 'job:anotar', title: '✍️ Como anotar', description: 'Gastos, entradas, forma de pagamento e foto' },
+        { id: 'gastos:saldo', title: '⚖️ Saldo do mês', description: 'Entrou, saiu e quanto dá por dia' },
+        { id: 'gastos:sobra', title: '🎯 Quanto posso gastar', description: 'Por categoria, até o fim do mês' },
+        { id: 'menu:gastos', title: '📊 Gastos e entradas', description: 'Hoje, semana, mês, formas de pagamento' },
+        { id: 'calc:compra', title: '🛍️ Posso comprar?', description: 'A conta com o seu saldo de verdade' },
+        { id: 'gastos:resumo', title: '📬 Resumo da semana', description: 'Como foi a semana, e todo domingo aqui' },
+        { id: 'site:todas', title: '🌐 Ferramentas no site', description: 'Diagnóstico, dívidas, 13º, direitos e mais' },
       ],
     },
   ];
@@ -459,10 +462,19 @@ function firstStepOut(data: WizardData, now: Date): Outgoing {
 export function welcomeFromSite(profile: StateSnapshot, now: Date, rawName?: string | null): Outgoing[] {
   const name = firstName(rawName ?? null);
   const data = diagnosisFrom(profile);
-  const hello = `${name ? `Oi, ${name}! 👋` : 'Oi! 👋'} Recebi seu diagnóstico do site. Daqui pra frente a gente segue por aqui, e você pode anotar gastos e entradas só mandando mensagem (ex.: *mercado 80 no pix*).`;
-  if (!data) return [txt(hello), ...nextStep({ profile, now, name })];
-  if (profile['selos-tracking']) return [txt(hello), txt(diagShort(data, now, null)), ...nextStep({ profile, now, name })];
-  return [txt(hello), txt(diagShort(data, now, null)), firstStepOut(data, now)];
+  const hello = `${name ? `Oi, ${name}! 👋` : 'Oi! 👋'} Recebi seu diagnóstico do site. 🪙`;
+  if (!data) return welcomeOut(name, false);
+  return [
+    txt(`${hello}\n\n${diagShort(data, now, null).split('\n').slice(2).join('\n')}`),
+    buttons(
+      `Daqui pra frente eu cuido do seu dia a dia. Me mande o que gastar e o que entrar (ex.: *mercado 80 no pix*, *recebi 3000 salário*) e eu te mostro quanto ainda dá pra gastar em cada coisa, com os limites do seu diagnóstico.`,
+      [
+        ['gastos:sobra', '🎯 Meus limites'],
+        ['job:anotar', '✍️ Como anotar'],
+        ['gastos:saldo', '⚖️ Saldo do mês'],
+      ]
+    ),
+  ];
 }
 
 export const SITE_CODE = /\bGS[-\s]?([A-HJ-NP-Z2-9]{6})\b/i;
@@ -979,17 +991,16 @@ function route(input: HubInput): HubResult | null {
     };
   }
 
-  // recepção: quem chega pela primeira vez é apresentado; quem já é de casa vê o próximo passo
+  // ferramentas maiores ficam no site: a palavra ou o botão de antes responde com o link
+  const site = toSite(t);
+  if (site) return { out: site, session: null, event: 'site_link' };
+
+  // recepção
   if (MENU_WORDS.test(t)) return { out: simpleMenu(name), session: null };
   if (t === 'menu:tudo' || /^(ferramentas|mais ferramentas|todas as opcoes|todas as ferramentas)$/.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
   if (GOALS_WORDS.test(t)) return { out: [goalsMenu(GOALS_ASK)], session: null, event: 'goals_menu' };
   if (t.startsWith('goal:')) return startGoal(t.slice(5), input);
-  if (GREETING.test(t)) {
-    const out = nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth, greeting: true });
-    // quem já usa o bot: os atalhos das ferramentas que mais usa, pra não passar pelo menu toda vez
-    if (input.shortcuts?.length && diagnosisFrom(profile)) out.push(buttons('⚡ *Seus atalhos:* o que você mais usa.', input.shortcuts));
-    return { out, session: null, event: 'greeting' };
-  }
+  if (GREETING.test(t)) return { out: welcomeOut(name, Boolean(diagnosisFrom(profile))), session: null, event: 'greeting' };
   if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
   if (t === 'plan:start') {
     const data = diagnosisFrom(profile);

@@ -6,6 +6,7 @@
 import type { Expense, Income } from './db.js';
 import { categoryEmoji } from './parse.js';
 import { QUOTES, dailyQuoteIndex } from '../../src/quotes.js';
+import { siteLink } from './site.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
@@ -50,7 +51,7 @@ function weeklyTip(week: Expense[], top: { name: string; total: number } | null,
     return `${top.name} levou ${Math.round((top.total / total) * 100)}% da semana. Mande *quanto ainda posso gastar* pra ver o limite de cada coisa.`;
   }
   if (week.some((r) => /netflix|spotify|prime|disney|hbo|assinatura|anuidade|tarifa/i.test(r.description))) {
-    return 'Teve assinatura ou tarifa na semana. Mande *vazamentos* e eu mostro quais costumam pesar.';
+    return `Teve assinatura ou tarifa na semana. Veja quais costumam pesar: ${siteLink('vazamentos')}`;
   }
   return `Frase da semana: ${QUOTES[dailyQuoteIndex(now)]}`;
 }
@@ -114,7 +115,7 @@ export function monthlySummary({ expenses, incomes, monthIndex }: MonthlyInput):
   const tip =
     inc > 0 && inc - out >= inc * 0.1
       ? 'Você guardou pelo menos 10% do que entrou: o primeiro hábito do livro. Separe esse valor logo que o salário cair.'
-      : 'Neste mês, tente separar 10% logo que o salário cair, antes de gastar. Mande *plano* que eu te ajudo.';
+      : 'Neste mês, tente separar 10% logo que o salário cair, antes de gastar. Pra saber quanto separar: ' + siteLink('diag');
   const text = [
     `🗓️ *Seu ${month}*`,
     '',

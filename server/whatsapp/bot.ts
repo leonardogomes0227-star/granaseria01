@@ -178,6 +178,7 @@ export const HELP_TEXT = [
   '• *quanto ainda posso gastar* — o que sobra do que você planejou',
   '• *apagar* — desfaz o último gasto (*apagar entrada* desfaz a última entrada)',
   '• *menu* — tudo o que eu sei fazer',
+  '• *ferramentas* — diagnóstico, dívidas, 13º e mais, no site',
 ].join('\n');
 
 export interface NewExpense {
