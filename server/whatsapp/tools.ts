@@ -435,7 +435,7 @@ function dividasResult(debts: DebtItem[]): Outgoing[] {
         '',
         same ? 'Nas suas dívidas, as duas ordens coincidem: sem dúvida, começa por aí. 👏' : 'Se os juros são bem diferentes, escolha a avalanche. Se você precisa de motivação, escolha a bola de neve.',
         assumed ? '\nOnde você não informou os juros, usei a taxa típica do tipo de dívida.' : '',
-        '\nEsqueceu alguma? Mande, por exemplo, *nova dívida cartão 2000*.',
+        '\nEsqueceu alguma? Mande *nova dívida cartão 2000*. Quitou ou errou? Mande *apagar dívida*.',
       ]
         .join('\n')
         .trim()
@@ -481,24 +481,82 @@ function addDebt(profile: StateSnapshot, raw: string): HubResult {
     };
   }
   const all = [...current, debt];
+  const total = all.reduce((t, d) => t + d.value, 0);
+  return {
+    out: [txt(`${added} Agora são ${all.length} ${all.length === 1 ? 'dívida' : 'dívidas'}, somando ${brl(total)}.${planNote(profile)}`), ...dividasResult(all)],
+    session: null,
+    profile: withDebts(profile, diag, all),
+  };
+}
+
+/** O diagnóstico salvo com outra lista de dívidas (o resto do progresso do site fica igual). */
+function withDebts(profile: StateSnapshot, diag: WizardData, debts: DebtItem[]): StateSnapshot {
   let progress: { data?: unknown; step?: number } = {};
   try {
     progress = JSON.parse(profile['selos-wizard-progress'] ?? '{}');
   } catch {
     // perfil corrompido: grava só os dados do diagnóstico
   }
-  const saved: StateSnapshot = { ...profile, 'selos-wizard-progress': JSON.stringify({ ...progress, data: { ...diag, debts: all } }) };
-  const total = all.reduce((t, d) => t + d.value, 0);
-  const following = Boolean(profile['selos-tracking']);
+  return { ...profile, 'selos-wizard-progress': JSON.stringify({ ...progress, data: { ...diag, debts } }) };
+}
+
+/** Quem acompanha o plano mês a mês fica sabendo que o plano só muda refazendo o diagnóstico. */
+const planNote = (profile: StateSnapshot) =>
+  profile['selos-tracking'] ? '\n\n_O plano do mês continua com as contas de quando você começou. Pra recalcular, mande *refazer diagnóstico*._' : '';
+
+/* ---------- apagar dívida / quitei ---------- */
+
+const debtList = (debts: DebtItem[]) => debts.map((d, i) => `${i + 1}. ${d.description} — ${brl(d.value)}`).join('\n');
+
+/** Acha a dívida pelo número da lista ("2") ou pelo nome ("cartão", "nubank"). Mais de uma com o mesmo nome: null. */
+function findDebt(debts: DebtItem[], raw: string): number | null {
+  const t = normalize(raw).replace(/^(o|a|do|da|meu|minha|no|na)\s+/, '').trim();
+  const n = t.match(/^(\d{1,2})$/);
+  if (n) {
+    const i = Number(n[1]) - 1;
+    return i >= 0 && i < debts.length ? i : null;
+  }
+  const words = t.split(/\s+/).filter((w) => w.length >= 3 && !/^(divida|dividas|que|tinha|com|de|do|da)$/.test(w));
+  if (words.length === 0) return null;
+  const hits = debts.map((d, i) => ({ i, name: normalize(d.description) })).filter((d) => words.every((w) => d.name.includes(w)));
+  return hits.length === 1 ? hits[0].i : null;
+}
+
+/** "apagar dívida" (pergunta qual) ou "quitei o cartão" (apaga direto, se der pra saber qual, e comemora). */
+export function startRemoveDebt(profile: StateSnapshot, target?: string, paidOff = false): HubResult {
+  const diag = diagnosisFrom(profile);
+  const debts = (diag?.debts ?? []).filter((d) => d.value > 0);
+  if (!diag || debts.length === 0) {
+    return { out: [txt('Você não tem dívidas salvas comigo. 🙂 Pra anotar uma, mande, por exemplo, *nova dívida cartão 2000*.')], session: null };
+  }
+  const i = target ? findDebt(debts, target) : null;
+  if (i !== null) return removeDebt(profile, diag, debts, i, paidOff);
   return {
-    out: [
-      txt(
-        `${added} Agora são ${all.length} ${all.length === 1 ? 'dívida' : 'dívidas'}, somando ${brl(total)}.${following ? '\n\n_O plano do mês continua com as contas de quando você começou. Pra recalcular com essa dívida, mande *refazer diagnóstico*._' : ''}`
-      ),
-      ...dividasResult(all),
-    ],
+    out: [txt(`${paidOff ? '🎉 Que notícia boa! Qual delas você quitou?' : '🗑️ Qual dívida você quer apagar?'} Responda o número:\n\n${debtList(debts)}\n\n(ou *cancelar*)`)],
+    session: { flow: 'dividas', step: 'remove', data: { paidOff } },
+  };
+}
+
+function stepRemoveDebt(session: Session, text: string, profile: StateSnapshot): HubResult {
+  const diag = diagnosisFrom(profile);
+  const debts = (diag?.debts ?? []).filter((d) => d.value > 0);
+  if (!diag || debts.length === 0) return { out: [txt('Você não tem mais dívidas salvas comigo. 🙂')], session: null };
+  const i = findDebt(debts, text);
+  if (i === null) return { out: [txt(`Não achei essa. 🤔 Responda só o número:\n\n${debtList(debts)}\n\n(ou *cancelar*)`)], session };
+  return removeDebt(profile, diag, debts, i, session.data.paidOff === true);
+}
+
+function removeDebt(profile: StateSnapshot, diag: WizardData, debts: DebtItem[], i: number, paidOff: boolean): HubResult {
+  const gone = debts[i];
+  const rest = debts.filter((_, k) => k !== i);
+  const head = paidOff
+    ? `🎉 *Parabéns!* Você quitou *${gone.description}* (${brl(gone.value)}). Cada dívida paga é um elo da corrente que se quebra.`
+    : `🗑️ Apaguei: *${gone.description}*, ${brl(gone.value)}.`;
+  const tail = rest.length === 0 ? '\n\nAgora você não tem nenhuma dívida anotada. 👏' : `\n\n${rest.length === 1 ? 'Falta 1 dívida' : `Faltam ${rest.length} dívidas`}, somando ${brl(rest.reduce((t, d) => t + d.value, 0))}.`;
+  return {
+    out: [txt(`${head}${tail}${planNote(profile)}`), ...(rest.length > 0 ? dividasResult(rest) : [])],
     session: null,
-    profile: saved,
+    profile: withDebts(profile, diag, rest),
   };
 }
 
@@ -718,7 +776,9 @@ export function toolStep(session: Session, text: string, profile: StateSnapshot,
     case 'emprestimo':
       return stepEmprestimo(session, text);
     case 'dividas':
-      return session.step === 'add' ? addDebt(profile, text) : stepDividas(session, text);
+      if (session.step === 'add') return addDebt(profile, text);
+      if (session.step === 'remove') return stepRemoveDebt(session, text, profile);
+      return stepDividas(session, text);
     case 'checkin':
       return stepCheckin(session, text, profile, now);
     default:

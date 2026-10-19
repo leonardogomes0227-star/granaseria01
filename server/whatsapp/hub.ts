@@ -14,7 +14,7 @@ import { getArchetype } from '../../src/archetypes.js';
 import { nextStep } from './coach.js';
 import { TIP_WORD } from './shortcuts.js';
 import { goalById, goalFromText, goalsMenu, GOALS_ASK, GOALS_WORDS, type GoalId } from './goals.js';
-import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startAddDebt, startCheckin, selosOut, fraseOut, toolStep, type MonthBalance } from './tools.js';
+import { calcMenu, maisMenu, startCompra, startMeta, startLongo, startEmprestimo, startDividas, startAddDebt, startRemoveDebt, startCheckin, selosOut, fraseOut, toolStep, type MonthBalance } from './tools.js';
 import type { WizardData, DebtItem } from '../../src/types.js';
 import type { Tracking } from '../../src/tracking.js';
 import { parseAmount } from './parse.js';
@@ -59,6 +59,7 @@ export function jobMenu(job: string, faturaEnabled = false): Outgoing[] | null {
     return list('💳 *Sair das dívidas.* Por onde começamos?', [
       { id: 'calc:dividas', title: '❄️ Qual pagar primeiro', description: 'A ordem certa e a data de ficar livre' },
       { id: 'calc:novadivida', title: '➕ Nova dívida', description: 'Esqueceu uma? Junte às que já estão salvas' },
+      { id: 'calc:apagardivida', title: '🗑️ Apagar ou quitar', description: 'Quitou ou errou uma dívida? Tire da lista' },
       { id: 'calc:emprestimo', title: '🏦 Comparar empréstimos', description: 'Qual proposta sai mais barata no total' },
       ...(faturaEnabled ? [{ id: 'menu:fatura', title: '🧾 Ler minha fatura', description: 'Juros, tarifas e cobranças escondidas' }] : []),
       { id: 'menu:direitos', title: '⚖️ Meus direitos', description: 'O que a lei garante com banco e dívida' },
@@ -785,6 +786,11 @@ function shortcutStart(t: string, profile: StateSnapshot, now: Date, name?: stri
   if (/^(emprestimo|comparar emprestimos?|financiamento)$/.test(t)) return startEmprestimo();
   const add = t.match(/^(?:nova divida|novo debito|adicionar (?:uma )?divida|incluir (?:uma )?divida|mais uma divida|outra divida|esqueci (?:uma|de uma) divida)(?:\s*[:,-]?\s+(.+))?$/);
   if (add) return startAddDebt(profile, add[1]);
+  const del = t.match(/^(?:apagar|apaga|excluir|remover|tirar|deletar) (?:uma |a )?divida(?:\s+(.+))?$/);
+  if (del) return startRemoveDebt(profile, del[1]);
+  const paid = t.match(/^(?:quitei|terminei de pagar|acabei de pagar|paguei tudo d[oae]|liquidei)\s+(?:a divida d[oae]\s+|a divida\s+)?(.+)$/);
+  if (paid) return startRemoveDebt(profile, paid[1], true);
+  if (/^(quitei|quitei uma divida|quitei a divida)$/.test(t)) return startRemoveDebt(profile, undefined, true);
   if (/^(dividas|minhas dividas|sair das dividas|pagar dividas|qual divida pagar|avalanche|bola de neve|avalanche x bola de neve)$/.test(t)) return startDividas(profile);
   if (/^(calculadoras?|calcular)$/.test(t)) return { out: calcMenu(), session: null };
   if (/^check[ -]?in( do mes)?$/.test(t)) return startCheckin(profile);
@@ -953,6 +959,7 @@ function route(input: HubInput): HubResult | null {
   if (t === 'calc:emprestimo') return startEmprestimo();
   if (t === 'calc:dividas') return startDividas(profile);
   if (t === 'calc:novadivida') return startAddDebt(profile);
+  if (t === 'calc:apagardivida') return startRemoveDebt(profile);
   if (t === 'mais:selos') return withMenuHint({ out: selosOut(profile), session: null });
   if (t === 'mais:frase') return { out: fraseOut(null, now), session: null };
   if (t.startsWith('frase:')) return { out: fraseOut(Number(t.slice(6)), now), session: null };
