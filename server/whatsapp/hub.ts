@@ -819,7 +819,9 @@ function rightDetail(id: string): Outgoing[] {
 
 /* ---------- ponto de entrada ---------- */
 
-const GREETING = /^(oi|ola|inicio|comecar|bom dia|boa tarde|boa noite)$/;
+const GREETING = /^(oi+|ola|oie|opa|eai|e ai|eae|salve|hey|hello|hi|inicio|comecar|bom dia|boa tarde|boa noite|tudo bem|oi tudo bem|ola tudo bem)$/;
+/** É um "oi"? (o "oi" já explica a novidade do site; o aviso de uma vez só não precisa vir junto) */
+export const isGreeting = (raw: string): boolean => GREETING.test(normalize(raw));
 const MENU_WORDS = /^(menu|opcoes|menu:menu)$/;
 const NEXT_STEP_WORDS = /^(menu:proximo|proximo passo|meu proximo passo|e agora|o que faco|o que eu faco|o que faco hoje|o que eu faco hoje|por onde comeco)$/;
 /** A mensagem pede o próximo passo (ou é um oi)? Quem chama usa pra buscar os dados extras só quando precisa. */

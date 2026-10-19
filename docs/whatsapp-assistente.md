@@ -141,17 +141,24 @@ Depois de entrar, o **nome é obrigatório** ("Como você quer ser chamado?"). E
 - a lista **Pessoas**: nome, final do número, último uso, se já entrou no site e o que usou;
 - as ferramentas abertas no site aparecem com 🌐.
 
+**"oi" explica a novidade:** qualquer saudação (oi, olá, bom dia, e aí…) responde explicando que as ferramentas agora ficam no site, com o link pra tocar já logado (página inicial, ou o painel pra quem já tem diagnóstico), e lembra que o dia a dia continua no WhatsApp.
+
 **Aviso pra quem já usa o bot:**
 - Na próxima mensagem que a pessoa mandar, o bot avisa uma vez que as ferramentas agora ficam no site, com o passo a passo (*entrar* → link → pronto).
-- Pra avisar todo mundo de uma vez, há o botão **Avisar todo mundo** no `/admin`. Ele precisa de um modelo aprovado na Meta (categoria **Utilidade** ou **Marketing**, pt_BR) chamado `novidade_site` (ou o nome em `WHATSAPP_NEWS_TEMPLATE`), sem variáveis:
+- Pra avisar todo mundo de uma vez: botão **Avisar todo mundo** no `/admin`. Cada pessoa recebe o aviso com o **próprio link de acesso** (já logado):
+  - quem falou com o bot nas **últimas 24 horas** recebe o texto completo na hora (a Meta permite texto livre nessa janela);
+  - os outros recebem pelo modelo aprovado `novidade_site` (ou o nome em `WHATSAPP_NEWS_TEMPLATE`), categoria **Utilidade** ou **Marketing**, pt_BR, com **uma variável** (o link):
 
 ```
-📣 Novidade na Grana Séria! Pra ficar mais prático, as ferramentas (diagnóstico, plano de ação, dívidas, 13º, metas) agora ficam no site, com tudo explicado e salvo na sua conta.
+📣 Novidade na Grana Séria!
 
-Aqui no WhatsApp você continua anotando o dia a dia, tipo "mercado 80 no pix".
+Pra ficar mais fácil, agora tudo fica no nosso site, com passo a passo e salvo na sua conta: diagnóstico e plano de ação, qual dívida pagar primeiro, 13º, metas e seus direitos.
 
-Pra entrar no site, responda: entrar
+👉 Toque pra entrar (já com a sua conta, sem senha): {{1}}
+
+Aqui no WhatsApp você continua anotando o dia a dia, tipo "mercado 80 no pix". O que você anota aqui aparece no site.
 ```
+  Exemplo pra Meta no {{1}}: `https://granaseria.com.br/?t=exemplo`.
 
 Cada pessoa recebe uma vez só, e quem recebe pelo modelo não vê o aviso de novo no chat.
 

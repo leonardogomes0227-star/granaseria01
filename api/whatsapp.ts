@@ -11,14 +11,14 @@ import { insertExpense, listExpensesSince, deleteLastExpense, updateLastExpense,
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { diagnosisFrom, firstName } from '../server/whatsapp/hubcore.js';
 import { askClaude, smartConfigured } from '../server/whatsapp/smart.js';
-import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, SITE_CODE, type History } from '../server/whatsapp/hub.js';
+import { hubStep, wantsNextStep, wantsBalance, wantsHistory, welcomeFromSite, isGreeting, SITE_CODE, type History } from '../server/whatsapp/hub.js';
 import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, getFlag, setFlag, takeHandoff, createWebLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, setLastInbound, takeHandoff, createWebLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
 import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
-import { siteLink, SITE_URL } from '../server/whatsapp/site.js';
+import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
@@ -102,29 +102,14 @@ async function withLoginLinks(out: Outgoing[], phone: string): Promise<Outgoing[
   return out.map((o) => ('text' in o ? { ...o, text: fix(o.text) } : o));
 }
 
-const SITE_NOTICE: Outgoing = {
-  kind: 'text',
-  text: [
-    '📣 *Novidade na Grana Séria!*',
-    '',
-    'Pra ficar mais prático, as ferramentas (diagnóstico, plano de ação, dívidas, 13º, vazamentos, direitos, metas…) agora ficam *no site*, com tudo explicado passo a passo e salvo na sua conta.',
-    '',
-    '*Como fica:*',
-    '1️⃣ Aqui no WhatsApp você continua anotando o dia a dia: *mercado 80 no pix*, *recebi 3000 salário*, foto do cupom.',
-    '2️⃣ Pra usar as ferramentas, mande *entrar*: eu te mando seu link de acesso.',
-    '3️⃣ Toque no link e pronto: você entra no site já logado, com seu plano e seus gastos juntos.',
-    '',
-    'Mande *ferramentas* pra ver a lista. 🪙',
-  ].join('\n'),
-};
-
 /** Quem já usava o bot recebe o aviso das ferramentas no site uma vez, na próxima mensagem que mandar. */
 async function siteNotice(phone: string): Promise<Outgoing[]> {
   try {
     if (await getFlag(phone, NOTICE_FLAG)) return [];
     await setFlag(phone, NOTICE_FLAG, true);
     const [profile, recent] = await Promise.all([getProfile(phone).catch(() => ({})), listExpensesSince(phone, new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)).catch(() => [])]);
-    return Object.keys(profile).length > 0 || recent.length > 0 ? [SITE_NOTICE] : [];
+    // o link vai sem login aqui: quem manda as mensagens põe o login em todos os links (withLoginLinks)
+    return Object.keys(profile).length > 0 || recent.length > 0 ? [{ kind: 'text', text: siteNoticeText(`${SITE_URL}/`) }] : [];
   } catch {
     return [];
   }
@@ -188,6 +173,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   }
 
   await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio
+  await setLastInbound(phone).catch(() => undefined); // janela de 24h da Meta (pro "Avisar todo mundo")
 
   // painel no site: o WhatsApp é o login. O link é pessoal e liga o navegador a este número.
   const t = parseMessage(incoming).kind === 'unknown' ? incoming.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[!?.]+$/, '') : '';
@@ -396,7 +382,9 @@ export async function POST(request: Request): Promise<Response> {
     try {
       const answer = await reply(msg);
       const phoneN = normalizeBrPhone(msg.from);
-      const out = answer ? await withLoginLinks([...(await siteNotice(phoneN)), ...answer], phoneN) : null;
+      // o "oi" já explica a novidade do site: o aviso de uma vez só fica marcado como visto e não vem junto
+      const notice = answer ? await siteNotice(phoneN) : [];
+      const out = answer ? await withLoginLinks([...(isGreeting(msg.text) ? [] : notice), ...answer], phoneN) : null;
       if (out) {
         for (const o of out) await sendOutgoing(msg.from, o);
         console.log(`WhatsApp: ${out.length} resposta(s) enviada(s) para o número final ${msg.from.slice(-4)}`);
