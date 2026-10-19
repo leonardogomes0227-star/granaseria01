@@ -40,6 +40,7 @@ export function simpleMenu(name?: string | null): Outgoing[] {
         { id: 'menu:gastos', title: '📊 Gastos e entradas', description: 'Hoje, semana, mês, formas de pagamento' },
         { id: 'calc:compra', title: '🛍️ Posso comprar?', description: 'A conta com o seu saldo de verdade' },
         { id: 'gastos:resumo', title: '📬 Resumo da semana', description: 'Como foi a semana, e todo domingo aqui' },
+        { id: 'site:painel', title: '📲 Meu painel no site', description: 'Seu plano e seus gastos, tudo salvo' },
         { id: 'site:todas', title: '🌐 Ferramentas no site', description: 'Diagnóstico, dívidas, 13º, direitos e mais' },
       ],
     },

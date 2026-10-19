@@ -1,6 +1,6 @@
 // Estado das conversas e dos perfis do WhatsApp (tabelas de supabase/whatsapp-hub.sql).
 
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { rest } from './db.js';
 import type { Session } from './hub.js';
 import type { StateSnapshot } from '../account/db.js';
@@ -96,6 +96,52 @@ export async function takeHandoff(code: string): Promise<StateSnapshot | null> {
   return state;
 }
 
+/* ---------- Painel no site: o WhatsApp é o login ---------- */
+// O bot manda um link pessoal (granaseria.com.br/painel?t=…). O token fica só no navegador da pessoa; aqui guardamos
+// o hash dele, ligado ao número, na wa_sessions (chave "weblink:<hash>"). Vale 180 dias desde o último uso.
+
+const WEBLINK_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
+
+export async function createWebLink(phone: string): Promise<string> {
+  const token = randomBytes(24).toString('base64url');
+  await check(
+    await upsert('wa_sessions', 'phone', { phone: `weblink:${tokenHash(token)}`, flow: 'weblink', step: 'active', data: { phone }, updated_at: new Date().toISOString() }),
+    'upsert'
+  );
+  return token;
+}
+
+/** O número dono do token, ou null se não existe ou expirou. Renova o prazo uma vez por dia. */
+export async function phoneFromWebLink(token: string): Promise<string | null> {
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return null;
+  const key = `weblink:${tokenHash(token)}`;
+  const res = await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}`, select: 'data,updated_at', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { data: { phone?: string }; updated_at: string }[];
+  const phone = row?.data?.phone;
+  if (!row || !phone) return null;
+  const age = Date.now() - new Date(row.updated_at).getTime();
+  if (age > WEBLINK_TTL_MS) return null;
+  if (age > 24 * 60 * 60 * 1000) {
+    await upsert('wa_sessions', 'phone', { phone: key, flow: 'weblink', step: 'active', data: { phone }, updated_at: new Date().toISOString() }).catch(() => undefined);
+  }
+  return phone;
+}
+
+/** Desconecta todos os navegadores ligados a este número. */
+export async function deleteWebLinks(phone: string): Promise<void> {
+  await check(await rest(`wa_sessions?${new URLSearchParams({ flow: 'eq.weblink', 'data->>phone': `eq.${phone}` })}`, { method: 'DELETE' }), 'delete');
+}
+
+/** Quando o perfil deste número foi gravado pela última vez (pra o site saber se a versão de lá é mais nova). */
+export async function getProfileWithDate(phone: string): Promise<{ state: StateSnapshot; updated_at: string | null }> {
+  const res = await rest(`wa_profiles?${new URLSearchParams({ phone: `eq.${phone}`, select: 'state,updated_at', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as { state: StateSnapshot; updated_at: string }[];
+  return { state: row?.state ?? {}, updated_at: row?.updated_at ?? null };
+}
+
 /** Liga/desliga uma preferência da pessoa (ex.: receber o resumo semanal). Fica na wa_usage: count 1 = ligado. */
 export async function setFlag(phone: string, key: string, on: boolean): Promise<void> {
   await check(await upsert('wa_usage', 'phone,period', { phone, period: key, count: on ? 1 : 0 }), 'upsert');
@@ -137,6 +183,7 @@ export async function trackEvent(phone: string, event: string, note?: string): P
 /** "Apagar meus dados" (LGPD): gastos, perfil, conversa em andamento, contadores e métricas deste número. */
 export async function eraseWhatsAppData(phone: string): Promise<void> {
   const targets = [`expenses?phone=eq.${phone}`, `incomes?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
+  await deleteWebLinks(phone).catch(() => undefined); // links do painel no site
   for (const t of targets) {
     const res = await rest(t, { method: 'DELETE' });
     // wa_events e incomes podem não existir ainda (SQL não rodado): não é motivo pra deixar de apagar o resto

@@ -91,5 +91,6 @@ export type AnalyticsEvent =
   | 'whatsapp_vinculado'
   | 'whatsapp_continuar'
   | 'objetivo_escolhido'
+  | 'painel_conectado'
   | 'checkout_clique'
   | 'guia_lido';
