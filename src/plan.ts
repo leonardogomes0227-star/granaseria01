@@ -578,16 +578,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     const canPay = stuck ? monthlyPower : target2.firstPayment;
     negotiation = {
       debtName: target2.name,
-      message: [
-        'Olá! Sou cliente e tenho uma dívida em aberto com vocês' +
-          ` (${getDebtKind(target2.kind).label.split(' (')[0].toLowerCase()}), no valor de cerca de ${formatBRL(target2.balance)}.`,
-        `Quero quitar, mas a taxa atual (${fmtRate(target2.rate)}) não cabe no meu orçamento. Consigo pagar ${formatBRL(canPay)} por mês.`,
-        'Gostaria de saber:',
-        '1) se existe desconto para pagamento à vista;',
-        '2) uma proposta de parcelamento com juros menores;',
-        '3) o Custo Efetivo Total (CET) de cada opção, por escrito.',
-        'Obrigado!',
-      ].join('\n'),
+      message: renegotiationText(getDebtKind(target2.kind).label.split(' (')[0].toLowerCase(), target2.balance, target2.rate, canPay),
     };
   }
 
@@ -733,6 +724,44 @@ export function compareStrategies(debts: DebtItem[], monthlyPower: number): Stra
       .map(([id]) => name(id));
     return { order, months: r.months, interest: r.interest, sequence };
   });
+}
+
+/** A mensagem pronta pra pedir desconto ou parcelamento menor ao banco (o mesmo texto do plano de ação). */
+export function renegotiationText(kindName: string, balance: number, rate: number, canPay: number): string {
+  return [
+    'Olá! Sou cliente e tenho uma dívida em aberto com vocês' + ` (${kindName}), no valor de cerca de ${formatBRL(balance)}.`,
+    `Quero quitar, mas a taxa atual (${fmtRate(rate)}) não cabe no meu orçamento. Consigo pagar ${formatBRL(canPay)} por mês.`,
+    'Gostaria de saber:',
+    '1) se existe desconto para pagamento à vista;',
+    '2) uma proposta de parcelamento com juros menores;',
+    '3) o Custo Efetivo Total (CET) de cada opção, por escrito.',
+    'Obrigado!',
+  ].join('\n');
+}
+
+export interface SnowballDebt {
+  debt: DebtItem;
+  rate: number;
+  assumed: boolean;
+  payoffMonth: number | null; // mês do plano em que a bola de neve acaba com ela
+}
+
+export interface SnowballResult {
+  order: SnowballDebt[]; // da menor pra maior
+  months: number | null; // null: com esse valor por mês não fecha
+  interest: number;
+}
+
+/** Bola de neve: paga o mínimo de todas e joga o resto na menor. Devolve em que mês cada uma acaba. */
+export function snowball(debts: DebtItem[], monthlyPower: number): SnowballResult {
+  const open = debts.filter((d) => d.value > 0 && !d.paidOff).sort((a, b) => a.value - b.value);
+  const sim: SimDebt[] = open.map((d) => ({ id: d.id, balance: d.value, rate: effectiveRate(d).rate / 100, min: d.installment || 0 }));
+  const r = simulateAvalanche(sim, monthlyPower, 'snowball');
+  return {
+    order: open.map((d) => ({ debt: d, rate: effectiveRate(d).rate, assumed: effectiveRate(d).assumed, payoffMonth: r.payoffMonth[d.id] ?? null })),
+    months: r.months,
+    interest: r.interest,
+  };
 }
 
 /** Os compromissos do mês que o plano deixa pro coach (com lembrete): renegociar, pagar, guardar, cortar. */

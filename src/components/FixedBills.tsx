@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { formatBRL } from '../calculations';
-import { loadBills, monthOf, monthStatus, saveBills, type BillStatus } from '../bills';
+import { SAVE_SHARE, loadBills, loadSaved, monthOf, monthStatus, saveBills, saveSaved, savedThisMonth, type BillStatus } from '../bills';
+import { fetchPainel, painelToken } from '../painel';
 import { todayBRT } from '../coach';
 import { fmtDay } from '../dates';
 
@@ -20,6 +21,28 @@ export function useBills() {
   return bills;
 }
 
+export function useSaved() {
+  const [saved, setSaved] = useState(loadSaved);
+  useEffect(() => {
+    const on = () => setSaved(loadSaved());
+    window.addEventListener('gs-contas', on);
+    return () => window.removeEventListener('gs-contas', on);
+  }, []);
+  return saved;
+}
+
+/** A renda anotada no mês (a base dos 10% do pague-se primeiro). */
+export function useMonthIncome(): number {
+  const [income, setIncome] = useState(0);
+  useEffect(() => {
+    if (!painelToken()) return;
+    void fetchPainel()
+      .then((d) => setIncome((d?.month.incomes ?? []).reduce((t, r) => t + r.amount, 0)))
+      .catch(() => undefined);
+  }, []);
+  return income;
+}
+
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 function dueText(s: BillStatus): string {
@@ -35,14 +58,27 @@ export function fixedSummary(statuses: BillStatus[]): { total: number; paid: num
   return { total: statuses.length, paid: statuses.filter((s) => s.left < 0.01).length, left: statuses.reduce((t, s) => t + s.left, 0) };
 }
 
-export function FixedBills({ compact = false }: { compact?: boolean }) {
+export function FixedBills({ compact = false, savingOnly = false }: { compact?: boolean; savingOnly?: boolean }) {
   const bills = useBills();
+  const savedList = useSaved();
+  const income = useMonthIncome();
   const today = todayBRT();
   const month = monthOf(today);
   const statuses = monthStatus(bills, month, today);
   const { total, paid, left } = fixedSummary(statuses);
   const [open, setOpen] = useState(!compact);
   const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
+  // pague-se primeiro: 10% do que entrou, separado antes de gastar
+  const target = Math.round(income * SAVE_SHARE);
+  const savedNow = savedThisMonth(savedList, month);
+  const saveLeft = Math.max(0, target - savedNow);
+  const showSave = target > 0;
+  const saveDone = showSave && saveLeft < 1;
+  const keep = () => {
+    if (saveLeft < 1) return;
+    saveSaved([...savedList, { on: today, amount: saveLeft }]);
+    setUndo({ id: 'guardado', name: 'Pague-se primeiro' });
+  };
 
   const pay = (s: BillStatus) => {
     const amount = Math.round(s.left * 100) / 100;
@@ -52,6 +88,14 @@ export function FixedBills({ compact = false }: { compact?: boolean }) {
   };
   const undoPay = () => {
     if (!undo) return;
+    if (undo.id === 'guardado') {
+      const list = [...savedList];
+      const i = list.map((e) => e.on).lastIndexOf(today);
+      if (i >= 0) list.splice(i, 1);
+      saveSaved(list);
+      setUndo(null);
+      return;
+    }
     saveBills(
       bills.map((b) => {
         if (b.id !== undo.id) return b;
@@ -65,7 +109,7 @@ export function FixedBills({ compact = false }: { compact?: boolean }) {
     setUndo(null);
   };
 
-  if (total === 0) {
+  if (total === 0 && !showSave) {
     return (
       <section className="fixed-bills empty">
         <div className="fixed-head">
@@ -81,7 +125,7 @@ export function FixedBills({ compact = false }: { compact?: boolean }) {
     <>
       <b>Gastos fixos</b>
       <span className="fixed-count">
-        {paid} de {total} pagos{left > 0 ? ` · faltam ${formatBRL(left)}` : ''}
+        {total === 0 ? 'Cadastre as contas fixas em Gerenciar' : `${paid} de ${total} pagos${left > 0 ? ` · faltam ${formatBRL(left)}` : ''}`}
       </span>
     </>
   );
@@ -103,7 +147,23 @@ export function FixedBills({ compact = false }: { compact?: boolean }) {
       {open && (
         <>
           <ul className="fixed-list">
-            {statuses.map((s) => {
+            {showSave && (
+              <li className={`fixed-first ${saveDone ? 'ok' : ''}`}>
+                <span className="fixed-copy">
+                  <b>Pague-se primeiro</b>
+                  <small>{saveDone ? 'guardado este mês' : `${Math.round(SAVE_SHARE * 100)}% do que entrou, antes de gastar`}</small>
+                </span>
+                <span className="fixed-amount">{formatBRL(saveDone ? savedNow : saveLeft)}</span>
+                {saveDone ? (
+                  <span className="fixed-done" aria-label="Guardado"><Check size={16} /></span>
+                ) : (
+                  <button type="button" className="fixed-pay" aria-label="Marcar que guardou a sua parte" onClick={keep}>
+                    Guardei
+                  </button>
+                )}
+              </li>
+            )}
+            {(savingOnly ? [] : statuses).map((s) => {
               const ok = s.left < 0.01;
               const late = !ok && s.daysToDue < 0;
               return (

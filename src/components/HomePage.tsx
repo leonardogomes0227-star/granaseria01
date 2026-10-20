@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Bell, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
@@ -11,8 +11,12 @@ import { faturaEnabled, getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
-import { FixedBills, fixedSummary, useBills } from './FixedBills';
-import { monthOf, monthStatus, paidThisMonth } from '../bills';
+import { FixedBills, fixedSummary, useBills, useMonthIncome, useSaved } from './FixedBills';
+import { Snowball } from './Snowball';
+import { loadSavedData, openDebts } from '../debts';
+import { buildPlan } from '../plan';
+import { SAVE_SHARE } from '../bills';
+import { monthOf, monthStatus, paidThisMonth, savedThisMonth } from '../bills';
 import { AgentArt } from './AgentArt';
 import { AgentAvatar } from './AgentPage';
 
@@ -38,7 +42,8 @@ function MonthCard() {
   const income = painel ? sum(painel.month.incomes) : 0;
   const spent = painel ? sum(painel.month.expenses) : 0;
   const bills = useBills();
-  const left = income - spent - paidThisMonth(bills, monthOf(todayBRT()));
+  const saved = useSaved();
+  const left = income - spent - paidThisMonth(bills, monthOf(todayBRT())) - savedThisMonth(saved, monthOf(todayBRT()));
   const { today, last } = monthLeft();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
   return (
@@ -120,9 +125,20 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
       .catch(() => undefined);
   }, []);
   const fixed = fixedSummary(monthStatus(bills, monthOf(today), today));
+  const saved = useSaved();
+  const income = useMonthIncome();
+  const savedNow = savedThisMonth(saved, monthOf(today));
+  const target = Math.round(income * SAVE_SHARE);
+  // dívidas e valor mensal do diagnóstico (se a pessoa já fez), pra o Dabasir mostrar a bola de neve
+  const saveData = useMemo(() => loadSavedData(), []);
+  const debtList = useMemo(() => openDebts(saveData), [saveData]);
+  const debtPower = useMemo(() => (saveData && debtList.length > 0 ? buildPlan(saveData).monthlyPower : 0), [saveData, debtList]);
+  const smallest = [...debtList].sort((a, b) => a.value - b.value)[0];
   // o que o agente mostra no cartão é o dado que ele controla, não só o que ele faz
   const liveLine = (id: string, fallback: string): string => {
     if (id === 'bansir') return fixed.total === 0 ? 'Cadastre seus gastos fixos' : fixed.left > 0 ? `${fixed.total - fixed.paid} a pagar · faltam ${formatBRL(fixed.left)}` : 'Todos os gastos fixos pagos';
+    if (id === 'arkad') return target > 0 ? (savedNow >= target - 1 ? `Guardou ${formatBRL(savedNow)} este mês` : `Falta guardar ${formatBRL(target - savedNow)} (10%)`) : fallback;
+    if (id === 'dabasir') return smallest ? `Próxima: ${smallest.description}, ${formatBRL(smallest.value)}` : fallback;
     if (id === 'nomasir') return cats[0] ? `Mais gastou: ${cats[0][0]}, ${formatBRL(cats[0][1])}` : fallback;
     return fallback;
   };
@@ -185,6 +201,10 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
           )}
           {chosen.id === 'bansir' ? (
             <FixedBills />
+          ) : chosen.id === 'arkad' && target > 0 ? (
+            <FixedBills savingOnly />
+          ) : chosen.id === 'dabasir' && debtList.length > 0 && debtPower > 0 ? (
+            <Snowball debts={debtList} power={debtPower} compact />
           ) : chosen.tasks.length > 0 ? (
             <ul className="focus-list">
               {chosen.tasks.map((t) => (
@@ -206,7 +226,7 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
             <Link className="btn-outline" to={chosen.custom ? '/conselheiros' : `/conselheiros/${chosen.id}`}>
               <MessageCircle size={15} /> {chosen.tasks.length > 0 ? 'Conversar' : `Conversar com ${chosen.name}`}
             </Link>
-            {[...(chosen.tool ? [chosen.tool] : []), ...chosen.extra].filter((id) => id !== 'fatura' || fatura).map((id) => (
+            {(chosen.tool ? [chosen.tool] : []).filter((id) => id !== 'fatura' || fatura).map((id) => (
               <button key={id} type="button" className="link-btn" onClick={() => onOpenTool(id)}>
                 {getTool(id).title}
               </button>

@@ -21,6 +21,9 @@ export function useResult(id: ToolId): ToolResult | undefined {
   return r;
 }
 
+// telas que já mostram o resultado ao vivo: o cartão de números salvo só repetiria
+const LIVE_RESULT: ToolId[] = ['debts', 'bills'];
+
 export function ToolPanel({ id }: { id: ToolId }) {
   const result = useResult(id);
   const tasks = useTasks().filter((t) => t.source === id);
@@ -45,7 +48,7 @@ export function ToolPanel({ id }: { id: ToolId }) {
         </ol>
       )}
 
-      {result && (
+      {result && !LIVE_RESULT.includes(id) && (
         <div className="card panel-card">
           <div className="card-row">
             <span className="card-label">{c?.label ?? 'Seu resultado'}</span>

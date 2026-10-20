@@ -134,3 +134,34 @@ export function paymentsThisMonth(bills: Bill[], month: string): { name: string;
   for (const b of bills) for (const p of b.payments) if (p.paidOn.slice(0, 7) === month) rows.push({ name: b.name, amount: p.amount, paidOn: p.paidOn });
   return rows.sort((a, b) => b.paidOn.localeCompare(a.paidOn));
 }
+
+/* ---------- Pague-se primeiro (Babilônia): separar 10% da renda antes de gastar ---------- */
+
+export const SAVED_KEY = 'gs-guardado';
+export const SAVE_SHARE = 0.1;
+
+export interface SavedEntry {
+  on: string; // AAAA-MM-DD em que a pessoa guardou
+  amount: number;
+}
+
+export function loadSaved(): SavedEntry[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]') as SavedEntry[];
+    return Array.isArray(v) ? v.filter((e) => e && typeof e.on === 'string' && e.amount > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSaved(list: SavedEntry[]) {
+  try {
+    if (list.length === 0) localStorage.removeItem(SAVED_KEY);
+    else localStorage.setItem(SAVED_KEY, JSON.stringify(list.slice(-60)));
+    window.dispatchEvent(new Event('gs-contas'));
+  } catch {
+    // segue sem salvar
+  }
+}
+
+export const savedThisMonth = (list: SavedEntry[], month: string) => Math.round(list.filter((e) => e.on.slice(0, 7) === month).reduce((t, e) => t + e.amount, 0) * 100) / 100;
