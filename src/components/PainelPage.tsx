@@ -238,12 +238,16 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         <>
           <section className="wallet" id="mes" aria-label={`Seu mês de ${clock.month}`}>
             <div className="wallet-top">
-              <span className="wallet-month">Saldo de {clock.month}</span>
+              <span className="wallet-month">{income > 0 ? 'Saldo' : 'Gastos'} de {clock.month}</span>
               <span className="wallet-phone"><MessageCircle size={13} /> WhatsApp final {lastDigits(painel.phone)}</span>
             </div>
-            <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
-              {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
-            </p>
+            {income > 0 ? (
+              <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
+                {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
+              </p>
+            ) : (
+              <p className="wallet-balance">Saiu {brl(spent)}</p>
+            )}
             <div className="wallet-flow">
               <span><small>📥 Entrou</small><b>{brl(income)}</b></span>
               <span><small>📤 Saiu</small><b>{brl(spent)}</b></span>

@@ -77,9 +77,16 @@ export function DailyTop() {
         <div className="wallet-top">
           <span className="wallet-month">Seu mês, anotado no WhatsApp</span>
         </div>
-        <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
-          {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
-        </p>
+        {income > 0 ? (
+          <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
+            {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
+          </p>
+        ) : (
+          <>
+            <p className="wallet-balance">Saiu {formatBRL(spent)}</p>
+            <p className="wallet-perday">Pra ver o saldo, anote também o que entrou. Ex.: mande <i>recebi 3000 salário</i> no WhatsApp.</p>
+          </>
+        )}
         <div className="wallet-flow">
           <span><small>📥 Entrou</small><b>{formatBRL(income)}</b></span>
           <span><small>📤 Saiu</small><b>{formatBRL(spent)}</b></span>
@@ -220,7 +227,7 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
         <Quiz onDone={finish} />
       ) : (
         <>
-          <div className="dir-grid dir-picks">
+          <div className={`dir-grid dir-picks n${picks.length}`}>
             {picks.map((p) => (
               <ToolCard key={p.tool} id={p.tool} done={results[p.tool]} why={p.why} onOpen={() => onOpenTool(p.tool)} />
             ))}
