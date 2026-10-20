@@ -50,7 +50,17 @@ export function RichDadTool({ data, onStart, ...nav }: { data: WizardData; onSta
   // o que já gera renda passiva: o investido ou, se a renda declarada for maior, o equivalente a ela
   const startPassive = Math.max(invested, passive / 0.005);
   const goals = [25, 50, 100].map((pct) => ({ pct, months: costs > 0 ? monthsTo((costs * pct) / 100, startPassive, monthly) : null }));
-  useSaveResult('richdad', costs > 0 ? `${r.level.label}: renda passiva paga ${r.freedomPct.toFixed(0)}% dos gastos; vive ${r.monthsFree.toFixed(1).replace('.', ',')} meses sem trabalhar` : null);
+  useSaveResult('richdad', costs > 0 ? `${r.level.label}: o dinheiro rendendo paga ${r.freedomPct.toFixed(0)}% das contas; vive ${r.monthsFree.toFixed(1).replace('.', ',')} meses sem trabalhar` : null, {
+    label: 'Você está',
+    big: r.level.label,
+    rows: [
+      ['Sobra no mês', formatBRL(r.cashflow)],
+      ['O que tem − o que deve', formatBRL(r.netWorth)],
+      ['Se parar de trabalhar, dá pra viver', `${r.monthsFree.toFixed(1).replace('.', ',')} meses`],
+      ['Dinheiro rendendo paga', `${r.freedomPct.toFixed(0)}% das contas`],
+      ['Liberdade (100% das contas)', inYears(goals[2].months)],
+    ],
+  });
 
   return (
     <ToolShell id="richdad" {...nav}>

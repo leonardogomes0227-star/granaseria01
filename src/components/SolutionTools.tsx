@@ -43,7 +43,12 @@ export function ExtraMoneyTool({ data, onStart, ...nav }: { data: WizardData; on
 
   useSaveResult(
     'extra',
-    touched && result ? `${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'extra'} de ${formatBRL(amount)}: ${result.allocation.map((a) => `${a.label} ${formatBRL(a.amount)}`).join(', ')}` : null
+    touched && result ? `${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'extra'} de ${formatBRL(amount)}: ${result.allocation.map((a) => `${a.label} ${formatBRL(a.amount)}`).join(', ')}` : null,
+    result ? {
+      label: `${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'Dinheiro extra'} de`,
+      big: formatBRL(amount),
+      rows: result.allocation.map((a) => [a.label, formatBRL(a.amount)] as [string, string]),
+    } : undefined
   );
 
   return (
@@ -224,7 +229,14 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
     return null;
   }, [data, total, diag]);
 
-  useSaveResult('leaks', total > 0 ? `achou ${formatBRL(total)} por mês (${formatBRL(total * 12)} por ano), já somados no plano` : null);
+  useSaveResult('leaks', total > 0 ? `achou ${formatBRL(total)} por mês (${formatBRL(total * 12)} por ano), já somados no plano` : null, {
+    label: 'Você achou por mês',
+    big: formatBRL(total),
+    rows: [
+      ['Por ano', formatBRL(total * 12)],
+      ...LEAKS.filter((l) => l.id in sel).map((l) => [l.title, formatBRL(sel[l.id])] as [string, string]),
+    ],
+  });
 
   return (
     <ToolShell id="leaks" {...nav}>
@@ -300,7 +312,11 @@ export function RightsTool({ data, ...nav }: { data: WizardData } & ToolNavProps
   const [all, setAll] = useState(false);
   const picked = PROBLEMS.find((p) => p.id === problem);
   const shown = all ? RIGHTS : picked ? RIGHTS.filter((r) => picked.rights.includes(r.id)).sort((a, b) => picked.rights.indexOf(a.id) - picked.rights.indexOf(b.id)) : [];
-  useSaveResult('rights', picked ? `${picked.label.replace(/^\S+\s/, '')}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null);
+  useSaveResult('rights', picked ? `${picked.label.replace(/^\S+\s/, '')}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null, picked ? {
+    label: 'Seu problema',
+    big: picked.label.replace(/^\S+\s/, ''),
+    rows: shown.map((r) => ['Seu direito', r.title] as [string, string]),
+  } : undefined);
 
   return (
     <ToolShell id="rights" {...nav}>

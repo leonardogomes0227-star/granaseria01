@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Target } from 'lucide-react';
-import { getResults, saveGoal, saveResult } from '../results';
+import { getResults, saveGoal, saveResult, type ResultCard } from '../results';
 import { fetchPainel, painelToken } from '../painel';
 import { DebtItem, DebtKind, WizardData } from '../types';
 import { buildPlan, compareStrategies, effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
@@ -60,12 +60,13 @@ export function ToolShell({
 }
 
 /** Guarda o resultado da ferramenta no painel da pessoa, um instante depois de ela parar de mexer. */
-export function useSaveResult(tool: ToolId, summary: string | null) {
+export function useSaveResult(tool: ToolId, summary: string | null, card?: ResultCard) {
+  const cardJson = card ? JSON.stringify(card) : '';
   useEffect(() => {
     if (!summary) return;
-    const t = window.setTimeout(() => saveResult(tool, summary), 1200);
+    const t = window.setTimeout(() => saveResult(tool, summary, cardJson ? (JSON.parse(cardJson) as ResultCard) : undefined), 1200);
     return () => window.clearTimeout(t);
-  }, [tool, summary]);
+  }, [tool, summary, cardJson]);
 }
 
 /* ---------- campos ---------- */
@@ -212,7 +213,16 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
       : pctOfIncome >= 10
         ? { cls: 'status-warn', text: 'Vale esperar 48h e ver se a vontade continua' }
         : { cls: 'status-good', text: 'Cabe no orçamento, se não sair da poupança' };
-  useSaveResult('impulse', income > 0 && price > 0 ? `compra de ${brl(price)} = ${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho (${pctOfIncome.toFixed(0)}% da renda)` : null);
+  useSaveResult('impulse', income > 0 && price > 0 ? `compra de ${brl(price)} = ${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho (${pctOfIncome.toFixed(0)}% da renda)` : null, {
+    label: `Uma compra de ${brl(price)} custa`,
+    big: `${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho`,
+    rows: [
+      ['Sua renda', brl(income)],
+      ['Da sua renda', `${pctOfIncome.toFixed(0)}%`],
+      ['Conselho', verdict.text],
+      ...(afterBuy !== null ? ([['Sobra no mês depois', brl(afterBuy)]] as [string, string][]) : []),
+    ],
+  });
 
   return (
     <ToolShell id="impulse" {...nav}>
@@ -307,7 +317,17 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
     : null;
   const label = (o: 'avalanche' | 'snowball') => (o === 'avalanche' ? 'Começar pela de juros mais alto' : 'Começar pela menor');
   const when = (m: number | null) => (m === null ? 'não fecha com esse valor' : m < 12 ? `em ${m} ${m === 1 ? 'mês' : 'meses'}` : `em ${(m / 12).toFixed(1).replace('.', ',')} anos`);
-  useSaveResult('debts', best ? `${label(best.order).toLowerCase()}: começa por ${best.sequence[0]}, livre ${when(best.months)}, ${formatBRL(best.interest)} de juros` : null);
+  useSaveResult('debts', best ? `${label(best.order).toLowerCase()}: começa por ${best.sequence[0]}, livre ${when(best.months)}, ${formatBRL(best.interest)} de juros` : null, best ? {
+    label: 'Comece por',
+    big: best.sequence[0],
+    rows: [
+      ['Ordem', best.sequence.join(' → ')],
+      ['Fica livre', when(best.months)],
+      ['Juros no total', formatBRL(best.interest)],
+      ['Pagando por mês', formatBRL(power)],
+      ['Total das dívidas', formatBRL(list.reduce((x, d) => x + d.value, 0))],
+    ],
+  } : undefined);
 
   const add = () => {
     if (value <= 0) return;
@@ -418,7 +438,11 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
   const total = computeProjection(contribution, rate, years);
   const totalContributed = contribution * years * 12;
   const totalInterest = Math.max(total - totalContributed, 0);
-  useSaveResult('longterm', contribution > 0 ? `${brl(contribution)} por mês por ${years} anos viram ${brl(total)}` : null);
+  useSaveResult('longterm', contribution > 0 ? `${brl(contribution)} por mês por ${years} anos viram ${brl(total)}` : null, {
+    label: `Em ${years} anos você teria`,
+    big: brl(total),
+    rows: [['Guardando por mês', brl(contribution)], ['Rendendo por ano', `${rate}%`], ['Do seu bolso', brl(totalContributed)], ['De rendimento', brl(totalInterest)]],
+  });
 
   return (
     <ToolShell id="longterm" {...nav}>
@@ -481,7 +505,15 @@ export function GoalCalculator({ data, ...nav }: { data: WizardData } & ToolNavP
   const saveToPlan = () => {
     const label = name.trim() || 'minha meta';
     saveGoal({ name: label, target, monthly: Math.round(required), months: years * 12 });
-    saveResult('goal', `${label}: ${brl(target)} em ${years} ${years === 1 ? 'ano' : 'anos'}, guardando ${brl(required)} por mês`);
+    saveResult('goal', `${label}: ${brl(target)} em ${years} ${years === 1 ? 'ano' : 'anos'}, guardando ${brl(required)} por mês`, {
+      label: `Pra ${label}, guarde por mês`,
+      big: brl(required),
+      rows: [
+        ['Valor da meta', brl(target)],
+        ['Prazo', `${years} ${years === 1 ? 'ano' : 'anos'}`],
+        ['Cabe no plano?', capacity > 0 ? (required <= capacity ? 'Sim' : `Ainda não (o plano tem ${brl(capacity)}/mês)`) : 'Faça o diagnóstico pra saber'],
+      ],
+    });
     setSavedGoal(true);
   };
 
@@ -614,7 +646,15 @@ export function LoanComparator(nav: ToolNavProps) {
   const bothFilled = pA > 0 && pB > 0;
   const tie = Math.abs(resA.total - resB.total) < 0.5;
   const cheaper = resA.total <= resB.total ? 'A' : 'B';
-  useSaveResult('loan', bothFilled ? (tie ? 'as duas propostas custam quase o mesmo' : `proposta ${cheaper} sai ${brl(Math.abs(resA.total - resB.total))} mais barata no total`) : null);
+  useSaveResult('loan', bothFilled ? (tie ? 'as duas propostas custam quase o mesmo' : `proposta ${cheaper} sai ${brl(Math.abs(resA.total - resB.total))} mais barata no total`) : null, {
+    label: 'A melhor proposta',
+    big: tie ? 'Empate' : `Proposta ${cheaper}`,
+    rows: [
+      ['Proposta A', `${nA}x de ${brl(resA.installment)} = ${brl(resA.total)}`],
+      ['Proposta B', `${nB}x de ${brl(resB.installment)} = ${brl(resB.total)}`],
+      ['Diferença', brl(Math.abs(resA.total - resB.total))],
+    ],
+  });
 
   return (
     <ToolShell id="loan" {...nav}>

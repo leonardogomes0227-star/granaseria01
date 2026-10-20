@@ -10,7 +10,7 @@ import { leaksMonthlyTotal } from '../leaks';
 import { getGoals, getResults, type ToolResult } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
-import { getTool } from '../tools';
+import { LISTED_TOOLS, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { RichDadCard } from './RichDadCard';
 import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
@@ -30,6 +30,54 @@ const CATS: { key: keyof WizardData['expenses']; name: string; label: string }[]
 ];
 
 const brl = (n: number) => formatBRL(n);
+
+type Tab = 'mes' | 'plano' | 'pairico' | 'ferramentas';
+const TABS: [Tab, string][] = [
+  ['mes', '💸 Meu mês'],
+  ['plano', '📋 Meu plano'],
+  ['pairico', '🏛️ Pai Rico'],
+  ['ferramentas', '🧰 Minhas ferramentas'],
+];
+
+const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+
+/** O cartão de uma ferramenta: o resultado em destaque e o que a pessoa colocou, igual ao do mês. */
+function ToolResultCard({ id, result, onOpen }: { id: ToolId; result: ToolResult; onOpen: () => void }) {
+  const t = getTool(id);
+  const c = result.card;
+  return (
+    <article className="tool-result">
+      <header>
+        <ToolIcon tool={t} />
+        <span>
+          <b>{t.title}</b>
+          <small>Atualizado em {dayMonth(result.at)}</small>
+        </span>
+      </header>
+      {c ? (
+        <>
+          <p className="tool-result-label">{c.label}</p>
+          <p className="tool-result-big">{c.big}</p>
+          {c.rows.length > 0 && (
+            <dl>
+              {c.rows.map(([k, v], i) => (
+                <div key={i}>
+                  <dt>{k}</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </>
+      ) : (
+        <p className="tool-result-summary">{result.summary}</p>
+      )}
+      <button type="button" className="btn-outline" onClick={onOpen}>
+        Abrir de novo <ArrowRight size={15} />
+      </button>
+    </article>
+  );
+}
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
@@ -99,6 +147,18 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
     .slice(0, 8);
   const name = getName();
   const done = (Object.entries(getResults()) as [ToolId, ToolResult][]).sort((x, y) => y[1].at.localeCompare(x[1].at));
+  const unused = LISTED_TOOLS.filter((t) => !done.some(([id]) => id === t.id));
+  // cada coisa no seu lugar: uma aba por vez (o #mes, #plano… do endereço abre a aba certa)
+  const [tab, setTab] = useState<Tab>(() => {
+    const h = window.location.hash.slice(1) as Tab;
+    return TABS.some(([id]) => id === h) ? h : 'mes';
+  });
+  const pickTab = (t: Tab) => {
+    setTab(t);
+    window.history.replaceState(null, '', `#${t}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const show = (t: Tab) => status !== 'ok' || tab === t;
 
   // para onde foi o dinheiro: o que foi anotado no mês e, com diagnóstico, os limites de cada coisa
   const byCategory = new Map<string, number>();
@@ -127,10 +187,13 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
       {status === 'ok' && (
         <>
           <p className="painel-sub">Seu plano, seus gastos e o que entrou. O que você anota no WhatsApp aparece aqui na hora.</p>
-          <nav className="painel-tabs" aria-label="Seções do painel">
-            <a href="#mes">Meu mês</a>
-            <a href="#plano">Meu plano</a>
-            <a href="#ferramentas">Ferramentas</a>
+          <nav className="painel-tabs" role="tablist" aria-label="Seções do painel">
+            {TABS.map(([id, label]) => (
+              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => pickTab(id)}>
+                {label}
+                {id === 'ferramentas' && done.length > 0 ? ` (${done.length})` : ''}
+              </button>
+            ))}
           </nav>
         </>
       )}
@@ -163,7 +226,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         </p>
       )}
 
-      {status === 'ok' && painel && (
+      {status === 'ok' && painel && tab === 'mes' && (
         <>
           <section className="wallet" id="mes" aria-label={`Seu mês de ${clock.month}`}>
             <div className="wallet-top">
@@ -250,12 +313,25 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         </>
       )}
 
-      {hasDiag && (
+      {show('pairico') && (
         <section className="painel-section">
-          <RichDadCard data={data} compact />
+          {hasDiag ? (
+            <>
+              <RichDadCard data={data} />
+              <button type="button" className="btn-outline" style={{ marginTop: 14 }} onClick={() => onOpenTool('richdad')}>
+                Ver quanto tempo falta <ArrowRight size={15} />
+              </button>
+            </>
+          ) : (
+            <div className="stat-card">
+              <p className="account-line">Faça o diagnóstico e veja seu placar do Pai Rico, Pai Pobre: quanto tempo você viveria sem trabalhar.</p>
+              <button type="button" className="btn-primary" onClick={onStart}>Fazer meu diagnóstico <ArrowRight size={16} /></button>
+            </div>
+          )}
         </section>
       )}
 
+      {show('plano') && (
       <section className="painel-section painel-anchor" id="plano" style={{ marginTop: 28 }}>
         <p className="diag-label">Seu plano de ação</p>
         {plan ? (
@@ -270,32 +346,34 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
           </div>
         )}
       </section>
+      )}
 
+      {show('ferramentas') && (
       <section className="painel-section painel-anchor" id="ferramentas" style={{ marginTop: 28 }}>
-        <p className="diag-label">O que você já fez nas ferramentas</p>
+        <p className="diag-label">Minhas ferramentas</p>
         {done.length === 0 ? (
-          <p className="field-hint">Ainda nada. Cada ferramenta que você usar fica salva aqui e conversa com o seu plano.</p>
+          <p className="field-hint">Ainda nada. Cada ferramenta que você usar ganha um cartão aqui, com o que você colocou e o resultado.</p>
         ) : (
-          <ul className="done-list">
-            {done.map(([id, r]) => {
-              const t = getTool(id);
-              return (
-                <li key={id}>
-                  <button type="button" onClick={() => onOpenTool(id)}>
-                    <ToolIcon tool={t} size="sm" />
-                    <span>
-                      <b>{t.title}</b>
-                      <small>{r.summary}</small>
-                    </span>
-                    <ArrowRight size={15} />
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="tool-results">
+            {done.map(([id, r]) => (
+              <ToolResultCard key={id} id={id} result={r} onOpen={() => onOpenTool(id)} />
+            ))}
+          </div>
         )}
-        <Link className="btn-outline" to="/#ferramentas" style={{ marginTop: 14 }}>Ver todas as ferramentas <ArrowRight size={15} /></Link>
+        {unused.length > 0 && (
+          <>
+            <p className="diag-label" style={{ marginTop: 22 }}>Ainda não usou</p>
+            <div className="unused-tools">
+              {unused.map((t) => (
+                <button key={t.id} type="button" onClick={() => onOpenTool(t.id)}>
+                  <ToolIcon tool={t} size="sm" /> {t.title}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </section>
+      )}
     </div>
   );
 }
