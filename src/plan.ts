@@ -286,8 +286,9 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
       };
     })
     .sort((a, b) => b.rate - a.rate);
-  // inclui dívidas já zeradas (ex.: quitadas com o 13º): a parcela delas continua indo pro plano
-  const installments = data.debts.reduce((s, d) => s + (d.installment || 0), 0);
+  // parcelas das dívidas em aberto e das quitadas no plano (13º, mês a mês): esse dinheiro continua indo pro plano.
+  // Parcela de dívida sem saldo que a pessoa digitou não conta: não dá pra saber se ela existe.
+  const installments = data.debts.reduce((s, d) => s + (d.value > 0 || d.paidOff ? d.installment || 0 : 0), 0);
 
   // 3. Quanto vai pro plano por mês: o que já guarda + parcelas que já paga + vazamentos achados + cortes.
   // O que a pessoa já guarda fica separado (savingNow): o resto só existe se ela fizer os passos do plano.
@@ -656,7 +657,10 @@ export function simulateLumpSum(data: WizardData, amount: number, opts: PlanOpti
         kind: 'debt',
         why: why(rate),
       });
-      if (d.value <= 0.5) d.value = 0;
+      if (d.value <= 0.5) {
+        d.value = 0;
+        d.paidOff = true;
+      }
     }
   };
 

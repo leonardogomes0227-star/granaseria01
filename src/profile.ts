@@ -38,6 +38,7 @@ export function saveAnswers(a: Answers | null) {
   } catch {
     // segue sem salvar
   }
+  window.dispatchEvent(new Event('gs-perfil'));
 }
 
 export interface Pick {

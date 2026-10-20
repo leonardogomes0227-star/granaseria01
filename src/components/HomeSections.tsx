@@ -8,8 +8,53 @@ import { track } from '../analytics';
 import { fetchPainel, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
 import { WhatsAppButton } from './ContinueWhatsApp';
+import { openWhatsApp } from '../whatsapp';
 import { ToolIcon } from './Layout';
 import { CountUp } from './motion';
+
+/* ---------- Começo: 3 passos, com o próximo sempre em destaque ---------- */
+
+export function StartSteps({ hasDiagnosis, onDiagnosis }: { hasDiagnosis: boolean; onDiagnosis: () => void }) {
+  const [answered, setAnswered] = useState(() => Boolean(getAnswers()));
+  const [noted, setNoted] = useState(false);
+  useEffect(() => {
+    const on = () => setAnswered(Boolean(getAnswers()));
+    window.addEventListener('gs-perfil', on);
+    if (painelToken()) void fetchPainel().then((d) => setNoted(Boolean(d && d.month.expenses.length + d.month.incomes.length > 0))).catch(() => undefined);
+    return () => window.removeEventListener('gs-perfil', on);
+  }, []);
+  const steps = [
+    { done: answered, title: 'Responda 6 perguntas', text: 'Pra gente saber quais ferramentas são pra você. Leva 30 segundos.', action: () => document.getElementById('ferramentas')?.scrollIntoView({ behavior: 'smooth' }), cta: 'Responder' },
+    { done: hasDiagnosis, title: 'Faça o diagnóstico', text: 'Sua nota e o seu plano de ação, com valores e datas. Uns 10 minutos.', action: onDiagnosis, cta: 'Fazer agora' },
+    { done: noted, title: 'Anote no WhatsApp', text: 'Mande "mercado 80 no pix" e o seu mês aparece aqui.', action: () => void openWhatsApp('inicio').catch(() => undefined), cta: 'Abrir o WhatsApp' },
+  ];
+  const next = steps.findIndex((st) => !st.done);
+  if (next === -1) return null;
+  return (
+    <div className="start-steps">
+      <p className="start-head">
+        <b>Comece por aqui</b>
+        <span>{steps.filter((st) => st.done).length} de 3 feitos</span>
+      </p>
+      <ol>
+        {steps.map((st, i) => (
+          <li key={i} className={st.done ? 'done' : i === next ? 'next' : ''}>
+            <span className="start-n">{st.done ? '✓' : i + 1}</span>
+            <span className="start-copy">
+              <b>{st.title}</b>
+              <small>{st.text}</small>
+            </span>
+            {i === next && (
+              <button type="button" className="wallet-cta" onClick={st.action}>
+                {st.cta} <ArrowRight size={15} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 /* ---------- Topo: o dia a dia no WhatsApp ---------- */
 // Logado: o mês de verdade (o que entrou e saiu pelo WhatsApp). Ainda não: como funciona, com uma conversa de exemplo.
@@ -189,6 +234,7 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
         </>
       )}
 
+      {hasDiagnosis && (
       <button type="button" className={`dir-diag ${hasDiagnosis ? 'done' : ''}`} onClick={onStart}>
         <span className="tool-icon lg tone-gold"><Sparkles size={24} strokeWidth={1.9} /></span>
         <span className="dir-copy">
@@ -198,6 +244,7 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
         </span>
         <ArrowRight size={20} className="pick-arrow" />
       </button>
+      )}
 
       {season && (
         <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>

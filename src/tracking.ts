@@ -56,7 +56,10 @@ export function currentState(t: Tracking): WizardData {
       if (d.value <= 0) continue;
       const r = effectiveRate(d).rate / 100;
       d.value = Math.max(0, d.value * (1 + r) - (m.paid[d.id] || 0));
-      if (d.value < 0.5) d.value = 0;
+      if (d.value < 0.5) {
+        d.value = 0;
+        d.paidOff = true;
+      }
     }
     emergencyFund += m.paid.reserve || 0;
   }
