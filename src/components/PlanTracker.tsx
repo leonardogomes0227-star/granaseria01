@@ -93,7 +93,14 @@ function TrackerBody({
     const total = Object.values(paid).reduce((x, v) => x + v, 0);
     const combined = view.tasks.reduce((x, t) => x + t.suggested, 0);
     track('mes_fechado', { cumprido: total + 0.5 >= combined });
-    saveResult('tracker', `${month}: ${total + 0.5 >= combined ? 'fez o combinado' : `guardou/pagou ${formatBRL(total)} de ${formatBRL(combined)}`}`);
+    saveResult('tracker', `${month}: ${total + 0.5 >= combined ? 'fez o combinado' : `guardou/pagou ${formatBRL(total)} de ${formatBRL(combined)}`}`, {
+      label: `Último mês fechado: ${month}`,
+      big: total + 0.5 >= combined ? 'Fez o combinado ✅' : `${formatBRL(total)} de ${formatBRL(combined)}`,
+      rows: [
+        ...view.tasks.map((t) => [t.label, `${formatBRL(paid[t.id] ?? 0)} de ${formatBRL(t.suggested)}`] as [string, string]),
+        ['Meses fechados', String(tracking.months.length + 1)],
+      ],
+    });
     setTracking(closeMonth(tracking, paid));
   };
 

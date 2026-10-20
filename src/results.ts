@@ -7,9 +7,17 @@ import type { PlanGoal } from './plan';
 const RESULTS_KEY = 'gs-resultados';
 const GOALS_KEY = 'gs-metas';
 
+/** O cartão de cada ferramenta no painel: o resultado em destaque e o que a pessoa colocou. */
+export interface ResultCard {
+  label: string; // o que é o número grande ("Comece por", "Por mês"…)
+  big: string; // o resultado
+  rows: [string, string][]; // o que a pessoa colocou e os outros números
+}
+
 export interface ToolResult {
   summary: string;
   at: string;
+  card?: ResultCard;
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -30,10 +38,10 @@ function write(key: string, value: unknown) {
 
 export const getResults = (): Partial<Record<ToolId, ToolResult>> => read(RESULTS_KEY, {});
 
-export function saveResult(tool: ToolId, summary: string) {
+export function saveResult(tool: ToolId, summary: string, card?: ResultCard) {
   const all = getResults();
-  if (all[tool]?.summary === summary) return;
-  write(RESULTS_KEY, { ...all, [tool]: { summary, at: new Date().toISOString() } });
+  if (all[tool]?.summary === summary && JSON.stringify(all[tool]?.card) === JSON.stringify(card)) return;
+  write(RESULTS_KEY, { ...all, [tool]: { summary, at: new Date().toISOString(), ...(card ? { card } : {}) } });
 }
 
 export const getGoals = (): PlanGoal[] => read<PlanGoal[]>(GOALS_KEY, []).filter((g) => g && g.monthly > 0 && g.months > 0);
