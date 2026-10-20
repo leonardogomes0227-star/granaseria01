@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CalendarDays, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
 import { CopyMessage } from './CopyMessage';
 import { ActionPlan, PlanStep, monthShort } from '../plan';
 import { RIGHTS, relevantRights } from '../leaks';
@@ -9,7 +9,167 @@ import { formatBRL } from '../calculations';
 
 /* ---------- Plano de ação: valor mensal, fases, passos, renegociação e calendário ---------- */
 
-const FIRST_STEPS = 3;
+type PotId = 'debts' | 'reserve' | 'invest' | 'gastos' | `goal-${number}`;
+
+interface Pot {
+  id: PotId;
+  icon: LucideIcon;
+  title: string;
+  status: 'agora' | 'depois' | 'pronto';
+  statusText: string;
+  amount: string | null; // "R$ 500 por mês"
+  when: string | null; // "até jul/28"
+  progress: { now: string; goal: string; pct: number } | null;
+  why: string;
+  steps: PlanStep[];
+  tool: ToolId | null;
+  extra?: React.ReactNode;
+}
+
+// cada passo do plano vai pro pote (objetivo) a que ele pertence
+function potOfStep(step: PlanStep, plan: ActionPlan): PotId | null {
+  const t = step.title;
+  if (/dívida|Pague primeiro|pra abater|Troque /i.test(t)) return 'debts';
+  if (/emergência/i.test(t)) return 'reserve';
+  if (/investir/i.test(t)) return 'invest';
+  if (/^Gaste menos|resto do dinheiro|moradia/i.test(t)) return 'gastos';
+  const g = plan.goals.findIndex((x) => t === `Junte pra ${x.name}`);
+  return g >= 0 ? `goal-${g}` : null;
+}
+
+const fmtPct = (r: number) => `${r.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+
+function buildPots(plan: ActionPlan): Pot[] {
+  const short = (n: number | null) => (n === null ? 'sem data ainda' : monthShort(plan.start, n));
+  const phase = (id: 'debts' | 'reserve' | 'invest') => plan.phases.find((p) => p.id === id);
+  const stepsOf = (id: PotId) => plan.steps.filter((s) => potOfStep(s, plan) === id);
+  const status = (from: number | undefined): Pick<Pot, 'status' | 'statusText'> =>
+    from === undefined || from <= 1 ? { status: 'agora', statusText: 'Agora' } : { status: 'depois', statusText: `Começa em ${short(from)}` };
+  const pots: Pot[] = [];
+
+  if (plan.debts.length > 0) {
+    const total = plan.debts.reduce((x, d) => x + d.balance, 0);
+    const ph = phase('debts');
+    pots.push({
+      id: 'debts',
+      icon: CreditCard,
+      title: 'Dívidas',
+      ...status(ph?.from),
+      amount: ph ? `${formatBRL(ph.amount)} por mês` : null,
+      when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}`,
+      progress: { now: `Falta pagar ${formatBRL(total)}`, goal: 'Zerar', pct: 0 },
+      why: plan.stuck ? 'Hoje o que você paga não cobre nem os juros. O primeiro passo é renegociar.' : 'Dívida com juros alto come o seu salário. Pagando na ordem certa, você sai mais rápido e paga menos juros.',
+      steps: stepsOf('debts'),
+      tool: 'debts',
+      extra: (
+        <>
+          <p className="pot-sub">A ordem pra pagar</p>
+          <ol className="pot-list">
+            {plan.debts.map((d) => (
+              <li key={d.id}>
+                <span>
+                  <b>{d.name}</b>
+                  <small>{fmtPct(d.rate)} ao mês{d.rateAssumed ? ' (taxa típica)' : ''}</small>
+                </span>
+                <span className="pot-list-right">
+                  <b>{formatBRL(d.balance)}</b>
+                  <small>{d.payoffMonth === null ? 'sem data ainda' : `quita em ${short(d.payoffMonth)}`}</small>
+                </span>
+              </li>
+            ))}
+          </ol>
+          {plan.negotiation && <NegotiationFold negotiation={plan.negotiation} />}
+        </>
+      ),
+    });
+  }
+
+  if (plan.reserve.target > 0) {
+    const ph = phase('reserve');
+    const pct = Math.min(100, (plan.reserve.current / plan.reserve.target) * 100);
+    pots.push({
+      id: 'reserve',
+      icon: PiggyBank,
+      title: 'Reserva',
+      ...(plan.reserve.alreadyDone ? { status: 'pronto' as const, statusText: 'Pronta' } : status(ph?.from)),
+      amount: ph && !plan.reserve.alreadyDone ? `${formatBRL(ph.amount)} por mês` : null,
+      when: plan.reserve.alreadyDone ? null : plan.reserve.doneMonth === null ? 'depois das dívidas' : `pronta em ${short(plan.reserve.doneMonth)}`,
+      progress: { now: `${formatBRL(plan.reserve.current)} guardados`, goal: formatBRL(plan.reserve.target), pct },
+      why: 'Dinheiro guardado pra imprevistos (6 meses de gastos). Com ela, um problema não vira dívida nova.',
+      steps: stepsOf('reserve'),
+      tool: 'tracker',
+    });
+  }
+
+  plan.goals.forEach((g, i) => {
+    pots.push({
+      id: `goal-${i}`,
+      icon: Target,
+      title: cap(g.name),
+      status: 'agora',
+      statusText: 'Agora',
+      amount: `${formatBRL(g.monthly)} por mês`,
+      when: `em ${g.months} meses`,
+      progress: { now: `${formatBRL(g.monthly)} por mês`, goal: formatBRL(g.target), pct: 0 },
+      why: 'A meta que você criou. Separando todo mês, ela chega na data.',
+      steps: stepsOf(`goal-${i}`),
+      tool: 'goal',
+    });
+  });
+
+  if (plan.investFrom !== null) {
+    pots.push({
+      id: 'invest',
+      icon: TrendingUp,
+      title: 'Investir',
+      ...status(plan.investFrom),
+      amount: `${formatBRL(plan.monthlyPower)} por mês`,
+      when: `a partir de ${short(plan.investFrom)}`,
+      progress: { now: 'Começa depois da reserva', goal: `${formatBRL(plan.invest10y)} em 10 anos`, pct: 0 },
+      why: 'Com as dívidas pagas e a reserva pronta, o dinheiro passa a trabalhar por você: é o que o Pai Rico chama de comprar ativos.',
+      steps: stepsOf('invest'),
+      tool: 'richdad',
+    });
+  }
+
+  if (plan.cuts.length > 0 || plan.unaccounted > 0) {
+    const cut = plan.cuts.reduce((x, c) => x + c.amount, 0);
+    pots.push({
+      id: 'gastos',
+      icon: Scissors,
+      title: 'Gastos',
+      status: 'agora',
+      statusText: 'Agora',
+      amount: cut > 0 ? `${formatBRL(cut)} a menos por mês` : null,
+      when: null,
+      progress: null,
+      why: 'Cada real que deixa de sair vai pro seu plano e adianta as datas.',
+      steps: stepsOf('gastos'),
+      tool: 'leaks',
+      extra: plan.cuts.length > 0 && (
+        <>
+          <p className="pot-sub">Seu limite em cada coisa</p>
+          <ol className="pot-list">
+            {plan.cuts.map((c) => (
+              <li key={c.key}>
+                <span>
+                  <b>{c.label}</b>
+                  <small>hoje {formatBRL(c.current)}</small>
+                </span>
+                <span className="pot-list-right">
+                  <b>{formatBRL(c.ceiling)}</b>
+                  <small>no máximo</small>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </>
+      ),
+    });
+  }
+  return pots;
+}
 
 export function ActionPlanView({
   plan,
@@ -22,53 +182,55 @@ export function ActionPlanView({
   lockedSlot?: React.ReactNode;
   onOpenTool: (id: ToolId) => void;
 }) {
-  // os primeiros passos aparecem; o resto e os extras (mensagem pra renegociar, direitos, calendário) ficam a um toque
-  const [allSteps, setAllSteps] = useState(false);
+  const pots = buildPots(plan);
+  const [potId, setPotId] = useState<PotId | null>(pots.find((p) => p.status === 'agora')?.id ?? pots[0]?.id ?? null);
+  const pot = pots.find((p) => p.id === potId) ?? pots[0];
   const [extras, setExtras] = useState(false);
-  const visibleSteps = locked ? plan.steps.slice(0, 1) : allSteps ? plan.steps : plan.steps.slice(0, FIRST_STEPS);
-  const hiddenSteps = locked ? 0 : plan.steps.length - visibleSteps.length;
-  const hasRights = relevantRights(plan).length > 0;
-  const hasExtras = !locked && (Boolean(plan.negotiation) || plan.schedule.length > 0 || hasRights);
+  const general = plan.steps.filter((s) => potOfStep(s, plan) === null);
+  const open = (id: PotId) => {
+    setPotId(id);
+    requestAnimationFrame(() => document.getElementById('pot-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
 
   return (
     <div className="plan">
-      <PlanSummary plan={plan} />
-      {!locked && <ThisMonth plan={plan} onOpenTool={onOpenTool} />}
-      <Journey plan={plan} />
-      <GrowthChart plan={plan} />
+      <ThisMonth plan={plan} general={general} onOpenTool={onOpenTool} onPick={locked ? undefined : open} />
 
-      <p className="diag-label plan-steps-label">Passo a passo</p>
+      {locked ? (
+        lockedSlot
+      ) : (
+        pot && (
+          <>
+            <p className="diag-label plan-steps-label">Cada objetivo no seu lugar</p>
+            <div className="pot-tabs" role="tablist" aria-label="Objetivos do plano">
+              {pots.map((p) => (
+                <button key={p.id} type="button" role="tab" aria-selected={p.id === pot.id} className={`pot-tab ${p.status} ${p.id === pot.id ? 'active' : ''}`} onClick={() => setPotId(p.id)}>
+                  <p.icon size={16} />
+                  <span>{p.title}</span>
+                  <i />
+                </button>
+              ))}
+            </div>
+            <PotDetail key={pot.id} pot={pot} onOpenTool={onOpenTool} />
+          </>
+        )
+      )}
 
-      <div className={locked ? 'paywall' : undefined}>
-        <ol className={locked ? 'paywall-teaser steps' : 'steps'}>
-          {visibleSteps.map((s, i) => (
-            <StepCard key={i} n={i + 1} step={s} onOpenTool={onOpenTool} />
-          ))}
-          {locked && <div className="paywall-fade" />}
-        </ol>
-        {locked && lockedSlot}
-        {hiddenSteps > 0 && (
-          <button type="button" className="plan-more" onClick={() => setAllSteps(true)}>
-            <ChevronDown size={14} /> Ver os outros {hiddenSteps} {hiddenSteps === 1 ? 'passo' : 'passos'}
-          </button>
-        )}
-      </div>
-
-      {hasExtras && !extras && (
+      {!locked && !extras && (
         <button type="button" className="plan-extras-btn" onClick={() => setExtras(true)}>
           <span>
-            <b>Mais ajuda pro seu plano</b>
-            <small>{[plan.negotiation && 'mensagem pronta pra renegociar', hasRights && 'seus direitos', plan.schedule.length > 0 && 'calendário mês a mês', 'como acelerar'].filter(Boolean).join(' · ')}</small>
+            <b>Ver mais</b>
+            <small>{['gráfico do seu dinheiro', plan.schedule.length > 0 && 'calendário mês a mês', 'seus direitos', 'como acelerar'].filter(Boolean).join(' · ')}</small>
           </span>
           <ChevronDown size={18} />
         </button>
       )}
       {extras && (
         <>
-          {plan.negotiation && <NegotiationCard negotiation={plan.negotiation} />}
+          <GrowthChart plan={plan} />
+          {plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
           <RightsCard plan={plan} onOpenTool={onOpenTool} />
           <Boosters plan={plan} onOpenTool={onOpenTool} />
-          {plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
         </>
       )}
 
@@ -80,35 +242,124 @@ export function ActionPlanView({
   );
 }
 
-/** O que fazer neste mês, em reais: a primeira coisa que a pessoa precisa ver. */
-function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: ToolId) => void }) {
+/** Um objetivo do plano, sozinho: quanto, até quando, o progresso, pra que serve, como fazer e a ferramenta. */
+function PotDetail({ pot, onOpenTool }: { pot: Pot; onOpenTool: (id: ToolId) => void }) {
+  const tool = pot.tool ? getTool(pot.tool) : null;
+  return (
+    <div className={`pot stat-card ${pot.status}`} id="pot-detail">
+      <div className="pot-head">
+        <span className="pot-icon" aria-hidden="true"><pot.icon size={20} /></span>
+        <h4>{pot.title}</h4>
+        <em className={`pot-status ${pot.status}`}>{pot.statusText}</em>
+      </div>
+      {(pot.amount || pot.when) && (
+        <div className="pot-nums">
+          {pot.amount && (
+            <span>
+              <small>Quanto</small>
+              <b>{pot.amount}</b>
+            </span>
+          )}
+          {pot.when && (
+            <span>
+              <small>Quando</small>
+              <b>{pot.when}</b>
+            </span>
+          )}
+        </div>
+      )}
+      {pot.progress && (
+        <div className="pot-progress">
+          <div className="jp-bar"><i style={{ width: `${Math.max(pot.progress.pct, 2)}%` }} /></div>
+          <p className="jp-nums">
+            <span>{pot.progress.now}</span>
+            <span>Meta: {pot.progress.goal}</span>
+          </p>
+        </div>
+      )}
+      <p className="pot-why">{pot.why}</p>
+      {pot.steps.length > 0 && (
+        <>
+          <p className="pot-sub">Como fazer</p>
+          <ol className="pot-steps">
+            {pot.steps.map((s, i) => (
+              <PotStep key={i} step={s} />
+            ))}
+          </ol>
+        </>
+      )}
+      {pot.extra}
+      {tool && (
+        <button type="button" className="btn-primary pot-tool" onClick={() => onOpenTool(tool.id)}>
+          Abrir {tool.title} <ArrowRight size={15} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PotStep({ step }: { step: PlanStep }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <li>
+      <button type="button" className="pot-step" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        <span>
+          <b>{step.title}</b>
+          {(step.amount || step.when) && <small>{[step.amount, step.when].filter(Boolean).join(' · ')}</small>}
+        </span>
+        <ChevronDown size={16} style={{ transform: open ? 'rotate(180deg)' : undefined }} />
+      </button>
+      {open && <p className="step-detail">{step.why ? `${step.why} ` : ''}{step.detail}</p>}
+    </li>
+  );
+}
+
+/** O que fazer neste mês, em reais: a primeira coisa que a pessoa vê. Cada linha leva pro objetivo dela. */
+function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; general: PlanStep[]; onOpenTool: (id: ToolId) => void; onPick?: (id: PotId) => void }) {
+  const [how, setHow] = useState(false);
   const row = plan.schedule[0];
-  const items: [LucideIcon, string, string][] = [];
-  if (plan.stuck) items.push([Phone, 'Ligar pro banco e pedir pra renegociar (mensagem pronta em "Mais ajuda")', 'agora']);
+  const items: [LucideIcon, string, string, PotId | null][] = [];
+  if (plan.stuck) items.push([Phone, 'Ligar pro banco e pedir pra renegociar', 'agora', 'debts']);
   if (row) {
-    for (const p of row.payments) items.push([CreditCard, `Pagar ${p.name}`, formatBRL(p.amount)]);
-    if (row.toReserve >= 1) items.push([PiggyBank, 'Guardar pra emergências', formatBRL(row.toReserve)]);
+    for (const p of row.payments) items.push([CreditCard, `Pagar ${p.name}`, formatBRL(p.amount), 'debts']);
+    if (row.toReserve >= 1) items.push([PiggyBank, 'Guardar pra emergências', formatBRL(row.toReserve), 'reserve']);
   } else if (plan.monthlyPower > 0 && plan.debts.length === 0) {
-    items.push([PiggyBank, plan.reserve.alreadyDone ? 'Investir' : 'Guardar pra emergências', formatBRL(plan.monthlyPower)]);
+    items.push(plan.reserve.alreadyDone ? [TrendingUp, 'Investir', formatBRL(plan.monthlyPower), 'invest'] : [PiggyBank, 'Guardar pra emergências', formatBRL(plan.monthlyPower), 'reserve']);
   }
-  for (const g of plan.goals) items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly)]);
-  for (const c of plan.cuts) items.push([Scissors, `Gastar no máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling)]);
-  if (items.length === 0) return null;
+  plan.goals.forEach((g, i) => items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly), `goal-${i}`]));
+  for (const c of plan.cuts) items.push([Scissors, `No máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling), 'gastos']);
   const month = monthShort(plan.start, 1);
   return (
     <div className="this-month">
       <p className="this-month-head">
-        <b>Este mês ({month}), faça isto:</b>
+        <b>Este mês ({month})</b>
+        <small>
+          {plan.powerAssumed
+            ? `Hoje não sobra nada. O plano começa separando 10% da renda: ${formatBRL(plan.monthlyPower)} por mês.`
+            : `Você guarda ${formatBRL(plan.savingNow)} hoje. Com o plano, vão ${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
+        </small>
       </p>
-      <ul>
-        {items.map(([Icon, what, amount], i) => (
-          <li key={i}>
-            <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
-            <span className="this-month-what">{what}</span>
-            <b>{amount}</b>
-          </li>
-        ))}
-      </ul>
+      {items.length > 0 && (
+        <ul>
+          {items.map(([Icon, what, amount, pot], i) => (
+            <li key={i}>
+              <button type="button" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
+                <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
+                <span className="this-month-what">{what}</span>
+                <b>{amount}</b>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {general.length > 0 && (
+        <>
+          <button type="button" className="plan-more" aria-expanded={how} onClick={() => setHow((v) => !v)}>
+            <ChevronDown size={14} style={{ transform: how ? 'rotate(180deg)' : undefined }} /> Como começar
+          </button>
+          {how && general.map((s, i) => <p key={i} className="step-detail"><b>{s.title}.</b> {s.detail}</p>)}
+        </>
+      )}
       <button type="button" className="btn-primary" onClick={() => onOpenTool('tracker')}>
         Já fiz? Marcar em Acompanhar meu plano <ArrowRight size={15} />
       </button>
@@ -116,43 +367,6 @@ function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: To
   );
 }
 
-/** As etapas do plano como uma jornada, com barra de progresso e data de cada uma. */
-function Journey({ plan }: { plan: ActionPlan }) {
-  const short = (n: number | null) => (n === null ? 'sem data ainda' : monthShort(plan.start, n));
-  const totalDebt = plan.debts.reduce((x, d) => x + d.balance, 0);
-  const stages: { icon: LucideIcon; title: string; now: string; goal: string; pct: number; when: string }[] = [];
-  if (plan.debts.length > 0) stages.push({ icon: CreditCard, title: 'Sair das dívidas', now: `Falta pagar ${formatBRL(totalDebt)}`, goal: 'Zerar', pct: 0, when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}` });
-  if (plan.reserve.target > 0) {
-    const pct = Math.min(100, (plan.reserve.current / plan.reserve.target) * 100);
-    stages.push({ icon: PiggyBank, title: 'Reserva de emergência', now: `${formatBRL(plan.reserve.current)} guardados`, goal: formatBRL(plan.reserve.target), pct, when: plan.reserve.alreadyDone ? 'pronta' : plan.reserve.doneMonth === null ? 'depois das dívidas' : `pronta em ${short(plan.reserve.doneMonth)}` });
-  }
-  for (const g of plan.goals) stages.push({ icon: Target, title: g.name.charAt(0).toUpperCase() + g.name.slice(1), now: `${formatBRL(g.monthly)} por mês`, goal: formatBRL(g.target), pct: 0, when: `em ${g.months} meses` });
-  if (plan.investFrom !== null) stages.push({ icon: TrendingUp, title: 'Investir', now: `${formatBRL(plan.monthlyPower)} por mês`, goal: `${formatBRL(plan.invest10y)} em 10 anos`, pct: 0, when: `começa em ${short(plan.investFrom)}` });
-  if (stages.length === 0) return null;
-  return (
-    <div className="journey-plan">
-      <p className="diag-label">Sua jornada</p>
-      <ol>
-        {stages.map((st, i) => (
-          <li key={i}>
-            <span className="jp-icon" aria-hidden="true"><st.icon size={18} /></span>
-            <div className="jp-body">
-              <p className="jp-head">
-                <b>{st.title}</b>
-                <span>{st.when}</span>
-              </p>
-              <div className="jp-bar"><i style={{ width: `${Math.max(st.pct, 2)}%` }} /></div>
-              <p className="jp-nums">
-                <span>{st.now}</span>
-                <span>Meta: {st.goal}</span>
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
 
 /** Gráfico simples do dinheiro guardado mês a mês, com as datas das metas marcadas. */
 function GrowthChart({ plan }: { plan: ActionPlan }) {
@@ -202,80 +416,20 @@ function GrowthChart({ plan }: { plan: ActionPlan }) {
   );
 }
 
-/** O plano numa olhada: quanto você guarda hoje, quanto o plano usa (e de onde vem) e as etapas com datas. */
-function PlanSummary({ plan }: { plan: ActionPlan }) {
-  const parts = [
-    { label: 'cortando gastos', value: plan.sources.cuts },
-    { label: 'parcelas que já paga', value: plan.sources.installments },
-    { label: 'vazamentos achados', value: plan.sources.leaks },
-  ].filter((p) => p.value > 0);
-  const when = (from: number, to: number | null) => (to === null ? `a partir de ${monthShort(plan.start, from)}` : `até ${monthShort(plan.start, to)}`);
-  return (
-    <div className="plan-summary stat-card">
-      <div className="plan-summary-row">
-        <span>
-          <small>Você guarda hoje</small>
-          <b>{formatBRL(plan.savingNow)}</b>
-        </span>
-        <span className="arrow-sep" aria-hidden="true">→</span>
-        <span className="target">
-          <small>Com o plano</small>
-          <b>{formatBRL(plan.monthlyPower)}<em>/mês</em></b>
-        </span>
-      </div>
-      <p className="plan-summary-from">
-        {plan.powerAssumed
-          ? 'Hoje não sobra nada: o plano começa separando 10% da renda.'
-          : parts.length > 0
-            ? `O que falta vem de: ${parts.map((p) => `${formatBRL(p.value)} ${p.label}`).join(' + ')}.`
-            : 'É o que você já guarda: o plano diz pra onde vai cada real.'}
-      </p>
-      {plan.phases.length > 0 && (
-        <ol className="plan-stages">
-          {plan.phases.map((ph, i) => (
-            <li key={ph.id}>
-              <span className="plan-stage-n">{i + 1}</span>
-              <span>
-                <b>{ph.title}</b>
-                <small>{ph.to === null && ph.id !== 'invest' ? 'sem data ainda' : when(ph.from, ph.to)}</small>
-              </span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
-  );
-}
 
-/** Um passo: o que fazer, pra que serve, quanto e até quando. O como fazer e a ferramenta ficam a um toque. */
-function StepCard({ n, step, onOpenTool }: { n: number; step: PlanStep; onOpenTool: (id: ToolId) => void }) {
+
+function NegotiationFold({ negotiation }: { negotiation: NonNullable<ActionPlan['negotiation']> }) {
   const [open, setOpen] = useState(false);
-  const tool = step.tool ? getTool(step.tool) : null;
-  return (
-    <li className={`step tone-${step.tone}`}>
-      <span className="step-n">{n}</span>
-      <div className="step-body">
-        <p className="step-title">{step.title}</p>
-        {step.why && <p className="step-why">{step.why}</p>}
-        {(step.amount || step.when) && (
-          <p className="step-chips">
-            {step.amount && <span><Wallet size={13} /> {step.amount}</span>}
-            {step.when && <span><CalendarDays size={13} /> {step.when}</span>}
-          </p>
-        )}
-        <div className="step-actions">
-          <button type="button" className="step-how" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
-            Como fazer <ChevronDown size={14} />
-          </button>
-          {tool && (
-            <button type="button" className="step-tool" onClick={() => onOpenTool(tool.id)}>
-              <ToolIcon tool={tool} size="sm" /> {tool.title} <ArrowRight size={14} />
-            </button>
-          )}
-        </div>
-        {open && <p className="step-detail">{step.detail}</p>}
-      </div>
-    </li>
+  return open ? (
+    <NegotiationCard negotiation={negotiation} />
+  ) : (
+    <button type="button" className="pot-step" style={{ marginTop: 8 }} onClick={() => setOpen(true)}>
+      <span>
+        <b>Mensagem pronta pra renegociar</b>
+        <small>É só copiar e mandar pro banco</small>
+      </span>
+      <ChevronDown size={16} />
+    </button>
   );
 }
 
