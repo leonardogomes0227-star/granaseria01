@@ -276,3 +276,21 @@ a.dir-row { text-decoration: none; }
 .focus-list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .focus-list li:last-child { border-bottom: 0; }
 @media (max-width: 760px) { .hero-cta { width: 100%; } }
+
+/* fase 2: meu mês com um herói e categorias leves */
+.month-hero { padding-top: 10px; padding-bottom: 24px; }
+.hero-number.neg { color: var(--bad); }
+.month-flow { margin-top: 10px; color: var(--text-faint); font-size: 13.5px; }
+.painel > .month-hero + .impulse-row { margin: 8px 0 26px; }
+.painel .painel-two { gap: 26px; }
+.painel .painel-where, .painel .painel-recent { padding: 18px 18px 8px; }
+.painel .where-list { gap: 4px; margin-top: 8px; }
+.painel .where-list li { padding: 12px 0; border-top: 1px solid var(--line); }
+.painel .where-list li:first-child { border-top: 0; }
+.painel .where-track { height: 5px; }
+.painel .where-note { color: var(--bad); font-size: 12.5px; }
+.painel .painel-list li { padding: 12px 0; }
+.month-out { display: inline-flex; align-items: center; gap: 6px; margin: 22px auto 0; padding: 6px 10px; background: none; border: 0; color: var(--text-faint); font: inherit; font-size: 13px; cursor: pointer; }
+.month-out:hover { color: var(--text); }
+.painel { display: flex; flex-direction: column; }
+.painel .month-out { align-self: center; }
