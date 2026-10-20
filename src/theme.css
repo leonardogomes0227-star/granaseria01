@@ -315,3 +315,73 @@ input[type='range'] { accent-color: var(--gold-bright); }
 .dir-extra { margin-top: 22px; }
 .dir-row.season { border-color: rgba(233, 176, 76, 0.4); }
 .tools-dir .dir-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+/* ---------- painel resumido ---------- */
+.dir-list.one { grid-template-columns: 1fr; max-width: none; }
+.tool-row .dir-row-copy small { color: var(--text-faint); font-size: 12.5px; }
+.tool-row .dir-row-copy b { font-size: 15.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+/* Viver de renda */
+.richdad .richdad-q { margin: 0; color: var(--text-soft); font-size: 14px; }
+.richdad .richdad-big { margin: 2px 0 4px; font-size: 34px; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
+.richdad .richdad-sub { margin: 0 0 16px; color: var(--text-soft); font-size: 14px; }
+.ladder { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ladder li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid transparent; }
+.ladder li.now { border-color: rgba(233, 176, 76, 0.5); }
+.ladder li > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.ladder li b { font-size: 15px; }
+.ladder li small { color: var(--text-soft); font-size: 13px; }
+.ladder li em { font-style: normal; font-size: 11.5px; font-weight: 600; color: #120D07; background: var(--gold-bright); padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.ladder-n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; background: var(--bg); color: var(--text-soft); border: 1px solid var(--line-strong); }
+.ladder li.done .ladder-n { background: var(--good); color: #0D0B09; border-color: transparent; }
+.ladder li.now .ladder-n { background: var(--gold-bright); color: #120D07; border-color: transparent; }
+
+/* Meu plano: este mês + potes */
+.this-month-head { display: flex; flex-direction: column; gap: 4px; }
+.this-month-head small { color: var(--text-soft); font-size: 13.5px; font-weight: 400; }
+.this-month ul li button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 0; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.this-month ul li button:disabled { cursor: default; }
+.this-month ul li button .this-month-what { flex: 1; }
+.pot-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
+.pot-tabs::-webkit-scrollbar { display: none; }
+.pot-tab { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 99px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text-soft); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pot-tab i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-faint); }
+.pot-tab.agora i { background: var(--gold-bright); }
+.pot-tab.pronto i { background: var(--good); }
+.pot-tab.active { background: var(--surface-2); color: var(--text); border-color: var(--gold-bright); }
+.pot { scroll-margin-top: 90px; }
+.pot-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.pot-head h4 { margin: 0; font-size: 20px; flex: 1; }
+.pot-icon { width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--gold-bright); }
+.pot-status { font-style: normal; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); color: var(--text-soft); }
+.pot-status.agora { background: rgba(233, 176, 76, 0.15); color: var(--gold-bright); }
+.pot-status.pronto { background: rgba(127, 203, 143, 0.15); color: var(--good); }
+.pot-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.pot-nums span { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 12px; background: var(--surface-2); }
+.pot-nums small { color: var(--text-faint); font-size: 12.5px; }
+.pot-nums b { font-size: 15.5px; }
+.pot-progress { margin-bottom: 12px; }
+.pot-why { margin: 0 0 14px; color: var(--text-soft); font-size: 14.5px; }
+.pot-sub { margin: 14px 0 8px; font-size: 13px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.pot-steps, .pot-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pot-step { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; border-radius: 10px; background: var(--surface-2); border: 0; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.pot-step > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.pot-step b { font-size: 14.5px; }
+.pot-step small { color: var(--text-soft); font-size: 12.5px; }
+.pot-steps .step-detail { margin: 6px 4px 4px; }
+.pot-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.pot-list li > span { display: flex; flex-direction: column; gap: 2px; }
+.pot-list small { color: var(--text-soft); font-size: 12.5px; }
+.pot-list-right { text-align: right; }
+.pot .plan-nego { margin-top: 12px; }
+.pot-tool { margin-top: 16px; width: 100%; justify-content: center; }
+
+/* abas do painel: no celular, barra fixa embaixo (como app de banco) */
+.painel-tabs button { display: inline-flex; align-items: center; gap: 7px; position: relative; }
+@media (max-width: 640px) {
+  .painel { padding-bottom: 96px; }
+  .painel-tabs { position: fixed !important; top: auto !important; bottom: 0; left: 0; right: 0; z-index: 40; margin: 0 !important; display: grid !important; grid-template-columns: repeat(5, 1fr); gap: 0 !important; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)) !important; background: rgba(13, 11, 9, 0.97) !important; border-top: 1px solid var(--line); backdrop-filter: blur(10px); }
+  .painel-tabs button { flex-direction: column; gap: 3px; padding: 6px 2px !important; font-size: 11px !important; border: 0 !important; background: none !important; color: var(--text-faint) !important; border-radius: 10px; }
+  .painel-tabs button.on, .painel-tabs button[aria-selected="true"] { color: var(--gold-bright) !important; background: rgba(233, 176, 76, 0.1) !important; box-shadow: none !important; }
+  .painel-tabs .tab-badge { position: absolute; top: 2px; right: calc(50% - 18px); }
+}

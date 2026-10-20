@@ -37,7 +37,12 @@ function write(key: string, value: unknown) {
   }
 }
 
-export const getResults = (): Partial<Record<ToolId, ToolResult>> => read(RESULTS_KEY, {});
+export const getResults = (): Partial<Record<ToolId, ToolResult>> => {
+  const all = read<Partial<Record<ToolId, ToolResult>>>(RESULTS_KEY, {});
+  // o plano do conselheiro chegou a ser gravado no lugar do resultado da ferramenta: esses não valem
+  for (const k of Object.keys(all) as ToolId[]) if (all[k]?.card?.label.startsWith('Plano do ')) delete all[k];
+  return all;
+};
 
 export function saveResult(tool: ToolId, summary: string, card?: ResultCard) {
   const all = getResults();

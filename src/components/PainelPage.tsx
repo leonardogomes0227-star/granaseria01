@@ -35,50 +35,27 @@ const brl = (n: number) => formatBRL(n);
 
 type Tab = 'coach' | 'mes' | 'plano' | 'pairico' | 'ferramentas';
 const TABS: [Tab, string, LucideIcon][] = [
-  ['coach', 'Próximos passos', Bell],
+  ['coach', 'Coach', Bell],
   ['mes', 'Meu mês', Wallet],
-  ['plano', 'Meu plano', ClipboardList],
-  ['pairico', 'Viver de renda', Landmark],
-  ['ferramentas', 'Minhas ferramentas', Wrench],
+  ['plano', 'Plano', ClipboardList],
+  ['pairico', 'Renda', Landmark],
+  ['ferramentas', 'Ferramentas', Wrench],
 ];
 
 const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 
-/** O cartão de uma ferramenta: o resultado em destaque e o que a pessoa colocou, igual ao do mês. */
+/** Uma ferramenta usada: o resultado numa linha e a data. Tocou, abre a ferramenta. */
 function ToolResultCard({ id, result, onOpen }: { id: ToolId; result: ToolResult; onOpen: () => void }) {
   const t = getTool(id);
-  const c = result.card;
   return (
-    <article className="tool-result">
-      <header>
-        <ToolIcon tool={t} />
-        <span>
-          <b>{t.title}</b>
-          <small>Atualizado em {dayMonth(result.at)}</small>
-        </span>
-      </header>
-      {c ? (
-        <>
-          <p className="tool-result-label">{c.label}</p>
-          <p className="tool-result-big">{c.big}</p>
-          {c.rows.length > 0 && (
-            <dl>
-              {c.rows.map(([k, v], i) => (
-                <div key={i}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </>
-      ) : (
-        <p className="tool-result-summary">{result.summary}</p>
-      )}
-      <button type="button" className="btn-outline" onClick={onOpen}>
-        Abrir de novo <ArrowRight size={15} />
-      </button>
-    </article>
+    <button type="button" className="dir-row tool-row" onClick={onOpen}>
+      <ToolIcon tool={t} />
+      <span className="dir-row-copy">
+        <small>{t.title} · {dayMonth(result.at)}</small>
+        <b>{result.card?.big ?? result.summary}</b>
+      </span>
+      <ArrowRight size={18} className="dir-row-arrow" />
+    </button>
   );
 }
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
@@ -194,12 +171,10 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
       <h1>{name ? `Oi, ${name}!` : 'Seu dinheiro, tudo num lugar'}</h1>
       {status === 'ok' && (
         <>
-          <p className="painel-sub">Seu plano, seus gastos e o que entrou. O que você anota no WhatsApp aparece aqui na hora.</p>
-          <nav className="painel-tabs" role="tablist" aria-label="Seções do painel">
+                    <nav className="painel-tabs" role="tablist" aria-label="Seções do painel">
             {TABS.map(([id, label, Icon]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => pickTab(id)}>
-                <Icon size={15} /> {label}
-                {id === 'ferramentas' && done.length > 0 ? ` (${done.length})` : ''}
+                <Icon size={17} /> <span>{label}</span>
                 {id === 'coach' && dueCount > 0 ? <span className="tab-badge">{dueCount}</span> : null}
               </button>
             ))}
@@ -334,7 +309,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
             <>
               <RichDadCard data={data} />
               <button type="button" className="btn-outline" style={{ marginTop: 14 }} onClick={() => onOpenTool('richdad')}>
-                Ver quanto tempo falta <ArrowRight size={15} />
+                Simular quanto tempo falta <ArrowRight size={15} />
               </button>
             </>
           ) : (
@@ -351,8 +326,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         <p className="diag-label">Seu plano de ação</p>
         {plan ? (
           <>
-            <h3 className="plan-heading">O que fazer, quanto e até quando</h3>
-            <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
+                        <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
           </>
         ) : (
           <div className="stat-card">
@@ -369,7 +343,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         {done.length === 0 ? (
           <p className="field-hint">Ainda nada. Cada ferramenta que você usar ganha um cartão aqui, com o que você colocou e o resultado.</p>
         ) : (
-          <div className="tool-results">
+          <div className="dir-list one">
             {done.map(([id, r]) => (
               <ToolResultCard key={id} id={id} result={r} onOpen={() => onOpenTool(id)} />
             ))}
