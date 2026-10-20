@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Bell, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
+import { ArrowRight, Bell, Check, ChevronRight, ClipboardList, MessageCircle, Plus, Receipt, Users } from 'lucide-react';
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
 import { todayBRT, type CoachTask } from '../coach';
@@ -8,7 +8,8 @@ import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, loadChosen, type CustomAgent } f
 import { markTaskDone } from '../results';
 import { fmtDue } from '../dates';
 import { faturaEnabled, getTool, type ToolId } from '../tools';
-import { WhatsAppButton } from './ContinueWhatsApp';
+import { WHATSAPP_NUMBER } from '../supabase';
+import { openWhatsApp } from '../whatsapp';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
 import { FixedBills, fixedSummary, useBills, useMonthIncome, useSaved } from './FixedBills';
@@ -30,6 +31,38 @@ function monthLeft(): { today: number; last: number } {
   return { today: now.getUTCDate(), last: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate() };
 }
 
+function QuickActions() {
+  const [sending, setSending] = useState(false);
+  return (
+    <div className="quick-actions">
+      {WHATSAPP_NUMBER && (
+        <button
+          type="button"
+          className="qa primary"
+          disabled={sending}
+          onClick={() => {
+            setSending(true);
+            openWhatsApp('inicio')
+              .catch(() => undefined)
+              .finally(() => setSending(false));
+          }}
+        >
+          <span className="qa-circle"><Plus size={22} /></span>
+          <span>Anotar</span>
+        </button>
+      )}
+      <Link className="qa" to="/mes#gastos-fixos">
+        <span className="qa-circle"><Receipt size={21} /></span>
+        <span>Gastos fixos</span>
+      </Link>
+      <Link className="qa" to="/conselheiros">
+        <span className="qa-circle"><Users size={21} /></span>
+        <span>Agentes</span>
+      </Link>
+    </div>
+  );
+}
+
 function MonthCard() {
   const [painel, setPainel] = useState<PainelData | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -47,18 +80,16 @@ function MonthCard() {
   const { today, last } = monthLeft();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
   return (
-    <section className="hero-money" aria-label="Quanto posso gastar hoje">
-      <span className="hero-label">Quanto posso gastar hoje</span>
-      {!loaded ? (
-        <span className="skeleton skeleton-hero" aria-label="Carregando" />
-      ) : (
-        <b className="hero-number">{income === 0 ? '—' : formatBRL(perDay)}</b>
-      )}
-      <span className="hero-sub">
+    <section className="home-hero" aria-label="Quanto posso gastar hoje">
+      <Link to="/mes" className="home-hero-top">
+        <span>Quanto posso gastar hoje</span>
+        <span className="home-hero-more">Ver mês <ChevronRight size={15} /></span>
+      </Link>
+      {!loaded ? <span className="skeleton skeleton-hero" aria-label="Carregando" /> : <b className="home-hero-number">{income === 0 ? '—' : formatBRL(perDay)}</b>}
+      <span className="home-hero-sub">
         {!loaded ? '\u00a0' : income === 0 ? 'Anote o que entrou e o que saiu pra ver.' : left > 0 ? `Sobram ${formatBRL(left)} até o fim do mês` : 'O que entrou este mês já foi usado.'}
       </span>
-      <WhatsAppButton label="Anotar" origin="inicio" className="btn-primary hero-cta" />
-      <Link className="hero-link" to="/mes">Ver meu mês</Link>
+      <QuickActions />
     </section>
   );
 }
