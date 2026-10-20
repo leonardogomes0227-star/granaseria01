@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useId, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Target } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, CheckCircle2 } from 'lucide-react';
 import { getResults, saveGoal, saveResult, setToolTasks, type ResultCard } from '../results';
 import type { NewTask, TaskSource } from '../coach';
 import { fetchPainel, painelToken } from '../painel';
@@ -26,36 +26,23 @@ export function ToolShell({
   const tool = getTool(id);
   const [saved] = useState(() => getResults()[id]);
   return (
-    <div className="wizard-wrap">
-      <div className="tool-page">
-        <div className="wizard-card anim-in" key={id} style={{ maxWidth: 'none' }}>
-          <div className="tool-head">
-            <ToolIcon tool={tool} size="lg" />
-            <div>
-              <div className="wizard-kicker" style={{ marginBottom: 4 }}>Ferramenta</div>
-              <h2 className="wizard-h2">{tool.title}</h2>
-            </div>
-          </div>
-          <dl className="tool-guide">
-            <div><dt><Target size={15} /> Pra que serve</dt><dd>{tool.guide.serve}</dd></div>
-            <div><dt><Clock size={15} /> Quando usar</dt><dd>{tool.guide.quando}</dd></div>
-            <div><dt><CheckCircle2 size={15} /> O que você recebe</dt><dd>{tool.guide.recebe}</dd></div>
-          </dl>
-          {saved && id !== 'tracker' && (
-            <p className="tool-saved">
-              <CheckCircle2 size={14} /> Da última vez: {saved.summary}
-            </p>
-          )}
-          {children}
-          <p className="tool-saved-note">O resultado fica salvo no seu painel e conversa com o seu plano de ação.</p>
-          <div className="wizard-nav">
-            <button className="btn-outline" type="button" onClick={onClose}>
-              <ArrowLeft size={16} /> Todas as ferramentas
-            </button>
-            <span />
-          </div>
+    <div className="tool-screen anim-in" key={id}>
+      <button type="button" className="link-btn tool-back" onClick={onClose}>
+        <ArrowLeft size={16} /> Ferramentas
+      </button>
+      <div className="tool-top">
+        <ToolIcon tool={tool} size="lg" />
+        <div>
+          <h1>{tool.title}</h1>
+          <p>{tool.guide.serve}</p>
         </div>
       </div>
+      {saved && id !== 'tracker' && (
+        <p className="tool-saved">
+          <CheckCircle2 size={14} /> Da última vez: {saved.summary}
+        </p>
+      )}
+      <div className="card tool-body">{children}</div>
     </div>
   );
 }

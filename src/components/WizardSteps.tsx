@@ -676,8 +676,8 @@ export function DiagnosisStep({
         >
           <CalendarCheck size={16} /> Seguir mês a mês
         </button>
-        <Link className="btn-primary" to="/painel">
-          Ir pro meu painel <ArrowRight size={16} />
+        <Link className="btn-primary" to="/plano">
+          Ver o meu plano <ArrowRight size={16} />
         </Link>
       </div>
     </div>

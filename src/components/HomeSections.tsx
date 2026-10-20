@@ -119,17 +119,17 @@ export function DailyTop() {
 
 /* ---------- Todas as ferramentas, separadas pelo que a pessoa quer fazer ---------- */
 
-const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
+export const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
   { title: 'Organizar e planejar', text: 'Seu plano de ação e o acompanhamento dele.', tools: ['tracker', 'goal', 'richdad'] },
   { title: 'Dívidas e banco', text: 'Sair das dívidas pagando menos juros.', tools: ['bills', 'debts', 'rights', 'loan', 'fatura'] },
   { title: 'Economizar', text: 'Achar dinheiro e gastar com cabeça.', tools: ['leaks', 'extra', 'impulse'] },
 ];
 
 // de outubro a dezembro o 13º está chegando: a ferramenta dele sobe pro topo
-const isThirteenthSeason = () => [9, 10, 11].includes(new Date().getMonth()); // out a dez: a 1ª parcela sai até 30/11
+export const isThirteenthSeason = () => [9, 10, 11].includes(new Date().getMonth()); // out a dez: a 1ª parcela sai até 30/11
 
 
-function ToolCard({ id, done, onOpen }: { id: ToolId; done?: ToolResult; onOpen: () => void }) {
+export function ToolCard({ id, done, onOpen }: { id: ToolId; done?: ToolResult; onOpen: () => void }) {
   const t = getTool(id);
   return (
     <button type="button" className={`dir-row ${done ? 'done' : ''}`} onClick={onOpen}>
@@ -144,7 +144,7 @@ function ToolCard({ id, done, onOpen }: { id: ToolId; done?: ToolResult; onOpen:
 }
 
 /** As perguntas da entrada, uma por vez: é só tocar. */
-function Quiz({ onDone }: { onDone: (a: Answers) => void }) {
+export function Quiz({ onDone }: { onDone: (a: Answers) => void }) {
   const [i, setI] = useState(0);
   const [a, setA] = useState<Partial<Answers>>({});
   const q = QUESTIONS[i];

@@ -117,7 +117,7 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
 
   return (
     <div className="page-wrap agent-page anim-in">
-      <button type="button" className="btn-ghost agent-back" onClick={() => navigate('/#conselheiros')}>
+      <button type="button" className="btn-ghost agent-back" onClick={() => navigate('/conselheiros')}>
         <ArrowLeft size={16} /> Conselheiros
       </button>
       <header className="agent-head">
@@ -159,7 +159,7 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
               <button type="button" className="btn-primary" onClick={() => onOpenTool(agent.tool)}>
                 Fazer as contas em {tool.title} <ArrowRight size={15} />
               </button>
-              <Link className="btn-outline" to="/painel#coach">Ver meus próximos passos</Link>
+              <Link className="btn-outline" to="/">Ver meus próximos passos</Link>
             </div>
           </div>
         )}
