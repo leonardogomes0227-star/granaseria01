@@ -297,3 +297,21 @@ input[type='range'] { accent-color: var(--gold-bright); }
   .agent-copy > span { font-size: 13px; }
   .bubble { max-width: 92%; }
 }
+
+/* ---------- lista de ferramentas na home: uma linha por ferramenta ---------- */
+.dir-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 900px; margin: 0 auto; }
+.dir-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 16px; text-align: left; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; transition: border-color .15s; }
+.dir-row:hover { border-color: var(--gold-bright); }
+.dir-row-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.dir-row-copy b { font-size: 15.5px; }
+.dir-row-copy > span { color: var(--text-soft); font-size: 13.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dir-row.done .dir-row-copy > span { color: var(--good); }
+.dir-row.done .dir-row-copy > span svg { vertical-align: -2px; }
+.dir-row-arrow { flex: none; color: var(--text-faint); }
+.dir-row:hover .dir-row-arrow { color: var(--gold-bright); }
+.tools-dir .dir-actions { max-width: 900px; margin: 14px auto 0; }
+.tools-dir .dir-group { max-width: 900px; margin-left: auto; margin-right: auto; }
+@media (max-width: 640px) { .dir-list { grid-template-columns: 1fr; } }
+.dir-extra { margin-top: 22px; }
+.dir-row.season { border-color: rgba(233, 176, 76, 0.4); }
+.tools-dir .dir-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

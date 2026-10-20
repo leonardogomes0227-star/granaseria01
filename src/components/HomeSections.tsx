@@ -129,38 +129,17 @@ const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
 const isThirteenthSeason = () => [9, 10, 11].includes(new Date().getMonth()); // out a dez: a 1ª parcela sai até 30/11
 
 
-function ToolCard({ id, done, why, onOpen }: { id: ToolId; done?: ToolResult; why?: string; onOpen: () => void }) {
+function ToolCard({ id, done, onOpen }: { id: ToolId; done?: ToolResult; onOpen: () => void }) {
   const t = getTool(id);
   return (
-<button type="button" className={`dir-card ${done ? 'done' : ''} ${why ? 'picked' : ''}`} onClick={onOpen}>
-                  {why && <span className="dir-why">{why}</span>}
-                  <span className="dir-card-head">
-                    <ToolIcon tool={t} />
-                    <b>{t.title}</b>
-                  </span>
-                  {done?.card ? (
-                    <span className="dir-done">
-                      <span className="dir-done-tag"><CheckCircle2 size={13} /> Você já usou</span>
-                      <small>{done.card.label}</small>
-                      <strong>{done.card.big}</strong>
-                      {done.card.rows.slice(0, 2).map(([k, v], i) => (
-                        <span className="dir-done-row" key={i}><em>{k}</em><b>{v}</b></span>
-                      ))}
-                    </span>
-                  ) : (
-                    <>
-                      <span className="dir-serve">{t.guide.serve}</span>
-                      <span className="dir-get">
-                        {done ? (
-                          <><CheckCircle2 size={13} /> {done.summary}</>
-                        ) : (
-                          <>Você recebe: {t.guide.recebe}</>
-                        )}
-                      </span>
-                    </>
-                  )}
-                  <span className="dir-open">{done ? 'Abrir de novo' : 'Abrir'} <ArrowRight size={14} /></span>
-                </button>
+    <button type="button" className={`dir-row ${done ? 'done' : ''}`} onClick={onOpen}>
+      <ToolIcon tool={t} />
+      <span className="dir-row-copy">
+        <b>{t.title}</b>
+        <span>{done ? `Feito: ${done.summary}` : t.guide.serve}</span>
+      </span>
+      <ArrowRight size={18} className="dir-row-arrow" />
+    </button>
   );
 }
 
@@ -220,16 +199,16 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
       <div className="section-head center">
         <div className="kicker"><span className="wedge" />Ferramentas</div>
         <h2>{answers ? 'Suas ferramentas' : 'Vamos achar as ferramentas certas pra você'}</h2>
-        <p>{answers ? 'Escolhidas pelas suas respostas. O que você faz em uma fica salvo e entra no seu plano.' : '6 perguntas rápidas, é só tocar. Depois a gente mostra só o que vai te ajudar.'}</p>
+        <p>{answers ? 'Escolhidas pelas suas respostas. O resultado de cada uma fica no seu painel.' : '6 perguntas rápidas, é só tocar. Depois a gente mostra só o que vai te ajudar.'}</p>
       </div>
 
       {!answers ? (
         <Quiz onDone={finish} />
       ) : (
         <>
-          <div className={`dir-grid dir-picks n${picks.length}`}>
+          <div className="dir-list">
             {picks.map((p) => (
-              <ToolCard key={p.tool} id={p.tool} done={results[p.tool]} why={p.why} onOpen={() => onOpenTool(p.tool)} />
+              <ToolCard key={p.tool} id={p.tool} done={results[p.tool]} onOpen={() => onOpenTool(p.tool)} />
             ))}
           </div>
           <div className="dir-actions">
@@ -241,29 +220,35 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
         </>
       )}
 
-      {hasDiagnosis && (
-      <button type="button" className={`dir-diag ${hasDiagnosis ? 'done' : ''}`} onClick={onStart}>
-        <span className="tool-icon lg tone-gold"><Sparkles size={24} strokeWidth={1.9} /></span>
-        <span className="dir-copy">
-          <em className="pick-badge">{hasDiagnosis ? 'Feito · refazer quando quiser' : 'Comece por aqui'}</em>
-          <b>Diagnóstico e plano de ação</b>
-          <span>Umas perguntas sobre renda, gastos e dívidas. Você recebe sua nota e um plano com valores e datas, que as outras ferramentas usam.</span>
-        </span>
-        <ArrowRight size={20} className="pick-arrow" />
-      </button>
-      )}
-
-      {season && (
-        <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>
-          <Gift size={18} /> <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
-          <ArrowRight size={18} />
-        </button>
+      {(hasDiagnosis || season) && (
+        <div className="dir-list dir-extra">
+          {hasDiagnosis && (
+            <button type="button" className="dir-row done" onClick={onStart}>
+              <span className="tool-icon tone-gold"><Sparkles size={20} strokeWidth={1.9} /></span>
+              <span className="dir-row-copy">
+                <b>Diagnóstico e plano de ação</b>
+                <span>Feito: refaça quando sua renda ou suas dívidas mudarem</span>
+              </span>
+              <ArrowRight size={18} className="dir-row-arrow" />
+            </button>
+          )}
+          {season && (
+            <button type="button" className="dir-row season" onClick={() => onOpenTool('extra')}>
+              <span className="tool-icon tone-gold"><Gift size={20} strokeWidth={1.9} /></span>
+              <span className="dir-row-copy">
+                <b>O 13º está chegando</b>
+                <span>Veja onde colocar cada real</span>
+              </span>
+              <ArrowRight size={18} className="dir-row-arrow" />
+            </button>
+          )}
+        </div>
       )}
 
       {answers && showOthers && others.map((g) => (
         <div className="dir-group" key={g.title}>
           <h3>{g.title}{g.text && <small> · {g.text}</small>}</h3>
-          <div className="dir-grid">
+          <div className="dir-list">
             {g.tools.map((id) => <ToolCard key={id} id={id} done={results[id]} onOpen={() => onOpenTool(id)} />)}
           </div>
         </div>

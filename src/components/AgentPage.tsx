@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Bell, Send } from 'lucide-react';
 import type { WizardData } from '../types';
 import { agentPlan, type Agent } from '../agents';
 import { getTool, type ToolId } from '../tools';
-import { saveResult, setToolTasks } from '../results';
+import { setToolTasks } from '../results';
 import { painelToken } from '../painel';
 import { track } from '../analytics';
 import { AgentArt, hasAgentArt } from './AgentArt';
@@ -59,11 +59,10 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [step, extra.length]);
 
-  // terminou as perguntas: o plano vira próximos passos e cartão no painel
+  // terminou as perguntas: o plano vira próximos passos do coach (o resultado da ferramenta fica intacto)
   useEffect(() => {
     if (!plan) return;
     setToolTasks(agent.tool, plan.tasks);
-    saveResult(agent.tool, `${agent.name}: ${plan.lines[0]}`, { label: `Plano do ${agent.name}`, big: agent.role, rows: plan.lines.slice(0, 4).map((l, i) => [`Passo ${i + 1}`, l] as [string, string]) });
     track('conselheiro_plano', { conselheiro: agent.id });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez quando a conversa termina
   }, [done]);
