@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LayoutGrid, Menu, UserRound, X } from 'lucide-react';
-import { TOOLS, ToolId, ToolInfo } from '../tools';
+import { LISTED_TOOLS as TOOLS, ToolId, ToolInfo } from '../tools';
 import { accountsEnabled } from '../supabase';
 import { painelToken } from '../painel';
 

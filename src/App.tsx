@@ -32,6 +32,7 @@ import { PainelPage } from './components/PainelPage';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
 import { SiteFeedback } from './components/SiteFeedback';
+import { RichDadTool } from './components/RichDadTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
@@ -408,17 +409,18 @@ function ToolRoute({
       <div key={tool.id} style={{ display: 'contents' }}>
         {tool.id === 'quote' && <QuoteTool {...toolProps} />}
         {tool.id === 'impulse' && <ImpulseTool monthlyIncome={data.monthlyIncome} {...toolProps} />}
-        {tool.id === 'debts' && <DebtSimulator debts={data.debts} onStart={onStart} {...toolProps} />}
+        {tool.id === 'debts' && <DebtSimulator debts={data.debts} data={data} onStart={onStart} {...toolProps} />}
         {tool.id === 'selos' && <SelosPanel onStart={onStart} {...toolProps} />}
         {tool.id === 'checkin' && <CheckInTool {...toolProps} />}
         {tool.id === 'longterm' && <LongTermSimulator monthlyIncome={data.monthlyIncome} {...toolProps} />}
-        {tool.id === 'goal' && <GoalCalculator {...toolProps} />}
+        {tool.id === 'goal' && <GoalCalculator data={data} {...toolProps} />}
         {tool.id === 'loan' && <LoanComparator {...toolProps} />}
         {tool.id === 'extra' && <ExtraMoneyTool data={data} onStart={onStart} {...toolProps} />}
         {tool.id === 'leaks' && <LeaksTool data={data} {...toolProps} />}
         {tool.id === 'rights' && <RightsTool data={data} {...toolProps} />}
         {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
         {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
+        {tool.id === 'richdad' && <RichDadTool data={data} onStart={onStart} {...toolProps} />}
       </div>
       <SiteFeedback key={`fb-${tool.id}`} tool={tool.id} />
       <WhatsAppStrip />

@@ -13,6 +13,11 @@ function json(body: unknown, status = 200) {
   return Response.json(body, { status });
 }
 
+/** O site pergunta se o leitor está ligado: sem a chave da IA, a ferramenta nem aparece na lista. */
+export async function GET(): Promise<Response> {
+  return json({ enabled: Boolean(process.env.ANTHROPIC_API_KEY) && accountsConfigured() }, 200);
+}
+
 export async function POST(request: Request): Promise<Response> {
   if (!process.env.ANTHROPIC_API_KEY || !accountsConfigured()) return json({ error: 'O leitor de fatura ainda não foi ativado.' }, 503);
 

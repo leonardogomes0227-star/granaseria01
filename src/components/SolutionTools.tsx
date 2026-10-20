@@ -77,7 +77,7 @@ export function ExtraMoneyTool({ data, onStart, ...nav }: { data: WizardData; on
           <div className="action-list" style={{ marginTop: 8 }}>
             {[
               ['Dívidas caras', 'Cartão, cheque especial, empréstimo pessoal: cobram de 5% a 15% ao mês. Quitar é o melhor "investimento" que existe.'],
-              ['Reserva de emergência', 'Até ter 6 meses dos seus gastos num CDB de liquidez diária ou no Tesouro Selic.'],
+              ['Reserva de emergência', 'Até ter 6 meses dos seus gastos num lugar que rende e deixa sacar na hora (no app do banco: "CDB com resgate diário" ou "Tesouro Selic").'],
               ['Dívidas baratas', 'Financiamento e consignado: amortizar antes reduz os juros (é seu direito pedir o desconto).'],
               ['Investir', 'Só depois disso: Tesouro IPCA+, fundos de índice.'],
             ].map(([t, d], i) => (
@@ -285,27 +285,51 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
 
 /* ---------- Seus direitos com o banco ---------- */
 
+// primeiro a pessoa diz o problema; aparecem só os direitos que resolvem ele
+const PROBLEMS: { id: string; label: string; rights: string[] }[] = [
+  { id: 'juros', label: '💳 Os juros do cartão ou do cheque especial estão altos', rights: ['rotativo', 'cheque', 'portabilidade'] },
+  { id: 'nao-paga', label: '😰 Não consigo pagar as minhas dívidas', rights: ['superendividamento', 'portabilidade', 'quitacao'] },
+  { id: 'quitar', label: '✅ Quero quitar uma dívida antes', rights: ['quitacao', 'portabilidade'] },
+  { id: 'cobranca', label: '🧾 Me cobraram algo que eu não devia', rights: ['cobranca'] },
+  { id: 'nome', label: '🚫 Meu nome está sujo (negativado)', rights: ['negativacao', 'superendividamento'] },
+];
+
 export function RightsTool({ data, ...nav }: { data: WizardData } & ToolNavProps) {
   const mine = useMemo(() => (hasDiagnosis(data) && data.debts.length > 0 ? relevantRights(buildPlan(data)) : []), [data]);
-  const sorted = [...RIGHTS].sort((a, b) => Number(mine.includes(b.id)) - Number(mine.includes(a.id)));
+  const [problem, setProblem] = useState<string | null>(null);
+  const [all, setAll] = useState(false);
+  const picked = PROBLEMS.find((p) => p.id === problem);
+  const shown = all ? RIGHTS : picked ? RIGHTS.filter((r) => picked.rights.includes(r.id)).sort((a, b) => picked.rights.indexOf(a.id) - picked.rights.indexOf(b.id)) : [];
+  useSaveResult('rights', picked ? `${picked.label.replace(/^\S+\s/, '')}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null);
 
   return (
     <ToolShell id="rights" {...nav}>
-      <p className="wizard-sub">
-        O que a lei já garante pra você na hora de lidar com banco, cartão e dívida.{' '}
-        {mine.length > 0 ? 'Os que valem pro seu caso, pelo seu diagnóstico, aparecem primeiro.' : ''}
-      </p>
-      <div className="rights-list">
-        {sorted.map((r) => (
-          <div className="stat-card right-card" key={r.id}>
-            {mine.includes(r.id) && <span className="status-pill status-good">Vale pro seu caso</span>}
-            <p className="plan-step-title" style={{ fontSize: 16 }}>{r.title}</p>
-            <p className="right-law">{r.law}</p>
-            <p className="right-summary">{r.summary}</p>
-            {r.message && <CopyMessage text={r.message} />}
-          </div>
+      <p className="wizard-sub">Qual é o seu problema com o banco agora?</p>
+      <div className="rights-problems">
+        {PROBLEMS.map((p) => (
+          <button key={p.id} type="button" className={problem === p.id ? 'on' : ''} onClick={() => { setProblem(p.id); setAll(false); }}>
+            {p.label}
+          </button>
         ))}
       </div>
+      {shown.length > 0 && (
+        <div className="rights-list" style={{ marginTop: 16 }}>
+          {shown.map((r) => (
+            <div className="stat-card right-card" key={r.id}>
+              {mine.includes(r.id) && <span className="status-pill status-good">Vale pro seu caso</span>}
+              <p className="plan-step-title" style={{ fontSize: 16 }}>{r.title}</p>
+              <p className="right-law">{r.law}</p>
+              <p className="right-summary">{r.summary}</p>
+              {r.message && <CopyMessage text={r.message} />}
+            </div>
+          ))}
+        </div>
+      )}
+      {!all && (
+        <button type="button" className="plan-more" onClick={() => setAll(true)} style={{ marginTop: 10 }}>
+          Ver todos os direitos
+        </button>
+      )}
       <p className="field-hint" style={{ marginTop: 14 }}>
         Conteúdo informativo, não substitui orientação jurídica. Se o banco não resolver: reclame no consumidor.gov.br, no Procon ou no Banco Central (bcb.gov.br/meubc).
       </p>

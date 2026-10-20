@@ -1546,6 +1546,28 @@ html { overflow-x: hidden; }
 .tk-save { width: 100%; justify-content: center; margin-top: 8px; }
 @media (max-width: 480px) { .tk-choices { grid-template-columns: 1fr; } }
 
+.rights-problems { display: grid; gap: 8px; }
+.rights-problems button { text-align: left; padding: 13px 14px; border-radius: 12px; border: 1.5px solid var(--hairline); background: var(--white); font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.rights-problems button.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.dir-season { width: 100%; display: flex; align-items: center; gap: 12px; margin: -14px 0 26px; padding: 14px 16px; border-radius: 14px; border: 1.5px solid var(--gold); background: #FBF1DA; font-family: var(--sans); font-size: 15px; color: var(--ink); text-align: left; cursor: pointer; }
+.dir-season span { flex: 1; }
+.tk-wa { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; background: #EEF5EC; border: 1px solid #C6DCC4; font-size: 14px; color: #2F6B45; }
+.richdad { margin-top: 16px; }
+.richdad-level { margin: 6px 0 12px; font-family: var(--sans); font-size: 14.5px; line-height: 1.5; color: var(--ink); }
+.richdad-level b { display: inline-block; margin-right: 6px; padding: 2px 10px; border-radius: 999px; font-size: 13px; }
+.lvl-rato b { background: #F8E6DE; color: #8E4426; }
+.lvl-saindo b { background: #FBF1DA; color: #7A5311; }
+.lvl-livre b { background: #EEF5EC; color: #2F6B45; }
+.richdad-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.richdad-grid > div, .richdad-goals > div { padding: 12px; border-radius: 12px; background: var(--white); border: 1px solid var(--hairline-soft); font-family: var(--sans); }
+.richdad-grid small, .richdad-goals small { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
+.richdad-grid b, .richdad-goals b { display: block; margin: 2px 0; font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.richdad-grid span, .richdad-goals span { display: block; font-size: 12.5px; color: var(--ink-soft); line-height: 1.4; }
+.richdad-bar { display: block; height: 6px; margin: 4px 0 6px; border-radius: 3px; background: var(--sand-deep); overflow: hidden; }
+.richdad-bar em { display: block; height: 100%; background: var(--sage); }
+.richdad-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+@media (max-width: 560px) { .richdad-grid { grid-template-columns: 1fr 1fr; } .richdad-goals { grid-template-columns: 1fr; } .richdad-grid b { font-size: 16px; } }
+
 /* ---------- movimento reduzido: tudo aparece, nada se mexe ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }

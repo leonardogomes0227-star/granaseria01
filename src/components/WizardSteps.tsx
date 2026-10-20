@@ -11,6 +11,7 @@ import { CountUp, AnimatedFill } from './motion';
 import { DecimalInput } from './DecimalInput';
 import type { ToolId } from '../tools';
 import { ArchetypeShare } from './ArchetypeShare';
+import { RichDadCard } from './RichDadCard';
 import { getArchetype } from '../archetypes';
 import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
@@ -187,7 +188,7 @@ export function IncomeStep({ data, update, onNext }: StepProps) {
         onChange={(v) => update({ monthlyIncome: v })}
         autoFocus
       />
-      <p className="field-hint" style={{ marginTop: -8 }}>Seus números ficam só neste navegador — ninguém mais vê.</p>
+      <p className="field-hint" style={{ marginTop: -8 }}>Seus números ficam salvos na sua conta. Só você vê.</p>
       <WizardNav onNext={onNext} canNext={data.monthlyIncome > 0} submit />
     </StepCard>
   );
@@ -200,10 +201,10 @@ export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
     <StepCard onSubmit={onNext}>
       <ProgressDots step={2} total={7} />
       <SeloBadge numeral="I" label="pague-se primeiro" />
-      <h2 className="wizard-h2">Quanto você guarda hoje, por mês?</h2>
-      <p className="wizard-sub">Antes de qualquer gasto — o que já vira poupança ou investimento.</p>
+      <h2 className="wizard-h2">Quanto você consegue guardar por mês?</h2>
+      <p className="wizard-sub">O que você separa todo mês ou o que costuma sobrar no fim do mês e fica guardado. Se no fim do mês não sobra nada, deixe 0.</p>
       <CurrencyField
-        label="Valor guardado por mês"
+        label="Guardo ou sobra por mês"
         value={data.currentSavings}
         onChange={(v) => update({ currentSavings: v })}
         autoFocus
@@ -352,7 +353,7 @@ export function DebtsStep({ data, update, onNext, onBack }: StepProps) {
                 value={debt.interestRate || 0}
                 onChange={(v) => updateDebt(debt.id, { interestRate: v })}
               />
-              <span>% a.m.</span>
+              <span>% ao mês</span>
             </div>
           </div>
         </div>
@@ -393,14 +394,26 @@ export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
     <StepCard onSubmit={onNext}>
       <ProgressDots step={5} total={7} />
       <SeloBadge numeral="III" label="construa sua reserva" />
-      <h2 className="wizard-h2">Quanto você já tem de reserva de emergência?</h2>
-      <p className="wizard-sub">Dinheiro guardado, líquido, pra imprevistos.</p>
+      <h2 className="wizard-h2">O que você já tem guardado?</h2>
+      <p className="wizard-sub">Reserva de emergência é o dinheiro que dá pra sacar na hora, pra imprevistos.</p>
       <CurrencyField
         label="Reserva de emergência"
         value={data.emergencyFund}
         onChange={(v) => update({ emergencyFund: v })}
         autoFocus
       />
+      <CurrencyField
+        label="Outros investimentos (além da reserva)"
+        value={data.investments ?? 0}
+        onChange={(v) => update({ investments: v })}
+      />
+      <p className="field-hint" style={{ marginTop: -8 }}>Ações, fundos, previdência, imóvel alugado… O que põe dinheiro no seu bolso. Não tem? Deixe 0.</p>
+      <CurrencyField
+        label="Renda que entra sem você trabalhar, por mês"
+        value={data.passiveIncome ?? 0}
+        onChange={(v) => update({ passiveIncome: v })}
+      />
+      <p className="field-hint" style={{ marginTop: -8 }}>Aluguel, dividendos, juros dos investimentos. É a renda passiva do <i>Pai Rico, Pai Pobre</i>.</p>
       {target > 0 && (
         <Insight tone={data.emergencyFund >= target ? 'good' : 'info'}>
           O ideal é ter 6 meses de gastos guardados: <b>{formatBRL(target)}</b>.{' '}
@@ -423,8 +436,13 @@ export function ReviewStep({
   onNext,
   onBack,
   goToStep,
+  update,
 }: StepProps & { goToStep: (step: number) => void }) {
   const debtsTotal = data.debts.reduce((sum, d) => sum + (d.value || 0), 0);
+  // pela conta, sobra dinheiro mas a pessoa disse que guarda 0: pergunta antes de o plano ignorar esse dinheiro
+  const totalExp = Object.values(data.expenses).reduce((a, b) => a + b, 0);
+  const installments = data.debts.reduce((x, d) => x + (d.installment || 0), 0);
+  const leftover = Math.round(data.monthlyIncome - totalExp - installments - data.currentSavings);
   return (
     <StepCard onSubmit={onNext} style={{ maxWidth: 600 }}>
       <ProgressDots step={6} total={7} />
@@ -464,12 +482,24 @@ export function ReviewStep({
         </div>
         <div className="review-row">
           <div>
-            <p className="review-label">Reserva de emergência</p>
-            <p className="review-value">{formatBRL(data.emergencyFund)}</p>
+            <p className="review-label">Reserva, investimentos e renda passiva</p>
+            <p className="review-value">{formatBRL(data.emergencyFund)} · {formatBRL(data.investments ?? 0)} · {formatBRL(data.passiveIncome ?? 0)}/mês</p>
           </div>
           <button className="btn-ghost" type="button" onClick={() => goToStep(5)}><Pencil size={14} /> Editar</button>
         </div>
       </div>
+
+      {leftover >= Math.max(100, data.monthlyIncome * 0.05) && (
+        <Insight tone="info">
+          Pela sua conta, sobram <b>{formatBRL(leftover)}</b> por mês que não aparecem em nenhum gasto. Esse dinheiro fica guardado?
+          <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+            <button type="button" className="btn-outline" onClick={() => update({ currentSavings: data.currentSavings + leftover })}>
+              Sim, fica guardado
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => goToStep(3)}>Não, gasto com outras coisas</button>
+          </span>
+        </Insight>
+      )}
 
       <WizardNav onBack={onBack} onNext={onNext} nextLabel="Ver meu diagnóstico" submit />
     </StepCard>
@@ -523,6 +553,8 @@ export function DiagnosisStep({
       <p className="wizard-sub">Primeiro a nota, depois o que fazer. Tudo fica salvo no seu painel.</p>
 
       <ScoreHero health={health} />
+
+      <RichDadCard data={data} compact />
 
       <div className="diag-section" id="plano" style={{ marginTop: 28, marginBottom: 8 }}>
         <p className="diag-label">Seu plano de ação</p>
