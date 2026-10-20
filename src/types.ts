@@ -8,6 +8,7 @@ export interface DebtItem {
   interestRate?: number; // % ao mês, opcional — sem ele o plano usa a taxa típica do tipo
   kind?: DebtKind; // opcional pra não quebrar dívidas salvas antes desse campo existir
   installment?: number; // parcela (ou mínimo) que a pessoa já paga por mês
+  paidOff?: boolean; // quitada no plano (13º, mês a mês): a parcela dela fica livre pro plano
 }
 
 export interface CheckinEntry {

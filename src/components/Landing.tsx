@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DailyTop, ToolsDirectory } from './HomeSections';
+import { DailyTop, StartSteps, ToolsDirectory } from './HomeSections';
 import { Journey } from './Journey';
 import { Plus } from 'lucide-react';
 import { CHECKOUT_READY, PRICE_LABEL } from '../config';
@@ -146,6 +146,7 @@ export function Landing({
           </div>
         )}
 
+        <StartSteps hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} onDiagnosis={savedProgress && savedProgress.step > 0 && savedProgress.step < 7 ? onResume : onStart} />
         <DailyTop />
       </section>
 

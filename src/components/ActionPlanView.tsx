@@ -33,6 +33,11 @@ export function ActionPlanView({
   return (
     <div className="plan">
       <PlanSummary plan={plan} />
+      {!locked && <ThisMonth plan={plan} onOpenTool={onOpenTool} />}
+      <Journey plan={plan} />
+      <GrowthChart plan={plan} />
+
+      <p className="diag-label plan-steps-label">Passo a passo</p>
 
       <div className={locked ? 'paywall' : undefined}>
         <ol className={locked ? 'paywall-teaser steps' : 'steps'}>
@@ -71,6 +76,128 @@ export function ActionPlanView({
         Estimativa feita com os seus números e, quando você não informou, com taxas típicas de mercado. Não é recomendação
         individual de investimento: confira as taxas do seu contrato.
       </p>
+    </div>
+  );
+}
+
+/** O que fazer neste mês, em reais: a primeira coisa que a pessoa precisa ver. */
+function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: ToolId) => void }) {
+  const row = plan.schedule[0];
+  const items: [string, string, string][] = [];
+  if (plan.stuck) items.push(['📞', 'Ligar pro banco e pedir pra renegociar (mensagem pronta em "Mais ajuda")', 'agora']);
+  if (row) {
+    for (const p of row.payments) items.push(['💳', `Pagar ${p.name}`, formatBRL(p.amount)]);
+    if (row.toReserve >= 1) items.push(['🐖', 'Guardar pra emergências', formatBRL(row.toReserve)]);
+  } else if (plan.monthlyPower > 0 && plan.debts.length === 0) {
+    items.push(['🐖', plan.reserve.alreadyDone ? 'Investir' : 'Guardar pra emergências', formatBRL(plan.monthlyPower)]);
+  }
+  for (const g of plan.goals) items.push(['🎯', `Juntar pra ${g.name}`, formatBRL(g.monthly)]);
+  for (const c of plan.cuts) items.push(['✂️', `Gastar no máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling)]);
+  if (items.length === 0) return null;
+  const month = monthShort(plan.start, 1);
+  return (
+    <div className="this-month">
+      <p className="this-month-head">
+        <b>Este mês ({month}), faça isto:</b>
+      </p>
+      <ul>
+        {items.map(([icon, what, amount], i) => (
+          <li key={i}>
+            <span className="this-month-icon" aria-hidden="true">{icon}</span>
+            <span className="this-month-what">{what}</span>
+            <b>{amount}</b>
+          </li>
+        ))}
+      </ul>
+      <button type="button" className="btn-primary" onClick={() => onOpenTool('tracker')}>
+        Já fiz? Marcar no Meu plano, mês a mês <ArrowRight size={15} />
+      </button>
+    </div>
+  );
+}
+
+/** As etapas do plano como uma jornada, com barra de progresso e data de cada uma. */
+function Journey({ plan }: { plan: ActionPlan }) {
+  const short = (n: number | null) => (n === null ? 'sem data ainda' : monthShort(plan.start, n));
+  const totalDebt = plan.debts.reduce((x, d) => x + d.balance, 0);
+  const stages: { icon: string; title: string; now: string; goal: string; pct: number; when: string }[] = [];
+  if (plan.debts.length > 0) stages.push({ icon: '💳', title: 'Sair das dívidas', now: `Falta pagar ${formatBRL(totalDebt)}`, goal: 'Zerar', pct: 0, when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}` });
+  if (plan.reserve.target > 0) {
+    const pct = Math.min(100, (plan.reserve.current / plan.reserve.target) * 100);
+    stages.push({ icon: '🐖', title: 'Reserva de emergência', now: `${formatBRL(plan.reserve.current)} guardados`, goal: formatBRL(plan.reserve.target), pct, when: plan.reserve.alreadyDone ? 'pronta ✅' : plan.reserve.doneMonth === null ? 'depois das dívidas' : `pronta em ${short(plan.reserve.doneMonth)}` });
+  }
+  for (const g of plan.goals) stages.push({ icon: '🎯', title: g.name.charAt(0).toUpperCase() + g.name.slice(1), now: `${formatBRL(g.monthly)} por mês`, goal: formatBRL(g.target), pct: 0, when: `em ${g.months} meses` });
+  if (plan.investFrom !== null) stages.push({ icon: '📈', title: 'Investir', now: `${formatBRL(plan.monthlyPower)} por mês`, goal: `${formatBRL(plan.invest10y)} em 10 anos`, pct: 0, when: `começa em ${short(plan.investFrom)}` });
+  if (stages.length === 0) return null;
+  return (
+    <div className="journey-plan">
+      <p className="diag-label">Sua jornada</p>
+      <ol>
+        {stages.map((st, i) => (
+          <li key={i}>
+            <span className="jp-icon" aria-hidden="true">{st.icon}</span>
+            <div className="jp-body">
+              <p className="jp-head">
+                <b>{st.title}</b>
+                <span>{st.when}</span>
+              </p>
+              <div className="jp-bar"><i style={{ width: `${Math.max(st.pct, 2)}%` }} /></div>
+              <p className="jp-nums">
+                <span>{st.now}</span>
+                <span>Meta: {st.goal}</span>
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/** Gráfico simples do dinheiro guardado mês a mês, com as datas das metas marcadas. */
+function GrowthChart({ plan }: { plan: ActionPlan }) {
+  if (plan.monthlyPower <= 0 || plan.stuck) return null;
+  const debtEnd = plan.debtFreeMonth ?? 0;
+  const horizon = Math.min(120, Math.max(24, (plan.investFrom ?? debtEnd + 24) + 24));
+  const pts: number[] = [];
+  let bal = plan.reserve.current;
+  for (let m = 1; m <= horizon; m++) {
+    if (m > debtEnd) bal = bal * 1.008 + plan.monthlyPower;
+    pts.push(bal);
+  }
+  const max = Math.max(...pts, plan.reserve.target) || 1;
+  const W = 600;
+  const H = 180;
+  const x = (m: number) => (m / horizon) * W;
+  const y = (v: number) => H - (v / max) * (H - 20);
+  const line = pts.map((v, i) => `${x(i + 1).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const marks: [number, string][] = [];
+  if (plan.debts.length > 0 && plan.debtFreeMonth) marks.push([plan.debtFreeMonth, 'Sem dívidas']);
+  if (plan.reserve.doneMonth && !plan.reserve.alreadyDone) marks.push([plan.reserve.doneMonth, 'Reserva pronta']);
+  return (
+    <div className="growth stat-card">
+      <p className="diag-label">Seu dinheiro guardado, se seguir o plano</p>
+      <p className="growth-big">
+        {formatBRL(pts[pts.length - 1])} <small>em {horizon >= 24 ? `${Math.round(horizon / 12)} anos` : `${horizon} meses`}</small>
+      </p>
+      <svg viewBox={`0 0 ${W} ${H + 24}`} className="growth-svg" role="img" aria-label="Gráfico do dinheiro guardado ao longo do tempo">
+        {plan.reserve.target > 0 && (
+          <g>
+            <line x1="0" x2={W} y1={y(plan.reserve.target)} y2={y(plan.reserve.target)} className="growth-target" />
+            <text x="4" y={y(plan.reserve.target) - 5} className="growth-label">reserva: {formatBRL(plan.reserve.target)}</text>
+          </g>
+        )}
+        <polygon points={`0,${H} ${line} ${W},${H}`} className="growth-area" />
+        <polyline points={line} className="growth-line" />
+        {marks.map(([m, label]) => (
+          <g key={label}>
+            <line x1={x(m)} x2={x(m)} y1="0" y2={H} className="growth-mark" />
+            <text x={Math.min(x(m) + 4, W - 90)} y="14" className="growth-label">{label}</text>
+          </g>
+        ))}
+        <text x="0" y={H + 18} className="growth-axis">hoje</text>
+        <text x={W} y={H + 18} textAnchor="end" className="growth-axis">{monthShort(plan.start, horizon)}</text>
+      </svg>
     </div>
   );
 }

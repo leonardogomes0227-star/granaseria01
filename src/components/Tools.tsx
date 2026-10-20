@@ -340,7 +340,7 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
 
   return (
     <ToolShell id="debts" {...nav}>
-      <p className="wizard-sub">Duas ordens pra decidir qual dívida atacar primeiro, mantendo o mínimo nas outras.</p>
+      <p className="wizard-sub">Veja por qual dívida começar. Nas outras, você paga só a parcela mínima.</p>
 
       {fromDiag.length === 0 && (
         <div className="stat-card" style={{ marginBottom: 16 }}>
