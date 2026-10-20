@@ -1,24 +1,21 @@
 import { useState, useEffect, useId, useMemo } from 'react';
 import { ContinueOnWhatsApp } from './ContinueWhatsApp';
-import { SiteFeedback } from './SiteFeedback';
 import { siteEvent } from '../painel';
 import { WizardData, DebtItem, DebtKind } from '../types';
 import { Diagnosis, formatBRL, calculateHealthScore } from '../calculations';
 import { CHECKOUT_URL, CHECKOUT_READY, PRICE_LABEL, isUnlocked, markDiagnosisCompleted } from '../config';
-import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, CalendarCheck, ChevronDown } from 'lucide-react';
+import { ArrowRight, Pencil, Plus, Trash2, CheckCircle2, AlertTriangle, RotateCcw, ChevronDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CountUp, AnimatedFill } from './motion';
 import { DecimalInput } from './DecimalInput';
 import type { ToolId } from '../tools';
 import { ArchetypeShare } from './ArchetypeShare';
-import { RichDadCard } from './RichDadCard';
 import { getArchetype } from '../archetypes';
 import { buildPlan, DEBT_KINDS, effectiveRate, planTasks } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
 import { leaksMonthlyTotal } from '../leaks';
 import { getGoals, setToolTasks } from '../results';
 
-import { getTracking, startTracking } from '../tracking';
 import { track } from '../analytics';
 
 /* ---------- shared bits ---------- */
@@ -554,35 +551,44 @@ export function DiagnosisStep({
   return (
     <div className="wizard-card result" style={{ maxWidth: 720 }}>
       <div className="wizard-kicker"><span className="wedge" />Seu diagnóstico</div>
-      <h2 className="wizard-h2">Sua nota e o seu plano</h2>
-      <p className="wizard-sub">Primeiro a nota, depois o que fazer. Tudo fica salvo no seu painel.</p>
+      <h2 className="wizard-h2">Sua nota</h2>
 
       <ScoreHero health={health} />
 
-      <RichDadCard data={data} compact />
+      {unlocked ? (
+        <div className="result-cta">
+          <p>
+            {plan.powerAssumed
+              ? `Seu plano começa separando ${formatBRL(plan.monthlyPower)} por mês.`
+              : `Seu plano usa ${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
+          </p>
+          <Link className="btn-primary" to="/plano">
+            Ver o meu plano <ArrowRight size={16} />
+          </Link>
+        </div>
+      ) : (
+        <div className="diag-section" id="plano" style={{ marginTop: 20 }}>
+          <ActionPlanView
+            plan={plan}
+            locked
+            onOpenTool={onOpenTool}
+            lockedSlot={
+              <>
+                <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
+                  O plano completo traz todos os passos com valores e datas, a mensagem pronta pra renegociar e o calendário mês a mês.
+                </p>
+                <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine" onClick={() => track('checkout_clique')}>
+                  Desbloquear meu plano de ação — {PRICE_LABEL}
+                </a>
+              </>
+            }
+          />
+        </div>
+      )}
 
-      <div className="diag-section" id="plano" style={{ marginTop: 28, marginBottom: 8 }}>
-        <p className="diag-label">Seu plano de ação</p>
-        <h3 className="plan-heading">O que fazer, quanto e até quando</h3>
-        <ActionPlanView
-          plan={plan}
-          locked={!unlocked}
-          onOpenTool={onOpenTool}
-          lockedSlot={
-            <>
-              <p className="wizard-sub" style={{ marginBottom: 16, fontSize: 14.5 }}>
-                O plano completo traz todos os passos com valores e datas, a mensagem pronta pra renegociar e o calendário mês a mês.
-              </p>
-              <a href={CHECKOUT_URL} target="_blank" rel="noopener noreferrer" className="btn-primary btn-shine" onClick={() => track('checkout_clique')}>
-                Desbloquear meu plano de ação — {PRICE_LABEL}
-              </a>
-            </>
-          }
-        />
+      <div style={{ marginTop: 20 }}>
+        <ContinueOnWhatsApp />
       </div>
-
-      <p className="diag-label result-next">Agora, o dia a dia</p>
-      <ContinueOnWhatsApp />
 
       <Fold title="Entender minha nota" hint="Poupança, reserva, dívidas e gastos por categoria">
         <div className="diag-grid">
@@ -655,30 +661,11 @@ export function DiagnosisStep({
         <ArchetypeShare archetype={archetype} score={health.score} />
       </Fold>
 
-      <div style={{ marginTop: 28 }}>
-        <SiteFeedback tool="diagnostico" question="Esse diagnóstico te ajudou?" />
-      </div>
-
       <div className="wizard-nav result-nav">
         <button className="btn-ghost" type="button" onClick={onRestart}>
-          <RotateCcw size={15} /> Refazer
+          <RotateCcw size={15} /> Refazer o diagnóstico
         </button>
-        <button
-          className="btn-outline"
-          type="button"
-          onClick={() => {
-            if (!getTracking()) {
-              startTracking(data);
-              track('plano_seguido');
-            }
-            onOpenTool('tracker');
-          }}
-        >
-          <CalendarCheck size={16} /> Seguir mês a mês
-        </button>
-        <Link className="btn-primary" to="/plano">
-          Ver o meu plano <ArrowRight size={16} />
-        </Link>
+        <span />
       </div>
     </div>
   );
