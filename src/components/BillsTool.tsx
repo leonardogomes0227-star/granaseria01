@@ -63,6 +63,8 @@ export function BillsTool(nav: ToolNavProps) {
 
   // editar uma conta: muda nome, valor, vencimento e parcelas, sem perder o que já foi pago
   const [editing, setEditing] = useState<string | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [undo, setUndo] = useState<{ name: string; before: Bill[] } | null>(null); // o que foi apagado, pra dar pra voltar atrás
   const [eName, setEName] = useState('');
   const [eAmount, setEAmount] = useState(0);
   const [eDay, setEDay] = useState(10);
@@ -177,6 +179,13 @@ export function BillsTool(nav: ToolNavProps) {
         </div>
       )}
 
+      {undo && (
+        <div className="bill-undo" role="status">
+          <span><b>{undo.name}</b> foi apagada.</span>
+          <button type="button" className="link-btn" onClick={() => { setBills(undo.before); setUndo(null); }}>Desfazer</button>
+        </div>
+      )}
+
       {statuses.length === 0 ? (
         <div className="result-empty">Cadastre suas contas e parcelas abaixo: luz, água, aluguel, cartão, empréstimo…</div>
       ) : (
@@ -200,13 +209,24 @@ export function BillsTool(nav: ToolNavProps) {
                 {s.state === 'vence' && (s.daysToDue === 0 ? 'Vence hoje' : s.daysToDue === 1 ? 'Vence amanhã' : `Vence em ${s.daysToDue} dias`)}
                 {s.paid > 0 && s.left > 0 && ` · já pagou ${formatBRL(s.paid)}, falta ${formatBRL(s.left)}`}
               </p>
-              {paying !== s.bill.id && editing !== s.bill.id && (
+              {removing === s.bill.id && (
+                <div className="bill-confirm" role="alertdialog" aria-label={`Apagar ${s.bill.name}?`}>
+                  <p>Apagar <b>{s.bill.name}</b>? Os pagamentos marcados nela também somem.</p>
+                  <div className="bill-actions">
+                    <button type="button" className="btn-danger" onClick={() => { setUndo({ name: s.bill.name, before: bills }); setBills(bills.filter((b) => b.id !== s.bill.id)); setRemoving(null); }}>
+                      <Trash2 size={15} /> Apagar
+                    </button>
+                    <button type="button" className="btn-outline" onClick={() => setRemoving(null)}>Manter</button>
+                  </div>
+                </div>
+              )}
+              {paying !== s.bill.id && editing !== s.bill.id && removing !== s.bill.id && (
                 <div className="bill-actions">
                   {s.left > 0 && <button type="button" className="btn-outline" onClick={() => { setEditing(null); openPay(s); }}><Check size={15} /> Paguei</button>}
                   <button type="button" className="plan-more" onClick={() => openEdit(s.bill)}>
                     <Pencil size={14} /> editar
                   </button>
-                  <button type="button" className="plan-more danger" onClick={() => window.confirm(`Apagar ${s.bill.name}?`) && setBills(bills.filter((b) => b.id !== s.bill.id))}>
+                  <button type="button" className="plan-more danger" onClick={() => setRemoving(s.bill.id)}>
                     <Trash2 size={14} /> apagar
                   </button>
                 </div>
