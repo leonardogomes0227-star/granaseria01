@@ -36,23 +36,19 @@ function MonthCard() {
   const { today, last } = monthLeft();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
   return (
-    <div className="card money-card">
-      <span className="card-label">Quanto posso gastar hoje</span>
+    <section className="hero-money" aria-label="Quanto posso gastar hoje">
+      <span className="hero-label">Quanto posso gastar hoje</span>
       {!loaded ? (
-        <span className="skeleton skeleton-big" aria-label="Carregando" />
-      ) : income === 0 ? (
-        <b className="money-big">—</b>
+        <span className="skeleton skeleton-hero" aria-label="Carregando" />
       ) : (
-        <b className="money-big">{formatBRL(perDay)}</b>
+        <b className="hero-number">{income === 0 ? '—' : formatBRL(perDay)}</b>
       )}
-      <span className="money-sub">
+      <span className="hero-sub">
         {!loaded ? '\u00a0' : income === 0 ? 'Anote o que entrou e o que saiu pra ver.' : left > 0 ? `Sobram ${formatBRL(left)} até o fim do mês` : 'O que entrou este mês já foi usado.'}
       </span>
-      <span className="money-actions">
-        <WhatsAppButton label="Anotar" origin="inicio" className="btn-primary" />
-        <Link className="btn-outline" to="/mes">Ver meu mês</Link>
-      </span>
-    </div>
+      <WhatsAppButton label="Anotar" origin="inicio" className="btn-primary hero-cta" />
+      <Link className="hero-link" to="/mes">Ver meu mês</Link>
+    </section>
   );
 }
 
@@ -61,47 +57,59 @@ function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolea
   const tasks = useTasks();
   const today = todayBRT();
   const open = tasks.filter((t) => !t.done).sort((a, b) => a.due.localeCompare(b.due));
-  const [all, setAll] = useState(false);
+  const [more, setMore] = useState(false);
   const navigate = useNavigate();
   if (!hasDiagnosis)
     return (
-      <button type="button" className="card next-card" onClick={onStart}>
-        <span className="card-label">Seu próximo passo</span>
-        <b>Monte o seu plano</b>
-        <span className="next-sub">10 minutos. Você recebe o que fazer, quanto e até quando.</span>
+      <button type="button" className="card focus-card" onClick={onStart}>
+        <span className="card-label">Foco de hoje</span>
+        <b className="focus-title">Monte o seu plano</b>
+        <span className="focus-meta">10 minutos. Você recebe o que fazer, quanto e até quando.</span>
         <span className="next-go">Começar <ArrowRight size={16} /></span>
       </button>
     );
-  const shown = all ? open : open.slice(0, 1);
-  return (
-    <div className="card">
-      <div className="card-row">
-        <span className="card-label">Seu próximo passo</span>
+  if (open.length === 0)
+    return (
+      <div className="card focus-card">
+        <span className="card-label">Foco de hoje</span>
+        <b className="focus-title">Tudo em dia</b>
+        <span className="focus-meta">Nada pra fazer agora.</span>
       </div>
-      {open.length === 0 ? (
-        <p className="next-empty">Tudo em dia. Nada pra fazer agora.</p>
-      ) : (
-        <ul className="task-list">
-          {shown.map((t) => (
-            <li key={t.id} className={t.due <= today ? 'today' : ''}>
-              <button type="button" className="task-check" aria-label={`Marcar como feito: ${t.text}`} onClick={() => markTaskDone(t.id)}>
-                <Check size={15} />
-              </button>
-              <button type="button" className="task-copy" onClick={() => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId))}>
-                <b>{t.text}</b>
-                <small>
-                  {fmtDue(t.due, today)}
-                  {t.source !== 'plano' ? ` · ${getTool(t.source as ToolId).title}` : ''}
-                </small>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {open.length > 1 && (
-        <button type="button" className="link-btn" onClick={() => setAll((v) => !v)}>
-          {all ? 'Mostrar só o próximo' : `Ver os outros ${open.length - 1}`}
-        </button>
+    );
+  const [focus, ...rest] = open;
+  const go = (t: typeof focus) => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId));
+  const meta = (t: typeof focus) => `${fmtDue(t.due, today)}${t.source !== 'plano' ? ` · ${getTool(t.source as ToolId).title}` : ''}`;
+  return (
+    <div className="card focus-card">
+      <span className="card-label">Foco de hoje</span>
+      <button type="button" className="focus-main" onClick={() => go(focus)}>
+        <b className="focus-title">{focus.text}</b>
+        <span className="focus-meta">{meta(focus)}</span>
+      </button>
+      <button type="button" className="btn-outline focus-done" onClick={() => markTaskDone(focus.id)}>
+        <Check size={16} /> Marcar como feito
+      </button>
+      {rest.length > 0 && (
+        <>
+          <button type="button" className="link-btn focus-more" aria-expanded={more} onClick={() => setMore((v) => !v)}>
+            {more ? 'Esconder' : `Ver mais tarefas (${rest.length})`}
+          </button>
+          {more && (
+            <ul className="focus-list">
+              {rest.map((t) => (
+                <li key={t.id}>
+                  <button type="button" className="task-check" aria-label={`Marcar como feito: ${t.text}`} onClick={() => markTaskDone(t.id)}>
+                    <Check size={15} />
+                  </button>
+                  <button type="button" className="task-copy" onClick={() => go(t)}>
+                    <b>{t.text}</b>
+                    <small>{meta(t)}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );
