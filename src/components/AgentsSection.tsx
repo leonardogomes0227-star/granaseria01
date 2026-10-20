@@ -47,10 +47,12 @@ export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean; bare?: 
   const free = AGENTS.filter((a) => !chosen.includes(a.id)).sort((x, y) => rank(x.id) - rank(y.id));
 
   const row = (a: (typeof AGENTS)[number], on: boolean) => (
-    <li key={a.id} className="agent-row">
-      <button type="button" className="agent-row-main" onClick={() => navigate(`/conselheiros/${a.id}`)}>
-        <AgentAvatar id={a.id} name={a.name} hue={a.hue} size={48} />
-        <span>
+    <li key={a.id} className={`ag-card ${on ? 'on' : ''}`}>
+      <button type="button" className="ag-main" onClick={() => navigate(`/conselheiros/${a.id}`)}>
+        <span className="ag-head">
+          <AgentAvatar id={a.id} name={a.name} hue={a.hue} size={64} />
+        </span>
+        <span className="ag-body">
           <b>{a.name}</b>
           <small>{a.does}</small>
         </span>
@@ -66,13 +68,13 @@ export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean; bare?: 
       {(mine.length > 0 || custom.length > 0) && (
         <>
           <p className="section-label">Meus agentes</p>
-          <ul className="agent-rows">
+          <ul className="ag-grid">
             {mine.map((a) => row(a, true))}
             {custom.map((c) => (
-              <li key={c.id} className="agent-row">
-                <span className="agent-row-main static">
-                  <AgentAvatar name={c.name} hue={45} size={48} />
-                  <span>
+              <li key={c.id} className="ag-card on">
+                <span className="ag-main static">
+                  <span className="ag-head"><AgentAvatar name={c.name} hue={45} size={64} /></span>
+                  <span className="ag-body">
                     <b>{c.name}</b>
                     <small>{customPlan(c).lines[0]}</small>
                   </span>
@@ -99,17 +101,15 @@ export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean; bare?: 
       {free.length > 0 && (
         <>
           {(mine.length > 0 || custom.length > 0) && <p className="section-label">Disponíveis</p>}
-          <ul className="agent-rows">{free.map((a) => row(a, false))}</ul>
+          <ul className="ag-grid">{free.map((a) => row(a, false))}</ul>
         </>
       )}
 
-      <button type="button" className="agent-row create" onClick={() => setCreating(true)}>
-        <span className="agent-row-main static">
-          <span className="agent-create-icon"><Plus size={22} /></span>
-          <span>
-            <b>Criar o meu</b>
-            <small>Você escolhe o que ele vigia e quando avisa</small>
-          </span>
+      <button type="button" className="ag-create" onClick={() => setCreating(true)}>
+        <span className="agent-create-icon"><Plus size={22} /></span>
+        <span>
+          <b>Criar o meu</b>
+          <small>Você escolhe o que ele vigia e quando avisa</small>
         </span>
       </button>
 

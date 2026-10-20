@@ -575,3 +575,45 @@ a.dir-row { text-decoration: none; }
 .impulse-row.dir-row.soft, .painel .dir-row.soft { background: var(--surface); border: 1px solid var(--line); border-style: solid; }
 .painel .where-track { background: var(--surface-2); }
 .painel .section-label { color: var(--text-faint); }
+
+/* ---------- Agentes no padrão FinTech: grid, cabeçalho verde e pílula ---------- */
+.agents-page .section-label { margin: 22px 0 10px; color: var(--text-faint); }
+.agents-page .section-label:first-child { margin-top: 0; }
+.ag-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 761px) { .ag-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+.ag-card { display: flex; flex-direction: column; overflow: hidden; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+.ag-main { flex: 1; display: flex; flex-direction: column; padding: 0; background: none; border: 0; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.ag-main.static { cursor: default; }
+.ag-head { display: flex; align-items: center; justify-content: center; padding: 18px 0 14px; background: linear-gradient(160deg, var(--hero-2), var(--hero)); }
+.ag-card .agent-avatar.art { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22); }
+.ag-body { display: flex; flex-direction: column; gap: 3px; padding: 12px 14px 6px; }
+.ag-body b { font-size: 16px; }
+.ag-body small { color: var(--text-soft); font-size: 13px; line-height: 1.4; }
+.ag-card .agent-pick { margin: 8px 14px 14px; justify-content: center; border: 0; background: var(--surface-2); color: var(--hero); padding: 10px 12px; }
+.ag-card .agent-pick:hover { background: #E7E4DC; }
+.ag-card .agent-pick.on { background: var(--hero); color: #fff; }
+.ag-card .agent-pick.remove { background: none; color: var(--text-faint); }
+.ag-create { width: 100%; margin-top: 20px; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 22px; background: var(--surface); border: 1px dashed var(--line-strong); font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.ag-create > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.ag-create small { color: var(--text-soft); font-size: 13.5px; }
+.agent-create-icon { background: var(--hero); color: #fff; }
+
+/* detalhe do agente e botões do app (dentro da casca) no padrão FinTech */
+.shell .btn-primary { background: var(--hero); color: #fff; border: 0; box-shadow: none; text-shadow: none; }
+.shell .btn-primary:hover { background: var(--hero-2); box-shadow: 0 10px 22px -12px rgba(26, 56, 43, 0.6); }
+.shell .btn-shine::after { display: none; }
+.shell .link-btn { color: var(--hero); font-weight: 700; }
+.shell .btn-outline { border-color: var(--line-strong); background: var(--surface); color: var(--text); }
+.agent-head { padding: 20px; border-radius: 24px; background: linear-gradient(160deg, var(--hero-2), var(--hero)); color: #fff; align-items: center; }
+.agent-head h1 { color: #fff; }
+.agent-role { color: rgba(255, 255, 255, 0.86); }
+.agent-story { color: rgba(255, 255, 255, 0.7); }
+.agent-head .agent-avatar.art { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22); }
+.bubble { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+.bubble.me { background: var(--hero); color: #fff; }
+.chat-options button { background: var(--surface); }
+.chat-options button:hover { border-color: var(--hero); background: var(--hero); color: #fff; }
+.agent-plan { border-color: var(--line) !important; }
+.agent-plan-tasks { color: var(--hero); font-weight: 600; }
+.shell-login, .shell-avatar { background: var(--hero); color: #fff; }
+@media (max-width: 760px) { .shell-bottom a.on { color: var(--hero); background: rgba(26, 56, 43, 0.08); } }
