@@ -334,3 +334,19 @@ a.dir-row { text-decoration: none; }
 .agent-copy > span { -webkit-line-clamp: unset; }
 .agent-plan-more { margin: 12px 0 0; font-size: 13.5px; color: var(--text-soft); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
 .agent-plan-more .link-btn { padding: 0; }
+
+/* criar agente: escolha, quando… então… */
+.agent-create-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.trigger-options { display: flex; flex-direction: column; gap: 10px; }
+.trigger-option { display: flex; flex-direction: column; gap: 3px; padding: 16px; text-align: left; border-radius: 16px; background: var(--surface-2); border: 1.5px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
+.trigger-option:hover { border-color: var(--gold-bright); }
+.trigger-option b { font-size: 16px; }
+.trigger-option small { color: var(--text-soft); font-size: 13.5px; }
+.when-then { display: flex; flex-direction: column; border-radius: 16px; background: var(--surface-2); border: 1.5px dashed var(--line-strong); overflow: hidden; }
+.when-then.on { border-style: solid; border-color: var(--gold-bright); }
+.when-then span { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; }
+.when-then span + span { border-top: 1px solid var(--line); }
+.when-then small { color: var(--text-faint); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.when-then b { font-size: 15px; line-height: 1.4; font-weight: 600; }
+.agent-create-go { width: 100%; justify-content: center; margin-top: 14px; }
+.agent-create { scroll-margin-top: 80px; }
