@@ -13,6 +13,7 @@ import type { CoachTask } from '../coach';
 import { pushNow } from '../painel';
 import { AgentAvatar } from './AgentPage';
 import { useTasks } from './CoachPanel';
+import { FixedBills } from './FixedBills';
 
 /* ---------- Plano de ação: valor mensal, fases, passos, renegociação e calendário ---------- */
 
@@ -320,13 +321,15 @@ export function ActionPlanView({
               <button type="button" className="link-btn" aria-expanded={how} onClick={() => setHow((v) => !v)}>Como começar</button>
             )}
             <button type="button" className="link-btn" onClick={() => onOpenTool('tracker')}>
-              {allDone ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={13} />
+              {allDone ? 'Registrar o mês' : 'Registrar como foi o mês'} <ArrowRight size={13} />
             </button>
           </div>
           {how && general.map((st, i) => <p key={i} className="step-detail"><b>{st.title}.</b> {st.detail}</p>)}
           <PlanManage />
         </div>
       )}
+
+      {!locked && <FixedBills compact />}
 
       {locked ? (
         lockedSlot

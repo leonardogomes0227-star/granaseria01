@@ -100,3 +100,37 @@ export function parseBills(raw: string | null | undefined): Bill[] {
     return [];
   }
 }
+
+/* ---------- uso compartilhado (Meu mês, Plano, Início e a tela de contas) ---------- */
+
+export function loadBills(): Bill[] {
+  try {
+    return parseBills(localStorage.getItem(BILLS_KEY));
+  } catch {
+    return [];
+  }
+}
+
+/** Salva as contas e avisa as outras telas abertas (o saldo e os cartões se atualizam na hora). */
+export function saveBills(list: Bill[]) {
+  try {
+    localStorage.setItem(BILLS_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event('gs-contas'));
+  } catch {
+    // segue sem salvar
+  }
+}
+
+/** Quanto saiu pelas contas marcadas como pagas no app neste mês (pela data em que o dinheiro saiu). */
+export function paidThisMonth(bills: Bill[], month: string): number {
+  let total = 0;
+  for (const b of bills) for (const p of b.payments) if (p.paidOn.slice(0, 7) === month) total += p.amount;
+  return Math.round(total * 100) / 100;
+}
+
+/** Pagamentos do mês, do mais novo pro mais velho: viram linhas nos lançamentos. */
+export function paymentsThisMonth(bills: Bill[], month: string): { name: string; amount: number; paidOn: string }[] {
+  const rows: { name: string; amount: number; paidOn: string }[] = [];
+  for (const b of bills) for (const p of b.payments) if (p.paidOn.slice(0, 7) === month) rows.push({ name: b.name, amount: p.amount, paidOn: p.paidOn });
+  return rows.sort((a, b) => b.paidOn.localeCompare(a.paidOn));
+}
