@@ -51,7 +51,7 @@ function weeklyTip(week: Expense[], top: { name: string; total: number } | null,
   if (week.some((r) => /netflix|spotify|prime|disney|hbo|assinatura|anuidade|tarifa/i.test(r.description))) {
     return `Teve assinatura ou tarifa na semana. Veja se alguma não vale: ${siteLink('vazamentos')}`;
   }
-  return `Seu plano e seu coach: ${siteLink('painel')}`;
+  return `Seu plano: ${siteLink('plano')}`;
 }
 
 export function weeklySummary({ recent, monthExpenses, monthIncomes, now }: WeeklyInput): Summary | null {
@@ -114,7 +114,7 @@ export function monthlySummary({ expenses, incomes, monthIndex }: MonthlyInput):
   const tip =
     inc > 0 && inc - out >= inc * 0.1
       ? 'Você guardou pelo menos 10%. No próximo mês, separe esse valor assim que o salário cair.'
-      : `No próximo mês, tente separar 10% assim que o salário cair. Conte como foi o mês pro seu coach: ${siteLink('coach')}`;
+      : `No próximo mês, tente separar 10% assim que o salário cair. Seu plano: ${siteLink('plano')}`;
   const topLine = top ? `${brl(out)}, mais em ${top.name} (${brl(top.total)})` : brl(out);
   const text = [
     `*Seu ${month}*`,
