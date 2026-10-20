@@ -18,6 +18,7 @@ export const SYNC_KEYS = [
   'gs-perfil', // respostas das perguntas da entrada (src/profile.ts)
   'gs-tarefas', // próximos passos do coach (src/coach.ts)
   'gs-contas', // minhas contas e dívidas (src/bills.ts)
+  'gs-conselheiros', // conselheiros que a pessoa criou (src/agents.ts)
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
 

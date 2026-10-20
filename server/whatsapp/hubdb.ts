@@ -70,7 +70,7 @@ export async function refundUsage(phone: string, period: string): Promise<void> 
 // Fica na wa_sessions (chave "handoff:<código>") pra não precisar de tabela nova.
 
 const HANDOFF_TTL_MS = 24 * 60 * 60 * 1000;
-export const HANDOFF_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-leaks', 'selos-checkins', 'selos-diagnosis-completed', 'gs-nome', 'gs-resultados', 'gs-metas', 'gs-reset', 'gs-perfil', 'gs-tarefas', 'gs-contas'];
+export const HANDOFF_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-leaks', 'selos-checkins', 'selos-diagnosis-completed', 'gs-nome', 'gs-resultados', 'gs-metas', 'gs-reset', 'gs-perfil', 'gs-tarefas', 'gs-contas', 'gs-conselheiros'];
 
 export async function saveHandoff(code: string, state: StateSnapshot): Promise<void> {
   await check(

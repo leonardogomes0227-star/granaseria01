@@ -37,6 +37,8 @@ import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
+import { AgentPage } from './components/AgentPage';
+import { getAgent } from './agents';
 
 // recomeço do plano (src/reset.ts): o plano antigo deste navegador sai uma vez, antes de qualquer coisa ler ele
 try {
@@ -245,6 +247,7 @@ function App() {
             </Titled>
           }
         />
+        <Route path="/conselheiros/:id" element={<AgentRoute data={data} onHome={goHome} onOpenTool={openTool} footer={footer} />} />
         <Route
           path="/conta"
           element={
@@ -360,6 +363,23 @@ function WizardRoute({
         )}
       </div>
     </>
+  );
+}
+
+function AgentRoute({ data, onHome, onOpenTool, footer }: { data: WizardData; onHome: () => void; onOpenTool: (id: ToolId) => void; footer: ReactNode }) {
+  const agent = getAgent(useParams().id);
+  return (
+    <Titled title={agent ? `${agent.name}, seu conselheiro` : 'Página não encontrada'}>
+      <AppBar onHome={onHome} />
+      {agent ? (
+        <LoginGate what={`a conversa com ${agent.name}`}>
+          <AgentPage key={agent.id} agent={agent} data={data} onOpenTool={onOpenTool} />
+        </LoginGate>
+      ) : (
+        <NotFoundPage />
+      )}
+      {footer}
+    </Titled>
   );
 }
 
