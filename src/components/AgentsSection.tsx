@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
 import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, type CustomAgent } from '../agents';
 import { getAnswers, recommend } from '../profile';
 import { saveGoal, setToolTasks } from '../results';
-import { formatBRL } from '../calculations';
 import { AgentAvatar } from './AgentPage';
 import { AgentArt } from './AgentArt';
 import { MoneyField } from './Tools';
@@ -36,6 +35,9 @@ export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: bo
   const order = [...AGENTS].sort((a, b) => (picked.indexOf(a.id) === -1 ? 99 : picked.indexOf(a.id)) - (picked.indexOf(b.id) === -1 ? 99 : picked.indexOf(b.id)));
   const [custom, setCustom] = useState<CustomAgent[]>(loadCustom);
   const [creating, setCreating] = useState(() => window.location.hash === '#criar');
+  useEffect(() => {
+    if (creating) window.setTimeout(() => document.getElementById('criar')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  }, [creating]);
 
   return (
     <section className={bare ? 'agents bare' : 'section agents'} id="conselheiros">
@@ -56,7 +58,7 @@ export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: bo
               </span>
               <span className="agent-copy">
                 <b>{a.name}</b>
-                <span>{a.role}</span>
+                <span>{a.does}</span>
               </span>
             </button>
           );
@@ -88,7 +90,7 @@ export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: bo
           <span className="agent-cover create-cover"><Plus size={30} /></span>
           <span className="agent-copy">
             <b>Criar o meu</b>
-            <span>Um conselheiro só pro seu objetivo: juntar pra algo, quitar uma dívida ou gastar menos com uma coisa.</span>
+            <span>Escolha o que ele vigia e quando te avisa no WhatsApp.</span>
           </span>
         </button>
       </div>
@@ -111,53 +113,72 @@ export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: bo
   );
 }
 
+const KINDS: { kind: CustomAgent['kind']; title: string; text: string; whatLabel: string; placeholder: string }[] = [
+  { kind: 'juntar', title: 'Juntar dinheiro', text: 'Te avisa na hora de guardar pro seu objetivo.', whatLabel: 'Pra quê?', placeholder: 'Ex.: moto, viagem' },
+  { kind: 'divida', title: 'Quitar uma dívida', text: 'Te avisa na hora de pagar um valor a mais.', whatLabel: 'Qual dívida?', placeholder: 'Ex.: cartão Nubank' },
+  { kind: 'gasto', title: 'Gastar menos', text: 'Te avisa na hora de conferir o seu limite.', whatLabel: 'Com o quê?', placeholder: 'Ex.: delivery' },
+];
+const AGENT_NAME: Record<CustomAgent['kind'], string> = { juntar: 'Meta', divida: 'Dívida', gasto: 'Limite' };
+
+/** Criar um agente em dois toques: escolhe o que ele vigia, preenche o essencial e vê "Quando… então…" antes de ativar. */
 function CreateAgent({ onDone, onCancel }: { onDone: (c: CustomAgent) => void; onCancel: () => void }) {
-  const [name, setName] = useState('');
-  const [kind, setKind] = useState<CustomAgent['kind']>('juntar');
+  const [kind, setKind] = useState<CustomAgent['kind'] | null>(null);
   const [what, setWhat] = useState('');
   const [amount, setAmount] = useState(0);
   const [months, setMonths] = useState(12);
   const [freq, setFreq] = useState<CustomAgent['freq']>('mes');
-  const ok = name.trim() && what.trim() && amount > 0 && months > 0;
-  const preview = ok ? customPlan({ id: '', name, kind, what, amount, months, freq, createdAt: '' }).lines[0] : null;
+  const info = KINDS.find((k) => k.kind === kind);
+  const ok = Boolean(kind && what.trim() && amount > 0 && (kind === 'gasto' || months > 0));
+  const draft: CustomAgent | null = kind
+    ? { id: `c-${Date.now()}`, name: `${AGENT_NAME[kind]}: ${what.trim() || '…'}`, kind, what: what.trim(), amount, months: kind === 'gasto' ? 1 : months, freq, createdAt: new Date().toISOString() }
+    : null;
+  const notice = ok && draft ? customPlan(draft).tasks[0]?.text : null;
+
   return (
-    <div className="stat-card agent-create">
-      <p className="field-label" style={{ fontWeight: 700 }}>Criar o meu conselheiro</p>
-      <div className="field-group">
-        <label className="field-label" htmlFor="ag-name">Nome dele</label>
-        <input id="ag-name" className="field-input" placeholder="Ex.: Meta da moto" value={name} maxLength={30} onChange={(e) => setName(e.target.value)} />
+    <div className="stat-card agent-create" id="criar">
+      <div className="agent-create-head">
+        <p className="field-label" style={{ fontWeight: 700, margin: 0 }}>{kind ? info?.title : 'O que o seu agente vai vigiar?'}</p>
+        <button type="button" className="link-btn" onClick={kind ? () => setKind(null) : onCancel}>{kind ? 'Trocar' : 'Cancelar'}</button>
       </div>
-      <div className="seg" role="tablist" aria-label="O que ele vai fazer" style={{ marginBottom: 12, flexWrap: 'wrap' }}>
-        {([['juntar', 'Juntar pra algo'], ['divida', 'Quitar uma dívida'], ['gasto', 'Gastar menos']] as [CustomAgent['kind'], string][]).map(([k, l]) => (
-          <button key={k} type="button" className={kind === k ? 'active' : ''} onClick={() => setKind(k)}>{l}</button>
-        ))}
-      </div>
-      <div className="field-group">
-        <label className="field-label" htmlFor="ag-what">{kind === 'juntar' ? 'Pra quê?' : kind === 'divida' ? 'Qual dívida?' : 'Gastar menos com o quê?'}</label>
-        <input id="ag-what" className="field-input" placeholder={kind === 'juntar' ? 'Ex.: moto, viagem' : kind === 'divida' ? 'Ex.: cartão Nubank' : 'Ex.: delivery'} value={what} maxLength={40} onChange={(e) => setWhat(e.target.value)} />
-      </div>
-      <MoneyField label={kind === 'gasto' ? 'Quanto quer gastar no máximo, no total do período' : 'Valor'} value={amount} onChange={setAmount} />
-      <div className="field-group">
-        <label className="field-label" htmlFor="ag-months">Em quantos meses?</label>
-        <DecimalInput id="ag-months" decimals={0} max={240} value={months} onChange={(v) => setMonths(Math.max(1, v))} />
-      </div>
-      <div className="seg" role="tablist" aria-label="Lembrete" style={{ marginBottom: 12 }}>
-        <button type="button" className={freq === 'mes' ? 'active' : ''} onClick={() => setFreq('mes')}>Lembrar todo mês</button>
-        <button type="button" className={freq === 'semana' ? 'active' : ''} onClick={() => setFreq('semana')}>Toda semana</button>
-      </div>
-      {preview && <p className="insight insight-info" style={{ marginTop: 0 }}>{preview}</p>}
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!ok}
-          onClick={() => onDone({ id: `c-${Date.now()}`, name: name.trim(), kind, what: what.trim(), amount, months, freq, createdAt: new Date().toISOString() })}
-        >
-          Criar {name.trim() ? `o ${name.trim()}` : 'o conselheiro'}
-        </button>
-        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-      </div>
-      {amount > 0 && <p className="field-hint" style={{ marginTop: 8 }}>Total: {formatBRL(amount)} em {months} meses.</p>}
+
+      {!kind ? (
+        <div className="trigger-options">
+          {KINDS.map((k) => (
+            <button key={k.kind} type="button" className="trigger-option" onClick={() => setKind(k.kind)}>
+              <b>{k.title}</b>
+              <small>{k.text}</small>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="field-group">
+            <label className="field-label" htmlFor="ag-what">{info?.whatLabel}</label>
+            <input id="ag-what" className="field-input" placeholder={info?.placeholder} value={what} maxLength={40} autoFocus onChange={(e) => setWhat(e.target.value)} />
+          </div>
+          <MoneyField label={kind === 'gasto' ? 'Limite por mês' : 'Valor total'} value={amount} onChange={setAmount} />
+          {kind !== 'gasto' && (
+            <div className="field-group">
+              <label className="field-label" htmlFor="ag-months">Em quantos meses?</label>
+              <DecimalInput id="ag-months" decimals={0} max={240} value={months} onChange={(v) => setMonths(Math.max(1, v))} />
+            </div>
+          )}
+          <p className="field-label" style={{ marginBottom: 6 }}>Quando o agente te avisa?</p>
+          <div className="seg" role="tablist" aria-label="Quando avisar" style={{ marginBottom: 14 }}>
+            <button type="button" className={freq === 'mes' ? 'active' : ''} onClick={() => setFreq('mes')}>Todo mês</button>
+            <button type="button" className={freq === 'semana' ? 'active' : ''} onClick={() => setFreq('semana')}>Toda semana</button>
+          </div>
+
+          <div className={`when-then ${notice ? 'on' : ''}`} aria-live="polite">
+            <span><small>Quando</small><b>{freq === 'semana' ? 'Chegar a semana' : 'Chegar o mês'}</b></span>
+            <span><small>O agente</small><b>{notice ? `te avisa no WhatsApp: ${notice}` : 'Preencha acima pra ver o aviso.'}</b></span>
+          </div>
+
+          <button type="button" className="btn-primary agent-create-go" disabled={!ok} onClick={() => draft && onDone(draft)}>
+            Ativar agente
+          </button>
+        </>
+      )}
     </div>
   );
 }

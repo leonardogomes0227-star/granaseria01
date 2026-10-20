@@ -7,7 +7,7 @@ import { todayBRT, type CoachTask } from '../coach';
 import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, type CustomAgent } from '../agents';
 import { markTaskDone } from '../results';
 import { fmtDue } from '../dates';
-import { getTool, type ToolId } from '../tools';
+import { faturaEnabled, getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
@@ -73,8 +73,10 @@ interface Watcher {
   id: string;
   name: string;
   role: string;
+  does: string;
   hue: number;
-  tool: ToolId | null; // a ferramenta dele (null = criado pela pessoa)
+  extra: ToolId[]; // outras telas que ele abre
+  tool: ToolId | null; // a tela de cálculo dele (null = criado pela pessoa)
   custom: boolean;
   tasks: CoachTask[]; // os avisos abertos, do mais perto pro mais longe
 }
@@ -82,9 +84,9 @@ interface Watcher {
 function buildWatchers(tasks: CoachTask[], custom: CustomAgent[]): Watcher[] {
   const open = tasks.filter((t) => !t.done).sort((a, b) => a.due.localeCompare(b.due));
   const own = (source: string) => open.filter((t) => t.source === source || (source === 'tracker' && t.source === 'plano'));
-  const list: Watcher[] = AGENTS.map((a) => ({ id: a.id, name: a.name, role: a.role, hue: a.hue, tool: a.tool, custom: false, tasks: own(a.tool) }));
+  const list: Watcher[] = AGENTS.map((a) => ({ id: a.id, name: a.name, role: a.role, does: a.does, extra: a.extra ?? [], hue: a.hue, tool: a.tool, custom: false, tasks: own(a.tool) }));
   const goals = open.filter((t) => t.source === 'goal');
-  custom.forEach((c) => list.push({ id: c.id, name: c.name, role: customPlan(c).lines[0], hue: 45, tool: null, custom: true, tasks: goals }));
+  custom.forEach((c) => list.push({ id: c.id, name: c.name, role: customPlan(c).lines[0], does: customPlan(c).lines[0], extra: [], hue: 45, tool: null, custom: true, tasks: goals }));
   // quem está vigiando vem primeiro, e dentro deles o aviso mais próximo
   return list.sort((x, y) => (x.tasks.length ? 0 : 1) - (y.tasks.length ? 0 : 1) || (x.tasks[0]?.due ?? '9').localeCompare(y.tasks[0]?.due ?? '9'));
 }
@@ -96,15 +98,20 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
   const watchers = buildWatchers(tasks, loadCustom());
   const active = watchers.filter((w) => w.tasks.length > 0).length;
   const [sel, setSel] = useState<string | null>(null);
+  const [fatura, setFatura] = useState(false);
+  useEffect(() => {
+    void faturaEnabled().then(setFatura);
+  }, []);
   const chosen = watchers.find((w) => w.id === sel) ?? null;
   const meta = (t: CoachTask) => `${fmtDue(t.due, today)}${t.repeat === 'monthly' ? ' · todo mês' : ''}`;
   const go = (t: CoachTask) => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId));
   return (
     <section className="home-block agents-panel" aria-label="Seus agentes">
       <div className="block-head">
-        <h2>Seus agentes</h2>
-        <span className="agents-count">{active === 0 ? 'nenhum ativo' : `${active} de olho`}</span>
+        <h2>Seus agentes ativos</h2>
+        <span className="agents-count">{active === 0 ? 'nenhum ainda' : `${active} de olho`}</span>
       </div>
+      {active === 0 && <p className="agents-hint">Escolha um agente abaixo. Ele monta os seus avisos e te lembra no WhatsApp.</p>}
       <div className="agent-strip live">
         {watchers.map((w) => {
           const first = w.tasks[0];
@@ -116,12 +123,10 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
                 {on && <i className="live-dot" aria-label="Ativo" />}
               </span>
               <b>{w.name}</b>
-              <small className="live-line">{on ? first.text : w.custom ? w.role : 'Em espera'}</small>
-              {on && (
-                <span className="live-when">
-                  <Bell size={12} /> {fmtDue(first.due, today)}
-                </span>
-              )}
+              <small className="live-line">{w.does}</small>
+              <span className={`live-when ${on ? '' : 'idle'}`}>
+                <Bell size={12} /> {on ? `Aviso: ${fmtDue(first.due, today)}` : 'Em espera'}
+              </span>
             </button>
           );
         })}
@@ -137,7 +142,7 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
           <div className="agent-detail-head">
             <span>
               <b>{chosen.name}</b>
-              <small>{chosen.tasks.length > 0 ? 'De olho. Te aviso no WhatsApp no dia.' : chosen.role}</small>
+              <small>{chosen.does}</small>
             </span>
           </div>
           {chosen.tasks.length > 0 ? (
@@ -161,11 +166,11 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
             <Link className="btn-outline" to={chosen.custom ? '/conselheiros' : `/conselheiros/${chosen.id}`}>
               <MessageCircle size={15} /> {chosen.tasks.length > 0 ? 'Conversar' : `Conversar com ${chosen.name}`}
             </Link>
-            {chosen.tool && (
-              <button type="button" className="link-btn" onClick={() => onOpenTool(chosen.tool as ToolId)}>
-                Abrir {getTool(chosen.tool).title}
+            {[...(chosen.tool ? [chosen.tool] : []), ...chosen.extra].filter((id) => id !== 'fatura' || fatura).map((id) => (
+              <button key={id} type="button" className="link-btn" onClick={() => onOpenTool(id)}>
+                {getTool(id).title}
               </button>
-            )}
+            ))}
           </div>
         </div>
       )}
