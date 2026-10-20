@@ -136,7 +136,7 @@ export function ToolCard({ id, done, onOpen }: { id: ToolId; done?: ToolResult; 
       <ToolIcon tool={t} />
       <span className="dir-row-copy">
         <b>{t.title}</b>
-        <span>{done ? `Feito: ${done.summary}` : t.guide.serve}</span>
+        <span className={done ? 'one-line' : undefined}>{done ? `Feito · ${done.summary}` : t.guide.serve}</span>
       </span>
       <ArrowRight size={18} className="dir-row-arrow" />
     </button>

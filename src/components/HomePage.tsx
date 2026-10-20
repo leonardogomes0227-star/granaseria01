@@ -3,13 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
-import { getAnswers, recommend } from '../profile';
-import { AGENTS } from '../agents';
 import { daysBetween, todayBRT } from '../coach';
 import { markTaskDone } from '../results';
 import { getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
-import { AgentArt } from './AgentArt';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
 
@@ -25,8 +22,12 @@ function monthLeft(): { today: number; last: number } {
 
 function MonthCard() {
   const [painel, setPainel] = useState<PainelData | null>(null);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    void fetchPainel().then(setPainel).catch(() => undefined);
+    void fetchPainel()
+      .then(setPainel)
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
   }, []);
   const income = painel ? sum(painel.month.incomes) : 0;
   const spent = painel ? sum(painel.month.expenses) : 0;
@@ -34,25 +35,29 @@ function MonthCard() {
   const { today, last } = monthLeft();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
   return (
-    <Link to="/mes" className="card money-card">
-      <span className="card-label">Saldo do mês</span>
-      <b className={`money-big ${left < 0 ? 'neg' : ''}`}>{painel ? formatBRL(left) : '—'}</b>
-      <span className="money-flow">
-        <span>Entrou <b>{formatBRL(income)}</b></span>
-        <span>Saiu <b>{formatBRL(spent)}</b></span>
+    <div className="card money-card">
+      <span className="card-label">Quanto posso gastar hoje</span>
+      {!loaded ? (
+        <span className="skeleton skeleton-big" aria-label="Carregando" />
+      ) : income === 0 ? (
+        <b className="money-big">—</b>
+      ) : (
+        <b className="money-big">{formatBRL(perDay)}</b>
+      )}
+      <span className="money-sub">
+        {!loaded ? '\u00a0' : income === 0 ? 'Anote o que entrou e o que saiu pra ver.' : left > 0 ? `Sobram ${formatBRL(left)} até o fim do mês` : 'O que entrou este mês já foi usado.'}
       </span>
-      <span className="money-hint">
-        {income === 0 ? 'Anote o que entrou no WhatsApp pra ver o saldo.' : left > 0 ? `Dá pra gastar ${formatBRL(perDay)} por dia` : 'O mês passou do que entrou.'}
-        <ArrowRight size={15} />
+      <span className="money-actions">
+        <WhatsAppButton label="Anotar" origin="inicio" className="btn-primary" />
+        <Link className="btn-outline" to="/mes">Ver meu mês</Link>
       </span>
-    </Link>
+    </div>
   );
 }
 
 const when = (due: string, today: string) => {
   const d = daysBetween(today, due);
-  if (d < 0) return 'atrasado';
-  if (d === 0) return 'hoje';
+  if (d <= 0) return 'pra hoje';
   if (d === 1) return 'amanhã';
   return new Date(`${due}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 };
@@ -68,23 +73,22 @@ function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolea
       <button type="button" className="card next-card" onClick={onStart}>
         <span className="card-label">Seu próximo passo</span>
         <b>Monte o seu plano</b>
-        <span className="next-sub">10 perguntas sobre renda, gastos e dívidas. Você recebe o plano com valores e datas.</span>
+        <span className="next-sub">10 minutos. Você recebe o que fazer, quanto e até quando.</span>
         <span className="next-go">Começar <ArrowRight size={16} /></span>
       </button>
     );
-  const shown = all ? open : open.slice(0, 3);
+  const shown = all ? open : open.slice(0, 1);
   return (
     <div className="card">
       <div className="card-row">
-        <span className="card-label">Próximos passos</span>
-        {open.length > 0 && <span className="card-count">{open.length}</span>}
+        <span className="card-label">Seu próximo passo</span>
       </div>
       {open.length === 0 ? (
-        <p className="next-empty">Tudo em dia. Use um conselheiro ou uma ferramenta e os próximos passos aparecem aqui.</p>
+        <p className="next-empty">Tudo em dia. Nada pra fazer agora.</p>
       ) : (
         <ul className="task-list">
           {shown.map((t) => (
-            <li key={t.id} className={t.due < today ? 'late' : t.due === today ? 'today' : ''}>
+            <li key={t.id} className={t.due <= today ? 'today' : ''}>
               <button type="button" className="task-check" aria-label={`Marcar como feito: ${t.text}`} onClick={() => markTaskDone(t.id)}>
                 <Check size={15} />
               </button>
@@ -99,41 +103,12 @@ function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolea
           ))}
         </ul>
       )}
-      {open.length > 3 && (
+      {open.length > 1 && (
         <button type="button" className="link-btn" onClick={() => setAll((v) => !v)}>
-          {all ? 'Mostrar menos' : `Ver todos (${open.length})`}
+          {all ? 'Mostrar só o próximo' : `Ver os outros ${open.length - 1}`}
         </button>
       )}
     </div>
-  );
-}
-
-function AgentsStrip({ hasDiagnosis }: { hasDiagnosis: boolean }) {
-  const navigate = useNavigate();
-  const answers = getAnswers();
-  const picked = answers ? recommend(answers, hasDiagnosis).map((p) => AGENTS.find((a) => a.tool === p.tool)?.id) : ['dabasir', 'bansir', 'arkad'];
-  const order = [...AGENTS].sort((a, b) => (picked.indexOf(a.id) === -1 ? 99 : picked.indexOf(a.id)) - (picked.indexOf(b.id) === -1 ? 99 : picked.indexOf(b.id)));
-  return (
-    <section className="home-block">
-      <div className="block-head">
-        <h2>Seus conselheiros</h2>
-        <Link to="/conselheiros">Ver todos</Link>
-      </div>
-      <div className="agent-strip">
-        {order.map((a) => (
-          <button key={a.id} type="button" className="agent-mini" onClick={() => navigate(`/conselheiros/${a.id}`)}>
-            <span className="agent-mini-art"><AgentArt id={a.id} hue={a.hue} /></span>
-            <b>{a.name}</b>
-            <small>{a.role}</small>
-          </button>
-        ))}
-        <button type="button" className="agent-mini create" onClick={() => navigate('/conselheiros#criar')}>
-          <span className="agent-mini-art"><Plus size={26} /></span>
-          <b>Criar o meu</b>
-          <small>Pro seu objetivo</small>
-        </button>
-      </div>
-    </section>
   );
 }
 
@@ -181,8 +156,6 @@ function Welcome({ resume, onStart, onResume }: { resume: number | null; onStart
         })}
       </section>
 
-      <AgentsStrip hasDiagnosis={false} />
-
       <section className="home-block">
         <div className="block-head"><h2>Dúvidas</h2></div>
         <div className="faq-list">
@@ -216,26 +189,20 @@ export function HomePage({
   const resume = savedProgress && savedProgress.step > 0 && savedProgress.step < 7 ? savedProgress.step : null;
   if (!logged) return <Welcome resume={resume} onStart={onStart} onResume={onResume} />;
   const name = getName();
-  const date = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Sao_Paulo' });
   return (
     <>
-      <PageHead title={name ? `Oi, ${name}` : 'Oi!'} sub={date.charAt(0).toUpperCase() + date.slice(1)} />
+      <PageHead title={name ? `Oi, ${name}` : 'Oi!'} />
       {resume !== null && (
         <button type="button" className="card next-card" onClick={onResume}>
           <span className="card-label">Você parou no meio</span>
           <b>Continuar o meu plano</b>
-          <span className="next-sub">Etapa {resume} de 7.</span>
-          <span className="next-go">Continuar <ArrowRight size={16} /></span>
+          <span className="next-go">Continuar (etapa {resume} de 7) <ArrowRight size={16} /></span>
         </button>
       )}
-      <div className="home-grid">
+      <div className="home-stack">
         <MonthCard />
         {resume === null && <NextSteps hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
       </div>
-      <div className="wa-line">
-        <WhatsAppButton label="Anotar no WhatsApp" origin="inicio" className="btn-outline" />
-      </div>
-      <AgentsStrip hasDiagnosis={hasDiagnosis} />
     </>
   );
 }

@@ -33,7 +33,6 @@ import { AdminPage } from './components/AdminPage';
 import { PainelPage } from './components/PainelPage';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
-import { SiteFeedback } from './components/SiteFeedback';
 import { RichDadTool } from './components/RichDadTool';
 import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
@@ -445,7 +444,6 @@ function ToolRoute({
         {tool.id === 'richdad' && <RichDadTool data={data} onStart={onStart} {...toolProps} />}
         {tool.id === 'bills' && <BillsTool {...toolProps} />}
       </div>
-      <SiteFeedback key={`fb-${tool.id}`} tool={tool.id} />
       </LoginGate>
     </AppShell>
   );

@@ -35,7 +35,7 @@
   .shell-me { padding: 4px; border: 0; }
   .shell-main { padding: 20px 16px 32px; }
   .shell-foot { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
-  .shell-bottom { display: grid; grid-template-columns: repeat(5, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(251, 247, 239, 0.97); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
+  .shell-bottom { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(251, 247, 239, 0.97); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
   .shell-bottom a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px; color: var(--text-faint); font-size: 11px; font-weight: 600; text-decoration: none; }
   .shell-bottom a.on { color: var(--gold-bright); background: rgba(233, 176, 76, 0.1); }
 }
@@ -210,3 +210,40 @@ button.card:hover, a.card:hover { border-color: var(--line-strong); }
 .month-list .task-check { flex: none; width: 28px; height: 28px; padding: 0; }
 .month-list li { justify-content: flex-start; }
 .this-month { overflow: hidden; }
+
+/* etapa 2: menos ruído */
+a.dir-row { text-decoration: none; }
+.dir-row.soft { background: transparent; box-shadow: none; border-style: dashed; }
+.dir-row-copy > span.one-line { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: unset; }
+.home-stack { display: flex; flex-direction: column; gap: 14px; }
+.money-card .money-sub { color: var(--text-soft); font-size: 14.5px; }
+.money-actions { display: flex; gap: 10px; margin-top: 14px; }
+.money-actions > * { flex: 1; justify-content: center; }
+.task-list li.today .task-copy small { color: var(--text-soft); }
+.skeleton { display: block; border-radius: 10px; background: linear-gradient(100deg, var(--surface-2) 30%, var(--line) 50%, var(--surface-2) 70%); background-size: 200% 100%; animation: skel 1.2s linear infinite; }
+.skeleton-big { width: 160px; height: 40px; margin: 4px 0; }
+@keyframes skel { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+.journey-line { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-faint); }
+.journey-line li { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.journey-line li + li::before { content: ''; width: 18px; height: 1px; background: var(--line-strong); flex: none; }
+.journey-line li.now { color: var(--text); font-weight: 600; }
+.journey-line li.now span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jl-dot { flex: none; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.journey-line li.now .jl-dot { border-color: var(--gold-bright); background: var(--gold-bright); }
+.journey-line li.done .jl-dot { border-color: var(--good); background: var(--good); }
+.tool-agent { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; color: var(--text-soft); font-size: 14px; font-weight: 600; text-decoration: none; }
+.tool-agent:hover { color: var(--gold-bright); }
+.tool-panel { gap: 10px; margin-bottom: 16px; }
+.tool-panel:empty { display: none; }
+.plan-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 14px; font-size: 13.5px; color: var(--text-soft); }
+.plan-line span { display: inline-flex; align-items: center; gap: 6px; }
+.plan-line b { font-weight: 600; color: var(--text-soft); }
+.plan-line span.now b { color: var(--gold-bright); }
+.plan-line small { color: var(--text-faint); font-size: 12.5px; }
+.plan-line svg { color: var(--text-faint); }
+.plan-more-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; }
+.plan-legal { margin: 18px 0 0; color: var(--text-faint); font-size: 12px; }
+.impulse-row { margin: 14px 0; }
+.dir-list.one { grid-template-columns: minmax(0, 1fr); }
+.dir-row { min-width: 0; }

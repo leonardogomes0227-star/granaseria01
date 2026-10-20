@@ -1,17 +1,17 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { ClipboardList, House, UserRound, Users, Wallet, Wrench, type LucideIcon } from 'lucide-react';
+import { ClipboardList, House, UserRound, Wallet, Wrench, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
 import { BrandMark } from './Layout';
 
-/* ---------- A casca do app: as mesmas 5 abas no topo (PC) e embaixo (celular) ---------- */
-// Cada coisa no seu lugar: Início (o dia de hoje), Meu mês (o que entrou e saiu), Plano, Conselheiros e Ferramentas.
+/* ---------- A casca do app: as mesmas 4 abas no topo (PC) e embaixo (celular) ---------- */
+// Cada tela responde uma pergunta: Início (como estou hoje?), Meu mês (pra onde foi?), Plano (o que faço?) e
+// Ferramentas (preciso resolver algo?). Os conselheiros falam dentro das ferramentas.
 
 export const NAV: [string, string, LucideIcon][] = [
   ['/', 'Início', House],
   ['/mes', 'Meu mês', Wallet],
   ['/plano', 'Plano', ClipboardList],
-  ['/conselheiros', 'Conselheiros', Users],
   ['/ferramentas', 'Ferramentas', Wrench],
 ];
 
