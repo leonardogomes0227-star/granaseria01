@@ -5,6 +5,7 @@ import App from './App.tsx';
 import './index.css';
 import './site.css';
 import './theme.css';
+import './app.css';
 import { initAnalytics } from './analytics';
 
 initAnalytics();

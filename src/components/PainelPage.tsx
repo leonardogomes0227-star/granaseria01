@@ -1,21 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { accountsEnabled } from '../supabase';
-import { MessageCircle, LogOut, RefreshCw, ArrowRight, ArrowDownLeft, Bell, Car, ClipboardList, GraduationCap, HeartHandshake, HeartPulse, House, Landmark, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, Wallet, Wrench, type LucideIcon } from 'lucide-react';
+import { MessageCircle, LogOut, RefreshCw, ArrowRight, ArrowDownLeft, Car, GraduationCap, HeartHandshake, HeartPulse, House, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
 import type { ToolId } from '../tools';
 import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { buildPlan } from '../plan';
 import { leaksMonthlyTotal } from '../leaks';
-import { getGoals, getResults, type ToolResult } from '../results';
+import { getGoals } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
-import { LISTED_TOOLS, getTool } from '../tools';
-import { todayBRT } from '../coach';
-import { ToolIcon } from './Layout';
+import { PageHead } from './AppShell';
 import { RichDadCard } from './RichDadCard';
-import { CoachPanel, useTasks } from './CoachPanel';
-import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
+import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
 import { CountUp } from './motion';
@@ -33,31 +30,6 @@ const CATS: { key: keyof WizardData['expenses']; name: string; label: string }[]
 
 const brl = (n: number) => formatBRL(n);
 
-type Tab = 'coach' | 'mes' | 'plano' | 'pairico' | 'ferramentas';
-const TABS: [Tab, string, LucideIcon][] = [
-  ['coach', 'Coach', Bell],
-  ['mes', 'Meu mês', Wallet],
-  ['plano', 'Plano', ClipboardList],
-  ['pairico', 'Renda', Landmark],
-  ['ferramentas', 'Ferramentas', Wrench],
-];
-
-const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-
-/** Uma ferramenta usada: o resultado numa linha e a data. Tocou, abre a ferramenta. */
-function ToolResultCard({ id, result, onOpen }: { id: ToolId; result: ToolResult; onOpen: () => void }) {
-  const t = getTool(id);
-  return (
-    <button type="button" className="dir-row tool-row" onClick={onOpen}>
-      <ToolIcon tool={t} />
-      <span className="dir-row-copy">
-        <small>{t.title} · {dayMonth(result.at)}</small>
-        <b>{result.card?.big ?? result.summary}</b>
-      </span>
-      <ArrowRight size={18} className="dir-row-arrow" />
-    </button>
-  );
-}
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
@@ -90,7 +62,7 @@ function monthClock(): { today: number; last: number; month: string } {
 
 const lastDigits = (phone: string) => phone.replace(/\D/g, '').slice(-4);
 
-export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
+export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'mes' | 'plano'; data: WizardData; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [painel, setPainel] = useState<PainelData | null>(null);
@@ -102,7 +74,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
       // o link do WhatsApp: guarda o token e tira da barra de endereço
       setPainelToken(t);
       track('painel_conectado');
-      navigate('/painel', { replace: true });
+      navigate(window.location.pathname, { replace: true });
     }
     if (!painelToken()) return setStatus('none');
     startPainelSync()
@@ -128,23 +100,6 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
   const recent = [...expenses.map((e) => ({ ...e, kind: 'out' as const, what: e.category })), ...incomes.map((i) => ({ ...i, kind: 'in' as const, what: i.source }))]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
-  const name = getName();
-  const done = (Object.entries(getResults()) as [ToolId, ToolResult][]).sort((x, y) => y[1].at.localeCompare(x[1].at));
-  const coachTasks = useTasks();
-  const dueCount = coachTasks.filter((t) => !t.done && t.due <= todayBRT()).length;
-  const unused = LISTED_TOOLS.filter((t) => !done.some(([id]) => id === t.id));
-  // cada coisa no seu lugar: uma aba por vez (o #mes, #plano… do endereço abre a aba certa)
-  const [tab, setTab] = useState<Tab>(() => {
-    const h = window.location.hash.slice(1) as Tab;
-    return TABS.some(([id]) => id === h) ? h : 'coach';
-  });
-  const pickTab = (t: Tab) => {
-    setTab(t);
-    window.history.replaceState(null, '', `#${t}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-  const show = (t: Tab) => status !== 'ok' || tab === t;
-
   // para onde foi o dinheiro: o que foi anotado no mês e, com diagnóstico, os limites de cada coisa
   const byCategory = new Map<string, number>();
   for (const e of expenses) byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + e.amount);
@@ -165,23 +120,30 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
     setStatus('none');
   };
 
-  return (
-    <div className="page-wrap anim-in painel">
-      <div className="kicker"><span className="wedge" />Meu painel</div>
-      <h1>{name ? `Oi, ${name}!` : 'Seu dinheiro, tudo num lugar'}</h1>
-      {status === 'ok' && (
-        <>
-                    <nav className="painel-tabs" role="tablist" aria-label="Seções do painel">
-            {TABS.map(([id, label, Icon]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => pickTab(id)}>
-                <Icon size={17} /> <span>{label}</span>
-                {id === 'coach' && dueCount > 0 ? <span className="tab-badge">{dueCount}</span> : null}
-              </button>
-            ))}
-          </nav>
-        </>
-      )}
+  if (section === 'plano')
+    return (
+      <div className="painel">
+        <PageHead title="Seu plano" sub={plan ? 'Um objetivo de cada vez. Toque pra ver o que fazer.' : undefined} />
+        {plan ? (
+          <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
+        ) : (
+          <EmptyCard text="Responda o diagnóstico (uns 10 minutos) e o seu plano aparece aqui, com valores e datas." cta="Fazer meu diagnóstico" onClick={onStart} />
+        )}
+        {hasDiag && (
+          <section className="painel-section" style={{ marginTop: 28 }}>
+            <p className="section-label">Viver de renda</p>
+            <RichDadCard data={data} />
+            <button type="button" className="btn-outline" style={{ marginTop: 12 }} onClick={() => onOpenTool('richdad')}>
+              Simular quanto tempo falta <ArrowRight size={15} />
+            </button>
+          </section>
+        )}
+      </div>
+    );
 
+  return (
+    <div className="painel">
+      <PageHead title="Meu mês" sub={status === 'ok' ? `O que você anotou no WhatsApp em ${clock.month}.` : undefined} />
       {status === 'none' && (
         <div className="stat-card painel-connect">
           <p className="diag-label"><MessageCircle size={14} style={{ verticalAlign: '-2px' }} /> Entrar com seu WhatsApp</p>
@@ -210,9 +172,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         </p>
       )}
 
-      {status === 'ok' && tab === 'coach' && <CoachPanel onOpenTool={onOpenTool} onOpenPlan={() => pickTab('plano')} />}
-
-      {status === 'ok' && painel && tab === 'mes' && (
+      {status === 'ok' && painel && (
         <>
           <section className="wallet" id="mes" aria-label={`Seu mês de ${clock.month}`}>
             <div className="wallet-top">
@@ -303,66 +263,15 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         </>
       )}
 
-      {show('pairico') && (
-        <section className="painel-section">
-          {hasDiag ? (
-            <>
-              <RichDadCard data={data} />
-              <button type="button" className="btn-outline" style={{ marginTop: 14 }} onClick={() => onOpenTool('richdad')}>
-                Simular quanto tempo falta <ArrowRight size={15} />
-              </button>
-            </>
-          ) : (
-            <div className="stat-card">
-              <p className="account-line">Faça o diagnóstico e veja seu placar do Pai Rico, Pai Pobre: quanto tempo você viveria sem trabalhar.</p>
-              <button type="button" className="btn-primary" onClick={onStart}>Fazer meu diagnóstico <ArrowRight size={16} /></button>
-            </div>
-          )}
-        </section>
-      )}
+    </div>
+  );
+}
 
-      {show('plano') && (
-      <section className="painel-section painel-anchor" id="plano" style={{ marginTop: 28 }}>
-        <p className="diag-label">Seu plano de ação</p>
-        {plan ? (
-          <>
-                        <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
-          </>
-        ) : (
-          <div className="stat-card">
-            <p className="account-line">Faça o diagnóstico (uns 10 minutos) e seu plano de ação aparece aqui, salvo junto com o seu WhatsApp.</p>
-            <button type="button" className="btn-primary" onClick={onStart}>Fazer meu diagnóstico <ArrowRight size={16} /></button>
-          </div>
-        )}
-      </section>
-      )}
-
-      {show('ferramentas') && (
-      <section className="painel-section painel-anchor" id="ferramentas" style={{ marginTop: 28 }}>
-        <p className="diag-label">Minhas ferramentas</p>
-        {done.length === 0 ? (
-          <p className="field-hint">Ainda nada. Cada ferramenta que você usar ganha um cartão aqui, com o que você colocou e o resultado.</p>
-        ) : (
-          <div className="dir-list one">
-            {done.map(([id, r]) => (
-              <ToolResultCard key={id} id={id} result={r} onOpen={() => onOpenTool(id)} />
-            ))}
-          </div>
-        )}
-        {unused.length > 0 && (
-          <>
-            <p className="diag-label" style={{ marginTop: 22 }}>Ainda não usou</p>
-            <div className="unused-tools">
-              {unused.map((t) => (
-                <button key={t.id} type="button" onClick={() => onOpenTool(t.id)}>
-                  <ToolIcon tool={t} size="sm" /> {t.title}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-      )}
+function EmptyCard({ text, cta, onClick }: { text: string; cta: string; onClick: () => void }) {
+  return (
+    <div className="stat-card empty-card">
+      <p>{text}</p>
+      <button type="button" className="btn-primary" onClick={onClick}>{cta} <ArrowRight size={16} /></button>
     </div>
   );
 }

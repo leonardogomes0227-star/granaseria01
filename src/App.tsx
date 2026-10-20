@@ -17,8 +17,11 @@ import { ExtraMoneyTool, LeaksTool, RightsTool } from './components/SolutionTool
 import { PlanTracker } from './components/PlanTracker';
 import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
-import { Landing } from './components/Landing';
-import { AppBar, SiteFooter } from './components/Layout';
+import { HomePage } from './components/HomePage';
+import { ToolsPage } from './components/ToolsPage';
+import { AgentsSection } from './components/AgentsSection';
+import { AppShell, PageHead } from './components/AppShell';
+import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
 import { calculateDiagnosis } from './calculations';
@@ -27,7 +30,6 @@ import { useSession } from './account';
 import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
-import { WhatsAppStrip } from './components/ContinueWhatsApp';
 import { PainelPage } from './components/PainelPage';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
@@ -160,7 +162,7 @@ function App() {
   };
   const backToTools = () => {
     setSavedProgress(loadSavedProgress());
-    navigate('/#ferramentas');
+    navigate('/ferramentas');
   };
 
   useEffect(() => {
@@ -174,11 +176,10 @@ function App() {
 
   // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
   useEffect(() => {
-    if (location.pathname !== '/painel') void startPainelSync().catch(() => undefined);
+    if (!['/painel', '/mes', '/plano'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez ao abrir o site (o /painel liga sozinho)
   }, []);
 
-  const footer = <SiteFooter onStart={startWizard} onOpenTool={openTool} />;
 
   return (
     <>
@@ -188,7 +189,9 @@ function App() {
           path="/"
           element={
             <Titled title={null}>
-              <Landing savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
+              <AppShell>
+                <HomePage savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
+              </AppShell>
             </Titled>
           }
         />
@@ -210,54 +213,73 @@ function App() {
           }
         />
         <Route
+          path="/entrar"
+          element={
+            <Titled title="Entrar">
+              <AppShell>
+                <LoginGate what="o seu painel">
+                  <Navigate to="/" replace />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/mes"
+          element={
+            <Titled title="Meu mês">
+              <AppShell>
+                <LoginGate what="o seu mês">
+                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/plano"
+          element={
+            <Titled title="Seu plano">
+              <AppShell>
+                <LoginGate what="o seu plano">
+                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route path="/painel" element={<PainelRedirect />} />
+        <Route
+          path="/conselheiros"
+          element={
+            <Titled title="Conselheiros">
+              <AppShell>
+                <PageHead title="Conselheiros" sub="Cada um cuida de um problema. Escolha um e converse: ele monta o seu plano." />
+                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} bare />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route path="/conselheiros/:id" element={<AgentRoute data={data} onOpenTool={openTool} />} />
+        <Route
+          path="/ferramentas"
+          element={
+            <Titled title="Ferramentas">
+              <AppShell>
+                <ToolsPage hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} onStart={savedProgress && savedProgress.step > 0 ? resumeWizard : startWizard} onOpenTool={openTool} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
           path="/ferramentas/:slug"
-          element={<ToolRoute data={data} onClose={backToTools} onHome={goHome} onSwitch={openTool} onStart={startWizard} />}
+          element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
         />
-        <Route path="/ferramentas" element={<Navigate to="/#ferramentas" replace />} />
-        <Route
-          path="/politica-de-privacidade"
-          element={
-            <Titled title="Política de privacidade">
-              <AppBar onHome={goHome} />
-              <PrivacyPage />
-              {footer}
-            </Titled>
-          }
-        />
-        <Route
-          path="/guias"
-          element={
-            <Titled title="Guias">
-              <AppBar onHome={goHome} />
-              <GuidesIndex />
-              {footer}
-            </Titled>
-          }
-        />
-        <Route path="/guias/:slug" element={<GuideRoute onHome={goHome} onStart={startWizard} footer={footer} />} />
-        <Route
-          path="/painel"
-          element={
-            <Titled title="Meu painel">
-              <AppBar onHome={goHome} />
-              <LoginGate what="o seu painel">
-                <PainelPage data={data} onStart={startWizard} onOpenTool={openTool} />
-              </LoginGate>
-              {footer}
-            </Titled>
-          }
-        />
-        <Route path="/conselheiros/:id" element={<AgentRoute data={data} onHome={goHome} onOpenTool={openTool} footer={footer} />} />
-        <Route
-          path="/conta"
-          element={
-            <Titled title="Minha conta">
-              <AppBar onHome={goHome} />
-              <AccountPage session={session} />
-              {footer}
-            </Titled>
-          }
-        />
+        <Route path="/politica-de-privacidade" element={<Titled title="Política de privacidade"><AppShell><PrivacyPage /></AppShell></Titled>} />
+        <Route path="/termos-de-uso" element={<Titled title="Termos de uso"><AppShell><TermsPage /></AppShell></Titled>} />
+        <Route path="/guias" element={<Titled title="Guias"><AppShell><GuidesIndex /></AppShell></Titled>} />
+        <Route path="/guias/:slug" element={<GuideRoute onStart={startWizard} />} />
+        <Route path="/conta" element={<Titled title="Minha conta"><AppShell><AccountPage session={session} /></AppShell></Titled>} />
         <Route
           path="/admin"
           element={
@@ -267,25 +289,7 @@ function App() {
             </Titled>
           }
         />
-        <Route
-          path="/termos-de-uso"
-          element={
-            <Titled title="Termos de uso">
-              <AppBar onHome={goHome} />
-              <TermsPage />
-              {footer}
-            </Titled>
-          }
-        />
-        <Route
-          path="*"
-          element={
-            <Titled title="Página não encontrada">
-              <AppBar onHome={goHome} />
-              <NotFoundPage />
-            </Titled>
-          }
-        />
+        <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
       </Routes>
     </>
   );
@@ -366,46 +370,45 @@ function WizardRoute({
   );
 }
 
-function AgentRoute({ data, onHome, onOpenTool, footer }: { data: WizardData; onHome: () => void; onOpenTool: (id: ToolId) => void; footer: ReactNode }) {
+function AgentRoute({ data, onOpenTool }: { data: WizardData; onOpenTool: (id: ToolId) => void }) {
   const agent = getAgent(useParams().id);
   return (
     <Titled title={agent ? `${agent.name}, seu conselheiro` : 'Página não encontrada'}>
-      <AppBar onHome={onHome} />
-      {agent ? (
-        <LoginGate what={`a conversa com ${agent.name}`}>
-          <AgentPage key={agent.id} agent={agent} data={data} onOpenTool={onOpenTool} />
-        </LoginGate>
-      ) : (
-        <NotFoundPage />
-      )}
-      {footer}
+      <AppShell>
+        {agent ? (
+          <LoginGate what={`a conversa com ${agent.name}`}>
+            <AgentPage key={agent.id} agent={agent} data={data} onOpenTool={onOpenTool} />
+          </LoginGate>
+        ) : (
+          <NotFoundPage />
+        )}
+      </AppShell>
     </Titled>
   );
 }
 
-function GuideRoute({ onHome, onStart, footer }: { onHome: () => void; onStart: () => void; footer: ReactNode }) {
+function GuideRoute({ onStart }: { onStart: () => void }) {
   const { slug } = useParams();
   const guide = getGuide(slug);
   useTitle(guide ? guide.title : 'Página não encontrada');
-  return (
-    <>
-      <AppBar onHome={onHome} />
-      {guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}
-      {footer}
-    </>
-  );
+  return <AppShell>{guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}</AppShell>;
+}
+
+/** Os links antigos do painel (/painel#mes, #plano…) levam pra página nova de cada coisa. */
+function PainelRedirect() {
+  const { hash, search } = useLocation();
+  const to: Record<string, string> = { '#mes': '/mes', '#plano': '/plano', '#pairico': '/plano', '#ferramentas': '/ferramentas' };
+  return <Navigate to={`${to[hash] ?? '/'}${search}`} replace />;
 }
 
 function ToolRoute({
   data,
   onClose,
-  onHome,
   onSwitch,
   onStart,
 }: {
   data: WizardData;
   onClose: () => void;
-  onHome: () => void;
   onSwitch: (id: ToolId) => void;
   onStart: () => void;
 }) {
@@ -414,16 +417,14 @@ function ToolRoute({
   useTitle(tool ? tool.title : 'Página não encontrada');
   if (!tool) {
     return (
-      <>
-        <AppBar onHome={onHome} />
+      <AppShell>
         <NotFoundPage />
-      </>
+      </AppShell>
     );
   }
   const toolProps = { onClose, onSwitch };
   return (
-    <>
-      <AppBar onHome={onHome} />
+    <AppShell>
       <LoginGate what={tool.title.charAt(0).toLowerCase() + tool.title.slice(1)}>
       <ToolOpened id={tool.id} />
       {/* key: trocar de ferramenta zera os campos da anterior */}
@@ -445,9 +446,8 @@ function ToolRoute({
         {tool.id === 'bills' && <BillsTool {...toolProps} />}
       </div>
       <SiteFeedback key={`fb-${tool.id}`} tool={tool.id} />
-      <WhatsAppStrip />
       </LoginGate>
-    </>
+    </AppShell>
   );
 }
 

@@ -28,22 +28,22 @@ function saveCustom(list: CustomAgent[]) {
   }
 }
 
-export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean }) {
+export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: boolean; bare?: boolean }) {
   const navigate = useNavigate();
   const answers = getAnswers();
   // os indicados pelas perguntas da entrada vêm primeiro
   const picked = answers ? recommend(answers, hasDiagnosis).map((p) => AGENTS.find((a) => a.tool === p.tool)?.id).filter(Boolean) : ['dabasir', 'bansir', 'arkad'];
   const order = [...AGENTS].sort((a, b) => (picked.indexOf(a.id) === -1 ? 99 : picked.indexOf(a.id)) - (picked.indexOf(b.id) === -1 ? 99 : picked.indexOf(b.id)));
   const [custom, setCustom] = useState<CustomAgent[]>(loadCustom);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(() => window.location.hash === '#criar');
 
   return (
-    <section className="section agents" id="conselheiros">
-      <div className="section-head center">
+    <section className={bare ? 'agents bare' : 'section agents'} id="conselheiros">
+      {!bare && <div className="section-head center">
         <div className="kicker">Seus conselheiros</div>
         <h2>Escolha quem vai te ajudar</h2>
         <p>Cada um cuida de um problema, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. Ele conversa com você, monta o seu plano e te lembra no WhatsApp.</p>
-      </div>
+      </div>}
 
       <div className="agents-grid">
         {order.map((a) => {
