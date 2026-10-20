@@ -225,7 +225,7 @@ export function FaturaTool({ data, ...nav }: { data: WizardData } & ToolNavProps
           {result.alertas.length > 0 && (
             <div className="insight insight-bad" style={{ marginTop: 14 }}>
               {result.alertas.map((a, i) => (
-                <p key={i}>⚠️ {a}</p>
+                <p key={i}>{a}</p>
               ))}
             </div>
           )}

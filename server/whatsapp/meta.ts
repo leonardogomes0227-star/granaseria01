@@ -7,6 +7,7 @@ export interface IncomingText {
   from: string; // número de quem mandou, como a Meta informa (ex.: 5511987654321)
   text: string; // texto digitado, ou o id do botão/linha da lista que a pessoa tocou (ex.: "menu:13o")
   profileName?: string; // nome que a pessoa colocou no WhatsApp (pode ser apelido)
+  heard?: boolean; // veio de um áudio transcrito
 }
 
 export interface IncomingMedia {
@@ -26,6 +27,7 @@ type RawMessage = {
   interactive?: { type?: string; button_reply?: { id?: string }; list_reply?: { id?: string } };
   document?: { id?: string; mime_type?: string; filename?: string; caption?: string };
   image?: { id?: string; mime_type?: string; caption?: string };
+  audio?: { id?: string; mime_type?: string; voice?: boolean };
 };
 
 type WithName = RawMessage & { profileName?: string };
@@ -50,7 +52,9 @@ export function extractMessages(payload: unknown): {
   texts: IncomingText[];
   media: IncomingMedia[];
   others: { id: string; from: string; type?: string }[];
+  audios: (IncomingText & { mediaId: string; mime: string })[];
 } {
+  const audios: (IncomingText & { mediaId: string; mime: string })[] = [];
   const texts: IncomingText[] = [];
   const media: IncomingMedia[] = [];
   const others: { id: string; from: string; type?: string }[] = [];
@@ -61,9 +65,10 @@ export function extractMessages(payload: unknown): {
     else if (msg.type === 'document' && msg.document?.id)
       media.push({ id: msg.id, from: msg.from, mediaId: msg.document.id, mime: msg.document.mime_type ?? '', filename: msg.document.filename, caption: msg.document.caption });
     else if (msg.type === 'image' && msg.image?.id) media.push({ id: msg.id, from: msg.from, mediaId: msg.image.id, mime: msg.image.mime_type ?? '', caption: msg.image.caption });
+    else if (msg.type === 'audio' && msg.audio?.id) audios.push({ id: msg.id, from: msg.from, text: '', profileName: msg.profileName, mediaId: msg.audio.id, mime: msg.audio.mime_type ?? 'audio/ogg' });
     else others.push({ id: msg.id, from: msg.from, type: msg.type });
   }
-  return { texts, media, others };
+  return { texts, media, others, audios };
 }
 
 /** Compatibilidade: só texto e toques em botão, mais o que não foi entendido. */

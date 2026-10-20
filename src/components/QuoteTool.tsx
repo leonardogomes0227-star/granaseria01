@@ -68,7 +68,7 @@ export function QuoteTool(nav: ToolNavProps) {
     if (r !== 'cancelled') setTimeout(() => setStatus('idle'), 2500);
   };
 
-  const caption = `"${quote}"\n\n✨ Frase do dia da Grana Séria — faça seu diagnóstico financeiro grátis: ${window.location.host.replace(/^www\./, '')}\n\n${CAPTION_HASHTAGS}`;
+  const caption = `"${quote}"\n\nFrase do dia da Grana Séria — faça seu diagnóstico financeiro grátis: ${window.location.host.replace(/^www\./, '')}\n\n${CAPTION_HASHTAGS}`;
   const copyCaption = async () => {
     try {
       await navigator.clipboard.writeText(caption);

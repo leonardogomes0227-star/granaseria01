@@ -31,7 +31,7 @@ function MiniScore() {
 function MiniPlan() {
   const steps: [string, string][] = [
     ['nov', 'Guarde R$ 300 na reserva'],
-    ['mar', 'Cartão quitado 🎉'],
+    ['mar', 'Cartão quitado'],
     ['2028', 'Reserva de 6 meses pronta'],
   ];
   return (
@@ -50,7 +50,7 @@ function MiniChat() {
   return (
     <div className="mini mini-chat" aria-hidden="true">
       <p className="me">uber 18,50 débito</p>
-      <p className="bot">✅ R$ 18,50 em 🚗 Transporte{'\n'}🎯 uns R$ 112 por dia</p>
+      <p className="bot">R$ 18,50 em Transporte{'\n'}Dá pra gastar uns R$ 112 por dia</p>
     </div>
   );
 }

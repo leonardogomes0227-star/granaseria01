@@ -342,7 +342,7 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
           { text: `Ver no seu banco quanto ainda falta de ${best.sequence[0]}`, inDays: 30, repeat: 'monthly' },
         ]
       : results && results[0].months === null
-        ? [{ text: 'Pedir pro banco renegociar as dívidas (veja "Seus direitos com o banco")', inDays: 1 }]
+        ? [{ text: 'Pedir pro banco renegociar as dívidas (veja "Negociar com o banco")', inDays: 1 }]
         : null
   );
   useSaveResult('debts', best ? `${label(best.order).toLowerCase()}: começa por ${best.sequence[0]}, livre ${when(best.months)}, ${formatBRL(best.interest)} de juros` : null, best ? {
@@ -427,7 +427,7 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
                   <p className="field-hint">Você fica livre {when(best.months)} e paga {formatBRL(best.interest)} de juros no total.</p>
                 </>
               ) : (
-                <p className="wizard-sub" style={{ margin: 0 }}>Com {formatBRL(power)} por mês os juros crescem mais rápido que os pagamentos. Renegocie primeiro: veja "Seus direitos com o banco".</p>
+                <p className="wizard-sub" style={{ margin: 0 }}>Com {formatBRL(power)} por mês os juros crescem mais rápido que os pagamentos. Renegocie primeiro: veja "Negociar com o banco".</p>
               )}
               <div className="result-split">
                 {results.map((r) => (
@@ -581,7 +581,7 @@ export function GoalCalculator({ data, ...nav }: { data: WizardData } & ToolNavP
                 <>
                   Não cabe ainda: o seu plano tem {formatBRL(capacity)} por mês.{' '}
                   {monthsWithCapacity !== null
-                    ? `Com esse valor, você chega lá em ${monthsWithCapacity < 12 ? `${monthsWithCapacity} meses` : `${(monthsWithCapacity / 12).toFixed(1).replace('.', ',')} anos`}. Aumente o prazo ou ache dinheiro no Caça-vazamentos.`
+                    ? `Com esse valor, você chega lá em ${monthsWithCapacity < 12 ? `${monthsWithCapacity} meses` : `${(monthsWithCapacity / 12).toFixed(1).replace('.', ',')} anos`}. Aumente o prazo ou ache dinheiro em Cortar gastos escondidos.`
                     : 'Aumente o prazo ou diminua a meta.'}
                 </>
               )}

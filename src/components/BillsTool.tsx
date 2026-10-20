@@ -90,7 +90,7 @@ export function BillsTool(nav: ToolNavProps) {
     month === monthOf(today) && statuses.length > 0 ? `${monthName(month)}: pagou ${formatBRL(paid)} de ${formatBRL(total)}` : null,
     {
       label: `Contas de ${monthName(month)}`,
-      big: open.length === 0 ? 'Tudo pago ✅' : `Faltam ${formatBRL(total - paid)}`,
+      big: open.length === 0 ? 'Tudo pago' : `Faltam ${formatBRL(total - paid)}`,
       rows: [
         ['Já pagou', `${formatBRL(paid)} de ${formatBRL(total)}`],
         ['Atrasadas', late.length > 0 ? `${late.length} (${late.map((s) => s.bill.name).join(', ')})` : 'nenhuma'],
@@ -118,14 +118,14 @@ export function BillsTool(nav: ToolNavProps) {
 
       {open.length > 0 && (
         <div className="bills-money">
-          <p className="bills-money-q">💵 Entrou dinheiro agora? Diga quanto e eu digo o que pagar primeiro.</p>
+          <p className="bills-money-q">Entrou dinheiro agora? Diga quanto e eu digo o que pagar primeiro.</p>
           <MoneyField label="Quanto entrou" value={money} onChange={setMoney} />
           {split.length > 0 && (
             <>
               <ul>
                 {split.map(({ status: s, pay: v }) => (
                   <li key={s.bill.id}>
-                    <span>{s.state === 'atrasado' ? '⚠️' : '📌'} {s.bill.name} <small>{s.state === 'atrasado' ? `atrasada ${-s.daysToDue} dias` : `vence ${ddmm(s.due)}`}</small></span>
+                    <span><i className={`dot ${s.state === 'atrasado' ? 'bad' : ''}`} /> {s.bill.name} <small>{s.state === 'atrasado' ? `atrasada ${-s.daysToDue} dias` : `vence ${ddmm(s.due)}`}</small></span>
                     <b>{formatBRL(v)}{v + 0.01 < s.left ? ' (parte)' : ''}</b>
                   </li>
                 ))}
@@ -165,10 +165,10 @@ export function BillsTool(nav: ToolNavProps) {
                 <span className="bill-amount">{formatBRL(s.bill.amount)}</span>
               </div>
               <p className="bill-state">
-                {s.state === 'pago' && '✅ Paga em dia'}
-                {s.state === 'pago-atrasado' && `✅ Paga com atraso: uns ${formatBRL(s.fee)} de multa e juros`}
-                {s.state === 'atrasado' && `⚠️ Atrasada ${-s.daysToDue} ${s.daysToDue === -1 ? 'dia' : 'dias'}: já corre uns ${formatBRL(s.fee)} de multa e juros`}
-                {s.state === 'vence' && (s.daysToDue === 0 ? '📍 Vence hoje' : s.daysToDue === 1 ? '📍 Vence amanhã' : `🗓️ Vence em ${s.daysToDue} dias`)}
+                {s.state === 'pago' && 'Paga em dia'}
+                {s.state === 'pago-atrasado' && `Paga com atraso: uns ${formatBRL(s.fee)} de multa e juros`}
+                {s.state === 'atrasado' && `Atrasada ${-s.daysToDue} ${s.daysToDue === -1 ? 'dia' : 'dias'}: já corre uns ${formatBRL(s.fee)} de multa e juros`}
+                {s.state === 'vence' && (s.daysToDue === 0 ? 'Vence hoje' : s.daysToDue === 1 ? 'Vence amanhã' : `Vence em ${s.daysToDue} dias`)}
                 {s.paid > 0 && s.left > 0 && ` · já pagou ${formatBRL(s.paid)}, falta ${formatBRL(s.left)}`}
               </p>
               {s.left > 0 && paying !== s.bill.id && (

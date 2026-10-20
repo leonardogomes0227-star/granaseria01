@@ -10,7 +10,7 @@ export function RichDadCard({ data, compact = false }: { data: WizardData; compa
   const months = r.monthsFree < 1 ? 'menos de 1 mês' : `${r.monthsFree.toFixed(r.monthsFree < 10 ? 1 : 0).replace('.', ',')} ${r.monthsFree < 2 ? 'mês' : 'meses'}`;
   return (
     <div className={`richdad stat-card ${compact ? 'compact' : ''}`}>
-      <p className="diag-label">Placar Pai Rico, Pai Pobre</p>
+      <p className="diag-label">Viver de renda · Pai Rico, Pai Pobre</p>
       <p className={`richdad-level lvl-${r.level.id}`}>
         <b>{r.level.label}</b> {r.level.text}
       </p>

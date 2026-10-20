@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronDown, ShieldAlert } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 import { CopyMessage } from './CopyMessage';
 import { ActionPlan, PlanStep, monthShort } from '../plan';
 import { RIGHTS, relevantRights } from '../leaks';
@@ -83,16 +83,16 @@ export function ActionPlanView({
 /** O que fazer neste mês, em reais: a primeira coisa que a pessoa precisa ver. */
 function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: ToolId) => void }) {
   const row = plan.schedule[0];
-  const items: [string, string, string][] = [];
-  if (plan.stuck) items.push(['📞', 'Ligar pro banco e pedir pra renegociar (mensagem pronta em "Mais ajuda")', 'agora']);
+  const items: [LucideIcon, string, string][] = [];
+  if (plan.stuck) items.push([Phone, 'Ligar pro banco e pedir pra renegociar (mensagem pronta em "Mais ajuda")', 'agora']);
   if (row) {
-    for (const p of row.payments) items.push(['💳', `Pagar ${p.name}`, formatBRL(p.amount)]);
-    if (row.toReserve >= 1) items.push(['🐖', 'Guardar pra emergências', formatBRL(row.toReserve)]);
+    for (const p of row.payments) items.push([CreditCard, `Pagar ${p.name}`, formatBRL(p.amount)]);
+    if (row.toReserve >= 1) items.push([PiggyBank, 'Guardar pra emergências', formatBRL(row.toReserve)]);
   } else if (plan.monthlyPower > 0 && plan.debts.length === 0) {
-    items.push(['🐖', plan.reserve.alreadyDone ? 'Investir' : 'Guardar pra emergências', formatBRL(plan.monthlyPower)]);
+    items.push([PiggyBank, plan.reserve.alreadyDone ? 'Investir' : 'Guardar pra emergências', formatBRL(plan.monthlyPower)]);
   }
-  for (const g of plan.goals) items.push(['🎯', `Juntar pra ${g.name}`, formatBRL(g.monthly)]);
-  for (const c of plan.cuts) items.push(['✂️', `Gastar no máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling)]);
+  for (const g of plan.goals) items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly)]);
+  for (const c of plan.cuts) items.push([Scissors, `Gastar no máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling)]);
   if (items.length === 0) return null;
   const month = monthShort(plan.start, 1);
   return (
@@ -101,16 +101,16 @@ function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: To
         <b>Este mês ({month}), faça isto:</b>
       </p>
       <ul>
-        {items.map(([icon, what, amount], i) => (
+        {items.map(([Icon, what, amount], i) => (
           <li key={i}>
-            <span className="this-month-icon" aria-hidden="true">{icon}</span>
+            <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
             <span className="this-month-what">{what}</span>
             <b>{amount}</b>
           </li>
         ))}
       </ul>
       <button type="button" className="btn-primary" onClick={() => onOpenTool('tracker')}>
-        Já fiz? Marcar no Meu plano, mês a mês <ArrowRight size={15} />
+        Já fiz? Marcar em Acompanhar meu plano <ArrowRight size={15} />
       </button>
     </div>
   );
@@ -120,14 +120,14 @@ function ThisMonth({ plan, onOpenTool }: { plan: ActionPlan; onOpenTool: (id: To
 function Journey({ plan }: { plan: ActionPlan }) {
   const short = (n: number | null) => (n === null ? 'sem data ainda' : monthShort(plan.start, n));
   const totalDebt = plan.debts.reduce((x, d) => x + d.balance, 0);
-  const stages: { icon: string; title: string; now: string; goal: string; pct: number; when: string }[] = [];
-  if (plan.debts.length > 0) stages.push({ icon: '💳', title: 'Sair das dívidas', now: `Falta pagar ${formatBRL(totalDebt)}`, goal: 'Zerar', pct: 0, when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}` });
+  const stages: { icon: LucideIcon; title: string; now: string; goal: string; pct: number; when: string }[] = [];
+  if (plan.debts.length > 0) stages.push({ icon: CreditCard, title: 'Sair das dívidas', now: `Falta pagar ${formatBRL(totalDebt)}`, goal: 'Zerar', pct: 0, when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}` });
   if (plan.reserve.target > 0) {
     const pct = Math.min(100, (plan.reserve.current / plan.reserve.target) * 100);
-    stages.push({ icon: '🐖', title: 'Reserva de emergência', now: `${formatBRL(plan.reserve.current)} guardados`, goal: formatBRL(plan.reserve.target), pct, when: plan.reserve.alreadyDone ? 'pronta ✅' : plan.reserve.doneMonth === null ? 'depois das dívidas' : `pronta em ${short(plan.reserve.doneMonth)}` });
+    stages.push({ icon: PiggyBank, title: 'Reserva de emergência', now: `${formatBRL(plan.reserve.current)} guardados`, goal: formatBRL(plan.reserve.target), pct, when: plan.reserve.alreadyDone ? 'pronta' : plan.reserve.doneMonth === null ? 'depois das dívidas' : `pronta em ${short(plan.reserve.doneMonth)}` });
   }
-  for (const g of plan.goals) stages.push({ icon: '🎯', title: g.name.charAt(0).toUpperCase() + g.name.slice(1), now: `${formatBRL(g.monthly)} por mês`, goal: formatBRL(g.target), pct: 0, when: `em ${g.months} meses` });
-  if (plan.investFrom !== null) stages.push({ icon: '📈', title: 'Investir', now: `${formatBRL(plan.monthlyPower)} por mês`, goal: `${formatBRL(plan.invest10y)} em 10 anos`, pct: 0, when: `começa em ${short(plan.investFrom)}` });
+  for (const g of plan.goals) stages.push({ icon: Target, title: g.name.charAt(0).toUpperCase() + g.name.slice(1), now: `${formatBRL(g.monthly)} por mês`, goal: formatBRL(g.target), pct: 0, when: `em ${g.months} meses` });
+  if (plan.investFrom !== null) stages.push({ icon: TrendingUp, title: 'Investir', now: `${formatBRL(plan.monthlyPower)} por mês`, goal: `${formatBRL(plan.invest10y)} em 10 anos`, pct: 0, when: `começa em ${short(plan.investFrom)}` });
   if (stages.length === 0) return null;
   return (
     <div className="journey-plan">
@@ -135,7 +135,7 @@ function Journey({ plan }: { plan: ActionPlan }) {
       <ol>
         {stages.map((st, i) => (
           <li key={i}>
-            <span className="jp-icon" aria-hidden="true">{st.icon}</span>
+            <span className="jp-icon" aria-hidden="true"><st.icon size={18} /></span>
             <div className="jp-body">
               <p className="jp-head">
                 <b>{st.title}</b>
@@ -259,8 +259,8 @@ function StepCard({ n, step, onOpenTool }: { n: number; step: PlanStep; onOpenTo
         {step.why && <p className="step-why">{step.why}</p>}
         {(step.amount || step.when) && (
           <p className="step-chips">
-            {step.amount && <span>💰 {step.amount}</span>}
-            {step.when && <span>📅 {step.when}</span>}
+            {step.amount && <span><Wallet size={13} /> {step.amount}</span>}
+            {step.when && <span><CalendarDays size={13} /> {step.when}</span>}
           </p>
         )}
         <div className="step-actions">
