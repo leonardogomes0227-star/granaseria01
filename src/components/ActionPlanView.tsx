@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Plus, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, MoreHorizontal, Plus, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
 import { CopyMessage } from './CopyMessage';
 import { ActionPlan, PlanStep, monthShort } from '../plan';
 import { RIGHTS, relevantRights } from '../leaks';
@@ -177,6 +177,55 @@ function buildPots(plan: ActionPlan): Pot[] {
   return pots;
 }
 
+/** O que fazer neste mês, por objetivo (a mesma conta de sempre): vira linhas dentro do cartão de cada objetivo. */
+interface MonthItem {
+  what: string;
+  amount: string;
+  pot: PotId | null;
+  icon: LucideIcon;
+}
+
+function monthItems(plan: ActionPlan): MonthItem[] {
+  const row = plan.schedule[0];
+  const items: MonthItem[] = [];
+  if (plan.stuck) items.push({ icon: Phone, what: 'Ligar pro banco e pedir pra renegociar', amount: 'agora', pot: 'debts' });
+  if (row) {
+    for (const p of row.payments) items.push({ icon: CreditCard, what: `Pagar ${p.name}`, amount: formatBRL(p.amount), pot: 'debts' });
+    if (row.toReserve >= 1) items.push({ icon: PiggyBank, what: 'Guardar pra emergências', amount: formatBRL(row.toReserve), pot: 'reserve' });
+  } else if (plan.monthlyPower > 0 && plan.debts.length === 0) {
+    items.push(
+      plan.reserve.alreadyDone
+        ? { icon: TrendingUp, what: 'Investir', amount: formatBRL(plan.monthlyPower), pot: 'invest' }
+        : { icon: PiggyBank, what: 'Guardar pra emergências', amount: formatBRL(plan.monthlyPower), pot: 'reserve' }
+    );
+  }
+  plan.goals.forEach((g, i) => items.push({ icon: Target, what: `Juntar pra ${g.name}`, amount: formatBRL(g.monthly), pot: `goal-${i}` }));
+  for (const c of plan.cuts) items.push({ icon: Scissors, what: `No máximo em ${c.label.toLowerCase()}`, amount: formatBRL(c.ceiling), pot: 'gastos' });
+  return items;
+}
+
+// qual objetivo cada agente vigia (as telas de cálculo dele dizem de que assunto ele cuida)
+const POT_OF_TOOL: Partial<Record<ToolId, PotId>> = { debts: 'debts', bills: 'debts', loan: 'debts', tracker: 'reserve', extra: 'reserve', leaks: 'gastos', richdad: 'invest' };
+
+interface Watcher {
+  id: string;
+  name: string;
+  hue: number;
+  custom: boolean;
+}
+
+function watchersOf(pot: PotId, plan: ActionPlan, mine: string[], custom: CustomAgent[]): Watcher[] {
+  const list: Watcher[] = AGENTS.filter((a) => mine.includes(a.id) && POT_OF_TOOL[a.tool] === pot).map((a) => ({ id: a.id, name: a.name, hue: a.hue, custom: false }));
+  for (const c of custom) {
+    const target: PotId | null = c.kind === 'divida' ? 'debts' : c.kind === 'gasto' ? 'gastos' : (() => {
+      const i = plan.goals.findIndex((g) => g.name === c.what);
+      return i >= 0 ? (`goal-${i}` as PotId) : null;
+    })();
+    if (target === pot) list.push({ id: c.id, name: c.name, hue: 45, custom: true });
+  }
+  return list;
+}
+
 export function ActionPlanView({
   plan,
   locked,
@@ -193,44 +242,64 @@ export function ActionPlanView({
   const pots = all.filter((p) => !off.includes(p.id));
   const outPots = all.filter((p) => off.includes(p.id));
   const [openId, setOpenId] = useState<PotId | null>(null);
+  const [menuId, setMenuId] = useState<PotId | null>(null);
+  const [edit, setEdit] = useState(false);
   const [more, setMore] = useState(false);
+  const [how, setHow] = useState(false);
+  const [done, setDone] = useState<string[]>(readDone);
+  const [mine, setMine] = useState<string[]>(loadChosen);
+  const [custom, setCustom] = useState<CustomAgent[]>(loadCustomAgents);
   const general = plan.steps.filter((s) => potOfStep(s, plan) === null);
+  useEffect(() => {
+    const on = () => {
+      setMine(loadChosen());
+      setCustom(loadCustomAgents());
+    };
+    window.addEventListener('gs-agentes', on);
+    return () => window.removeEventListener('gs-agentes', on);
+  }, []);
+  // o menu ⋯ de um cartão fecha ao tocar em qualquer outro lugar
+  useEffect(() => {
+    if (!menuId) return;
+    const close = () => setMenuId(null);
+    window.addEventListener('click', close);
+    return () => window.removeEventListener('click', close);
+  }, [menuId]);
+
   const setOffList = (next: string[]) => {
     setOff(next);
     writeOff(next);
   };
-  const focus = (id: PotId) => {
-    setOpenId(id);
-    requestAnimationFrame(() => document.getElementById(`pot-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  const toggleDone = (what: string) => {
+    const next = done.includes(what) ? done.filter((d) => d !== what) : [...done, what];
+    setDone(next);
+    writeDone(next);
   };
+  const items = monthItems(plan).filter((it) => !it.pot || !off.includes(it.pot));
+  const count = items.filter((it) => done.includes(it.what)).length;
+  const allDone = items.length > 0 && count === items.length;
+  const month = monthShort(plan.start, 1);
 
   return (
     <div className="plan">
-      <ThisMonth plan={plan} general={general} off={off} onOpenTool={onOpenTool} onPick={locked ? undefined : focus} />
+      <header className="plan-top">
+        <div className="plan-top-main">
+          <span className="tm-label">Este mês · {month}</span>
+          <b className="plan-top-count">
+            {items.length === 0 ? 'Sem tarefas' : allDone ? 'Mês cumprido' : `${count} de ${items.length} feitos`}
+          </b>
+        </div>
+        {!locked && (
+          <button type="button" className={`menu-dots ${edit ? 'on' : ''}`} aria-label="Editar o plano" aria-expanded={edit} onClick={() => setEdit((v) => !v)}>
+            <MoreHorizontal size={20} />
+          </button>
+        )}
+        {items.length > 0 && <span className="plan-top-bar" aria-hidden="true"><i style={{ width: `${Math.max(3, (count / items.length) * 100)}%` }} /></span>}
+      </header>
 
-      {!locked && <PlanAgents />}
-
-      {locked ? (
-        lockedSlot
-      ) : (
-        <>
-          <p className="section-label plan-block-label">Objetivos do plano</p>
-          {pots.length > 0 ? (
-            <ol className="timeline" aria-label="Seus objetivos">
-              {pots.map((p) => (
-                <PotCard
-                  key={p.id}
-                  pot={p}
-                  open={openId === p.id}
-                  onToggle={() => setOpenId(openId === p.id ? null : p.id)}
-                  onOpenTool={onOpenTool}
-                  onRemove={() => setOffList([...off, p.id])}
-                />
-              ))}
-            </ol>
-          ) : (
-            <p className="plan-empty">Nenhum objetivo no plano. Adicione abaixo o que faz sentido pra você.</p>
-          )}
+      {edit && !locked && (
+        <div className="plan-edit">
+          <PlanAgents />
           {outPots.length > 0 && (
             <div className="plan-out">
               <p className="section-label">Fora do plano</p>
@@ -246,7 +315,45 @@ export function ActionPlanView({
               </ul>
             </div>
           )}
-        </>
+          <div className="plan-edit-links">
+            {general.length > 0 && (
+              <button type="button" className="link-btn" aria-expanded={how} onClick={() => setHow((v) => !v)}>Como começar</button>
+            )}
+            <button type="button" className="link-btn" onClick={() => onOpenTool('tracker')}>
+              {allDone ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={13} />
+            </button>
+          </div>
+          {how && general.map((st, i) => <p key={i} className="step-detail"><b>{st.title}.</b> {st.detail}</p>)}
+          <PlanManage />
+        </div>
+      )}
+
+      {locked ? (
+        lockedSlot
+      ) : pots.length > 0 ? (
+        <ol className="timeline" aria-label="Seus objetivos">
+          {pots.map((p) => (
+            <PotCard
+              key={p.id}
+              pot={p}
+              rows={items.filter((it) => it.pot === p.id)}
+              done={done}
+              onCheck={toggleDone}
+              watchers={watchersOf(p.id, plan, mine, custom)}
+              open={openId === p.id}
+              onToggle={() => setOpenId(openId === p.id ? null : p.id)}
+              menuOpen={menuId === p.id}
+              onMenu={() => setMenuId(menuId === p.id ? null : p.id)}
+              onOpenTool={onOpenTool}
+              onRemove={() => {
+                setOffList([...off, p.id]);
+                setMenuId(null);
+              }}
+            />
+          ))}
+        </ol>
+      ) : (
+        <p className="plan-empty">Nenhum objetivo no plano. Toque nos três pontos para adicionar.</p>
       )}
 
       {!locked && !more && (
@@ -266,50 +373,118 @@ export function ActionPlanView({
         </>
       )}
 
-      {!locked && <PlanManage />}
-
       <p className="plan-legal">Estimativa com os seus números. Não é recomendação de investimento.</p>
     </div>
   );
 }
 
-/** Um objetivo na linha do tempo: o nome, o valor por mês e o prazo. Tocou, abre o como fazer. */
-function PotCard({ pot, open, onToggle, onOpenTool, onRemove }: { pot: Pot; open: boolean; onToggle: () => void; onOpenTool: (id: ToolId) => void; onRemove: () => void }) {
+/** Um objetivo: título, prazo, a tarefa do mês com caixinha, a barra e quem está de olho. Os botões ficam no menu ⋯. */
+function PotCard({
+  pot,
+  rows,
+  done,
+  onCheck,
+  watchers,
+  open,
+  onToggle,
+  menuOpen,
+  onMenu,
+  onOpenTool,
+  onRemove,
+}: {
+  pot: Pot;
+  rows: MonthItem[];
+  done: string[];
+  onCheck: (what: string) => void;
+  watchers: Watcher[];
+  open: boolean;
+  onToggle: () => void;
+  menuOpen: boolean;
+  onMenu: () => void;
+  onOpenTool: (id: ToolId) => void;
+  onRemove: () => void;
+}) {
   const tool = pot.tool ? getTool(pot.tool) : null;
-  const line = [pot.amount?.replace(' por mês', '/mês'), pot.when].filter(Boolean).join(' · ');
+  // com tarefa do mês no cartão, o valor aparece nela; sem tarefa, o valor fica na linha do prazo
+  const line = rows.length > 0 ? pot.when ?? '' : [pot.amount?.replace(' por mês', '/mês'), pot.when].filter(Boolean).join(' · ') || pot.statusText;
   return (
     <li id={`pot-${pot.id}`} className={`tl-item ${pot.status} ${open ? 'open' : ''}`}>
       <span className="tl-dot" aria-hidden="true" />
-      <button type="button" className="tl-card" aria-expanded={open} onClick={onToggle}>
-        <span className="tl-head">
-          <b>{pot.title}</b>
-          <ChevronDown size={16} className="tl-chev" />
-        </span>
-        <span className="tl-line">{line || pot.statusText}</span>
-        {pot.progress && (
-          <span className="tl-bar" aria-hidden="true"><i style={{ width: `${Math.max(pot.progress.pct, 3)}%` }} /></span>
-        )}
-      </button>
-      {open && (
-        <div className="tl-body">
-          {pot.steps.length > 0 && (
-            <ol className="pot-steps">
-              {pot.steps.map((st, i) => (
-                <PotStep key={i} step={st} />
-              ))}
-            </ol>
-          )}
-          {pot.extra}
-          <div className="tl-actions">
-            {tool && (
-              <button type="button" className="link-btn" onClick={() => onOpenTool(tool.id)}>
-                Abrir {tool.title} <ArrowRight size={13} />
-              </button>
+      <div className="tl-card">
+        <div className="tl-top">
+          <button type="button" className="tl-title" aria-expanded={open} onClick={onToggle}>
+            <b>{pot.title}</b>
+            {line && <span className="tl-line">{line}</span>}
+          </button>
+          <div className="tl-menu-wrap">
+            <button
+              type="button"
+              className="menu-dots"
+              aria-label={`Opções de ${pot.title}`}
+              aria-expanded={menuOpen}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMenu();
+              }}
+            >
+              <MoreHorizontal size={18} />
+            </button>
+            {menuOpen && (
+              <div className="tl-menu" role="menu" onClick={(e) => e.stopPropagation()}>
+                {tool && (
+                  <button type="button" role="menuitem" onClick={() => onOpenTool(tool.id)}>
+                    Abrir {tool.title}
+                  </button>
+                )}
+                <button type="button" role="menuitem" onClick={onRemove}>Tirar do plano</button>
+              </div>
             )}
-            <button type="button" className="link-btn muted" onClick={onRemove}>Tirar do plano</button>
           </div>
         </div>
-      )}
+
+        {rows.length > 0 && (
+          <ul className="tl-rows">
+            {rows.map((r) => {
+              const ok = done.includes(r.what);
+              return (
+                <li key={r.what} className={ok ? 'ok' : ''}>
+                  <button type="button" className={`task-check ${ok ? 'on' : ''}`} aria-pressed={ok} aria-label={ok ? `Desmarcar: ${r.what}` : `Marcar como feito: ${r.what}`} onClick={() => onCheck(r.what)}>
+                    <Check size={15} />
+                  </button>
+                  <span className="tl-row-what">{r.what}</span>
+                  <b>{r.amount}</b>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {pot.progress && <span className="tl-bar" aria-hidden="true"><i style={{ width: `${Math.max(pot.progress.pct, 3)}%` }} /></span>}
+
+        {watchers.length > 0 && (
+          <span className="tl-watch">
+            <span className="tl-watch-faces">
+              {watchers.map((w) => (
+                <AgentAvatar key={w.id} id={w.custom ? undefined : w.id} name={w.name} hue={w.hue} size={22} />
+              ))}
+            </span>
+            <small>De olho: {watchers.map((w) => w.name.split(':')[0]).join(', ')}</small>
+          </span>
+        )}
+
+        {open && (
+          <div className="tl-body">
+            {pot.steps.length > 0 && (
+              <ol className="pot-steps">
+                {pot.steps.map((st, i) => (
+                  <PotStep key={i} step={st} />
+                ))}
+              </ol>
+            )}
+            {pot.extra}
+          </div>
+        )}
+      </div>
     </li>
   );
 }
@@ -366,74 +541,6 @@ function writeDone(list: string[]) {
   } catch {
     // segue sem salvar
   }
-}
-
-/** O que fazer neste mês, em reais, com caixinha pra marcar. Cada linha leva pro objetivo dela. */
-function ThisMonth({ plan, general, off, onOpenTool, onPick }: { plan: ActionPlan; general: PlanStep[]; off: string[]; onOpenTool: (id: ToolId) => void; onPick?: (id: PotId) => void }) {
-  const [how, setHow] = useState(false);
-  const [done, setDone] = useState<string[]>(readDone);
-  const row = plan.schedule[0];
-  const items: [LucideIcon, string, string, PotId | null][] = [];
-  if (plan.stuck) items.push([Phone, 'Ligar pro banco e pedir pra renegociar', 'agora', 'debts']);
-  if (row) {
-    for (const p of row.payments) items.push([CreditCard, `Pagar ${p.name}`, formatBRL(p.amount), 'debts']);
-    if (row.toReserve >= 1) items.push([PiggyBank, 'Guardar pra emergências', formatBRL(row.toReserve), 'reserve']);
-  } else if (plan.monthlyPower > 0 && plan.debts.length === 0) {
-    items.push(plan.reserve.alreadyDone ? [TrendingUp, 'Investir', formatBRL(plan.monthlyPower), 'invest'] : [PiggyBank, 'Guardar pra emergências', formatBRL(plan.monthlyPower), 'reserve']);
-  }
-  plan.goals.forEach((g, i) => items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly), `goal-${i}`]));
-  for (const c of plan.cuts) items.push([Scissors, `No máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling), 'gastos']);
-  const month = monthShort(plan.start, 1);
-  items.splice(0, items.length, ...items.filter(([, , , pot]) => !pot || !off.includes(pot)));
-  const count = items.filter(([, what]) => done.includes(what)).length;
-  const all = items.length > 0 && count === items.length;
-  const toggle = (what: string) => {
-    const next = done.includes(what) ? done.filter((d) => d !== what) : [...done, what];
-    setDone(next);
-    writeDone(next);
-  };
-  return (
-    <section className="this-month">
-      <div className="this-month-top">
-        <div>
-          <span className="tm-label">Este mês · {month}</span>
-          <b className="tm-big">{formatBRL(plan.monthlyPower)}</b>
-          <span className="tm-sub">pros seus objetivos</span>
-        </div>
-        {items.length > 0 && <span className={`month-count ${all ? 'all' : ''}`}>{count}/{items.length}</span>}
-      </div>
-      {items.length > 0 && (
-        <ul className="month-list">
-          {items.map(([Icon, what, amount, pot], i) => {
-            const ok = done.includes(what);
-            return (
-              <li key={i} className={ok ? 'ok' : ''}>
-                <button type="button" className={`task-check ${ok ? 'on' : ''}`} aria-pressed={ok} aria-label={ok ? `Desmarcar: ${what}` : `Marcar como feito: ${what}`} onClick={() => toggle(what)}>
-                  <Check size={15} />
-                </button>
-                <button type="button" className="month-item" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
-                  <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
-                  <span className="this-month-what">{what}</span>
-                  <b>{amount}</b>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <div className="tm-links">
-        {general.length > 0 && (
-          <button type="button" className="link-btn" aria-expanded={how} onClick={() => setHow((v) => !v)}>
-            Como começar
-          </button>
-        )}
-        <button type="button" className="link-btn" onClick={() => onOpenTool('tracker')}>
-          {all ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={13} />
-        </button>
-      </div>
-      {how && general.map((s, i) => <p key={i} className="step-detail"><b>{s.title}.</b> {s.detail}</p>)}
-    </section>
-  );
 }
 
 /** Gráfico simples do dinheiro guardado mês a mês, com as datas das metas marcadas. */
@@ -624,6 +731,7 @@ function loadCustomAgents(): CustomAgent[] {
 function saveCustomAgents(list: CustomAgent[]) {
   try {
     localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event('gs-agentes'));
   } catch {
     // segue sem salvar
   }
