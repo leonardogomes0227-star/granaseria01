@@ -49,7 +49,6 @@ function buildPots(plan: ActionPlan): Pot[] {
   const pots: Pot[] = [];
 
   if (plan.debts.length > 0) {
-    const total = plan.debts.reduce((x, d) => x + d.balance, 0);
     const ph = phase('debts');
     pots.push({
       id: 'debts',
@@ -58,7 +57,7 @@ function buildPots(plan: ActionPlan): Pot[] {
       ...status(ph?.from),
       amount: ph ? `${formatBRL(ph.amount)} por mês` : null,
       when: plan.stuck ? 'renegociar primeiro' : `livre em ${short(plan.debtFreeMonth)}`,
-      progress: { now: `Falta pagar ${formatBRL(total)}`, goal: 'Zerar', pct: 0 },
+      progress: null,
       why: plan.stuck ? 'Hoje o que você paga não cobre nem os juros. O primeiro passo é renegociar.' : 'Dívida com juros alto come o seu salário. Pagando na ordem certa, você sai mais rápido e paga menos juros.',
       steps: stepsOf('debts'),
       tool: 'debts',
@@ -202,7 +201,7 @@ export function ActionPlanView({
       ) : (
         pot && (
           <>
-            <p className="diag-label plan-steps-label">Cada objetivo no seu lugar</p>
+            <p className="section-label plan-steps-label">Seus objetivos</p>
             <div className="pot-tabs" role="tablist" aria-label="Objetivos do plano">
               {pots.map((p) => (
                 <button key={p.id} type="button" role="tab" aria-selected={p.id === pot.id} className={`pot-tab ${p.status} ${p.id === pot.id ? 'active' : ''}`} onClick={() => setPotId(p.id)}>
@@ -218,12 +217,8 @@ export function ActionPlanView({
       )}
 
       {!locked && !extras && (
-        <button type="button" className="plan-extras-btn" onClick={() => setExtras(true)}>
-          <span>
-            <b>Ver mais</b>
-            <small>{['gráfico do seu dinheiro', plan.schedule.length > 0 && 'calendário mês a mês', 'seus direitos', 'como acelerar'].filter(Boolean).join(' · ')}</small>
-          </span>
-          <ChevronDown size={18} />
+        <button type="button" className="link-btn plan-more-link" onClick={() => setExtras(true)}>
+          <ChevronDown size={14} /> Gráfico, calendário e mais detalhes
         </button>
       )}
       {extras && (
@@ -235,10 +230,7 @@ export function ActionPlanView({
         </>
       )}
 
-      <p className="field-hint" style={{ marginTop: 14 }}>
-        Estimativa feita com os seus números e, quando você não informou, com taxas típicas de mercado. Não é recomendação
-        individual de investimento: confira as taxas do seu contrato.
-      </p>
+      <p className="plan-legal">Estimativa com os seus números e taxas típicas de mercado. Não é recomendação de investimento.</p>
     </div>
   );
 }
@@ -365,8 +357,8 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
           <b>Este mês ({month})</b>
           <small>
             {plan.powerAssumed
-              ? `Hoje não sobra nada: o plano começa separando 10% da renda, ${formatBRL(plan.monthlyPower)} por mês.`
-              : `Com o plano, vão ${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
+              ? `O plano começa separando 10% da renda: ${formatBRL(plan.monthlyPower)} por mês.`
+              : `${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
           </small>
         </p>
         {items.length > 0 && <span className={`month-count ${all ? 'all' : ''}`}>{count}/{items.length}</span>}
@@ -393,7 +385,7 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
           </ul>
         </>
       )}
-      {all && <p className="month-ok">Mês cumprido. Registre no acompanhamento pra o plano ajustar as datas.</p>}
+      {all && <p className="month-ok">Mês cumprido. Bom trabalho.</p>}
       {general.length > 0 && (
         <>
           <button type="button" className="plan-more" aria-expanded={how} onClick={() => setHow((v) => !v)}>
@@ -425,16 +417,15 @@ function PlanRoad({ plan }: { plan: ActionPlan }) {
     text: plan.investFrom !== null ? `Investindo a partir de ${short(plan.investFrom)}` : 'Tudo em dia',
   });
   return (
-    <ol className="plan-road" aria-label="O caminho do seu plano">
+    <p className="plan-line" aria-label="O caminho do seu plano">
       {stops.map((st, i) => (
-        <li key={i} className={i === 0 ? 'now' : ''}>
-          <span className="road-dot" />
-          <small>{st.label}</small>
+        <span key={i} className={i === 0 ? 'now' : ''}>
+          {i > 0 && <ArrowRight size={13} aria-hidden="true" />}
           <b>{st.title}</b>
-          <span>{st.text}</span>
-        </li>
+          {i > 0 && st.label !== 'Fim' && <small>{st.label.replace('Até ', '')}</small>}
+        </span>
       ))}
-    </ol>
+    </p>
   );
 }
 

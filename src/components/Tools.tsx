@@ -9,6 +9,8 @@ import { formatBRL, computeProjection, computeRequiredContribution, computeLoanI
 import { ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { ToolPanel, useResult } from './ToolPanel';
+import { Link } from 'react-router-dom';
+import { agentForTool } from '../agents';
 import { CountUp } from './motion';
 import { DecimalInput } from './DecimalInput';
 
@@ -26,6 +28,7 @@ export function ToolShell({
 }: ToolNavProps & { id: ToolId; children: ReactNode }) {
   const tool = getTool(id);
   const result = useResult(id);
+  const agent = agentForTool(id);
   return (
     <div className="tool-screen anim-in" key={id}>
       <button type="button" className="link-btn tool-back" onClick={onClose}>
@@ -39,8 +42,13 @@ export function ToolShell({
         </div>
       </div>
       <ToolPanel id={id} />
-      <p className="section-label tool-form-label">{result ? 'Atualizar os seus números' : 'Começar'}</p>
+      {result && <p className="section-label tool-form-label">Atualizar os seus números</p>}
       <div className="card tool-body">{children}</div>
+      {agent && (
+        <Link className="tool-agent" to={`/conselheiros/${agent.id}`}>
+          Ficou em dúvida? Converse com {agent.name} <ArrowRight size={14} />
+        </Link>
+      )}
     </div>
   );
 }

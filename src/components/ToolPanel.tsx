@@ -13,8 +13,7 @@ import { useTasks } from './CoachPanel';
 const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
 const when = (due: string, today: string) => {
   const d = daysBetween(today, due);
-  if (d < 0) return `atrasado ${-d} ${d === -1 ? 'dia' : 'dias'}`;
-  if (d === 0) return 'hoje';
+  if (d <= 0) return 'pra hoje';
   if (d === 1) return 'amanhã';
   return new Date(`${due}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
 };
@@ -43,14 +42,11 @@ export function ToolPanel({ id }: { id: ToolId }) {
   return (
     <div className="tool-panel">
       {journey && (
-        <ol className="journey3" aria-label="Começo, meio e fim">
+        <ol className="journey-line" aria-label="Começo, meio e fim">
           {journey.map((text, i) => (
-            <li key={i} className={i < stage ? 'done' : i === stage ? 'now' : ''}>
-              <span className="j3-dot">{i < stage ? <Check size={13} /> : i + 1}</span>
-              <span className="j3-copy">
-                <small>{['Começo', 'Meio', 'Fim'][i]}{i === stage ? ' · você está aqui' : ''}</small>
-                <b>{text}</b>
-              </span>
+            <li key={i} className={i < stage ? 'done' : i === stage ? 'now' : ''} title={text}>
+              <span className="jl-dot">{i < stage ? <Check size={11} /> : null}</span>
+              <span>{i === stage ? text : ['Começo', 'Meio', 'Fim'][i]}</span>
             </li>
           ))}
         </ol>
@@ -65,7 +61,7 @@ export function ToolPanel({ id }: { id: ToolId }) {
           <b className="panel-big">{c?.big ?? result.summary}</b>
           {c && c.rows.length > 0 && (
             <div className="panel-tiles">
-              {c.rows.slice(0, 6).map(([k, v], i) => (
+              {c.rows.slice(0, 4).map(([k, v], i) => (
                 <span key={i}>
                   <small>{k}</small>
                   <b>{v}</b>
@@ -102,13 +98,13 @@ export function ToolPanel({ id }: { id: ToolId }) {
           <div className="jp-bar"><i style={{ width: `${Math.max(3, (done.length / tasks.length) * 100)}%` }} /></div>
           <ul className="task-list">
             {open.map((t) => (
-              <li key={t.id} className={t.due < today ? 'late' : t.due === today ? 'today' : ''}>
+              <li key={t.id} className={t.due <= today ? 'today' : ''}>
                 <button type="button" className="task-check" aria-label={`Marcar como feito: ${t.text}`} onClick={() => markTaskDone(t.id)}>
                   <Check size={15} />
                 </button>
                 <span className="task-copy">
                   <b>{t.text}</b>
-                  <small>{when(t.due, today)}{t.repeat === 'monthly' ? ' · todo mês' : ''} · lembrete no WhatsApp</small>
+                  <small>{when(t.due, today)}{t.repeat === 'monthly' ? ' · todo mês' : ''}</small>
                 </span>
               </li>
             ))}
