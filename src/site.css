@@ -1607,6 +1607,20 @@ html { overflow-x: hidden; }
 .unused-tools .tool-icon.sm { width: 26px; height: 26px; border-radius: 50%; }
 @media (max-width: 480px) { .tool-results { grid-template-columns: 1fr; } }
 
+/* ---------- perguntas da entrada e ferramentas indicadas ---------- */
+.quiz { max-width: 640px; margin: 0 auto 30px; padding: 22px; border-radius: 20px; background: var(--white); border: 1px solid var(--hairline); box-shadow: var(--shadow-md); font-family: var(--sans); }
+.quiz-step { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--gold-deep); }
+.quiz-bar { height: 6px; border-radius: 3px; background: var(--sand-deep); overflow: hidden; margin-bottom: 16px; }
+.quiz-bar i { display: block; height: 100%; background: var(--gold); transition: width 0.3s var(--ease-out); }
+.quiz h3 { font-size: clamp(20px, 4vw, 24px); font-weight: 500; line-height: 1.25; margin-bottom: 14px; }
+.quiz-options { display: grid; gap: 8px; margin-bottom: 10px; }
+.quiz-options button { text-align: left; padding: 14px 16px; border-radius: 12px; border: 1.5px solid var(--hairline); background: var(--paper); font-family: var(--sans); font-size: 15.5px; font-weight: 600; color: var(--ink); cursor: pointer; transition: border-color 0.2s ease, background 0.2s ease; }
+.quiz-options button:hover { border-color: var(--ink); background: var(--white); }
+.dir-picks { margin-bottom: 16px; }
+.dir-card.picked { border-width: 1.5px; border-color: var(--gold); }
+.dir-why { display: block; padding: 8px 10px; border-radius: 10px; background: #FBF1DA; font-size: 13px; line-height: 1.45; color: #6A4A10; }
+.dir-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 26px; }
+
 /* ---------- movimento reduzido: tudo aparece, nada se mexe ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
