@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Gift, MessageCircle, Sparkles } from 'lucide-react';
 import { LISTED_TOOLS, faturaEnabled, getTool, type ToolId } from '../tools';
 import { getResults, type ToolResult } from '../results';
 import { QUESTIONS, getAnswers, recommend, saveAnswers, type Answers } from '../profile';
@@ -39,7 +39,7 @@ export function StartSteps({ hasDiagnosis, onDiagnosis }: { hasDiagnosis: boolea
       <ol>
         {steps.map((st, i) => (
           <li key={i} className={st.done ? 'done' : i === next ? 'next' : ''}>
-            <span className="start-n">{st.done ? '✓' : i + 1}</span>
+            <span className="start-n">{st.done ? <CheckCircle2 size={16} /> : i + 1}</span>
             <span className="start-copy">
               <b>{st.title}</b>
               <small>{st.text}</small>
@@ -88,8 +88,8 @@ export function DailyTop() {
           </>
         )}
         <div className="wallet-flow">
-          <span><small>📥 Entrou</small><b>{formatBRL(income)}</b></span>
-          <span><small>📤 Saiu</small><b>{formatBRL(spent)}</b></span>
+          <span><small>Entrou</small><b>{formatBRL(income)}</b></span>
+          <span><small>Saiu</small><b>{formatBRL(spent)}</b></span>
         </div>
         <div className="wallet-actions">
           <WhatsAppButton label="Anotar no WhatsApp" origin="inicio" className="wallet-cta" />
@@ -109,9 +109,9 @@ export function DailyTop() {
       </div>
       <div className="daily-chat" aria-hidden="true">
         <p className="me">mercado 80 no pix</p>
-        <p className="bot">✅ R$ 80,00 em 🍽️ Alimentação · Pix{'\n'}Saldo do mês: R$ 1.420{'\n'}🎯 uns R$ 109 por dia</p>
+        <p className="bot">R$ 80,00 em Alimentação · Pix{'\n'}Saldo do mês: R$ 1.420{'\n'}Dá pra gastar uns R$ 109 por dia</p>
         <p className="me">recebi 3000 salário</p>
-        <p className="bot">💰 Entrada anotada: R$ 3.000,00{'\n'}🟢 Saldo do mês: R$ 4.420</p>
+        <p className="bot">Entrada anotada: R$ 3.000,00{'\n'}Saldo do mês: R$ 4.420</p>
       </div>
     </div>
   );
@@ -133,7 +133,7 @@ function ToolCard({ id, done, why, onOpen }: { id: ToolId; done?: ToolResult; wh
   const t = getTool(id);
   return (
 <button type="button" className={`dir-card ${done ? 'done' : ''} ${why ? 'picked' : ''}`} onClick={onOpen}>
-                  {why && <span className="dir-why">💡 {why}</span>}
+                  {why && <span className="dir-why">{why}</span>}
                   <span className="dir-card-head">
                     <ToolIcon tool={t} />
                     <b>{t.title}</b>
@@ -255,7 +255,7 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
 
       {season && (
         <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>
-          🎁 <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
+          <Gift size={18} /> <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
           <ArrowRight size={18} />
         </button>
       )}

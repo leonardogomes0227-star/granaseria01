@@ -68,14 +68,14 @@ export function CoachPanel({ onOpenTool, onOpenPlan }: { onOpenTool: (id: ToolId
       <div className="coach-head">
         <p className="diag-label">Seu coach</p>
         <p className="coach-big">
-          {open.length === 0 ? 'Tudo em dia ✨' : late.length + now.length > 0 ? `${late.length + now.length} pra fazer hoje` : `${open.length} próximos passos`}
+          {open.length === 0 ? 'Tudo em dia' : late.length + now.length > 0 ? `${late.length + now.length} pra fazer hoje` : `${open.length} próximos passos`}
         </p>
         <p className="coach-sub">Cada ferramenta que você usa vira um passo aqui. No dia, o WhatsApp te lembra.</p>
       </div>
       {open.length === 0 && <p className="field-hint">Use uma ferramenta ou faça o diagnóstico: eu crio os seus próximos passos, com data e lembrete.</p>}
-      {group('⚠️ Atrasados', late)}
-      {group('📍 Hoje', now)}
-      {group('🗓️ Nos próximos 7 dias', soon)}
+      {group('Atrasados', late)}
+      {group('Hoje', now)}
+      {group('Nos próximos 7 dias', soon)}
       {group('Depois', later)}
       {done.length > 0 && (
         <>
@@ -86,7 +86,7 @@ export function CoachPanel({ onOpenTool, onOpenPlan }: { onOpenTool: (id: ToolId
             <ul className="coach-done">
               {done.map((t) => (
                 <li key={t.id}>
-                  ✅ {t.text}
+                  <span><Check size={13} /> {t.text}</span>
                   <button type="button" className="plan-more" onClick={() => unmarkTask(t.id)}><Undo2 size={13} /> desfazer</button>
                 </li>
               ))}

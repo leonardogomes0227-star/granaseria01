@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Undo2, RotateCcw } from 'lucide-react';
+import { ArrowRight, Award, Undo2, RotateCcw } from 'lucide-react';
 import { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { monthLong, monthShort } from '../plan';
@@ -95,13 +95,13 @@ function TrackerBody({
     track('mes_fechado', { cumprido: total + 0.5 >= combined });
     saveResult('tracker', `${month}: ${total + 0.5 >= combined ? 'fez o combinado' : `guardou/pagou ${formatBRL(total)} de ${formatBRL(combined)}`}`, {
       label: `Último mês fechado: ${month}`,
-      big: total + 0.5 >= combined ? 'Fez o combinado ✅' : `${formatBRL(total)} de ${formatBRL(combined)}`,
+      big: total + 0.5 >= combined ? 'Fez o combinado' : `${formatBRL(total)} de ${formatBRL(combined)}`,
       rows: [
         ...view.tasks.map((t) => [t.label, `${formatBRL(paid[t.id] ?? 0)} de ${formatBRL(t.suggested)}`] as [string, string]),
         ['Meses fechados', String(tracking.months.length + 1)],
       ],
     });
-    setToolTasks('tracker', [{ text: `Fechar ${monthLong(start, view.openMonth + 1)} no Meu plano, mês a mês`, inDays: 30 }]);
+    setToolTasks('tracker', [{ text: `Fechar ${monthLong(start, view.openMonth + 1)} em Acompanhar meu plano`, inDays: 30 }]);
     setTracking(closeMonth(tracking, paid));
   };
 
@@ -111,7 +111,7 @@ function TrackerBody({
   const reserveAbs = current.reserve.doneMonth !== null ? tracking.months.length + current.reserve.doneMonth : null;
   const reserveShift = original.debts.length === 0 && original.reserve.doneMonth !== null && reserveAbs !== null ? original.reserve.doneMonth - reserveAbs : 0;
   const status = current.stuck
-    ? { tone: 'bad', text: 'Com o valor de hoje, a dívida não fecha. O próximo passo é renegociar (veja "Seus direitos com o banco").' }
+    ? { tone: 'bad', text: 'Com o valor de hoje, a dívida não fecha. O próximo passo é renegociar (veja "Negociar com o banco").' }
     : debtShift !== null && debtShift < 0
       ? { tone: 'warn', text: `Você está ${-debtShift} ${debtShift === -1 ? 'mês' : 'meses'} atrasado. Sem problema: a nova data pra sair das dívidas é ${monthLong(start, view.debtFreeAbs ?? 0)}.` }
       : debtShift !== null && debtShift > 0
@@ -153,7 +153,7 @@ function TrackerBody({
 
         {reserveTask && guardado > 0 && (
           <div className="tk-wa">
-            💬 Pelo WhatsApp, você anotou <b>{formatBRL(guardado)}</b> como guardado neste mês.
+            Pelo WhatsApp, você anotou <b>{formatBRL(guardado)}</b> como guardado neste mês.
             <button type="button" className="btn-outline" onClick={useGuardado}>Usar esse valor</button>
           </div>
         )}
@@ -172,9 +172,9 @@ function TrackerBody({
               </p>
               <div className="tk-choices" role="radiogroup" aria-label={t.label}>
                 {([
-                  ['all', '✅ Fiz tudo'],
-                  ['part', '🤏 Fiz uma parte'],
-                  ['none', '❌ Não deu'],
+                  ['all', 'Fiz tudo'],
+                  ['part', 'Fiz uma parte'],
+                  ['none', 'Não deu'],
                 ] as [Choice, string][]).map(([c, label]) => (
                   <button key={c} type="button" role="radio" aria-checked={choice[t.id] === c} className={choice[t.id] === c ? 'on' : ''} onClick={() => setChoice({ ...choice, [t.id]: c })}>
                     {label}
@@ -205,7 +205,7 @@ function TrackerBody({
       {earned.length > 0 && (
         <div className="tracker-badges">
           {earned.map((b) => (
-            <span key={b.id} className="tracker-badge earned">🏅 {b.label}</span>
+            <span key={b.id} className="tracker-badge earned"><Award size={13} /> {b.label}</span>
           ))}
         </div>
       )}
@@ -220,7 +220,7 @@ function TrackerBody({
               <div className="plan-row" key={i}>
                 <span className="plan-row-month">{monthShort(start, i + 1)}</span>
                 <span>{formatBRL(total)}</span>
-                <span className={`plan-row-left tone-text-${ok ? 'good' : 'warn'}`}>{ok ? '✅ fez' : 'parte'}</span>
+                <span className={`plan-row-left tone-text-${ok ? 'good' : 'warn'}`}>{ok ? 'fez' : 'parte'}</span>
               </div>
             );
           })}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { accountsEnabled } from '../supabase';
-import { MessageCircle, LogOut, RefreshCw, ArrowRight } from 'lucide-react';
+import { MessageCircle, LogOut, RefreshCw, ArrowRight, ArrowDownLeft, Bell, Car, ClipboardList, GraduationCap, HeartHandshake, HeartPulse, House, Landmark, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, Wallet, Wrench, type LucideIcon } from 'lucide-react';
 import type { ToolId } from '../tools';
 import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
@@ -34,12 +34,12 @@ const CATS: { key: keyof WizardData['expenses']; name: string; label: string }[]
 const brl = (n: number) => formatBRL(n);
 
 type Tab = 'coach' | 'mes' | 'plano' | 'pairico' | 'ferramentas';
-const TABS: [Tab, string][] = [
-  ['coach', '🔔 Próximos passos'],
-  ['mes', '💸 Meu mês'],
-  ['plano', '📋 Meu plano'],
-  ['pairico', '🏛️ Pai Rico'],
-  ['ferramentas', '🧰 Minhas ferramentas'],
+const TABS: [Tab, string, LucideIcon][] = [
+  ['coach', 'Próximos passos', Bell],
+  ['mes', 'Meu mês', Wallet],
+  ['plano', 'Meu plano', ClipboardList],
+  ['pairico', 'Viver de renda', Landmark],
+  ['ferramentas', 'Minhas ferramentas', Wrench],
 ];
 
 const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
@@ -85,20 +85,23 @@ const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 
 const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 
 // mesmos emojis do assistente (server/whatsapp/parse.ts), pra pessoa reconhecer o que anotou lá
-const EMOJI: Record<string, string> = {
-  Alimentação: '🍽️',
-  Transporte: '🚗',
-  Moradia: '🏠',
-  Saúde: '💊',
-  Lazer: '🎉',
-  Compras: '🛍️',
-  Educação: '📚',
-  Pets: '🐾',
-  'Cuidados pessoais': '💇',
-  Doações: '🤲',
-  Guardado: '🐖',
+const CAT_ICON: Record<string, LucideIcon> = {
+  Alimentação: Utensils,
+  Transporte: Car,
+  Moradia: House,
+  Saúde: HeartPulse,
+  Lazer: Ticket,
+  Compras: ShoppingBag,
+  Educação: GraduationCap,
+  Pets: PawPrint,
+  'Cuidados pessoais': Scissors,
+  Doações: HeartHandshake,
+  Guardado: PiggyBank,
 };
-const emoji = (category: string) => EMOJI[category] ?? '📌';
+function CatIcon({ category, size = 16 }: { category: string; size?: number }) {
+  const Icon = CAT_ICON[category] ?? Receipt;
+  return <Icon size={size} />;
+}
 
 /** Dia de hoje e último dia do mês, no horário de Brasília. */
 function monthClock(): { today: number; last: number; month: string } {
@@ -193,9 +196,9 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
         <>
           <p className="painel-sub">Seu plano, seus gastos e o que entrou. O que você anota no WhatsApp aparece aqui na hora.</p>
           <nav className="painel-tabs" role="tablist" aria-label="Seções do painel">
-            {TABS.map(([id, label]) => (
+            {TABS.map(([id, label, Icon]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => pickTab(id)}>
-                {label}
+                <Icon size={15} /> {label}
                 {id === 'ferramentas' && done.length > 0 ? ` (${done.length})` : ''}
                 {id === 'coach' && dueCount > 0 ? <span className="tab-badge">{dueCount}</span> : null}
               </button>
@@ -249,8 +252,8 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
               <p className="wallet-balance">Saiu {brl(spent)}</p>
             )}
             <div className="wallet-flow">
-              <span><small>📥 Entrou</small><b>{brl(income)}</b></span>
-              <span><small>📤 Saiu</small><b>{brl(spent)}</b></span>
+              <span><small>Entrou</small><b>{brl(income)}</b></span>
+              <span><small>Saiu</small><b>{brl(spent)}</b></span>
             </div>
             <div className="wallet-clock">
               <div className="wallet-clock-track"><i style={{ width: `${(clock.today / clock.last) * 100}%` }} /></div>
@@ -260,8 +263,8 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
               {income === 0
                 ? <>Anote o que entrou no WhatsApp (ex.: <i>recebi 3000 salário</i>) pra ver o saldo e quanto dá por dia.</>
                 : left > 0
-                  ? <>🎯 Dá pra gastar uns <b>{brl(perDay)} por dia</b> até o fim do mês.</>
-                  : <>⚠️ O mês passou do que entrou. Antes da próxima compra, mande <i>posso comprar</i> no WhatsApp.</>}
+                  ? <>Dá pra gastar uns <b>{brl(perDay)} por dia</b> até o fim do mês.</>
+                  : <>O mês passou do que entrou. Antes da próxima compra, mande <i>posso comprar</i> no WhatsApp.</>}
             </p>
             <div className="wallet-actions">
               <a className="wallet-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar no WhatsApp</a>
@@ -281,7 +284,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
                     const pct = w.limit > 0 ? Math.min(100, (w.used / w.limit) * 100) : (w.used / biggest) * 100;
                     return (
                       <li key={w.cat}>
-                        <span className="where-icon" aria-hidden="true">{emoji(w.cat)}</span>
+                        <span className="where-icon" aria-hidden="true"><CatIcon category={w.cat} /></span>
                         <span className="where-body">
                           <span className="where-head">
                             <b>{w.label}</b>
@@ -310,7 +313,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
                 <ul className="painel-list">
                   {recent.map((r, i) => (
                     <li key={i}>
-                      <span className={`entry-icon ${r.kind}`} aria-hidden="true">{r.kind === 'in' ? '💰' : emoji(r.what)}</span>
+                      <span className={`entry-icon ${r.kind}`} aria-hidden="true">{r.kind === 'in' ? <ArrowDownLeft size={16} /> : <CatIcon category={r.what} />}</span>
                       <span className="what">
                         {r.description}
                         <small>{r.what}{r.method ? ` · ${r.method}` : ''} · {day(r.created_at)}</small>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { sendFeedback } from '../painel';
 import { track } from '../analytics';
 
@@ -28,7 +29,7 @@ export function SiteFeedback({ tool, question = 'Essa ferramenta te ajudou?' }: 
     setState('done');
   };
 
-  if (state === 'done') return <div className="site-feedback done">Obrigado pela opinião! 🙏</div>;
+  if (state === 'done') return <div className="site-feedback done">Obrigado pela opinião!</div>;
   if (state === 'note') {
     return (
       <div className="site-feedback">
@@ -45,8 +46,8 @@ export function SiteFeedback({ tool, question = 'Essa ferramenta te ajudou?' }: 
     <div className="site-feedback">
       <p>{question}</p>
       <div className="site-feedback-row">
-        <button type="button" className="btn-outline" onClick={() => finish('up')}>👍 Ajudou</button>
-        <button type="button" className="btn-outline" onClick={() => setState('note')}>👎 Faltou algo</button>
+        <button type="button" className="btn-outline" onClick={() => finish('up')}><ThumbsUp size={15} /> Ajudou</button>
+        <button type="button" className="btn-outline" onClick={() => setState('note')}><ThumbsDown size={15} /> Faltou algo</button>
       </div>
     </div>
   );

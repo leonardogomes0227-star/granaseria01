@@ -309,11 +309,11 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
 
 // primeiro a pessoa diz o problema; aparecem só os direitos que resolvem ele
 const PROBLEMS: { id: string; label: string; rights: string[] }[] = [
-  { id: 'juros', label: '💳 Os juros do cartão ou do cheque especial estão altos', rights: ['rotativo', 'cheque', 'portabilidade'] },
-  { id: 'nao-paga', label: '😰 Não consigo pagar as minhas dívidas', rights: ['superendividamento', 'portabilidade', 'quitacao'] },
-  { id: 'quitar', label: '✅ Quero quitar uma dívida antes', rights: ['quitacao', 'portabilidade'] },
-  { id: 'cobranca', label: '🧾 Me cobraram algo que eu não devia', rights: ['cobranca'] },
-  { id: 'nome', label: '🚫 Meu nome está sujo (negativado)', rights: ['negativacao', 'superendividamento'] },
+  { id: 'juros', label: 'Os juros do cartão ou do cheque especial estão altos', rights: ['rotativo', 'cheque', 'portabilidade'] },
+  { id: 'nao-paga', label: 'Não consigo pagar as minhas dívidas', rights: ['superendividamento', 'portabilidade', 'quitacao'] },
+  { id: 'quitar', label: 'Quero quitar uma dívida antes', rights: ['quitacao', 'portabilidade'] },
+  { id: 'cobranca', label: 'Me cobraram algo que eu não devia', rights: ['cobranca'] },
+  { id: 'nome', label: 'Meu nome está sujo (negativado)', rights: ['negativacao', 'superendividamento'] },
 ];
 
 export function RightsTool({ data, ...nav }: { data: WizardData } & ToolNavProps) {
@@ -331,9 +331,9 @@ export function RightsTool({ data, ...nav }: { data: WizardData } & ToolNavProps
         ]
       : null
   );
-  useSaveResult('rights', picked ? `${picked.label.replace(/^\S+\s/, '')}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null, picked ? {
+  useSaveResult('rights', picked ? `${picked.label}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null, picked ? {
     label: 'Seu problema',
-    big: picked.label.replace(/^\S+\s/, ''),
+    big: picked.label,
     rows: shown.map((r) => ['Seu direito', r.title] as [string, string]),
   } : undefined);
 

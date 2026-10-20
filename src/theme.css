@@ -1,0 +1,247 @@
+/* ==========================================================================
+   Grana Séria — tema profissional (app de banco): fundo escuro, cartões escuros,
+   dourado só pra destacar, uma fonte só (Inter). Carregado por último: vale por cima do site.css.
+   ========================================================================== */
+
+:root {
+  --bg: #0D0B09;
+  --surface: #17140F;
+  --surface-2: #1F1B15;
+  --line: #2C261E;
+  --line-strong: #3B3328;
+  --text: #F3EEE5;
+  --text-soft: #B9AF9F;
+  --text-faint: #8C8373;
+  --good: #7FCB8F;
+  --warn: #E9B04C;
+  --bad: #F08C72;
+
+  /* os tokens antigos passam a apontar pro tema escuro */
+  --ink: var(--text);
+  --ink-soft: var(--text-soft);
+  --ink-faint: var(--text-faint);
+  --white: var(--surface);
+  --paper: var(--surface);
+  --sand: var(--surface-2);
+  --sand-deep: #2A241C;
+  --hairline: var(--line-strong);
+  --hairline-soft: var(--line);
+  --sage: #5FA672;
+  --lapis: #5B9BD0;
+  --clay: #E07B5F;
+  --gold: #D3962F;
+  --gold-bright: #E9B04C;
+  --gold-deep: #E9B04C;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --shadow-sm: none;
+  --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  --shadow-lg: 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg) !important;
+  background-image: none !important;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+}
+::selection { background: var(--gold); color: #120D07; }
+
+/* ---------- tipografia: limpa, sem maiúsculas antigas ---------- */
+h1, h2, h3, .serif, .logo, .wizard-h2, .plan-heading, .result-big, .diag-number, .growth-big, .coach-big, .tk-q,
+.tool-result-big, .wallet-balance, .quiz h3, .dir-done strong, .plan-summary-row b, .richdad-grid b {
+  font-family: var(--sans) !important;
+  letter-spacing: -0.02em;
+  font-variant: normal;
+  text-transform: none;
+}
+h1, .page-wrap h1, .home h1 { font-weight: 700; color: var(--text); }
+.home h1 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.1; }
+h2, .section-head h2 { font-weight: 700; color: var(--text); }
+h3, .wizard-h2, .plan-heading { font-weight: 650; color: var(--text); }
+.wizard-h2 { font-size: clamp(22px, 3.2vw, 28px); }
+.logo { font-weight: 700; letter-spacing: -0.01em; }
+.result-big, .diag-number, .wallet-balance, .growth-big, .coach-big, .tool-result-big, .plan-summary-row b { font-weight: 700; }
+.lede, .wizard-sub, .section-head p, .account-line, .faq-a p, p { color: inherit; }
+.lede, .wizard-sub, .section-head p { color: var(--text-soft) !important; font-size: 16.5px; }
+.kicker { color: var(--gold-bright); letter-spacing: 0.08em; font-size: 12px; }
+.wedge { display: none; }
+.diag-label { color: var(--text-faint); }
+.field-hint, .microcopy { color: var(--text-faint); }
+a { color: inherit; }
+
+/* ---------- cabeçalho e rodapé ---------- */
+.site-header, .site-header.scrolled, .app-bar {
+  background: rgba(13, 11, 9, 0.86) !important;
+  border-bottom: 1px solid var(--line) !important;
+  box-shadow: none !important;
+}
+.navlink { color: var(--text-soft); }
+.navlink:hover, .navlink.open { color: var(--text); background: var(--surface-2); }
+.nav-cta { background: var(--gold-bright); color: #120D07; font-weight: 600; }
+@media (hover: hover) { .nav-cta:hover { background: #F2C063; } }
+.menu-btn { border-color: var(--line-strong); color: var(--text); }
+.mega, .drawer { background: var(--surface) !important; border: 1px solid var(--line); }
+.drawer-backdrop { background: rgba(0, 0, 0, 0.6); }
+.mega-item:hover { background: var(--surface-2); }
+.mega-item .desc, .drawer-label { color: var(--text-faint); }
+.mega-foot { border-color: var(--line); color: var(--text-soft); }
+.site-footer { border-top: 1px solid var(--line); color: var(--text-soft); }
+.site-footer h4 { color: var(--text-faint); }
+.foot-col button, .foot-col a { color: var(--text-soft); }
+.foot-col button:hover, .foot-col a:hover { color: var(--text); }
+.foot-bottom { color: var(--text-faint); border-color: var(--line) !important; }
+.to-top { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); }
+
+/* ---------- botões ---------- */
+.btn-primary {
+  background: var(--gold-bright) !important; color: #120D07 !important; border-radius: 12px;
+  box-shadow: none !important; font-weight: 650;
+}
+@media (hover: hover) { .btn-primary:hover { background: #F2C063 !important; transform: none; } }
+.btn-shine::after { display: none; }
+.btn-outline { background: transparent !important; color: var(--text) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px; }
+.btn-outline:hover { border-color: var(--text-soft) !important; background: var(--surface-2) !important; }
+.btn-ghost { color: var(--text-soft); }
+.btn-ghost:hover { color: var(--text); background: var(--surface-2); }
+.plan-more { color: var(--gold-bright); }
+.plan-more.danger { color: var(--bad); }
+.wallet-cta { background: var(--gold-bright); color: #120D07; }
+
+/* ---------- superfícies: tudo é cartão escuro do mesmo jeito ---------- */
+.stat-card, .wizard-card, .tool-card, .dir-card, .pick-card, .quiz, .daily-intro, .journey-card, .site-feedback, .wa-strip,
+.tool-guide > div, .result-empty, .rest-item, .unused-tools button, .step, .bills-add, .done-list button, .faq-item, .right-card,
+.leak-card, .review-row, .resume-banner, .loan-col, .mini, .plan-extras-btn, .fold, .tool-switcher button, .painel-connect {
+  background: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+  color: var(--text);
+}
+.wizard-card { border-radius: 20px; }
+.faq-item { border-width: 0 0 1px !important; background: transparent !important; }
+.faq-q { color: var(--text); }
+.faq-a p { color: var(--text-soft); }
+.result-split .stat-card, .result-card .stat-card { background: var(--surface-2) !important; border-color: transparent !important; }
+
+/* painéis de destaque (cartão do mês, coach, plano…): um pouco mais claros que o fundo, com borda */
+.wallet, .start-steps, .richdad, .tool-result, .plan-summary, .journey-plan, .growth, .this-month, .coach-head, .result-card,
+.bills-list > li, .bills-money, .coach li, .tk-month, .bills-summary, .bills-month, .dir-diag, .pick-card.is-first {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--line-strong) !important;
+  box-shadow: none !important;
+  color: var(--text);
+}
+.wallet::after { display: none; }
+.wallet, .this-month, .coach-head { background: linear-gradient(160deg, #241E16, #18140F) !important; }
+.this-month, .bills-money { border-color: rgba(233, 176, 76, 0.45) !important; }
+.bills-list > li { border-left: 4px solid var(--gold-bright) !important; }
+.bills-list > li.bill-pago, .bills-list > li.bill-pago-atrasado { border-left-color: var(--good) !important; }
+.bills-list > li.bill-atrasado, .coach li.late { border-color: rgba(240, 140, 114, 0.5) !important; border-left-color: var(--bad) !important; background: #22160F !important; }
+.coach li.today { border-color: rgba(233, 176, 76, 0.6) !important; }
+.step { border-left: 4px solid var(--gold) !important; }
+.step.tone-bad { border-left-color: var(--bad) !important; }
+.step.tone-good { border-left-color: var(--good) !important; }
+.step.tone-info { border-left-color: var(--lapis) !important; }
+
+/* textos dentro dos cartões */
+.dir-card-head b, .pick-copy b, .dir-copy b, .step-title, .jp-head b, .coach-copy b, .bill-copy b, .tool-result header b, .done-list b { color: var(--text) !important; }
+.dir-serve, .step-why, .step-detail, .pick-copy > span, .dir-copy > span { color: var(--text-soft) !important; }
+.dir-get, .jp-nums, .coach-copy small, .bill-copy small, .tool-result header small, .done-list small { color: var(--text-faint) !important; }
+.dir-get { border-color: var(--line) !important; }
+.dir-why { background: rgba(233, 176, 76, 0.1) !important; color: #EDCB8B !important; }
+.dir-card.picked { border-color: rgba(233, 176, 76, 0.5) !important; }
+.dir-card.done .dir-get { color: var(--good) !important; }
+.dir-done-tag { background: rgba(127, 203, 143, 0.12) !important; color: var(--good) !important; }
+.dir-open { color: var(--gold-bright) !important; }
+.dir-done-row, .tool-result dl, .tool-result dl div { border-color: var(--line) !important; }
+.dir-season { background: rgba(233, 176, 76, 0.08) !important; border: 1px solid rgba(233, 176, 76, 0.4) !important; color: var(--text); }
+.step-chips span, .step-how, .step-tool { background: var(--surface-2) !important; border: 1px solid var(--line-strong) !important; color: var(--text) !important; }
+.step-detail { background: var(--bg) !important; }
+.step-n, .plan-stage-n { background: var(--gold-bright) !important; color: #120D07 !important; }
+.journey-n { background: var(--gold-bright); color: #120D07; box-shadow: none; }
+.journey-track::before { opacity: 0.3; }
+.journey-where { color: var(--gold-bright); }
+.journey-card p { color: var(--text-soft); }
+
+/* ícones de ferramenta: fundo translúcido da cor */
+.tone-gold { background: rgba(233, 176, 76, 0.14) !important; color: #E9B04C !important; }
+.tone-lapis { background: rgba(91, 155, 208, 0.16) !important; color: #7DB4E3 !important; }
+.tone-sage { background: rgba(95, 166, 114, 0.16) !important; color: #8ACB99 !important; }
+.tone-clay { background: rgba(224, 123, 95, 0.16) !important; color: #EE9A80 !important; }
+
+/* avisos e etiquetas */
+.insight-good, .status-good, .tk-good, .tool-saved, .tk-wa { background: rgba(127, 203, 143, 0.1) !important; border-color: rgba(127, 203, 143, 0.3) !important; color: var(--good) !important; }
+.insight-warn, .status-warn, .tk-warn { background: rgba(233, 176, 76, 0.1) !important; border-color: rgba(233, 176, 76, 0.35) !important; color: #EDCB8B !important; }
+.insight-bad, .status-bad, .tk-bad { background: rgba(240, 140, 114, 0.1) !important; border-color: rgba(240, 140, 114, 0.35) !important; color: #F5AE9A !important; }
+.insight-info { background: rgba(91, 155, 208, 0.1) !important; border-color: rgba(91, 155, 208, 0.3) !important; color: #A9CDEE !important; }
+.insight b { color: inherit; }
+.pick-badge { background: var(--gold-bright) !important; color: #120D07 !important; }
+.tab-badge { background: var(--bad) !important; }
+.tone-text-good { color: var(--good) !important; }
+.tone-text-bad { color: var(--bad) !important; }
+.tone-text-warn { color: var(--warn) !important; }
+
+/* campos */
+.field-input, select.field-input, textarea {
+  background: var(--bg) !important; color: var(--text) !important; border: 1px solid var(--line-strong) !important; border-radius: 12px;
+}
+.field-input::placeholder { color: #6F675A !important; }
+.field-input:hover { border-color: #4A4033 !important; }
+.field-input:focus { border-color: var(--gold-bright) !important; box-shadow: 0 0 0 3px rgba(233, 176, 76, 0.18) !important; }
+.field-label { color: var(--text-soft) !important; }
+.input-prefix > span, .input-suffix > span { color: var(--text-faint); }
+.seg { background: var(--bg); border: 1px solid var(--line); }
+.seg button { color: var(--text-soft); }
+.seg button.active { background: var(--surface-2); color: var(--text); }
+input[type='range'] { accent-color: var(--gold-bright); }
+
+/* abas, perguntas e escolhas */
+.painel-tabs { background: rgba(13, 11, 9, 0.92) !important; }
+.painel-tabs button, .quiz-options button, .rights-problems button, .tk-choices button, .picker-more {
+  background: var(--surface) !important; border: 1px solid var(--line-strong) !important; color: var(--text) !important;
+}
+.painel-tabs button.on, .rights-problems button.on, .tk-choices button.on { background: var(--gold-bright) !important; border-color: var(--gold-bright) !important; color: #120D07 !important; }
+.quiz-options button:hover, .rights-problems button:hover { border-color: var(--gold-bright) !important; }
+.quiz-bar, .jp-bar, .where-track, .wallet-clock-track, .richdad-bar, .bar-track, .progress-track { background: #2A241C !important; }
+
+/* barras, listas e detalhes */
+.painel-list li, .where-list li { border-color: var(--line) !important; }
+.where-icon, .entry-icon, .jp-icon { background: var(--surface-2) !important; border: 1px solid var(--line) !important; }
+.entry-icon.in { background: rgba(127, 203, 143, 0.1) !important; }
+.coach-check { border-color: var(--text-faint) !important; }
+.daily-chat { background: #0B1410; }
+.daily-chat .me { background: #1F4A33; color: #E8F5EC; }
+.daily-chat .bot { background: #1E2A24; color: #E8F0EA; }
+.daily-label { color: var(--good); }
+.mini-chat { background: #0B1410; }
+.mini-chat .me { background: #1F4A33; color: #E8F5EC; }
+.mini-chat .bot { background: #1E2A24; color: #E8F0EA; }
+.mini-plan b { background: var(--gold-bright); color: #120D07; }
+.home-coin { display: none; }
+.home { padding-top: 40px; }
+.journey { border-color: var(--line) !important; }
+.tools-dir { border-color: var(--line) !important; }
+.right-law { color: var(--gold-bright); }
+.right-summary { color: var(--text-soft); }
+.copy-msg, .copy-message, .msg-box { background: var(--bg) !important; color: var(--text) !important; border-color: var(--line-strong) !important; }
+.growth-target { stroke: var(--gold-bright); }
+.score-hero { background: var(--surface-2) !important; border: 1px solid var(--line-strong) !important; }
+.score-ring circle:first-child { stroke: #2A241C; }
+.status-pill { border: 1px solid transparent; }
+.review-label { color: var(--text-faint); }
+.review-value { color: var(--text); }
+.loan-col.winner { border-color: var(--good) !important; }
+.paywall-fade { background: linear-gradient(180deg, transparent, var(--surface)) !important; }
+.anim-in, .home-head > *, .pick-card { animation-duration: 0.35s !important; }
+.dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--gold-bright); vertical-align: 1px; }
+.dot.bad { background: var(--bad); }
+.score-hero .score-chips span, .score-chip { background: var(--surface) !important; color: var(--text) !important; border: 1px solid var(--line) !important; }
+.this-month-icon, .jp-icon { color: var(--gold-bright); }
+.step-chips span { display: inline-flex; align-items: center; gap: 5px; }
+.painel-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.score-parts span { background: var(--surface) !important; color: var(--text-soft) !important; border: 1px solid var(--line) !important; }
+.score-parts span b { color: var(--text) !important; }

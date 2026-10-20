@@ -17,11 +17,12 @@ import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
 import { bumpUsage, getFlag, setFlag, setLastInbound, takeHandoff, createWebLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
-import { MAX_BASE64, MEDIA_TYPES, type MediaType } from '../server/fatura.js';
+import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type FaturaResult, type MediaType } from '../server/fatura.js';
 import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { resetIfOld } from '../src/reset.js';
+import { transcribe, transcribeConfigured } from '../server/transcribe.js';
 import { planBudgets } from '../src/plan.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
 
@@ -321,6 +322,50 @@ const FATURA_ON_SITE = () =>
  * Foto ou PDF de cupom, nota ou comprovante: a IA lê e vira um gasto (ou uma entrada, se o pix foi recebido).
  * Fatura e extrato ficam com o leitor do site.
  */
+const FATURA_MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
+const brl = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** O resumo da fatura no chat: total, onde foi o dinheiro, o que dá pra cortar e as parcelas que ainda vêm. */
+function faturaText(r: FaturaResult): string {
+  const hidden = r.cobrancas.filter((c) => c.tipo !== 'outro');
+  const hiddenTotal = hidden.reduce((s, c) => s + c.valor, 0);
+  return [
+    `🧾 *Sua fatura${r.periodo ? ` (${r.periodo})` : ''}: ${brl(r.total)}*`,
+    '',
+    ...(r.categorias.length ? ['*Onde foi o dinheiro:*', ...r.categorias.slice(0, 5).map((c) => `• ${c.nome}: ${brl(c.total)}`), ''] : []),
+    ...(hidden.length
+      ? [`*Dá pra cortar ou contestar (${brl(hiddenTotal)}):*`, ...hidden.slice(0, 6).map((c) => `• ${c.descricao}: ${brl(c.valor)}${c.dica ? `. ${c.dica}` : ''}`), '']
+      : ['Não achei assinatura, tarifa ou juros escondidos. 👏', '']),
+    ...(r.parcelados.length ? ['*Parcelas que ainda vêm:*', ...r.parcelados.slice(0, 4).map((p) => `• ${p.descricao}: ${brl(p.parcela)} (faltam ${p.parcelas_restantes})`), ''] : []),
+    ...r.alertas.slice(0, 2).map((a) => `⚠️ ${a}`),
+  ]
+    .join('\n')
+    .trim();
+}
+
+async function readFatura(m: IncomingMedia, phone: string, say: (t: string) => Promise<void>, sayLinked: (t: string) => Promise<void>): Promise<void> {
+  if (!smartConfigured()) return sayLinked(FATURA_ON_SITE());
+  if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande a fatura em *PDF* ou em *foto* (JPG ou PNG). 📄');
+  const period = `fatura:${new Date().toISOString().slice(0, 7)}`;
+  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => true))) {
+    return say(`Você já mandou ${FATURA_MONTHLY_LIMIT} faturas neste mês. 🙏 Mês que vem eu leio de novo.`);
+  }
+  await say('📄 Recebi a fatura! Lendo… (leva uns segundos)');
+  try {
+    const file = await downloadMedia(m.mediaId, MAX_FILE_BYTES);
+    const outcome = await analyzeFatura(file.mime as MediaType, file.base64);
+    if (!outcome.ok || !outcome.result.e_documento_financeiro) {
+      await refundUsage(phone, period).catch(() => undefined);
+      return say(outcome.ok ? 'Isso não parece uma fatura ou extrato. 🤔 Mande o PDF da fatura do cartão ou do extrato do banco.' : outcome.error);
+    }
+    await sayLinked(`${faturaText(outcome.result)}\n\nPra cancelar o que pesa, com a mensagem pronta, abra o *Cortar gastos escondidos* no site:\n${siteLink('vazamentos')}`);
+  } catch (err) {
+    await refundUsage(phone, period).catch(() => undefined);
+    if (err instanceof MediaTooBigError) return say('Arquivo grande demais (máximo 3 MB). 🙏 Tenta um PDF menor ou uma foto.');
+    throw err;
+  }
+}
+
 async function handleMedia(m: IncomingMedia): Promise<void> {
   const phone = normalizeBrPhone(m.from);
   const user = accountsConfigured() ? await findUserByPhone(phone) : null;
@@ -333,7 +378,8 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
     const [o] = await withLoginLinks([{ kind: 'text', text: t }], phone);
     return say(o.kind === 'text' ? o.text : t);
   };
-  if (FATURA_HINT.test(m.caption ?? '')) return sayLinked(FATURA_ON_SITE());
+  // fatura ou extrato (legenda, ou PDF): a IA lê aqui mesmo e manda o resumo, com o link do painel completo
+  if (FATURA_HINT.test(m.caption ?? '') || m.mime === 'application/pdf') return readFatura(m, phone, say, sayLinked);
   if (!smartConfigured()) return say('Ler fotos ainda não foi ativado por aqui. 🙏 Me manda por escrito, ex.: *mercado 45,90 no pix*.');
   if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande em *foto* (JPG ou PNG) ou em *PDF*. 📸');
 
@@ -348,7 +394,7 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
     if (!outcome.ok || outcome.receipt.tipo === 'outro' || outcome.receipt.tipo === 'fatura_extrato') {
       await refundUsage(phone, period).catch(() => undefined);
       if (!outcome.ok) return say(`${outcome.error} Ou me manda por escrito, ex.: *mercado 45,90 no pix*.`);
-      if (outcome.receipt.tipo === 'fatura_extrato') return sayLinked(FATURA_ON_SITE());
+      if (outcome.receipt.tipo === 'fatura_extrato') return readFatura(m, phone, say, sayLinked);
       return say('Não achei um pagamento nessa imagem. 🤔 Mande a foto do cupom, da nota ou do comprovante do pix.');
     }
     const hub = await loadHub(user, phone);
@@ -387,7 +433,27 @@ export async function POST(request: Request): Promise<Response> {
     return new Response('Bad JSON', { status: 400 });
   }
 
-  const { texts, media, others } = extractMessages(payload);
+  const { texts, media, others, audios } = extractMessages(payload);
+
+  // áudio: vira texto e segue igual a uma mensagem escrita (o bot repete o que entendeu, pra pessoa conferir)
+  for (const a of audios) {
+    if (!transcribeConfigured()) {
+      others.push({ id: a.id, from: a.from, type: 'audio' });
+      continue;
+    }
+    try {
+      const file = await downloadMedia(a.mediaId, 16 * 1024 * 1024);
+      const heard = (await transcribe(file.base64, file.mime || a.mime)).slice(0, 500);
+      if (!heard) {
+        await sendText(a.from, 'Não consegui entender o áudio. 🎧 Pode mandar de novo, ou escrever? Ex.: *gastei 35 no mercado no pix*');
+        continue;
+      }
+      texts.push({ id: a.id, from: a.from, text: heard, profileName: a.profileName, heard: true });
+    } catch (err) {
+      console.error('Erro ao ouvir o áudio', a.id, err);
+      await sendText(a.from, 'Tive um problema pra ouvir esse áudio. 🎧 Tenta de novo, ou me manda por escrito.').catch(() => undefined);
+    }
+  }
 
   for (const msg of texts) {
     try {
@@ -395,7 +461,8 @@ export async function POST(request: Request): Promise<Response> {
       const phoneN = normalizeBrPhone(msg.from);
       // o "oi" já explica a novidade do site: o aviso de uma vez só fica marcado como visto e não vem junto
       const notice = answer ? await siteNotice(phoneN) : [];
-      const out = answer ? await withLoginLinks([...(isGreeting(msg.text) ? [] : notice), ...answer], phoneN) : null;
+      const heardLine: Outgoing[] = msg.heard ? [{ kind: 'text', text: `🎧 Entendi: _"${msg.text}"_` }] : [];
+      const out = answer ? await withLoginLinks([...heardLine, ...(isGreeting(msg.text) ? [] : notice), ...answer], phoneN) : null;
       if (out) {
         for (const o of out) await sendOutgoing(msg.from, o);
         console.log(`WhatsApp: ${out.length} resposta(s) enviada(s) para o número final ${msg.from.slice(-4)}`);

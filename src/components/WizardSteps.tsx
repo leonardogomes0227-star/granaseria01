@@ -219,7 +219,7 @@ export function SavingsStep({ data, update, onNext, onBack }: StepProps) {
         <Insight tone={pct(data.currentSavings, data.monthlyIncome) >= 10 ? 'good' : 'warn'}>
           Isso é <b>{pct(data.currentSavings, data.monthlyIncome).toFixed(0)}%</b> da sua renda.{' '}
           {pct(data.currentSavings, data.monthlyIncome) >= 10
-            ? 'Você já cumpre a primeira lei do livro: guardar pelo menos 10%. 👏'
+            ? 'Você já cumpre a primeira lei do livro: guardar pelo menos 10%.'
             : `A meta do livro é 10% (${formatBRL(data.monthlyIncome * 0.1)} por mês).`}
         </Insight>
       )}
@@ -419,7 +419,7 @@ export function EmergencyStep({ data, update, onNext, onBack }: StepProps) {
         <Insight tone={data.emergencyFund >= target ? 'good' : 'info'}>
           O ideal é ter 6 meses de gastos guardados: <b>{formatBRL(target)}</b>.{' '}
           {data.emergencyFund >= target
-            ? 'Você já chegou lá! 🎉'
+            ? 'Você já chegou lá!'
             : data.emergencyFund > 0
               ? `Você tem ${Math.round(pct(data.emergencyFund, target))}% disso.`
               : 'Não tem nada ainda? Tudo bem, é só continuar.'}

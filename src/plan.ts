@@ -450,8 +450,8 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
       when: 'antes de pagar a próxima parcela',
       tool: 'loan',
       detail: stuck
-        ? `Com um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) no lugar, a dívida passa a fechar: você fica livre em ${monthLong(start, swap.months ?? 0)}. Consignado costuma ser ainda mais barato. Antes de assinar, compare o custo total no Comparador de empréstimo.`
-        : `Um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) ou consignado pra quitar essas dívidas economiza cerca de ${formatBRL(swap.saving)} em juros. Antes de assinar, compare o custo total no Comparador de empréstimo.`,
+        ? `Com um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) no lugar, a dívida passa a fechar: você fica livre em ${monthLong(start, swap.months ?? 0)}. Consignado costuma ser ainda mais barato. Antes de assinar, compare o custo total em Comparar empréstimos.`
+        : `Um empréstimo pessoal (perto de ${fmtRate(SWAP_RATE)}) ou consignado pra quitar essas dívidas economiza cerca de ${formatBRL(swap.saving)} em juros. Antes de assinar, compare o custo total em Comparar empréstimos.`,
     });
   }
 
@@ -525,7 +525,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     steps.push({
       tone: 'info',
       title: `Junte pra ${g.name}`,
-      why: 'A meta que você definiu na Calculadora de meta.',
+      why: 'A meta que você definiu em Juntar pra um objetivo.',
       amount: perMonth(g.monthly),
       when: `em ${g.months} ${g.months === 1 ? 'mês' : 'meses'}`,
       tool: 'goal',
