@@ -1,6 +1,6 @@
-import { Landmark, ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
+import { Receipt, Landmark, ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
 
-export type ToolId = 'richdad' | 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
+export type ToolId = 'bills' | 'richdad' | 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
 
 export interface ToolInfo {
   id: ToolId;
@@ -18,6 +18,20 @@ export interface ToolInfo {
 }
 
 export const TOOLS: ToolInfo[] = [
+  {
+    id: 'bills',
+    slug: 'minhas-contas',
+    title: 'Minhas contas e dívidas',
+    short: 'Contas',
+    description: 'Cadastre cada conta e parcela com o vencimento, marque o que pagou e veja multa e juros quando atrasar.',
+    icon: Receipt,
+    tone: 'clay',
+    guide: {
+      serve: 'Não esquecer nenhuma conta e saber o que pagar primeiro quando o dinheiro entra aos poucos.',
+      quando: 'Sempre que entrar um dinheiro ou chegar uma conta. Uma olhada por semana.',
+      recebe: 'O que já pagou, o que vence e quando, quanto o atraso custou e um lembrete na véspera.',
+    },
+  },
   {
     id: 'richdad',
     slug: 'placar-pai-rico',

@@ -1,5 +1,6 @@
 import type { ToolId } from './tools';
 import type { PlanGoal } from './plan';
+import { TASKS_KEY, completeTask, parseTasks, replaceTasks, undoTask, type CoachTask, type NewTask, type TaskSource } from './coach';
 
 // O que cada ferramenta deixou no plano da pessoa. Usou uma ferramenta: o resultado fica salvo, aparece no painel
 // e, quando muda o plano (metas, vazamentos), entra no plano de ação. Sincroniza com o WhatsApp como o resto.
@@ -43,6 +44,28 @@ export function saveResult(tool: ToolId, summary: string, card?: ResultCard) {
   if (all[tool]?.summary === summary && JSON.stringify(all[tool]?.card) === JSON.stringify(card)) return;
   write(RESULTS_KEY, { ...all, [tool]: { summary, at: new Date().toISOString(), ...(card ? { card } : {}) } });
 }
+
+/* ---------- próximos passos do coach ---------- */
+
+export const getTasks = (): CoachTask[] => {
+  try {
+    return parseTasks(localStorage.getItem(TASKS_KEY));
+  } catch {
+    return [];
+  }
+};
+function writeTasks(t: CoachTask[]) {
+  write(TASKS_KEY, t);
+  window.dispatchEvent(new Event('gs-tarefas'));
+}
+export function setToolTasks(source: TaskSource, tasks: NewTask[]) {
+  const all = getTasks();
+  const open = all.filter((t) => t.source === source && !t.done).map((t) => t.text).join('|');
+  if (open === tasks.map((t) => t.text).join('|')) return; // nada mudou: não mexe nas datas
+  writeTasks(replaceTasks(all, source, tasks));
+}
+export const markTaskDone = (id: string) => writeTasks(completeTask(getTasks(), id));
+export const unmarkTask = (id: string) => writeTasks(undoTask(getTasks(), id));
 
 export const getGoals = (): PlanGoal[] => read<PlanGoal[]>(GOALS_KEY, []).filter((g) => g && g.monthly > 0 && g.months > 0);
 

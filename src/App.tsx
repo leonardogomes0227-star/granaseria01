@@ -33,6 +33,7 @@ import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
 import { SiteFeedback } from './components/SiteFeedback';
 import { RichDadTool } from './components/RichDadTool';
+import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
@@ -421,6 +422,7 @@ function ToolRoute({
         {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
         {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
         {tool.id === 'richdad' && <RichDadTool data={data} onStart={onStart} {...toolProps} />}
+        {tool.id === 'bills' && <BillsTool {...toolProps} />}
       </div>
       <SiteFeedback key={`fb-${tool.id}`} tool={tool.id} />
       <WhatsAppStrip />

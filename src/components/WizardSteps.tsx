@@ -13,10 +13,11 @@ import type { ToolId } from '../tools';
 import { ArchetypeShare } from './ArchetypeShare';
 import { RichDadCard } from './RichDadCard';
 import { getArchetype } from '../archetypes';
-import { buildPlan, DEBT_KINDS, effectiveRate } from '../plan';
+import { buildPlan, DEBT_KINDS, effectiveRate, planTasks } from '../plan';
 import { ActionPlanView } from './ActionPlanView';
 import { leaksMonthlyTotal } from '../leaks';
-import { getGoals } from '../results';
+import { getGoals, setToolTasks } from '../results';
+
 import { getTracking, startTracking } from '../tracking';
 import { track } from '../analytics';
 
@@ -541,6 +542,10 @@ export function DiagnosisStep({
   }, []);
 
   const health = calculateHealthScore(data, diagnosis);
+  const planForTasks = useMemo(() => buildPlan(data, { extraMonthly: leaksMonthlyTotal(), goals: getGoals() }), [data]);
+  useEffect(() => {
+    setToolTasks('plano', planTasks(planForTasks));
+  }, [planForTasks]);
   const plan = useMemo(() => buildPlan(data, { extraMonthly: leaksMonthlyTotal(), goals: getGoals() }), [data]);
   const archetype = getArchetype(data, diagnosis);
   const savingsOk = diagnosis.savingsRate >= diagnosis.savingsGoalRate;

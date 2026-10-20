@@ -4,7 +4,7 @@ import { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { buildPlan, simulateLumpSum, monthLong } from '../plan';
 import { LEAKS, RIGHTS, LeakSelection, getLeakSelection, saveLeakSelection, leaksMonthlyTotal, relevantRights } from '../leaks';
-import { ToolShell, ToolNavProps, MoneyField, useSaveResult } from './Tools';
+import { ToolShell, ToolNavProps, MoneyField, useSaveResult, useToolTasks } from './Tools';
 import { CopyMessage } from './CopyMessage';
 import { DecimalInput } from './DecimalInput';
 import { CountUp } from './motion';
@@ -41,6 +41,12 @@ export function ExtraMoneyTool({ data, onStart, ...nav }: { data: WizardData; on
       ? result.before.reserve.doneMonth - result.after.reserve.doneMonth
       : 0;
 
+  useToolTasks(
+    'extra',
+    touched && result
+      ? [{ text: `Quando o ${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'dinheiro extra'} cair: ${result.allocation.map((a) => `${a.label} ${formatBRL(a.amount)}`).join(', ')}`, inDays: kind === '13' ? Math.max(1, Math.round((Date.UTC(new Date().getFullYear(), 10, 30) - Date.now()) / 86400000)) : 7 }]
+      : null
+  );
   useSaveResult(
     'extra',
     touched && result ? `${EXTRA_KINDS.find((k) => k.id === kind)?.label ?? 'extra'} de ${formatBRL(amount)}: ${result.allocation.map((a) => `${a.label} ${formatBRL(a.amount)}`).join(', ')}` : null,
@@ -229,6 +235,10 @@ export function LeaksTool({ data, ...nav }: { data: WizardData } & ToolNavProps)
     return null;
   }, [data, total, diag]);
 
+  useToolTasks(
+    'leaks',
+    total > 0 ? LEAKS.filter((l) => l.id in sel).map((l, i) => ({ text: `Cancelar ou baixar: ${l.title.toLowerCase()} (${formatBRL(sel[l.id])}/mês)`, inDays: 2 + i })) : null
+  );
   useSaveResult('leaks', total > 0 ? `achou ${formatBRL(total)} por mês (${formatBRL(total * 12)} por ano), já somados no plano` : null, {
     label: 'Você achou por mês',
     big: formatBRL(total),
@@ -312,6 +322,15 @@ export function RightsTool({ data, ...nav }: { data: WizardData } & ToolNavProps
   const [all, setAll] = useState(false);
   const picked = PROBLEMS.find((p) => p.id === problem);
   const shown = all ? RIGHTS : picked ? RIGHTS.filter((r) => picked.rights.includes(r.id)).sort((a, b) => picked.rights.indexOf(a.id) - picked.rights.indexOf(b.id)) : [];
+  useToolTasks(
+    'rights',
+    picked && shown[0]
+      ? [
+          { text: `Mandar a mensagem pro banco: ${shown[0].title.toLowerCase()}`, inDays: 1 },
+          { text: 'Ver se o banco respondeu. Se não, reclamar no consumidor.gov.br', inDays: 7 },
+        ]
+      : null
+  );
   useSaveResult('rights', picked ? `${picked.label.replace(/^\S+\s/, '')}: ${shown.map((r) => r.title.toLowerCase()).join('; ')}` : null, picked ? {
     label: 'Seu problema',
     big: picked.label.replace(/^\S+\s/, ''),

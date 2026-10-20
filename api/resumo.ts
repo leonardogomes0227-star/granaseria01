@@ -8,6 +8,7 @@ import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { bumpUsage, listFlagged } from '../server/whatsapp/hubdb.js';
 import { monthlySummary, weeklySummary } from '../server/whatsapp/summary.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
+import { runCoach } from '../server/coach.js';
 
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,7 +27,13 @@ export async function GET(request: Request): Promise<Response> {
   const forced = url.searchParams.get('tipo');
   const weekly = forced ? forced === 'semana' : local.getUTCDay() === 0;
   const monthly = forced ? forced === 'mes' : local.getUTCDate() === 1;
-  if (!weekly && !monthly) return Response.json({ sent: 0, skipped: 0, reason: 'hoje não é domingo nem dia 1' });
+  // o coach lembra todo dia (o plano da Vercel tem poucos crons, então ele roda junto com o resumo)
+  const coach = forced && forced !== 'coach' ? null : await runCoach(now).catch((err) => {
+    console.error('Coach: falhou', err);
+    return null;
+  });
+  if (forced === 'coach') return Response.json({ coach });
+  if (!weekly && !monthly) return Response.json({ sent: 0, skipped: 0, coach, reason: 'hoje não é domingo nem dia 1' });
 
   const language = process.env.WHATSAPP_REMINDER_LANGUAGE || 'pt_BR';
   const weeklyTemplate = process.env.WHATSAPP_WEEKLY_TEMPLATE || 'resumo_semanal';
@@ -73,5 +80,5 @@ export async function GET(request: Request): Promise<Response> {
       console.error('Resumo não enviado, número final', phone.slice(-4), err);
     }
   }
-  return Response.json({ sent, skipped, failed });
+  return Response.json({ sent, skipped, failed, coach });
 }

@@ -734,3 +734,18 @@ export function compareStrategies(debts: DebtItem[], monthlyPower: number): Stra
     return { order, months: r.months, interest: r.interest, sequence };
   });
 }
+
+/** Os compromissos do mês que o plano deixa pro coach (com lembrete): renegociar, pagar, guardar, cortar. */
+export function planTasks(plan: ActionPlan): { text: string; inDays: number; repeat?: 'monthly' }[] {
+  const out: { text: string; inDays: number; repeat?: 'monthly' }[] = [];
+  if (plan.stuck) out.push({ text: 'Ligar pro banco e pedir pra renegociar (a mensagem pronta está no seu plano)', inDays: 1 });
+  const row = plan.schedule[0];
+  if (row) {
+    for (const p of row.payments) out.push({ text: `Pagar ${formatBRL(p.amount)} em ${p.name}`, inDays: 5, repeat: 'monthly' });
+    if (row.toReserve >= 1) out.push({ text: `Guardar ${formatBRL(row.toReserve)} pra emergências`, inDays: 5, repeat: 'monthly' });
+  } else if (plan.debts.length === 0 && plan.monthlyPower > 0) {
+    out.push({ text: `${plan.reserve.alreadyDone ? 'Investir' : 'Guardar pra emergências'} ${formatBRL(plan.monthlyPower)}`, inDays: 5, repeat: 'monthly' });
+  }
+  for (const c of plan.cuts) out.push({ text: `Conferir se gastou no máximo ${formatBRL(c.ceiling)} em ${c.label.toLowerCase()} este mês`, inDays: 25, repeat: 'monthly' });
+  return out;
+}

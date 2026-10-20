@@ -7,7 +7,7 @@ import { Tracking, getTracking, startTracking, trackingView, closeMonth, undoLas
 import { ToolShell, ToolNavProps } from './Tools';
 import { DecimalInput } from './DecimalInput';
 import { track } from '../analytics';
-import { saveResult } from '../results';
+import { saveResult, setToolTasks } from '../results';
 import { fetchPainel, painelToken } from '../painel';
 
 /* ---------- Meu plano, mês a mês ---------- */
@@ -101,6 +101,7 @@ function TrackerBody({
         ['Meses fechados', String(tracking.months.length + 1)],
       ],
     });
+    setToolTasks('tracker', [{ text: `Fechar ${monthLong(start, view.openMonth + 1)} no Meu plano, mês a mês`, inDays: 30 }]);
     setTracking(closeMonth(tracking, paid));
   };
 

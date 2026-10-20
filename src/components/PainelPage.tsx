@@ -11,8 +11,10 @@ import { getGoals, getResults, type ToolResult } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
 import { LISTED_TOOLS, getTool } from '../tools';
+import { todayBRT } from '../coach';
 import { ToolIcon } from './Layout';
 import { RichDadCard } from './RichDadCard';
+import { CoachPanel, useTasks } from './CoachPanel';
 import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
@@ -31,8 +33,9 @@ const CATS: { key: keyof WizardData['expenses']; name: string; label: string }[]
 
 const brl = (n: number) => formatBRL(n);
 
-type Tab = 'mes' | 'plano' | 'pairico' | 'ferramentas';
+type Tab = 'coach' | 'mes' | 'plano' | 'pairico' | 'ferramentas';
 const TABS: [Tab, string][] = [
+  ['coach', '🔔 Próximos passos'],
   ['mes', '💸 Meu mês'],
   ['plano', '📋 Meu plano'],
   ['pairico', '🏛️ Pai Rico'],
@@ -147,11 +150,13 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
     .slice(0, 8);
   const name = getName();
   const done = (Object.entries(getResults()) as [ToolId, ToolResult][]).sort((x, y) => y[1].at.localeCompare(x[1].at));
+  const coachTasks = useTasks();
+  const dueCount = coachTasks.filter((t) => !t.done && t.due <= todayBRT()).length;
   const unused = LISTED_TOOLS.filter((t) => !done.some(([id]) => id === t.id));
   // cada coisa no seu lugar: uma aba por vez (o #mes, #plano… do endereço abre a aba certa)
   const [tab, setTab] = useState<Tab>(() => {
     const h = window.location.hash.slice(1) as Tab;
-    return TABS.some(([id]) => id === h) ? h : 'mes';
+    return TABS.some(([id]) => id === h) ? h : 'coach';
   });
   const pickTab = (t: Tab) => {
     setTab(t);
@@ -192,6 +197,7 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'on' : ''} onClick={() => pickTab(id)}>
                 {label}
                 {id === 'ferramentas' && done.length > 0 ? ` (${done.length})` : ''}
+                {id === 'coach' && dueCount > 0 ? <span className="tab-badge">{dueCount}</span> : null}
               </button>
             ))}
           </nav>
@@ -225,6 +231,8 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
           Não consegui carregar agora. <button type="button" className="plan-more" onClick={() => window.location.reload()}><RefreshCw size={13} /> Tentar de novo</button>
         </p>
       )}
+
+      {status === 'ok' && tab === 'coach' && <CoachPanel onOpenTool={onOpenTool} onOpenPlan={() => pickTab('plano')} />}
 
       {status === 'ok' && painel && tab === 'mes' && (
         <>

@@ -114,7 +114,7 @@ export function DailyTop() {
 
 const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
   { title: 'Organizar e planejar', text: 'Seu plano de ação e o acompanhamento dele.', tools: ['tracker', 'goal', 'richdad'] },
-  { title: 'Dívidas e banco', text: 'Sair das dívidas pagando menos juros.', tools: ['debts', 'rights', 'loan', 'fatura'] },
+  { title: 'Dívidas e banco', text: 'Sair das dívidas pagando menos juros.', tools: ['bills', 'debts', 'rights', 'loan', 'fatura'] },
   { title: 'Economizar', text: 'Achar dinheiro e gastar com cabeça.', tools: ['leaks', 'extra', 'impulse'] },
 ];
 

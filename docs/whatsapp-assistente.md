@@ -263,3 +263,9 @@ select created_at, event, note from wa_events where note is not null order by cr
 ```
 
 Os diálogos e a voz estão em `docs/voz-da-grana-seria.md`.
+
+## Coach: próximos passos com lembrete
+
+Cada ferramenta do site, o plano do diagnóstico e "Minhas contas e dívidas" criam próximos passos com data (`gs-tarefas`, `src/coach.ts`). Eles aparecem na aba **🔔 Próximos passos** do painel, onde a pessoa marca como feito. O que é de todo mês volta sozinho pro mês seguinte.
+
+Todo dia, junto com o cron do resumo (`/api/resumo`, 10h), `server/coach.ts` manda no WhatsApp o que vence hoje, e os atrasados de 3 em 3 dias (até 30 dias). Vai no máximo uma mensagem por pessoa por dia. Dentro da janela de 24h vai o texto completo com o link do painel. Fora dela vai o modelo `WHATSAPP_COACH_TEMPLATE` (padrão: `lembrete_plano`), com um parâmetro `{{1}}` que leva os passos e o link. Pra testar: `/api/resumo?tipo=coach` com o `CRON_SECRET`.

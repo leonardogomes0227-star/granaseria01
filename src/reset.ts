@@ -13,6 +13,7 @@ export const PLAN_KEYS = [
   'selos-diagnosis-completed',
   'gs-resultados',
   'gs-metas',
+  'gs-tarefas',
 ];
 
 /** O estado já passou pelo recomeço? Se não, devolve uma cópia sem as chaves do plano e com a marca. */
