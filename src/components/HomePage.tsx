@@ -11,6 +11,8 @@ import { faturaEnabled, getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
+import { FixedBills, fixedSummary, useBills } from './FixedBills';
+import { monthOf, monthStatus, paidThisMonth } from '../bills';
 import { AgentArt } from './AgentArt';
 import { AgentAvatar } from './AgentPage';
 
@@ -35,7 +37,8 @@ function MonthCard() {
   }, []);
   const income = painel ? sum(painel.month.incomes) : 0;
   const spent = painel ? sum(painel.month.expenses) : 0;
-  const left = income - spent;
+  const bills = useBills();
+  const left = income - spent - paidThisMonth(bills, monthOf(todayBRT()));
   const { today, last } = monthLeft();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
   return (
@@ -104,6 +107,25 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
   const watchers = buildWatchers(tasks, loadCustom(), mine);
   const active = watchers.filter((w) => w.tasks.length > 0).length;
   const [sel, setSel] = useState<string | null>(null);
+  const bills = useBills();
+  const [cats, setCats] = useState<[string, number][]>([]);
+  useEffect(() => {
+    if (!painelToken()) return;
+    void fetchPainel()
+      .then((d) => {
+        const by = new Map<string, number>();
+        for (const e of d?.month.expenses ?? []) by.set(e.category, (by.get(e.category) ?? 0) + e.amount);
+        setCats([...by.entries()].sort((a, b) => b[1] - a[1]));
+      })
+      .catch(() => undefined);
+  }, []);
+  const fixed = fixedSummary(monthStatus(bills, monthOf(today), today));
+  // o que o agente mostra no cartão é o dado que ele controla, não só o que ele faz
+  const liveLine = (id: string, fallback: string): string => {
+    if (id === 'bansir') return fixed.total === 0 ? 'Cadastre seus gastos fixos' : fixed.left > 0 ? `${fixed.total - fixed.paid} a pagar · faltam ${formatBRL(fixed.left)}` : 'Todos os gastos fixos pagos';
+    if (id === 'nomasir') return cats[0] ? `Mais gastou: ${cats[0][0]}, ${formatBRL(cats[0][1])}` : fallback;
+    return fallback;
+  };
   const [fatura, setFatura] = useState(false);
   useEffect(() => {
     void faturaEnabled().then(setFatura);
@@ -129,7 +151,7 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
                 {on && <i className="live-dot" aria-label="Ativo" />}
               </span>
               <b>{w.name}</b>
-              <small className="live-line">{w.does}</small>
+              <small className="live-line">{liveLine(w.id, w.does)}</small>
               <span className={`live-when ${on ? '' : 'idle'}`}>
                 <Bell size={12} /> {on ? `Aviso: ${fmtDue(first.due, today)}` : 'Em espera'}
               </span>
@@ -151,7 +173,19 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
               <small>{chosen.does}</small>
             </span>
           </div>
-          {chosen.tasks.length > 0 ? (
+          {chosen.id === 'nomasir' && cats.length > 0 && (
+            <ul className="cat-list">
+              {cats.slice(0, 4).map(([name, value]) => (
+                <li key={name}>
+                  <span>{name}</span>
+                  <b>{formatBRL(value)}</b>
+                </li>
+              ))}
+            </ul>
+          )}
+          {chosen.id === 'bansir' ? (
+            <FixedBills />
+          ) : chosen.tasks.length > 0 ? (
             <ul className="focus-list">
               {chosen.tasks.map((t) => (
                 <li key={t.id}>

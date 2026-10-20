@@ -1,27 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { formatBRL } from '../calculations';
-import { BILLS_KEY, installmentNumber, monthOf, monthStatus, parseBills, splitMoney, type Bill, type BillStatus } from '../bills';
+import { installmentNumber, loadBills, monthOf, monthStatus, saveBills, splitMoney, type Bill, type BillStatus } from '../bills';
 import { todayBRT } from '../coach';
 import { ToolShell, ToolNavProps, MoneyField, useSaveResult, useToolTasks } from './Tools';
 import { DecimalInput } from './DecimalInput';
 
 /* ---------- Minhas contas e dívidas ---------- */
-
-function load(): Bill[] {
-  try {
-    return parseBills(localStorage.getItem(BILLS_KEY));
-  } catch {
-    return [];
-  }
-}
-function store(b: Bill[]) {
-  try {
-    localStorage.setItem(BILLS_KEY, JSON.stringify(b));
-  } catch {
-    // segue sem salvar
-  }
-}
 
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 const monthName = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}`;
@@ -33,11 +18,11 @@ const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
 export function BillsTool(nav: ToolNavProps) {
   const today = todayBRT();
-  const [bills, setBillsState] = useState<Bill[]>(load);
+  const [bills, setBillsState] = useState<Bill[]>(loadBills);
   const [month, setMonth] = useState(monthOf(today));
   const setBills = (b: Bill[]) => {
     setBillsState(b);
-    store(b);
+    saveBills(b);
   };
   const statuses = useMemo(() => monthStatus(bills, month, today), [bills, month, today]);
   const total = statuses.reduce((s, x) => s + x.bill.amount, 0);
@@ -283,6 +268,11 @@ export function BillsTool(nav: ToolNavProps) {
 
       <div className="stat-card bills-add">
         <p className="field-label" style={{ color: 'var(--ink)', fontWeight: 700 }}>Nova conta ou dívida</p>
+        <div className="bill-presets" aria-label="Atalhos">
+          {['Casa', 'Carro', 'Financiamento', 'Cartão', 'Luz', 'Água', 'Internet'].map((n) => (
+            <button key={n} type="button" className={name === n ? 'on' : ''} onClick={() => setName(n)}>{n}</button>
+          ))}
+        </div>
         <div className="field-group">
           <label className="field-label" htmlFor="bill-name">Nome</label>
           <input id="bill-name" className="field-input" placeholder="Ex.: luz, aluguel, cartão Nubank" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
