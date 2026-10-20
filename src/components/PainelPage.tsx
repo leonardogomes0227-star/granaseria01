@@ -12,6 +12,7 @@ import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
 import { getTool } from '../tools';
 import { ToolIcon } from './Layout';
+import { RichDadCard } from './RichDadCard';
 import { clearPainelToken, getName, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
@@ -247,6 +248,12 @@ export function PainelPage({ data, onStart, onOpenTool }: { data: WizardData; on
             </section>
           </div>
         </>
+      )}
+
+      {hasDiag && (
+        <section className="painel-section">
+          <RichDadCard data={data} compact />
+        </section>
       )}
 
       <section className="painel-section painel-anchor" id="plano" style={{ marginTop: 28 }}>

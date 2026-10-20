@@ -1,6 +1,6 @@
-import { ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
+import { Landmark, ClipboardCheck, ScanText, ShoppingBag, TrendingDown, Award, CalendarCheck, TrendingUp, Target, Scale, Quote, Gift, Droplets, ShieldCheck, LucideIcon } from 'lucide-react';
 
-export type ToolId = 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
+export type ToolId = 'richdad' | 'quote' | 'impulse' | 'debts' | 'selos' | 'checkin' | 'longterm' | 'goal' | 'loan' | 'extra' | 'leaks' | 'rights' | 'tracker' | 'fatura';
 
 export interface ToolInfo {
   id: ToolId;
@@ -18,6 +18,16 @@ export interface ToolInfo {
 }
 
 export const TOOLS: ToolInfo[] = [
+  {
+    id: 'richdad',
+    slug: 'placar-pai-rico',
+    title: 'Placar Pai Rico, Pai Pobre',
+    short: 'Pai Rico',
+    description: 'Quanto tempo você viveria sem trabalhar e quanto falta pro seu dinheiro pagar suas contas sozinho.',
+    icon: Landmark,
+    tone: 'lapis',
+    guide: { serve: 'Ver o quanto você está perto de não depender só do salário (ideia do livro Pai Rico, Pai Pobre).', quando: 'Uma vez por mês, ou quando guardar dinheiro ou quitar uma dívida.', recebe: 'Seu placar e quanto tempo falta pro seu dinheiro pagar suas contas.' },
+  },
   {
     id: 'tracker',
     slug: 'meu-plano',
@@ -94,7 +104,7 @@ export const TOOLS: ToolInfo[] = [
     slug: 'simulador-longo-prazo',
     title: 'Simulador de longo prazo',
     short: 'Longo prazo',
-    description: 'Ajuste aporte, taxa e prazo e veja aonde sua poupança chega em 10, 20 ou 30 anos.',
+    description: 'Veja quanto o que você guarda por mês vira em 10, 20 ou 30 anos.',
     icon: TrendingUp,
     tone: 'sage',
     guide: { serve: 'Ver quanto o que você guarda vira com os anos.', quando: 'Quando quiser saber se vale a pena começar a investir agora.', recebe: 'Quanto você teria em 10, 20 ou 30 anos.' },
@@ -124,11 +134,11 @@ export const TOOLS: ToolInfo[] = [
     slug: 'quitar-dividas',
     title: 'Qual dívida pagar primeiro',
     short: 'Quitar dívidas',
-    description: 'A ordem certa pra pagar suas dívidas: a de juros mais alto primeiro, ou a menor primeiro.',
+    description: 'Por qual dívida começar, quando você fica livre e quanto paga de juros.',
     icon: TrendingDown,
     tone: 'clay',
     needsDiagnosis: true,
-    guide: { serve: 'Decidir a ordem certa de pagar suas dívidas.', quando: 'Quando você tem mais de uma dívida e não sabe por qual começar.', recebe: 'A ordem de pagamento: a de juros mais alto primeiro, ou a menor primeiro.' },
+    guide: { serve: 'Decidir a ordem certa de pagar suas dívidas.', quando: 'Quando você tem mais de uma dívida e não sabe por qual começar.', recebe: 'Por qual dívida começar, quando você fica livre e quanto vai pagar de juros.' },
   },
   {
     id: 'checkin',
@@ -159,4 +169,19 @@ export function getTool(id: ToolId): ToolInfo {
 
 export function getToolBySlug(slug: string | undefined): ToolInfo | undefined {
   return TOOLS.find((t) => t.slug === slug);
+}
+
+// Saíram da lista (a página continua abrindo por link antigo): o check-in e os selos viraram parte do
+// "Meu plano, mês a mês", o simulador virou parte do passo "Comece a investir" do plano e a frase do dia é conteúdo.
+const UNLISTED: ToolId[] = ['checkin', 'selos', 'quote', 'longterm'];
+export const LISTED_TOOLS = TOOLS.filter((t) => !UNLISTED.includes(t.id));
+
+/** O leitor de fatura só aparece com a IA ligada na Vercel (GET /api/fatura). */
+let faturaCheck: Promise<boolean> | null = null;
+export function faturaEnabled(): Promise<boolean> {
+  faturaCheck ??= fetch('/api/fatura')
+    .then((r) => (r.ok ? r.json() : { enabled: false }))
+    .then((d: { enabled?: boolean }) => Boolean(d.enabled))
+    .catch(() => false);
+  return faturaCheck;
 }

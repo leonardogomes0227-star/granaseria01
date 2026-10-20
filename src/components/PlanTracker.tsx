@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Undo2, RotateCcw } from 'lucide-react';
 import { WizardData } from '../types';
 import { formatBRL } from '../calculations';
@@ -8,6 +8,7 @@ import { ToolShell, ToolNavProps } from './Tools';
 import { DecimalInput } from './DecimalInput';
 import { track } from '../analytics';
 import { saveResult } from '../results';
+import { fetchPainel, painelToken } from '../painel';
 
 /* ---------- Meu plano, mês a mês ---------- */
 
@@ -61,6 +62,24 @@ function TrackerBody({
   const { current, debtShift, original } = view;
   const month = monthLong(start, view.openMonth);
   const allChosen = view.tasks.every((t) => choice[t.id]);
+
+  // o que a pessoa anotou como "guardei" no WhatsApp neste mês já serve de resposta pra reserva
+  const [guardado, setGuardado] = useState(0);
+  useEffect(() => {
+    if (!painelToken()) return;
+    void fetchPainel()
+      .then((d) => setGuardado((d?.month.expenses ?? []).filter((e) => e.category === 'Guardado').reduce((x, e) => x + e.amount, 0)))
+      .catch(() => undefined);
+  }, []);
+  const reserveTask = view.tasks.find((t) => t.id === 'reserve');
+  const useGuardado = () => {
+    if (!reserveTask) return;
+    if (guardado + 0.5 >= reserveTask.suggested) setChoice({ ...choice, reserve: 'all' });
+    else {
+      setChoice({ ...choice, reserve: 'part' });
+      setPart({ ...part, reserve: Math.round(guardado * 100) / 100 });
+    }
+  };
 
   const restart = () => {
     if (window.confirm('Recomeçar o acompanhamento com os números do seu último diagnóstico? O histórico atual será apagado.')) {
@@ -123,6 +142,16 @@ function TrackerBody({
       <div className="tk-month">
         <p className="tk-q">{month.charAt(0).toUpperCase() + month.slice(1)}: você fez o combinado?</p>
         {from.length > 0 && <p className="tk-from">O valor vem do seu plano de ação: {from.join(' + ')}.</p>}
+
+        {reserveTask && guardado > 0 && (
+          <div className="tk-wa">
+            💬 Pelo WhatsApp, você anotou <b>{formatBRL(guardado)}</b> como guardado neste mês.
+            <button type="button" className="btn-outline" onClick={useGuardado}>Usar esse valor</button>
+          </div>
+        )}
+        {reserveTask && guardado === 0 && painelToken() && (
+          <p className="field-hint" style={{ marginBottom: 10 }}>Dica: mande <i>guardei 500</i> no WhatsApp quando separar o dinheiro, e ele já aparece aqui.</p>
+        )}
 
         {view.tasks.length === 0 ? (
           <p className="field-hint">Nada combinado pra este mês.</p>

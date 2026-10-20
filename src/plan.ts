@@ -90,8 +90,9 @@ interface SimResult {
 
 // Avalanche: todo mês paga o mínimo de cada dívida e joga o resto na de maior juros.
 // Quando uma dívida acaba, o que ia pra ela continua no plano (o valor mensal é fixo).
-function simulateAvalanche(debts: SimDebt[], monthlyPower: number): SimResult {
-  const list = debts.map((d) => ({ ...d })).sort((a, b) => b.rate - a.rate);
+function simulateAvalanche(debts: SimDebt[], monthlyPower: number, order: 'avalanche' | 'snowball' = 'avalanche'): SimResult {
+  // avalanche: o dinheiro extra vai pra dívida de maior juros; bola de neve: pra de menor saldo
+  const list = debts.map((d) => ({ ...d })).sort((a, b) => (order === 'avalanche' ? b.rate - a.rate : a.balance - b.balance));
   const payoffMonth: Record<string, number> = {};
   const schedule: SimResult['schedule'] = [];
   let interest = 0;
@@ -502,7 +503,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
         title: 'Sua reserva de emergência já está pronta',
         why: 'Um imprevisto não vira dívida.',
         amount: formatBRL(data.emergencyFund),
-        detail: 'Você tem mais que 6 meses de gastos guardados. Deixe num lugar que rende e deixa sacar no mesmo dia (CDB de liquidez diária ou Tesouro Selic, no app do seu banco). Nunca parado na conta.',
+        detail: 'Você tem mais que 6 meses de gastos guardados. Deixe num lugar que rende e deixa sacar na hora (no app do banco: "CDB com resgate diário" ou "Tesouro Selic"). Nunca parado na conta.',
       });
     } else if (doneMonth !== null) {
       steps.push({
@@ -512,7 +513,7 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
         amount: perMonth(monthlyPower),
         when: debts.length > 0 ? `de ${short((debtFreeMonth ?? 0) + 1)} até ${short(doneMonth)}` : `até ${short(doneMonth)}`,
         tool: 'tracker',
-        detail: `Guarde num lugar que rende e deixa sacar no mesmo dia (CDB de liquidez diária ou Tesouro Selic, no app do seu banco). Programe a transferência pro dia em que o salário cai: primeiro você, depois as contas.${data.emergencyFund > 0 ? ` Você já tem ${formatBRL(data.emergencyFund)}.` : ''}`,
+        detail: `Guarde num lugar que rende e deixa sacar na hora: no app do seu banco, procure "CDB com resgate diário" ou "Tesouro Selic". Nunca deixe parado na conta. Programe a transferência pro dia em que o salário cai: primeiro você, depois as contas.${data.emergencyFund > 0 ? ` Você já tem ${formatBRL(data.emergencyFund)}.` : ''}`,
       });
     }
   }
@@ -535,11 +536,16 @@ export function buildPlan(data: WizardData, opts: PlanOptions = {}): ActionPlan 
     steps.push({
       tone: 'good',
       title: 'Comece a investir',
-      why: 'Com a reserva pronta, o dinheiro passa a trabalhar pra você.',
+      why: 'Com a reserva pronta, você põe o dinheiro pra render e trabalhar por você.',
       amount: perMonth(monthlyPower),
       when: `a partir de ${short(investFrom)}`,
-      tool: 'longterm',
-      detail: `Mantendo esse valor, em 10 anos você chega perto de ${formatBRL(invest10y)} (contando uns 10% ao ano). Pra começar, Tesouro IPCA+ ou um fundo que segue o índice da bolsa, no app do seu banco ou corretora.`,
+      tool: 'richdad',
+      detail: `Mantendo esse valor (contando uns 10% ao ano): ${[10, 20, 30]
+        .map((y) => {
+          const v = computeProjection(monthlyPower, 10, y) + (data.investments ?? 0) * Math.pow(1.1, y);
+          return `em ${y} anos, ${formatBRL(v)}, que rendem uns ${formatBRL(v * 0.005)} por mês sem você trabalhar`;
+        })
+        .join('; ')}. É a ideia do Pai Rico, Pai Pobre: ter dinheiro que trabalha por você. Pra começar, no app do seu banco procure "Tesouro IPCA+": é do governo e serve pra guardar por muitos anos.`,
     });
   }
 
@@ -669,7 +675,7 @@ export function simulateLumpSum(data: WizardData, amount: number, opts: PlanOpti
       label: 'Reserva de emergência',
       amount: put,
       kind: 'reserve',
-      why: 'Num CDB de liquidez diária ou Tesouro Selic — protege o plano de um imprevisto.',
+      why: 'Guardado num lugar que rende e deixa sacar na hora: protege o plano de um imprevisto.',
     });
   }
 
@@ -702,4 +708,25 @@ export function planBudgets(data: WizardData): Record<'Moradia' | 'Alimentação
   const cuts = buildPlan(data).cuts;
   const limit = (key: keyof WizardData['expenses']) => cuts.find((c) => c.key === key)?.ceiling ?? data.expenses[key];
   return { Moradia: limit('moradia'), Alimentação: limit('alimentacao'), Transporte: limit('transporte'), Lazer: limit('lazer') };
+}
+
+export interface StrategyResult {
+  order: 'avalanche' | 'snowball';
+  months: number | null; // null: com esse valor por mês, não fecha
+  interest: number;
+  sequence: string[]; // ordem em que as dívidas acabam
+}
+
+/** As duas ordens de pagamento com o mesmo valor por mês: quando você fica livre e quanto paga de juros. */
+export function compareStrategies(debts: DebtItem[], monthlyPower: number): StrategyResult[] {
+  const open = debts.filter((d) => d.value > 0);
+  const sim: SimDebt[] = open.map((d) => ({ id: d.id, balance: d.value, rate: effectiveRate(d).rate / 100, min: d.installment || 0 }));
+  const name = (id: string) => open.find((d) => d.id === id)?.description || 'Dívida';
+  return (['avalanche', 'snowball'] as const).map((order) => {
+    const r = simulateAvalanche(sim, monthlyPower, order);
+    const sequence = Object.entries(r.payoffMonth)
+      .sort((a, b) => a[1] - b[1])
+      .map(([id]) => name(id));
+    return { order, months: r.months, interest: r.interest, sequence };
+  });
 }

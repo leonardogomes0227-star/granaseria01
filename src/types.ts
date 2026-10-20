@@ -29,6 +29,9 @@ export interface WizardData {
   };
   debts: DebtItem[];
   emergencyFund: number;
+  // Pai Rico, Pai Pobre: ativos que põem dinheiro no bolso. Opcionais pra não quebrar diagnósticos antigos.
+  investments?: number; // investido além da reserva (ações, fundos, previdência, imóvel pra renda…)
+  passiveIncome?: number; // o que entra por mês sem você trabalhar (aluguel, dividendos, juros)
 }
 
 export const INITIAL_DATA: WizardData = {

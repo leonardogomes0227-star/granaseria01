@@ -1,8 +1,9 @@
-import { useEffect, useState, useId, ReactNode } from 'react';
+import { useEffect, useMemo, useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Target } from 'lucide-react';
 import { getResults, saveGoal, saveResult } from '../results';
-import { DebtItem, DebtKind } from '../types';
-import { effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
+import { fetchPainel, painelToken } from '../painel';
+import { DebtItem, DebtKind, WizardData } from '../types';
+import { buildPlan, compareStrategies, effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment, inTodaysMoney, INFLATION_PCT } from '../calculations';
 import { ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
@@ -181,6 +182,23 @@ const brl = (n: number) => formatBRL(n);
 export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number } & ToolNavProps) {
   const [income, setIncome] = useState(monthlyIncome);
   const [price, setPrice] = useState(0);
+  // o mês de verdade: o que entrou menos o que saiu, anotado no WhatsApp
+  const [month, setMonth] = useState<{ left: number; daysLeft: number } | null>(null);
+  useEffect(() => {
+    if (!painelToken()) return;
+    void fetchPainel()
+      .then((d) => {
+        if (!d) return;
+        const inc = d.month.incomes.reduce((x, r) => x + r.amount, 0);
+        if (inc <= 0) return;
+        const out = d.month.expenses.reduce((x, r) => x + r.amount, 0);
+        const now = new Date(Date.now() - 3 * 3600 * 1000);
+        const last = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate();
+        setMonth({ left: inc - out, daysLeft: Math.max(1, last - now.getUTCDate() + 1) });
+      })
+      .catch(() => undefined);
+  }, []);
+  const afterBuy = month ? month.left - price : null;
 
   const pctOfIncome = income > 0 ? (price / income) * 100 : 0;
   const WORKDAYS = 22; // dias úteis num mês
@@ -205,21 +223,28 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
 
       {income > 0 && price > 0 ? (
         <div className="result-card">
+          {month && afterBuy !== null && (
+            <div className={`insight insight-${afterBuy < 0 ? 'bad' : afterBuy / month.daysLeft < 30 ? 'warn' : 'good'}`} style={{ marginBottom: 14 }}>
+              {afterBuy < 0
+                ? `Não cabe neste mês: pelo que você anotou no WhatsApp, sobram ${formatBRL(month.left)} e faltariam ${formatBRL(-afterBuy)}.`
+                : `Pelo seu mês no WhatsApp, depois da compra sobram ${formatBRL(afterBuy)}: uns ${formatBRL(Math.floor(afterBuy / month.daysLeft))} por dia até o fim do mês.`}
+            </div>
+          )}
           <span className={`status-pill ${verdict.cls}`}>{verdict.text}</span>
           <p className="diag-label">Essa compra custa</p>
           <p className="result-big">
-            <CountUp value={daysOfWork} format={(n) => (daysOfWork < 1 ? 'menos de 1 dia' : `${n.toFixed(1)} dias`)} />
+            <CountUp value={daysOfWork} format={(n) => (daysOfWork < 1 ? 'menos de 1 dia' : `${n.toFixed(1).replace('.', ',')} dias`)} />
           </p>
           <p className="diag-label">de trabalho (dias úteis)</p>
           <div className="result-split">
             <div className="stat-card">
               <p className="diag-label">Da sua renda mensal</p>
-              <p className="diag-number"><CountUp value={pctOfIncome} format={(n) => `${n.toFixed(1)}%`} /></p>
+              <p className="diag-number"><CountUp value={pctOfIncome} format={(n) => `${n.toFixed(1).replace('.', ',')}%`} /></p>
             </div>
             <div className="stat-card">
-              <p className="diag-label">Atraso na meta de poupança</p>
+              <p className="diag-label">Quanto atrasa o que você ia guardar</p>
               <p className="diag-number">
-                <CountUp value={monthsDelay} format={(n) => (monthsDelay < 1 ? '< 1 mês' : `${n.toFixed(1)} meses`)} />
+                <CountUp value={monthsDelay} format={(n) => (monthsDelay < 1 ? '< 1 mês' : `${n.toFixed(1).replace('.', ',')} meses`)} />
               </p>
             </div>
           </div>
@@ -252,7 +277,7 @@ function DebtOrderList({ title, note, debts }: { title: string; note: string; de
             <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
             <p>
               {d.description || 'Dívida sem nome'} — {formatBRL(d.value)}
-              {` (${effectiveRate(d).rate.toLocaleString('pt-BR')}% a.m.${effectiveRate(d).assumed ? ', típica' : ''})`}
+              {` (${effectiveRate(d).rate.toLocaleString('pt-BR')}% ao mês${effectiveRate(d).assumed ? ', valor comum' : ''})`}
             </p>
           </div>
         ))}
@@ -261,7 +286,7 @@ function DebtOrderList({ title, note, debts }: { title: string; note: string; de
   );
 }
 
-export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; onStart: () => void } & ToolNavProps) {
+export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtItem[]; data: WizardData; onStart: () => void } & ToolNavProps) {
   // com diagnóstico, usa as dívidas de lá; sem, a pessoa digita aqui mesmo (não precisa fazer o diagnóstico antes)
   const fromDiag = debts.filter((d) => d.value > 0);
   const [own, setOwn] = useState<DebtItem[]>([]);
@@ -269,8 +294,20 @@ export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; o
   const [value, setValue] = useState(0);
   const [rate, setRate] = useState(0);
   const list = fromDiag.length > 0 ? fromDiag : own;
-  const topDebt = list.length > 0 ? sortAvalanche(list)[0] : null;
-  useSaveResult('debts', topDebt ? `pagar primeiro ${topDebt.description || 'a dívida de juros mais alto'} (${effectiveRate(topDebt).rate.toLocaleString('pt-BR')}% ao mês)` : null);
+  // quanto dá pra pagar por mês: o do plano (com diagnóstico) ou o que a pessoa digita
+  const planPower = useMemo(() => (data.monthlyIncome > 0 && fromDiag.length > 0 ? buildPlan(data).monthlyPower : 0), [data, fromDiag.length]);
+  const [power, setPower] = useState(planPower);
+  const results = useMemo(() => (list.length > 0 && power > 0 ? compareStrategies(list, power) : null), [list, power]);
+  const best = results
+    ? results[0].months === null
+      ? null
+      : results[1].months !== null && results[1].interest - results[0].interest < Math.max(50, results[0].interest * 0.05)
+        ? results[1] // quase o mesmo juros: a bola de neve motiva mais (você vê dívidas acabando antes)
+        : results[0]
+    : null;
+  const label = (o: 'avalanche' | 'snowball') => (o === 'avalanche' ? 'Começar pela de juros mais alto' : 'Começar pela menor');
+  const when = (m: number | null) => (m === null ? 'não fecha com esse valor' : m < 12 ? `em ${m} ${m === 1 ? 'mês' : 'meses'}` : `em ${(m / 12).toFixed(1).replace('.', ',')} anos`);
+  useSaveResult('debts', best ? `${label(best.order).toLowerCase()}: começa por ${best.sequence[0]}, livre ${when(best.months)}, ${formatBRL(best.interest)} de juros` : null);
 
   const add = () => {
     if (value <= 0) return;
@@ -299,7 +336,7 @@ export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; o
             <label className="field-label" htmlFor="debt-rate">Juros ao mês (se souber)</label>
             <div className="input-suffix">
               <DecimalInput id="debt-rate" placeholder={`${getDebtKind(kind).typicalRate.toLocaleString('pt-BR')} (típico)`} value={rate} onChange={setRate} />
-              <span>% a.m.</span>
+              <span>% ao mês</span>
             </div>
           </div>
           <button type="button" className="btn-primary" onClick={add} disabled={value <= 0}>
@@ -324,12 +361,40 @@ export function DebtSimulator({ debts, onStart, ...nav }: { debts: DebtItem[]; o
         <>
           {list.some((d) => effectiveRate(d).assumed) && (
             <p className="field-hint" style={{ marginTop: -8, marginBottom: 16 }}>
-              Onde você não informou os juros, usamos a taxa típica do tipo de dívida. Confira no seu contrato.
+              Onde você não disse os juros, usamos o valor comum pra esse tipo de dívida. Confira no seu contrato.
             </p>
           )}
+          <MoneyField
+            label="Quanto dá pra pagar por mês, somando todas"
+            value={power}
+            onChange={setPower}
+            hint={planPower > 0 ? 'Vem do seu plano de ação.' : 'Some as parcelas que você já paga com o que dá pra pôr a mais.'}
+          />
+          {results && (
+            <div className="result-card" style={{ marginBottom: 16 }}>
+              {best ? (
+                <>
+                  <span className="status-pill status-good">Recomendado: {label(best.order)}</span>
+                  <p className="result-big" style={{ fontSize: 'clamp(22px, 5vw, 30px)' }}>Comece por {best.sequence[0]}</p>
+                  <p className="field-hint">Você fica livre {when(best.months)} e paga {formatBRL(best.interest)} de juros no total.</p>
+                </>
+              ) : (
+                <p className="wizard-sub" style={{ margin: 0 }}>Com {formatBRL(power)} por mês os juros crescem mais rápido que os pagamentos. Renegocie primeiro: veja "Seus direitos com o banco".</p>
+              )}
+              <div className="result-split">
+                {results.map((r) => (
+                  <div className="stat-card" key={r.order}>
+                    <p className="diag-label">{label(r.order)}</p>
+                    <p className="diag-number" style={{ fontSize: 20 }}>{r.months === null ? '—' : when(r.months).replace('em ', '')}</p>
+                    <p className="field-hint">{r.months === null ? 'não fecha' : `${formatBRL(r.interest)} de juros`}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="loan-grid">
-            <DebtOrderList title="Avalanche — maior juros primeiro" note="Economiza mais dinheiro em juros no total." debts={sortAvalanche(list)} />
-            <DebtOrderList title="Bola de neve — menor saldo primeiro" note="Quita dívidas mais rápido e mantém a motivação." debts={sortSnowball(list)} />
+            <DebtOrderList title="Começando pela de juros mais alto" note="Você paga menos juros no total." debts={sortAvalanche(list)} />
+            <DebtOrderList title="Começando pela menor" note="Você vê dívidas acabando mais cedo, e isso anima." debts={sortSnowball(list)} />
           </div>
           {fromDiag.length === 0 && (
             <p className="field-hint" style={{ marginTop: 14 }}>
@@ -357,10 +422,10 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
 
   return (
     <ToolShell id="longterm" {...nav}>
-      <p className="wizard-sub">Ajuste o aporte, a taxa e o prazo pra ver aonde isso te leva.</p>
+      <p className="wizard-sub">Mude os valores e veja quanto o que você guarda vira com o tempo.</p>
 
-      <RangeField label="Aporte mensal" prefix="R$" value={contribution} onChange={setContribution} min={0} max={10000} step={50} />
-      <RangeField label="Taxa de juros ao ano" suffix="% a.a." value={rate} onChange={setRate} min={0} max={20} step={0.5} />
+      <RangeField label="Quanto vai guardar por mês" prefix="R$" value={contribution} onChange={setContribution} min={0} max={10000} step={50} />
+      <RangeField label="Quanto rende por ano" suffix="% ao ano" value={rate} onChange={setRate} min={0} max={20} step={0.5} />
       <RangeField label="Prazo" suffix="anos" value={years} onChange={(v) => setYears(Math.max(v, 1))} min={1} max={50} />
 
       {contribution > 0 ? (
@@ -383,7 +448,7 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
           </p>
         </div>
       ) : (
-        <div className="result-empty">Defina um aporte mensal pra ver a projeção.</div>
+        <div className="result-empty">Diga quanto vai guardar por mês pra ver o resultado.</div>
       )}
     </ToolShell>
   );
@@ -391,7 +456,7 @@ export function LongTermSimulator({ monthlyIncome, ...nav }: { monthlyIncome: nu
 
 /* ---------- Calculadora de meta ---------- */
 
-export function GoalCalculator(nav: ToolNavProps) {
+export function GoalCalculator({ data, ...nav }: { data: WizardData } & ToolNavProps) {
   const [target, setTarget] = useState(0);
   const [years, setYears] = useState(5);
   const [rate, setRate] = useState(10);
@@ -401,6 +466,18 @@ export function GoalCalculator(nav: ToolNavProps) {
   const fromInterest = Math.max(target - totalContributed, 0);
   const [name, setName] = useState('');
   const [savedGoal, setSavedGoal] = useState(false);
+  // cabe no bolso? Compara com o que o plano tem por mês (sem contar as metas já salvas)
+  const capacity = useMemo(() => (data.monthlyIncome > 0 ? buildPlan(data).monthlyPower : 0), [data]);
+  const monthsWithCapacity = (() => {
+    if (capacity <= 0 || target <= 0) return null;
+    const r = Math.pow(1 + rate / 100, 1 / 12) - 1;
+    let b = 0;
+    for (let m = 1; m <= 600; m++) {
+      b = b * (1 + r) + capacity;
+      if (b >= target) return m;
+    }
+    return null;
+  })();
   const saveToPlan = () => {
     const label = name.trim() || 'minha meta';
     saveGoal({ name: label, target, monthly: Math.round(required), months: years * 12 });
@@ -410,7 +487,7 @@ export function GoalCalculator(nav: ToolNavProps) {
 
   return (
     <ToolShell id="goal" {...nav}>
-      <p className="wizard-sub">Diga aonde você quer chegar, a gente calcula o aporte mensal necessário.</p>
+      <p className="wizard-sub">Diga o que você quer e quanto custa. A gente calcula quanto guardar por mês.</p>
 
       <div className="field-group">
         <label className="field-label" htmlFor="goal-name">Qual é a meta?</label>
@@ -418,7 +495,7 @@ export function GoalCalculator(nav: ToolNavProps) {
       </div>
       <MoneyField label="Valor da meta" value={target} onChange={(v) => { setTarget(v); setSavedGoal(false); }} autoFocus />
       <RangeField label="Prazo" suffix="anos" value={years} onChange={(v) => setYears(Math.max(v, 1))} min={1} max={40} />
-      <RangeField label="Taxa de juros ao ano" suffix="% a.a." value={rate} onChange={setRate} min={0} max={20} step={0.5} />
+      <RangeField label="Quanto rende por ano" suffix="% ao ano" value={rate} onChange={setRate} min={0} max={20} step={0.5} />
 
       {target > 0 ? (
         <div className="result-card">
@@ -435,6 +512,20 @@ export function GoalCalculator(nav: ToolNavProps) {
               <p className="diag-number"><CountUp value={fromInterest} format={brl} /></p>
             </div>
           </div>
+          {capacity > 0 && (
+            <div className={`insight insight-${required <= capacity ? 'good' : 'warn'}`} style={{ marginTop: 14 }}>
+              {required <= capacity ? (
+                <>Cabe no seu plano: ele tem {formatBRL(capacity)} por mês. Lembre que a reserva de emergência vem primeiro.</>
+              ) : (
+                <>
+                  Não cabe ainda: o seu plano tem {formatBRL(capacity)} por mês.{' '}
+                  {monthsWithCapacity !== null
+                    ? `Com esse valor, você chega lá em ${monthsWithCapacity < 12 ? `${monthsWithCapacity} meses` : `${(monthsWithCapacity / 12).toFixed(1).replace('.', ',')} anos`}. Aumente o prazo ou ache dinheiro no Caça-vazamentos.`
+                    : 'Aumente o prazo ou diminua a meta.'}
+                </>
+              )}
+            </div>
+          )}
           <button type="button" className="btn-primary" style={{ marginTop: 16 }} onClick={saveToPlan} disabled={savedGoal}>
             {savedGoal ? <><Check size={16} /> Salvo no seu plano de ação</> : <>Salvar no meu plano <ArrowRight size={16} /></>}
           </button>
@@ -461,6 +552,8 @@ function LoanColumn({
   setRate,
   installmentsCount,
   setInstallmentsCount,
+  installment,
+  setInstallment,
   winner,
 }: {
   label: string;
@@ -470,6 +563,8 @@ function LoanColumn({
   setRate: (v: number) => void;
   installmentsCount: number;
   setInstallmentsCount: (v: number) => void;
+  installment: number;
+  setInstallment: (v: number) => void;
   winner: boolean;
 }) {
   return (
@@ -478,14 +573,17 @@ function LoanColumn({
         {label}
         {winner && <span className="winner-badge"><Check size={12} /> Mais barata</span>}
       </div>
-      <MoneyField label="Valor financiado" value={principal} onChange={setPrincipal} />
-      <div className="field-group">
-        <label className="field-label">Taxa de juros</label>
-        <div className="input-suffix">
-          <DecimalInput aria-label={`Taxa da ${label}`} max={100} value={rate} onChange={setRate} placeholder="0" />
-          <span>% a.m.</span>
+      <MoneyField label="Quanto você vai pegar" value={principal} onChange={setPrincipal} />
+      <MoneyField label="Valor de cada parcela" value={installment} onChange={setInstallment} hint="Não sabe a taxa? Põe só a parcela." />
+      {installment <= 0 && (
+        <div className="field-group">
+          <label className="field-label">Ou a taxa de juros</label>
+          <div className="input-suffix">
+            <DecimalInput aria-label={`Taxa da ${label}`} max={100} value={rate} onChange={setRate} placeholder="0" />
+            <span>% ao mês</span>
+          </div>
         </div>
-      </div>
+      )}
       <div className="field-group" style={{ marginBottom: 0 }}>
         <label className="field-label">Parcelas</label>
         <div className="input-suffix">
@@ -506,8 +604,13 @@ export function LoanComparator(nav: ToolNavProps) {
   const [rB, setRB] = useState(0);
   const [nB, setNB] = useState(12);
 
-  const resA = computeLoanInstallment(pA, rA, nA);
-  const resB = computeLoanInstallment(pB, rB, nB);
+  const [iA, setIA] = useState(0);
+  const [iB, setIB] = useState(0);
+  // com a parcela, o custo total é parcela × vezes; sem, sai da taxa
+  const cost = (p: number, r: number, n: number, i: number) =>
+    i > 0 ? { installment: i, total: i * n, totalInterest: Math.max(0, i * n - p) } : computeLoanInstallment(p, r, n);
+  const resA = cost(pA, rA, nA, iA);
+  const resB = cost(pB, rB, nB, iB);
   const bothFilled = pA > 0 && pB > 0;
   const tie = Math.abs(resA.total - resB.total) < 0.5;
   const cheaper = resA.total <= resB.total ? 'A' : 'B';
@@ -518,8 +621,8 @@ export function LoanComparator(nav: ToolNavProps) {
       <p className="wizard-sub">Compare duas propostas antes de assinar.</p>
 
       <div className="loan-grid">
-        <LoanColumn label="Proposta A" principal={pA} setPrincipal={setPA} rate={rA} setRate={setRA} installmentsCount={nA} setInstallmentsCount={setNA} winner={bothFilled && !tie && cheaper === 'A'} />
-        <LoanColumn label="Proposta B" principal={pB} setPrincipal={setPB} rate={rB} setRate={setRB} installmentsCount={nB} setInstallmentsCount={setNB} winner={bothFilled && !tie && cheaper === 'B'} />
+        <LoanColumn label="Proposta A" principal={pA} setPrincipal={setPA} rate={rA} setRate={setRA} installmentsCount={nA} setInstallmentsCount={setNA} installment={iA} setInstallment={setIA} winner={bothFilled && !tie && cheaper === 'A'} />
+        <LoanColumn label="Proposta B" principal={pB} setPrincipal={setPB} rate={rB} setRate={setRB} installmentsCount={nB} setInstallmentsCount={setNB} installment={iB} setInstallment={setIB} winner={bothFilled && !tie && cheaper === 'B'} />
       </div>
 
       {bothFilled ? (

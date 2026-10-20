@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
-import { TOOLS, getTool, type ToolId } from '../tools';
+import { LISTED_TOOLS, faturaEnabled, getTool, type ToolId } from '../tools';
 import { getResults } from '../results';
 import { fetchPainel, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
@@ -66,17 +66,23 @@ export function DailyTop() {
 /* ---------- Todas as ferramentas, separadas pelo que a pessoa quer fazer ---------- */
 
 const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
-  { title: 'Organizar e planejar', text: 'Seu plano de ação e o acompanhamento dele.', tools: ['tracker', 'checkin', 'goal', 'longterm'] },
+  { title: 'Organizar e planejar', text: 'Seu plano de ação e o acompanhamento dele.', tools: ['tracker', 'goal', 'richdad'] },
   { title: 'Dívidas e banco', text: 'Sair das dívidas pagando menos juros.', tools: ['debts', 'rights', 'loan', 'fatura'] },
   { title: 'Economizar', text: 'Achar dinheiro e gastar com cabeça.', tools: ['leaks', 'extra', 'impulse'] },
-  { title: 'Motivação', text: 'Pra não largar o plano no meio.', tools: ['selos', 'quote'] },
 ];
+
+// de outubro a dezembro o 13º está chegando: a ferramenta dele sobe pro topo
+const isThirteenthSeason = () => [9, 10, 11].includes(new Date().getMonth()); // out a dez: a 1ª parcela sai até 30/11
 
 export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart: () => void; onOpenTool: (id: ToolId) => void; hasDiagnosis: boolean }) {
   const [results] = useState(getResults);
-  const covered = new Set(GROUPS.flatMap((g) => g.tools));
-  const missing = TOOLS.filter((t) => !covered.has(t.id)).map((t) => t.id);
-  const groups = missing.length ? [...GROUPS, { title: 'Mais', text: '', tools: missing }] : GROUPS;
+  const [fatura, setFatura] = useState(false);
+  useEffect(() => {
+    void faturaEnabled().then(setFatura);
+  }, []);
+  const listed = new Set(LISTED_TOOLS.map((t) => t.id));
+  const groups = GROUPS.map((g) => ({ ...g, tools: g.tools.filter((id) => listed.has(id) && (id !== 'fatura' || fatura)) }));
+  const season = isThirteenthSeason();
   return (
     <section className="section tools-dir" id="ferramentas">
       <div className="section-head center">
@@ -94,6 +100,13 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
         </span>
         <ArrowRight size={20} className="pick-arrow" />
       </button>
+
+      {season && (
+        <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>
+          🎁 <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
+          <ArrowRight size={18} />
+        </button>
+      )}
 
       {groups.map((g) => (
         <div className="dir-group" key={g.title}>
