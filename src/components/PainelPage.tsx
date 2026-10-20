@@ -9,7 +9,7 @@ import { buildPlan } from '../plan';
 import { leaksMonthlyTotal } from '../leaks';
 import { getGoals } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
-import { ActionPlanView } from './ActionPlanView';
+import { ActionPlanView, PlanUndo } from './ActionPlanView';
 import { PageHead } from './AppShell';
 import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
@@ -126,7 +126,10 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
         {plan ? (
           <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
         ) : (
-          <EmptyCard text="Responda o diagnóstico (uns 10 minutos) e o seu plano aparece aqui, com valores e datas." cta="Fazer meu diagnóstico" onClick={onStart} />
+          <>
+            <PlanUndo />
+            <EmptyCard text="Responda o diagnóstico (uns 10 minutos) e o seu plano aparece aqui, com valores e datas." cta="Fazer meu diagnóstico" onClick={onStart} />
+          </>
         )}
       </div>
     );

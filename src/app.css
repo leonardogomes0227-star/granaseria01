@@ -398,3 +398,25 @@ a.dir-row { text-decoration: none; }
 .agent-row.create { width: 100%; margin-top: 18px; border-style: dashed; box-shadow: none; background: transparent; cursor: pointer; text-align: left; font: inherit; color: var(--text); }
 .agent-create-icon { width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-2); color: var(--gold-bright); }
 @media (max-width: 400px) { .agent-pick { padding: 8px 10px; } }
+
+/* plano modular: agentes, fora do plano e gerenciar */
+.plan-block-label { margin: 24px 0 10px; }
+.plan-agents { margin-top: 24px; }
+.plan-agents .block-head { margin-bottom: 10px; }
+.plan-agents .link-btn { padding: 0; font-weight: 700; }
+.plan-empty { margin: 0 0 12px; color: var(--text-soft); font-size: 14.5px; }
+.agent-row.stack { flex-direction: column; align-items: stretch; gap: 10px; }
+.agent-row-line { display: flex; align-items: center; gap: 10px; }
+.plan-add { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.plan-add .agent-rows { width: 100%; }
+.plan-out { margin-top: 18px; }
+.plan-out ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.plan-out li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px; border-radius: 14px; border: 1px dashed var(--line-strong); color: var(--text-soft); font-weight: 600; }
+.tl-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.tl-actions .link-btn { padding: 2px 0; display: inline-flex; align-items: center; gap: 4px; }
+.link-btn.muted { color: var(--text-faint); font-weight: 600; }
+.plan-manage { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.plan-manage .link-btn { padding: 4px 0; }
+.manage-row { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 14px 16px; text-align: left; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
+.manage-row small { color: var(--text-soft); font-size: 13.5px; }
+.plan-manage .bill-confirm { width: 100%; }

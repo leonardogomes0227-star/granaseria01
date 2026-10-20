@@ -76,6 +76,8 @@ export function setToolTasks(source: TaskSource, tasks: NewTask[]) {
   if (open === tasks.map((t) => t.text).join('|')) return; // nada mudou: não mexe nas datas
   writeTasks(replaceTasks(all, source, tasks));
 }
+/** Devolve a lista de passos como estava (usado pra desfazer ao remover um agente ou recomeçar o plano). */
+export const restoreTasks = (list: CoachTask[]) => writeTasks(list);
 export const markTaskDone = (id: string) => writeTasks(completeTask(getTasks(), id));
 export const unmarkTask = (id: string) => writeTasks(undoTask(getTasks(), id));
 

@@ -1,11 +1,18 @@
-import { useState } from 'react';
-import { ArrowRight, Check, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Check, ChevronDown, Plus, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
 import { CopyMessage } from './CopyMessage';
 import { ActionPlan, PlanStep, monthShort } from '../plan';
 import { RIGHTS, relevantRights } from '../leaks';
 import { ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
 import { formatBRL } from '../calculations';
+import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, loadChosen, saveChosen, type CustomAgent } from '../agents';
+import { getTasks, restoreTasks, setToolTasks } from '../results';
+import type { CoachTask } from '../coach';
+import { pushNow } from '../painel';
+import { AgentAvatar } from './AgentPage';
+import { useTasks } from './CoachPanel';
 
 /* ---------- Plano de ação: valor mensal, fases, passos, renegociação e calendário ---------- */
 
@@ -181,10 +188,17 @@ export function ActionPlanView({
   lockedSlot?: React.ReactNode;
   onOpenTool: (id: ToolId) => void;
 }) {
-  const pots = buildPots(plan);
+  const all = buildPots(plan);
+  const [off, setOff] = useState<string[]>(readOff);
+  const pots = all.filter((p) => !off.includes(p.id));
+  const outPots = all.filter((p) => off.includes(p.id));
   const [openId, setOpenId] = useState<PotId | null>(null);
   const [more, setMore] = useState(false);
   const general = plan.steps.filter((s) => potOfStep(s, plan) === null);
+  const setOffList = (next: string[]) => {
+    setOff(next);
+    writeOff(next);
+  };
   const focus = (id: PotId) => {
     setOpenId(id);
     requestAnimationFrame(() => document.getElementById(`pot-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
@@ -192,16 +206,47 @@ export function ActionPlanView({
 
   return (
     <div className="plan">
-      <ThisMonth plan={plan} general={general} onOpenTool={onOpenTool} onPick={locked ? undefined : focus} />
+      <ThisMonth plan={plan} general={general} off={off} onOpenTool={onOpenTool} onPick={locked ? undefined : focus} />
+
+      {!locked && <PlanAgents />}
 
       {locked ? (
         lockedSlot
       ) : (
-        <ol className="timeline" aria-label="Seus objetivos">
-          {pots.map((p) => (
-            <PotCard key={p.id} pot={p} open={openId === p.id} onToggle={() => setOpenId(openId === p.id ? null : p.id)} onOpenTool={onOpenTool} />
-          ))}
-        </ol>
+        <>
+          <p className="section-label plan-block-label">Objetivos do plano</p>
+          {pots.length > 0 ? (
+            <ol className="timeline" aria-label="Seus objetivos">
+              {pots.map((p) => (
+                <PotCard
+                  key={p.id}
+                  pot={p}
+                  open={openId === p.id}
+                  onToggle={() => setOpenId(openId === p.id ? null : p.id)}
+                  onOpenTool={onOpenTool}
+                  onRemove={() => setOffList([...off, p.id])}
+                />
+              ))}
+            </ol>
+          ) : (
+            <p className="plan-empty">Nenhum objetivo no plano. Adicione abaixo o que faz sentido pra você.</p>
+          )}
+          {outPots.length > 0 && (
+            <div className="plan-out">
+              <p className="section-label">Fora do plano</p>
+              <ul>
+                {outPots.map((p) => (
+                  <li key={p.id}>
+                    <span>{p.title}</span>
+                    <button type="button" className="agent-pick" onClick={() => setOffList(off.filter((x) => x !== p.id))}>
+                      <Plus size={14} /> Adicionar
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
       )}
 
       {!locked && !more && (
@@ -221,13 +266,15 @@ export function ActionPlanView({
         </>
       )}
 
+      {!locked && <PlanManage />}
+
       <p className="plan-legal">Estimativa com os seus números. Não é recomendação de investimento.</p>
     </div>
   );
 }
 
 /** Um objetivo na linha do tempo: o nome, o valor por mês e o prazo. Tocou, abre o como fazer. */
-function PotCard({ pot, open, onToggle, onOpenTool }: { pot: Pot; open: boolean; onToggle: () => void; onOpenTool: (id: ToolId) => void }) {
+function PotCard({ pot, open, onToggle, onOpenTool, onRemove }: { pot: Pot; open: boolean; onToggle: () => void; onOpenTool: (id: ToolId) => void; onRemove: () => void }) {
   const tool = pot.tool ? getTool(pot.tool) : null;
   const line = [pot.amount?.replace(' por mês', '/mês'), pot.when].filter(Boolean).join(' · ');
   return (
@@ -253,11 +300,14 @@ function PotCard({ pot, open, onToggle, onOpenTool }: { pot: Pot; open: boolean;
             </ol>
           )}
           {pot.extra}
-          {tool && (
-            <button type="button" className="link-btn tl-tool" onClick={() => onOpenTool(tool.id)}>
-              Abrir {tool.title} <ArrowRight size={13} />
-            </button>
-          )}
+          <div className="tl-actions">
+            {tool && (
+              <button type="button" className="link-btn" onClick={() => onOpenTool(tool.id)}>
+                Abrir {tool.title} <ArrowRight size={13} />
+              </button>
+            )}
+            <button type="button" className="link-btn muted" onClick={onRemove}>Tirar do plano</button>
+          </div>
         </div>
       )}
     </li>
@@ -281,6 +331,24 @@ function PotStep({ step }: { step: PlanStep }) {
 }
 
 /** O que fazer neste mês, em reais: a primeira coisa que a pessoa vê. Cada linha leva pro objetivo dela. */
+const OFF_KEY = 'gs-plano-fora';
+function readOff(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(OFF_KEY) || '[]') as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function writeOff(list: string[]) {
+  try {
+    if (list.length === 0) localStorage.removeItem(OFF_KEY);
+    else localStorage.setItem(OFF_KEY, JSON.stringify(list));
+  } catch {
+    // segue sem salvar
+  }
+}
+
 const DONE_KEY = 'gs-mes-feito';
 const ym = () => new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 7);
 function readDone(): string[] {
@@ -301,7 +369,7 @@ function writeDone(list: string[]) {
 }
 
 /** O que fazer neste mês, em reais, com caixinha pra marcar. Cada linha leva pro objetivo dela. */
-function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; general: PlanStep[]; onOpenTool: (id: ToolId) => void; onPick?: (id: PotId) => void }) {
+function ThisMonth({ plan, general, off, onOpenTool, onPick }: { plan: ActionPlan; general: PlanStep[]; off: string[]; onOpenTool: (id: ToolId) => void; onPick?: (id: PotId) => void }) {
   const [how, setHow] = useState(false);
   const [done, setDone] = useState<string[]>(readDone);
   const row = plan.schedule[0];
@@ -316,6 +384,7 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
   plan.goals.forEach((g, i) => items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly), `goal-${i}`]));
   for (const c of plan.cuts) items.push([Scissors, `No máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling), 'gastos']);
   const month = monthShort(plan.start, 1);
+  items.splice(0, items.length, ...items.filter(([, , , pot]) => !pot || !off.includes(pot)));
   const count = items.filter(([, what]) => done.includes(what)).length;
   const all = items.length > 0 && count === items.length;
   const toggle = (what: string) => {
@@ -538,6 +607,247 @@ function ScheduleTable({ plan }: { plan: ActionPlan }) {
           {all ? 'Mostrar menos' : `Ver os ${plan.schedule.length} meses`}
         </button>
       )}
+    </div>
+  );
+}
+
+/* ---------- Agentes do plano: adicionar e remover sem sair da aba ---------- */
+
+function loadCustomAgents(): CustomAgent[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]') as CustomAgent[];
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+function saveCustomAgents(list: CustomAgent[]) {
+  try {
+    localStorage.setItem(CUSTOM_AGENTS_KEY, JSON.stringify(list));
+  } catch {
+    // segue sem salvar
+  }
+}
+
+function PlanAgents() {
+  const tasks = useTasks();
+  const [mine, setMine] = useState<string[]>(loadChosen);
+  const [custom, setCustom] = useState<CustomAgent[]>(loadCustomAgents);
+  const [adding, setAdding] = useState(false);
+  const [asking, setAsking] = useState<string | null>(null);
+  const [undo, setUndo] = useState<{ name: string; chosen: string[]; custom: CustomAgent[]; tasks: CoachTask[] } | null>(null);
+  const open = (source: string) => tasks.filter((t) => !t.done && t.source === source);
+  const mineAgents = AGENTS.filter((a) => mine.includes(a.id));
+  const available = AGENTS.filter((a) => !mine.includes(a.id));
+
+  const keep = (name: string) => setUndo({ name, chosen: loadChosen(), custom: loadCustomAgents(), tasks: getTasks() });
+  const removeAgent = (id: string, name: string, tool: string) => {
+    keep(name);
+    const next = mine.filter((x) => x !== id);
+    setMine(next);
+    saveChosen(next);
+    setToolTasks(tool as ToolId, []);
+    setAsking(null);
+  };
+  const removeCustom = (c: CustomAgent) => {
+    keep(c.name);
+    const next = custom.filter((x) => x.id !== c.id);
+    setCustom(next);
+    saveCustomAgents(next);
+    setToolTasks('goal', []);
+    setAsking(null);
+  };
+  const add = (id: string) => {
+    const next = [...mine, id];
+    setMine(next);
+    saveChosen(next);
+  };
+  const undoNow = () => {
+    if (!undo) return;
+    saveChosen(undo.chosen);
+    saveCustomAgents(undo.custom);
+    restoreTasks(undo.tasks);
+    setMine(undo.chosen);
+    setCustom(undo.custom);
+    setUndo(null);
+  };
+
+  const confirmText = (name: string, n: number) => `Remover ${name}${n > 0 ? ` e ${n} ${n === 1 ? 'aviso' : 'avisos'} dele` : ''}?`;
+  const askRow = (id: string, name: string, n: number, yes: () => void) => (
+    <div className="bill-confirm" role="alertdialog" aria-label={confirmText(name, n)}>
+      <p>{confirmText(name, n)}</p>
+      <div className="bill-actions">
+        <button type="button" className="btn-danger" onClick={yes}>Remover</button>
+        <button type="button" className="btn-outline" onClick={() => setAsking(null)}>Manter</button>
+      </div>
+      <span hidden>{id}</span>
+    </div>
+  );
+
+  return (
+    <section className="plan-agents">
+      <div className="block-head">
+        <p className="section-label" style={{ margin: 0 }}>Agentes do plano</p>
+        <button type="button" className="link-btn" onClick={() => setAdding((v) => !v)}>{adding ? 'Fechar' : '+ Adicionar'}</button>
+      </div>
+
+      {undo && (
+        <div className="bill-undo" role="status">
+          <span><b>{undo.name}</b> foi removido.</span>
+          <button type="button" className="link-btn" onClick={undoNow}>Desfazer</button>
+        </div>
+      )}
+
+      {mineAgents.length === 0 && custom.length === 0 && !adding && <p className="plan-empty">Nenhum agente no plano. Adicione os que vão te avisar no WhatsApp.</p>}
+
+      <ul className="agent-rows">
+        {mineAgents.map((a) => {
+          const n = open(a.tool).length;
+          return (
+            <li key={a.id} className="agent-row stack">
+              <div className="agent-row-line">
+                <span className="agent-row-main static">
+                  <AgentAvatar id={a.id} name={a.name} hue={a.hue} size={40} />
+                  <span>
+                    <b>{a.name}</b>
+                    <small>{n > 0 ? `${n} ${n === 1 ? 'aviso' : 'avisos'} ativos` : a.does}</small>
+                  </span>
+                </span>
+                <button type="button" className="agent-pick remove" onClick={() => setAsking(a.id)}>Remover</button>
+              </div>
+              {asking === a.id && askRow(a.id, a.name, n, () => removeAgent(a.id, a.name, a.tool))}
+            </li>
+          );
+        })}
+        {custom.map((c) => {
+          const n = open('goal').length;
+          return (
+            <li key={c.id} className="agent-row stack">
+              <div className="agent-row-line">
+                <span className="agent-row-main static">
+                  <AgentAvatar name={c.name} hue={45} size={40} />
+                  <span>
+                    <b>{c.name}</b>
+                    <small>{customPlan(c).lines[0]}</small>
+                  </span>
+                </span>
+                <button type="button" className="agent-pick remove" onClick={() => setAsking(c.id)}>Remover</button>
+              </div>
+              {asking === c.id && askRow(c.id, c.name, n, () => removeCustom(c))}
+            </li>
+          );
+        })}
+      </ul>
+
+      {adding && (
+        <div className="plan-add">
+          {available.length > 0 ? (
+            <ul className="agent-rows">
+              {available.map((a) => (
+                <li key={a.id} className="agent-row">
+                  <span className="agent-row-main static">
+                    <AgentAvatar id={a.id} name={a.name} hue={a.hue} size={40} />
+                    <span>
+                      <b>{a.name}</b>
+                      <small>{a.does}</small>
+                    </span>
+                  </span>
+                  <button type="button" className="agent-pick" onClick={() => add(a.id)}>
+                    <Plus size={14} /> Adicionar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="plan-empty">Todos os agentes já estão no plano.</p>
+          )}
+          <Link className="link-btn" to="/conselheiros#criar">Criar o meu agente</Link>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ---------- Cancelar ou recomeçar o plano ---------- */
+// Apaga só o plano: diagnóstico, acompanhamento mês a mês, o "feito" do mês e os avisos do plano.
+// Ficam os gastos do WhatsApp, as contas a pagar, os agentes e as metas. Dá pra desfazer por alguns minutos.
+
+const RESET_PLAN_KEYS = ['selos-wizard-progress', 'selos-tracking', 'selos-diagnosis-completed', 'gs-mes-feito', OFF_KEY];
+export const PLAN_BACKUP_KEY = 'gs-plano-desfazer'; // só neste aparelho, não sincroniza
+
+function PlanManage() {
+  const [openMenu, setOpenMenu] = useState(false);
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const reset = async () => {
+    setBusy(true);
+    try {
+      const keys: Record<string, string> = {};
+      for (const k of RESET_PLAN_KEYS) {
+        const v = localStorage.getItem(k);
+        if (v !== null) keys[k] = v;
+      }
+      localStorage.setItem(PLAN_BACKUP_KEY, JSON.stringify({ at: Date.now(), keys, tasks: getTasks() }));
+      for (const k of RESET_PLAN_KEYS) localStorage.removeItem(k);
+      setToolTasks('plano', []);
+    } catch {
+      // segue: o pior caso é não ter o desfazer
+    }
+    await pushNow();
+    window.location.assign('/plano');
+  };
+  return (
+    <section className="plan-manage">
+      <button type="button" className="link-btn muted" aria-expanded={openMenu} onClick={() => setOpenMenu((v) => !v)}>
+        Gerenciar plano
+      </button>
+      {openMenu && !asking && (
+        <button type="button" className="manage-row" onClick={() => setAsking(true)}>
+          <b>Recomeçar do zero</b>
+          <small>Apaga o diagnóstico e os avisos do plano. Seus gastos, contas e agentes ficam.</small>
+        </button>
+      )}
+      {openMenu && asking && (
+        <div className="bill-confirm" role="alertdialog" aria-label="Recomeçar o plano?">
+          <p>Recomeçar o plano do zero? Você pode desfazer logo depois.</p>
+          <div className="bill-actions">
+            <button type="button" className="btn-danger" disabled={busy} onClick={() => void reset()}>Recomeçar</button>
+            <button type="button" className="btn-outline" onClick={() => setAsking(false)}>Manter</button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Depois de recomeçar: "Plano recomeçado. Desfazer" (10 minutos). */
+export function PlanUndo() {
+  const [backup, setBackup] = useState<{ at: number; keys: Record<string, string>; tasks: CoachTask[] } | null>(null);
+  useEffect(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(PLAN_BACKUP_KEY) || 'null') as { at: number; keys: Record<string, string>; tasks: CoachTask[] } | null;
+      if (v && Date.now() - v.at < 10 * 60 * 1000) setBackup(v);
+      else localStorage.removeItem(PLAN_BACKUP_KEY);
+    } catch {
+      // sem desfazer
+    }
+  }, []);
+  if (!backup) return null;
+  const undo = async () => {
+    try {
+      for (const [k, v] of Object.entries(backup.keys)) localStorage.setItem(k, v);
+      restoreTasks(backup.tasks);
+      localStorage.removeItem(PLAN_BACKUP_KEY);
+    } catch {
+      // idem
+    }
+    await pushNow();
+    window.location.assign('/plano');
+  };
+  return (
+    <div className="bill-undo" role="status">
+      <span>Plano recomeçado.</span>
+      <button type="button" className="link-btn" onClick={() => void undo()}>Desfazer</button>
     </div>
   );
 }
