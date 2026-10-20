@@ -14,6 +14,7 @@ import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
 import { FixedBills, fixedSummary, useBills, useMonthIncome, useSaved } from './FixedBills';
 import { Snowball } from './Snowball';
+import { useCoach } from '../coachChat/store';
 import { loadSavedData, openDebts } from '../debts';
 import { buildPlan } from '../plan';
 import { SAVE_SHARE } from '../bills';
@@ -341,6 +342,24 @@ function Welcome({ resume, onStart, onResume }: { resume: number | null; onStart
   );
 }
 
+/** Entrada do coach em chat: um recurso extra, que não substitui nenhuma tela. */
+function CoachEntry() {
+  const { coach, plano } = useCoach();
+  return (
+    <div className="coach-entry">
+      <Link to={coach ? '/coach/chat' : '/coach'} className="dir-row">
+        <span className="tool-icon round"><MessageCircle size={20} strokeWidth={1.9} /></span>
+        <span className="dir-row-copy">
+          <b>Montar plano com o coach</b>
+          <span>Uma conversa rápida e o seu plano fica pronto.</span>
+        </span>
+        <ArrowRight size={18} className="dir-row-arrow" />
+      </Link>
+      {plano && <Link className="link-btn" to="/coach/plano">Ver o plano do coach</Link>}
+    </div>
+  );
+}
+
 export function HomePage({
   savedProgress,
   onStart,
@@ -369,6 +388,7 @@ export function HomePage({
       )}
       <div className="home-stack">
         <MonthCard />
+        <CoachEntry />
         {resume === null && <AgentsPanel hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
       </div>
     </>

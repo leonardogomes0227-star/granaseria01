@@ -1,15 +1,18 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { House, MessageCircle, UserRound, type LucideIcon } from 'lucide-react';
+import { ClipboardList, House, UserRound, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
 import { BrandMark } from './Layout';
 
 /* ---------- A casca do app: as mesmas 4 abas no topo (PC) e embaixo (celular) ---------- */
-// O coach é o coração do app: Início (o plano e como estou) e Coach (a conversa). O resto vive dentro do chat.
+// Os agentes são o coração do app: Início (como estou hoje?), Agentes (quem cuida do quê?), Meu mês (pra onde foi?)
+// e Plano (o que faço?). Não há lista de ferramentas: cada tela de cálculo abre de dentro do agente dela.
 
 export const NAV: [string, string, LucideIcon][] = [
-  ['/inicio', 'Início', House],
-  ['/coach', 'Coach', MessageCircle],
+  ['/', 'Início', House],
+  ['/conselheiros', 'Agentes', Users],
+  ['/mes', 'Meu mês', Wallet],
+  ['/plano', 'Plano', ClipboardList],
 ];
 
 function TopBar() {
@@ -18,18 +21,18 @@ function TopBar() {
   return (
     <header className="shell-top">
       <div className="shell-top-in">
-        <Link to="/inicio" className="shell-brand" aria-label="Grana Séria, início">
+        <Link to="/" className="shell-brand" aria-label="Grana Séria, início">
           <BrandMark />
           <span>Grana Séria</span>
         </Link>
         <nav className="shell-links" aria-label="Seções">
           {NAV.map(([to, label]) => (
-            <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? 'on' : '')}>
+            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
               {label}
             </NavLink>
           ))}
         </nav>
-        <Link className={logged ? 'shell-me' : 'shell-login'} to={logged ? '/conta' : '/entrar'}>
+        <Link className={logged ? 'shell-me' : 'shell-login'} to={logged ? '/mes' : '/entrar'}>
           {logged ? <span className="shell-avatar">{(name || 'V').charAt(0).toUpperCase()}</span> : <UserRound size={16} />}
           <span>{logged ? name || 'Minha conta' : 'Entrar'}</span>
         </Link>
@@ -42,7 +45,7 @@ function BottomNav() {
   return (
     <nav className="shell-bottom" aria-label="Seções">
       {NAV.map(([to, label, Icon]) => (
-        <NavLink key={to} to={to} end className={({ isActive }) => (isActive ? 'on' : '')}>
+        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
           <Icon size={21} strokeWidth={1.9} />
           <span>{label}</span>
         </NavLink>

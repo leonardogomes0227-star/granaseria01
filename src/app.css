@@ -35,7 +35,7 @@
   .shell-me { padding: 4px; border: 0; }
   .shell-main { padding: 20px 16px 32px; }
   .shell-foot { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
-  .shell-bottom { display: grid; grid-template-columns: repeat(2, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, 0.97); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
+  .shell-bottom { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, 0.97); border-top: 1px solid var(--line); backdrop-filter: blur(12px); }
   .shell-bottom a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px; color: var(--text-faint); font-size: 11px; font-weight: 600; text-decoration: none; }
   .shell-bottom a.on { color: var(--gold-bright); background: rgba(26, 56, 43, 0.1); }
 }
@@ -709,3 +709,6 @@ a.dir-row { text-decoration: none; }
 .cc-page .btn-primary { background: var(--hero); color: #fff; border: 0; box-shadow: none; }
 .cc-page .btn-primary:hover { background: var(--hero-2); }
 .cc-page .btn-shine::after { display: none; }
+
+.coach-entry { display: flex; flex-direction: column; gap: 6px; }
+.coach-entry .tool-icon.round { background: var(--hero); color: #fff; }

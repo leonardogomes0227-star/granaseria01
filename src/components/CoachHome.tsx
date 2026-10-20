@@ -10,7 +10,7 @@ import { AgentAvatar } from './AgentPage';
 import { AppShell, PageHead } from './AppShell';
 import { PlanItems } from './PlanCard';
 
-/* ---------- /inicio: o plano em um cartão e a conversa com o coach ---------- */
+/* ---------- /coach/plano: o plano em um cartão e a conversa com o coach ---------- */
 
 /** O mês que o coach quer saber: o anterior (nos 10 primeiros dias) ou, a partir do dia 20, o atual. Só se ainda não foi registrado. */
 function pendingCheckin(plan: Plan, aportes: Aporte[], now: Date = new Date()): string | null {
@@ -29,7 +29,7 @@ export function CoachHome() {
 
   return (
     <AppShell>
-      <PageHead title={name ? `Oi, ${name}` : 'Oi!'} />
+      <PageHead title="Plano com o coach" sub={name ? `${name}, aqui está o seu plano e o check-in do mês.` : undefined} />
       <div className="home-stack">
 
         {!coach && (

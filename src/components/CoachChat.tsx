@@ -99,7 +99,7 @@ export function CoachChat() {
   if (!coach) return <RedirectTo to="/coach" />;
   if (mode.current === 'checkin') {
     if (!view.plano) return <RedirectTo to="/coach/chat?s=plano" />;
-    if (!mes || !checkinMonths(view.plano.criadoEm).includes(mes)) return <RedirectTo to="/inicio" />;
+    if (!mes || !checkinMonths(view.plano.criadoEm).includes(mes)) return <RedirectTo to="/coach/plano" />;
     const ctx: CheckinContext = { mes, plan: view.plano, aportes: view.aportes };
     return <Conversation key={`c-${mes}`} coach={coach} kind="checkin" ctx={ctx} />;
   }
@@ -116,7 +116,7 @@ function RedirectTo({ to }: { to: string }) {
 function Header({ coach, onBack, canBack, backLabel }: { coach: Coach; onBack?: () => void; canBack?: boolean; backLabel?: string }) {
   return (
     <header className="cc-head">
-      <Link to="/inicio" className="cc-close" aria-label="Voltar ao início"><ArrowLeft size={20} /></Link>
+      <Link to="/" className="cc-close" aria-label="Voltar ao início"><ArrowLeft size={20} /></Link>
       <AgentAvatar id={coach.id} name={coach.name} hue={coach.hue} size={38} />
       <span className="cc-who"><b>{coach.name}</b><small>{coach.tone} · foco em {coach.focus.toLowerCase()}</small></span>
       {onBack && (
@@ -295,12 +295,12 @@ function Conversation({ coach, kind, ctx }: { coach: Coach; kind: 'plano' | 'che
             <div className="cc-card">
               <b>Seu plano</b>
               <PlanItems plan={plan} />
-              <button type="button" className="btn-primary" onClick={() => navigate('/inicio')}>Começar</button>
+              <button type="button" className="btn-primary" onClick={() => navigate('/coach/plano')}>Começar</button>
             </div>
           )}
           {finished && kind === 'checkin' && (
             <div className="cc-card slim">
-              <button type="button" className="btn-primary" onClick={() => navigate('/inicio')}>Ver meu plano</button>
+              <button type="button" className="btn-primary" onClick={() => navigate('/coach/plano')}>Ver meu plano</button>
             </div>
           )}
           <div ref={bottom} />
