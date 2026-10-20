@@ -1529,6 +1529,23 @@ html { overflow-x: hidden; }
 .done-list b { display: block; font-size: 14.5px; }
 .done-list small { display: block; font-size: 13px; color: var(--ink-soft); }
 
+.tk-status { margin-bottom: 16px; padding: 12px 14px; border-radius: 12px; font-family: var(--sans); font-size: 15px; font-weight: 600; line-height: 1.45; }
+.tk-good { background: #EEF5EC; border: 1px solid #C6DCC4; color: #2F6B45; }
+.tk-warn { background: #FBF1DA; border: 1px solid #E8CF95; color: #7A5311; }
+.tk-bad { background: #F8E6DE; border: 1px solid #E5BBA8; color: #8E4426; }
+.tk-month { padding: 18px; border-radius: 16px; background: var(--white); border: 1px solid var(--hairline); font-family: var(--sans); }
+.tk-q { margin: 0 0 6px; font-family: var(--display); font-size: clamp(20px, 4vw, 24px); color: var(--ink); }
+.tk-from { margin: 0 0 14px; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+.tk-task { padding: 14px 0; border-top: 1px solid var(--hairline-soft); }
+.tk-task-head { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 10px; font-size: 16px; color: var(--ink); }
+.tk-task-head span { font-weight: 700; }
+.tk-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tk-choices button { min-height: 46px; padding: 8px; border-radius: 10px; border: 1.5px solid var(--hairline); background: var(--paper); font-family: var(--sans); font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.tk-choices button.on { border-color: var(--ink); background: var(--ink); color: #fff; }
+.tk-part { margin-top: 10px; max-width: 240px; }
+.tk-save { width: 100%; justify-content: center; margin-top: 8px; }
+@media (max-width: 480px) { .tk-choices { grid-template-columns: 1fr; } }
+
 /* ---------- movimento reduzido: tudo aparece, nada se mexe ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }

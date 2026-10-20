@@ -39,7 +39,7 @@ export function ToolShell({
             <div><dt><Clock size={15} /> Quando usar</dt><dd>{tool.guide.quando}</dd></div>
             <div><dt><CheckCircle2 size={15} /> O que você recebe</dt><dd>{tool.guide.recebe}</dd></div>
           </dl>
-          {saved && (
+          {saved && id !== 'tracker' && (
             <p className="tool-saved">
               <CheckCircle2 size={14} /> Da última vez: {saved.summary}
             </p>
