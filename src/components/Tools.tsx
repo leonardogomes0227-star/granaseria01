@@ -32,7 +32,7 @@ export function ToolShell({
   return (
     <div className="tool-screen anim-in" key={id}>
       <button type="button" className="link-btn tool-back" onClick={onClose}>
-        <ArrowLeft size={16} /> Ferramentas
+        <ArrowLeft size={16} /> Voltar
       </button>
       <div className="tool-top">
         <ToolIcon tool={tool} size="lg" />

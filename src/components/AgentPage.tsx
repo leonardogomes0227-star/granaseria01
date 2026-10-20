@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bell, Send } from 'lucide-react';
 import type { WizardData } from '../types';
 import { agentPlan, type Agent } from '../agents';
-import { getTool, type ToolId } from '../tools';
+import { faturaEnabled, getTool, type ToolId } from '../tools';
 import { setToolTasks } from '../results';
 import { painelToken } from '../painel';
 import { track } from '../analytics';
@@ -52,6 +52,11 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
   const [extra, setExtra] = useState<Msg[]>([]);
   const [ask, setAsk] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fatura, setFatura] = useState(false);
+  useEffect(() => {
+    void faturaEnabled().then(setFatura);
+  }, []);
+  const others = (agent.extra ?? []).filter((id) => id !== 'fatura' || fatura);
   const endRef = useRef<HTMLDivElement>(null);
   const tool = getTool(agent.tool);
 
@@ -161,6 +166,14 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
               </button>
               <Link className="btn-outline" to="/">Ver meus próximos passos</Link>
             </div>
+            {others.length > 0 && (
+              <p className="agent-plan-more">
+                Também posso te ajudar com:{' '}
+                {others.map((id) => (
+                  <button key={id} type="button" className="link-btn" onClick={() => onOpenTool(id)}>{getTool(id).title}</button>
+                ))}
+              </p>
+            )}
           </div>
         )}
 

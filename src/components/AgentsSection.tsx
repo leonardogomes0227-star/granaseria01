@@ -56,7 +56,7 @@ export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: bo
               </span>
               <span className="agent-copy">
                 <b>{a.name}</b>
-                <span>{a.role}</span>
+                <span>{a.does}</span>
               </span>
             </button>
           );

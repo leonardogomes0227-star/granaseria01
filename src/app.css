@@ -325,3 +325,12 @@ a.dir-row { text-decoration: none; }
 .btn-danger:hover { filter: brightness(0.92); }
 .bill-undo { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line-strong); font-size: 14.5px; }
 .bill-undo .link-btn { padding: 0; font-weight: 700; }
+
+/* agentes no centro: a frase do que cada um faz */
+.agents-hint { margin: 0 0 12px; color: var(--text-soft); font-size: 14.5px; }
+.live-when.idle { background: var(--surface-2); color: var(--text-faint); }
+.agent-live .live-line { -webkit-line-clamp: 3; min-height: 51px; }
+.agent-live { width: 172px; }
+.agent-copy > span { -webkit-line-clamp: unset; }
+.agent-plan-more { margin: 12px 0 0; font-size: 13.5px; color: var(--text-soft); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.agent-plan-more .link-btn { padding: 0; }

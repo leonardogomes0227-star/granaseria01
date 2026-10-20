@@ -18,7 +18,6 @@ import { PlanTracker } from './components/PlanTracker';
 import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { HomePage } from './components/HomePage';
-import { ToolsPage } from './components/ToolsPage';
 import { AgentsSection } from './components/AgentsSection';
 import { AppShell, PageHead } from './components/AppShell';
 import { AppBar } from './components/Layout';
@@ -161,7 +160,9 @@ function App() {
   };
   const backToTools = () => {
     setSavedProgress(loadSavedProgress());
-    navigate('/ferramentas');
+    // volta pra quem abriu (o agente); se a pessoa chegou direto no link, vai pros agentes
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/conselheiros');
   };
 
   useEffect(() => {
@@ -251,25 +252,16 @@ function App() {
         <Route
           path="/conselheiros"
           element={
-            <Titled title="Conselheiros">
+            <Titled title="Agentes">
               <AppShell>
-                <PageHead title="Conselheiros" sub="Cada um cuida de um problema. Escolha um e converse: ele monta o seu plano." />
+                <PageHead title="Agentes" sub="Cada um cuida de uma coisa e te avisa no WhatsApp. Escolha um ou crie o seu." />
                 <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} bare />
               </AppShell>
             </Titled>
           }
         />
         <Route path="/conselheiros/:id" element={<AgentRoute data={data} onOpenTool={openTool} />} />
-        <Route
-          path="/ferramentas"
-          element={
-            <Titled title="Ferramentas">
-              <AppShell>
-                <ToolsPage hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} onStart={savedProgress && savedProgress.step > 0 ? resumeWizard : startWizard} onOpenTool={openTool} />
-              </AppShell>
-            </Titled>
-          }
-        />
+        <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
         <Route
           path="/ferramentas/:slug"
           element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
