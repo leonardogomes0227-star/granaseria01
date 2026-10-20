@@ -193,29 +193,30 @@ Fora da janela de 24h a Meta só entrega **modelos aprovados**. Crie dois no Wha
 
 **`resumo_semanal`**
 ```
-📊 Sua semana na Grana Séria
+Sua semana na Grana Séria
 
-💸 Gastou {{1}}.
-O que mais pesou: {{2}}.
+Gastou {{1}}.
+Mais pesou: {{2}}.
 No mês: {{3}}.
 
-💡 {{4}}
+{{4}}
 
 Pra parar de receber, responda: parar resumo
 ```
-Exemplos pra Meta: {{1}} `R$ 450,00 em 12 anotações`, {{2}} `Alimentação (R$ 200,00)`, {{3}} `saldo do mês R$ 1.200,00, uns R$ 90,00 por dia até o fim do mês`, {{4}} `Mande *vazamentos* e eu mostro quais assinaturas pesam.`
+Exemplos pra Meta: {{1}} `R$ 450,00, 12% a menos que na semana anterior`, {{2}} `Alimentação, R$ 200,00`, {{3}} `pode gastar uns R$ 90,00 por dia até o fim do mês`, {{4}} `Seu plano: https://granaseria.com.br/plano`
 
 **`resumo_mensal`**
 ```
-🗓️ Seu {{1}} na Grana Séria
+Seu {{1}} na Grana Séria
 
-📥 Entrou: {{2}}
-📤 Saiu: {{3}}
-⚖️ Resultado: {{4}}
+Entrou {{2}} e saiu {{3}}.
+Resultado: {{4}}
 
 Pra parar de receber, responda: parar resumo
 ```
-Exemplos: {{1}} `outubro`, {{2}} `R$ 3.000,00`, {{3}} `R$ 2.500,00, mais em Moradia`, {{4}} `sobraram R$ 500,00 (16% do que entrou).`
+Exemplos: {{1}} `outubro`, {{2}} `R$ 3.000,00`, {{3}} `R$ 2.500,00, mais em Moradia (R$ 900,00)`, {{4}} `sobraram R$ 500,00 (16% do que entrou). No próximo mês, separe esse valor assim que o salário cair.`
+
+Os modelos já aprovados antes (com emojis) continuam funcionando: os quatro campos são os mesmos, só o texto que entra neles ficou mais curto e calmo. Pra trocar o visual, crie os modelos acima e aponte `WHATSAPP_WEEKLY_TEMPLATE` e `WHATSAPP_MONTHLY_TEMPLATE` pros nomes novos.
 
 Variáveis (opcionais): `WHATSAPP_WEEKLY_TEMPLATE` (padrão `resumo_semanal`), `WHATSAPP_MONTHLY_TEMPLATE` (padrão `resumo_mensal`), `CRON_SECRET` (o mesmo dos lembretes). Cada mensagem de modelo tem custo na Meta (categoria utilidade).
 

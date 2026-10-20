@@ -12,8 +12,8 @@ type SiteKey = 'diag' | 'painel' | 'plano' | 'dividas' | 'emprestimo' | 'meta' |
 
 const TOOLS: Record<SiteKey, { title: string; path: string; why: string }> = {
   diag: { title: 'Diagnóstico', path: '/diagnostico', why: 'umas perguntas rápidas e você recebe sua nota e um plano com valores e datas' },
-  painel: { title: 'Meu painel', path: '/painel', why: 'seu mês, seu plano de ação e o próximo passo, tudo num lugar' },
-  plano: { title: 'Acompanhar meu plano', path: '/ferramentas/meu-plano', why: 'o que pagar e guardar em cada mês, recalculado quando você atrasa ou adianta' },
+  painel: { title: 'Meu app', path: '/', why: 'quanto você pode gastar hoje e o seu próximo passo' },
+  plano: { title: 'Seu plano', path: '/plano', why: 'o que fazer este mês, com valores e datas' },
   dividas: { title: 'Sair das dívidas', path: '/ferramentas/quitar-dividas', why: 'a ordem certa pra pagar suas dívidas e quando você fica livre' },
   emprestimo: { title: 'Comparar empréstimos', path: '/ferramentas/comparador-de-emprestimo', why: 'qual proposta sai mais barata no total' },
   meta: { title: 'Juntar pra um objetivo', path: '/ferramentas/calculadora-de-meta', why: 'quanto guardar por mês pra chegar no valor que você quer' },
