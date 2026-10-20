@@ -19,6 +19,7 @@ export interface ToolResult {
   summary: string;
   at: string;
   card?: ResultCard;
+  history?: { at: string; summary: string }[]; // as vezes anteriores, da mais nova pra mais velha
 }
 
 function read<T>(key: string, fallback: T): T {
@@ -47,7 +48,13 @@ export const getResults = (): Partial<Record<ToolId, ToolResult>> => {
 export function saveResult(tool: ToolId, summary: string, card?: ResultCard) {
   const all = getResults();
   if (all[tool]?.summary === summary && JSON.stringify(all[tool]?.card) === JSON.stringify(card)) return;
-  write(RESULTS_KEY, { ...all, [tool]: { summary, at: new Date().toISOString(), ...(card ? { card } : {}) } });
+  const prev = all[tool];
+  // a versão anterior vai pro histórico (uma por dia, as 8 mais novas)
+  const history = prev ? [{ at: prev.at, summary: prev.summary }, ...(prev.history ?? [])].filter((h, i, list) => i === 0 || h.at.slice(0, 10) !== list[i - 1].at.slice(0, 10)) : [];
+  const now = new Date().toISOString();
+  const kept = history.filter((h, i) => i > 0 || h.at.slice(0, 10) !== now.slice(0, 10)).slice(0, 8);
+  write(RESULTS_KEY, { ...all, [tool]: { summary, at: now, ...(card ? { card } : {}), ...(kept.length ? { history: kept } : {}) } });
+  window.dispatchEvent(new Event('gs-resultados'));
 }
 
 /* ---------- próximos passos do coach ---------- */

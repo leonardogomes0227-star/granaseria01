@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useId, ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2 } from 'lucide-react';
-import { getResults, saveGoal, saveResult, setToolTasks, type ResultCard } from '../results';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { saveGoal, saveResult, setToolTasks, type ResultCard } from '../results';
 import type { NewTask, TaskSource } from '../coach';
 import { fetchPainel, painelToken } from '../painel';
 import { DebtItem, DebtKind, WizardData } from '../types';
@@ -8,6 +8,7 @@ import { buildPlan, compareStrategies, effectiveRate, getDebtKind, DEBT_KINDS } 
 import { formatBRL, computeProjection, computeRequiredContribution, computeLoanInstallment, inTodaysMoney, INFLATION_PCT } from '../calculations';
 import { ToolId, getTool } from '../tools';
 import { ToolIcon } from './Layout';
+import { ToolPanel, useResult } from './ToolPanel';
 import { CountUp } from './motion';
 import { DecimalInput } from './DecimalInput';
 
@@ -24,7 +25,7 @@ export function ToolShell({
   children,
 }: ToolNavProps & { id: ToolId; children: ReactNode }) {
   const tool = getTool(id);
-  const [saved] = useState(() => getResults()[id]);
+  const result = useResult(id);
   return (
     <div className="tool-screen anim-in" key={id}>
       <button type="button" className="link-btn tool-back" onClick={onClose}>
@@ -37,11 +38,8 @@ export function ToolShell({
           <p>{tool.guide.serve}</p>
         </div>
       </div>
-      {saved && id !== 'tracker' && (
-        <p className="tool-saved">
-          <CheckCircle2 size={14} /> Da última vez: {saved.summary}
-        </p>
-      )}
+      <ToolPanel id={id} />
+      <p className="section-label tool-form-label">{result ? 'Atualizar os seus números' : 'Começar'}</p>
       <div className="card tool-body">{children}</div>
     </div>
   );

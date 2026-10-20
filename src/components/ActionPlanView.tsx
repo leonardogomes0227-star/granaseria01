@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Check, ChevronDown, CreditCard, Phone, PiggyBank, Scissors, ShieldAlert, Target, TrendingUp, type LucideIcon } from 'lucide-react';
 import { CopyMessage } from './CopyMessage';
 import { ActionPlan, PlanStep, monthShort } from '../plan';
 import { RIGHTS, relevantRights } from '../leaks';
@@ -194,6 +194,7 @@ export function ActionPlanView({
 
   return (
     <div className="plan">
+      {!locked && <PlanRoad plan={plan} />}
       <ThisMonth plan={plan} general={general} onOpenTool={onOpenTool} onPick={locked ? undefined : open} />
 
       {locked ? (
@@ -315,8 +316,29 @@ function PotStep({ step }: { step: PlanStep }) {
 }
 
 /** O que fazer neste mês, em reais: a primeira coisa que a pessoa vê. Cada linha leva pro objetivo dela. */
+const DONE_KEY = 'gs-mes-feito';
+const ym = () => new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 7);
+function readDone(): string[] {
+  try {
+    const all = JSON.parse(localStorage.getItem(DONE_KEY) || '{}') as Record<string, string[]>;
+    return Array.isArray(all[ym()]) ? all[ym()] : [];
+  } catch {
+    return [];
+  }
+}
+function writeDone(list: string[]) {
+  try {
+    // só o mês atual fica guardado
+    localStorage.setItem(DONE_KEY, JSON.stringify({ [ym()]: list }));
+  } catch {
+    // segue sem salvar
+  }
+}
+
+/** O que fazer neste mês, em reais, com caixinha pra marcar. Cada linha leva pro objetivo dela. */
 function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; general: PlanStep[]; onOpenTool: (id: ToolId) => void; onPick?: (id: PotId) => void }) {
   const [how, setHow] = useState(false);
+  const [done, setDone] = useState<string[]>(readDone);
   const row = plan.schedule[0];
   const items: [LucideIcon, string, string, PotId | null][] = [];
   if (plan.stuck) items.push([Phone, 'Ligar pro banco e pedir pra renegociar', 'agora', 'debts']);
@@ -329,29 +351,49 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
   plan.goals.forEach((g, i) => items.push([Target, `Juntar pra ${g.name}`, formatBRL(g.monthly), `goal-${i}`]));
   for (const c of plan.cuts) items.push([Scissors, `No máximo em ${c.label.toLowerCase()}`, formatBRL(c.ceiling), 'gastos']);
   const month = monthShort(plan.start, 1);
+  const count = items.filter(([, what]) => done.includes(what)).length;
+  const all = items.length > 0 && count === items.length;
+  const toggle = (what: string) => {
+    const next = done.includes(what) ? done.filter((d) => d !== what) : [...done, what];
+    setDone(next);
+    writeDone(next);
+  };
   return (
     <div className="this-month">
-      <p className="this-month-head">
-        <b>Este mês ({month})</b>
-        <small>
-          {plan.powerAssumed
-            ? `Hoje não sobra nada. O plano começa separando 10% da renda: ${formatBRL(plan.monthlyPower)} por mês.`
-            : `Você guarda ${formatBRL(plan.savingNow)} hoje. Com o plano, vão ${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
-        </small>
-      </p>
+      <div className="this-month-top">
+        <p className="this-month-head">
+          <b>Este mês ({month})</b>
+          <small>
+            {plan.powerAssumed
+              ? `Hoje não sobra nada: o plano começa separando 10% da renda, ${formatBRL(plan.monthlyPower)} por mês.`
+              : `Com o plano, vão ${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
+          </small>
+        </p>
+        {items.length > 0 && <span className={`month-count ${all ? 'all' : ''}`}>{count}/{items.length}</span>}
+      </div>
       {items.length > 0 && (
-        <ul>
-          {items.map(([Icon, what, amount, pot], i) => (
-            <li key={i}>
-              <button type="button" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
-                <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
-                <span className="this-month-what">{what}</span>
-                <b>{amount}</b>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="jp-bar"><i style={{ width: `${Math.max(3, (count / items.length) * 100)}%` }} /></div>
+          <ul className="month-list">
+            {items.map(([Icon, what, amount, pot], i) => {
+              const ok = done.includes(what);
+              return (
+                <li key={i} className={ok ? 'ok' : ''}>
+                  <button type="button" className={`task-check ${ok ? 'on' : ''}`} aria-pressed={ok} aria-label={ok ? `Desmarcar: ${what}` : `Marcar como feito: ${what}`} onClick={() => toggle(what)}>
+                    <Check size={15} />
+                  </button>
+                  <button type="button" className="month-item" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
+                    <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
+                    <span className="this-month-what">{what}</span>
+                    <b>{amount}</b>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
+      {all && <p className="month-ok">Mês cumprido. Registre no acompanhamento pra o plano ajustar as datas.</p>}
       {general.length > 0 && (
         <>
           <button type="button" className="plan-more" aria-expanded={how} onClick={() => setHow((v) => !v)}>
@@ -360,13 +402,41 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
           {how && general.map((s, i) => <p key={i} className="step-detail"><b>{s.title}.</b> {s.detail}</p>)}
         </>
       )}
-      <button type="button" className="btn-primary" onClick={() => onOpenTool('tracker')}>
-        Já fiz? Marcar em Acompanhar meu plano <ArrowRight size={15} />
+      <button type="button" className={all ? 'btn-primary' : 'btn-outline'} onClick={() => onOpenTool('tracker')}>
+        {all ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={15} />
       </button>
     </div>
   );
 }
 
+/** O caminho do plano inteiro: de hoje até o fim, com a data de cada etapa. */
+function PlanRoad({ plan }: { plan: ActionPlan }) {
+  const short = (n: number) => monthShort(plan.start, n);
+  const stops: { label: string; title: string; text: string }[] = [
+    { label: 'Começo', title: 'Hoje', text: `Separar ${formatBRL(plan.monthlyPower)} por mês` },
+  ];
+  for (const ph of plan.phases) {
+    if (ph.id === 'invest') continue;
+    stops.push({ label: ph.to === null ? 'Depois' : `Até ${short(ph.to)}`, title: ph.title, text: ph.id === 'debts' ? 'Uma dívida de cada vez' : `${formatBRL(plan.reserve.target)} guardados` });
+  }
+  stops.push({
+    label: 'Fim',
+    title: plan.investFrom !== null ? 'Dinheiro trabalhando por você' : 'Plano cumprido',
+    text: plan.investFrom !== null ? `Investindo a partir de ${short(plan.investFrom)}` : 'Tudo em dia',
+  });
+  return (
+    <ol className="plan-road" aria-label="O caminho do seu plano">
+      {stops.map((st, i) => (
+        <li key={i} className={i === 0 ? 'now' : ''}>
+          <span className="road-dot" />
+          <small>{st.label}</small>
+          <b>{st.title}</b>
+          <span>{st.text}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 /** Gráfico simples do dinheiro guardado mês a mês, com as datas das metas marcadas. */
 function GrowthChart({ plan }: { plan: ActionPlan }) {
