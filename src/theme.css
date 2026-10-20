@@ -4,11 +4,11 @@
    ========================================================================== */
 
 :root {
-  --bg: #EFE6D6;
-  --surface: #FBF7EF;
-  --surface-2: #F3EBDD;
-  --line: #E3D7C3;
-  --line-strong: #D2C3AA;
+  --bg: #F8F7F4;
+  --surface: #FFFFFF;
+  --surface-2: #F1EFEA;
+  --line: #E8E5DD;
+  --line-strong: #D9D5CA;
   --text: #16130E;
   --text-soft: #5A5043;
   --text-faint: #877B69;
@@ -39,6 +39,9 @@
   --shadow-sm: 0 1px 2px rgba(22, 19, 14, 0.05);
   --shadow-md: 0 1px 3px rgba(22, 19, 14, 0.06), 0 6px 18px rgba(22, 19, 14, 0.04);
   --shadow-lg: 0 2px 6px rgba(22, 19, 14, 0.06), 0 12px 32px rgba(22, 19, 14, 0.06);
+  --hero: #1A382B;
+  --hero-2: #234735;
+  --radius-card: 22px;
   color-scheme: light;
 }
 

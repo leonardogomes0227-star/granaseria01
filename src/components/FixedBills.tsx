@@ -111,7 +111,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
 
   if (total === 0 && !showSave) {
     return (
-      <section className="fixed-bills empty">
+      <section className="fixed-bills empty" id="gastos-fixos">
         <div className="fixed-head">
           <b>Gastos fixos</b>
         </div>
@@ -131,7 +131,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
   );
 
   return (
-    <section className={`fixed-bills ${compact ? 'compact' : ''}`}>
+    <section className={`fixed-bills ${compact ? 'compact' : ''}`} id="gastos-fixos">
       {compact ? (
         <button type="button" className="fixed-head fixed-toggle" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
           <span>{head}</span>
