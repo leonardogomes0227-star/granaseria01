@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { agentForTool } from '../agents';
 import { CountUp } from './motion';
 import { DecimalInput } from './DecimalInput';
+import { Snowball } from './Snowball';
 
 /* ---------- casca comum das ferramentas ---------- */
 
@@ -276,36 +277,6 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
   );
 }
 
-/* ---------- Avalanche vs. bola de neve ---------- */
-
-function sortAvalanche(debts: DebtItem[]): DebtItem[] {
-  return [...debts].sort((a, b) => effectiveRate(b).rate - effectiveRate(a).rate);
-}
-
-function sortSnowball(debts: DebtItem[]): DebtItem[] {
-  return [...debts].sort((a, b) => a.value - b.value);
-}
-
-function DebtOrderList({ title, note, debts }: { title: string; note: string; debts: DebtItem[] }) {
-  return (
-    <div className="stat-card">
-      <p className="field-label" style={{ color: 'var(--ink)', fontWeight: 600, marginBottom: 2 }}>{title}</p>
-      <p className="field-hint" style={{ marginTop: 0, marginBottom: 8 }}>{note}</p>
-      <div className="action-list stagger">
-        {debts.map((d, i) => (
-          <div className="action-item" key={d.id}>
-            <span className="action-num">{String(i + 1).padStart(2, '0')}</span>
-            <p>
-              {d.description || 'Dívida sem nome'} — {formatBRL(d.value)}
-              {` (${effectiveRate(d).rate.toLocaleString('pt-BR')}% ao mês${effectiveRate(d).assumed ? ', valor comum' : ''})`}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtItem[]; data: WizardData; onStart: () => void } & ToolNavProps) {
   // com diagnóstico, usa as dívidas de lá; sem, a pessoa digita aqui mesmo (não precisa fazer o diagnóstico antes)
   const fromDiag = debts.filter((d) => d.value > 0);
@@ -318,15 +289,10 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
   const planPower = useMemo(() => (data.monthlyIncome > 0 && fromDiag.length > 0 ? buildPlan(data).monthlyPower : 0), [data, fromDiag.length]);
   const [power, setPower] = useState(planPower);
   const results = useMemo(() => (list.length > 0 && power > 0 ? compareStrategies(list, power) : null), [list, power]);
-  const best = results
-    ? results[0].months === null
-      ? null
-      : results[1].months !== null && results[1].interest - results[0].interest < Math.max(50, results[0].interest * 0.05)
-        ? results[1] // quase o mesmo juros: a bola de neve motiva mais (você vê dívidas acabando antes)
-        : results[0]
-    : null;
+  // a bola de neve (da menor pra maior) é o método do app: dá vitórias mais cedo
+  const best = results && results[1].months !== null ? results[1] : null;
   const label = (o: 'avalanche' | 'snowball') => (o === 'avalanche' ? 'Começar pela de juros mais alto' : 'Começar pela menor');
-  const when = (m: number | null) => (m === null ? 'não fecha com esse valor' : m < 12 ? `em ${m} ${m === 1 ? 'mês' : 'meses'}` : `em ${(m / 12).toFixed(1).replace('.', ',')} anos`);
+  const when = (m: number | null) => (m === null ? 'não fecha com esse valor' : m < 12 ? `em ${m} ${m === 1 ? 'mês' : 'meses'}` : m % 12 === 0 ? `em ${m / 12} ${m === 12 ? 'ano' : 'anos'}` : `em ${(m / 12).toFixed(1).replace('.', ',')} anos`);
   useToolTasks(
     'debts',
     best
@@ -361,8 +327,6 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
 
   return (
     <ToolShell id="debts" {...nav}>
-      <p className="wizard-sub">Veja por qual dívida começar. Nas outras, você paga só a parcela mínima.</p>
-
       {fromDiag.length === 0 && (
         <div className="stat-card" style={{ marginBottom: 16 }}>
           <p className="field-label" style={{ color: 'var(--ink)', fontWeight: 600 }}>Suas dívidas</p>
@@ -400,43 +364,20 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
         <div className="result-empty">Adicione suas dívidas acima pra ver qual pagar primeiro.</div>
       ) : (
         <>
-          {list.some((d) => effectiveRate(d).assumed) && (
-            <p className="field-hint" style={{ marginTop: -8, marginBottom: 16 }}>
-              Onde você não disse os juros, usamos o valor comum pra esse tipo de dívida. Confira no seu contrato.
-            </p>
-          )}
           <MoneyField
             label="Quanto dá pra pagar por mês, somando todas"
             value={power}
             onChange={setPower}
-            hint={planPower > 0 ? 'Vem do seu plano de ação.' : 'Some as parcelas que você já paga com o que dá pra pôr a mais.'}
+            hint={planPower > 0 ? 'Vem do seu plano de ação.' : undefined}
           />
-          {results && (
-            <div className="result-card" style={{ marginBottom: 16 }}>
-              {best ? (
-                <>
-                  <span className="status-pill status-good">Recomendado: {label(best.order)}</span>
-                  <p className="result-big" style={{ fontSize: 'clamp(22px, 5vw, 30px)' }}>Comece por {best.sequence[0]}</p>
-                  <p className="field-hint">Você fica livre {when(best.months)} e paga {formatBRL(best.interest)} de juros no total.</p>
-                </>
-              ) : (
-                <p className="wizard-sub" style={{ margin: 0 }}>Com {formatBRL(power)} por mês os juros crescem mais rápido que os pagamentos. Renegocie primeiro: veja "Negociar com o banco".</p>
-              )}
-              <div className="result-split">
-                {results.map((r) => (
-                  <div className="stat-card" key={r.order}>
-                    <p className="diag-label">{label(r.order)}</p>
-                    <p className="diag-number" style={{ fontSize: 20 }}>{r.months === null ? '—' : when(r.months).replace('em ', '')}</p>
-                    <p className="field-hint">{r.months === null ? 'não fecha' : `${formatBRL(r.interest)} de juros`}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {power > 0 ? (
+            <Snowball debts={list} power={power} />
+          ) : (
+            <p className="field-hint">Diga quanto dá pra pagar por mês pra ver a ordem e o prazo.</p>
           )}
-          <div className="loan-grid">
-            <DebtOrderList title="Começando pela de juros mais alto" note="Você paga menos juros no total." debts={sortAvalanche(list)} />
-            <DebtOrderList title="Começando pela menor" note="Você vê dívidas acabando mais cedo, e isso anima." debts={sortSnowball(list)} />
-          </div>
+          {list.some((d) => effectiveRate(d).assumed) && (
+            <p className="field-hint" style={{ marginTop: 10 }}>Onde você não disse os juros, usamos o valor comum do tipo de dívida.</p>
+          )}
           {fromDiag.length === 0 && (
             <p className="field-hint" style={{ marginTop: 14 }}>
               Quer saber <b>quando</b> você fica livre e quanto pagar por mês?{' '}

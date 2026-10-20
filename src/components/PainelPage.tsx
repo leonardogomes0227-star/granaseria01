@@ -10,8 +10,8 @@ import { leaksMonthlyTotal } from '../leaks';
 import { getGoals } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView, PlanUndo } from './ActionPlanView';
-import { FixedBills, useBills } from './FixedBills';
-import { paidThisMonth, paymentsThisMonth } from '../bills';
+import { FixedBills, useBills, useSaved } from './FixedBills';
+import { paidThisMonth, paymentsThisMonth, savedThisMonth } from '../bills';
 import { PageHead } from './AppShell';
 import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
@@ -98,11 +98,14 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
   const bills = useBills();
   const monthKey = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 7);
   const billsPaid = paidThisMonth(bills, monthKey);
-  const left = income - spent - billsPaid;
+  const savedList = useSaved();
+  const putAside = savedThisMonth(savedList, monthKey);
+  const left = income - spent - billsPaid - putAside;
   const clock = monthClock();
   const perDay = left > 0 ? Math.floor(left / Math.max(1, clock.last - clock.today + 1)) : 0;
   const billRows = paymentsThisMonth(bills, monthKey).map((p) => ({ amount: p.amount, created_at: `${p.paidOn}T15:00:00Z`, description: p.name, method: null as string | null, kind: 'out' as const, what: 'Conta fixa' }));
-  const recent = [...expenses.map((e) => ({ ...e, kind: 'out' as const, what: e.category })), ...billRows, ...incomes.map((i) => ({ ...i, kind: 'in' as const, what: i.source }))]
+  const savedRows = savedList.filter((e) => e.on.slice(0, 7) === monthKey).map((e) => ({ amount: e.amount, created_at: `${e.on}T15:00:00Z`, description: 'Pague-se primeiro', method: null as string | null, kind: 'out' as const, what: 'Guardado' }));
+  const recent = [...expenses.map((e) => ({ ...e, kind: 'out' as const, what: e.category })), ...billRows, ...savedRows, ...incomes.map((i) => ({ ...i, kind: 'in' as const, what: i.source }))]
     .sort((a, b) => b.created_at.localeCompare(a.created_at))
     .slice(0, 8);
   // para onde foi o dinheiro: o que foi anotado no mês e, com diagnóstico, os limites de cada coisa
@@ -191,7 +194,7 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
                   ? `Dá pra gastar uns ${brl(perDay)} por dia`
                   : 'O que entrou este mês já foi usado'}
             </span>
-            <span className="month-flow">Entrou {brl(income)} · Saiu {brl(spent)}{billsPaid > 0 ? ` · Contas pagas ${brl(billsPaid)}` : ''}</span>
+            <span className="month-flow">Entrou {brl(income)} · Saiu {brl(spent)}{billsPaid > 0 ? ` · Contas pagas ${brl(billsPaid)}` : ''}{putAside > 0 ? ` · Guardado ${brl(putAside)}` : ''}</span>
             <a className="btn-primary hero-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar</a>
           </section>
 

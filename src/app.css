@@ -494,3 +494,34 @@ a.dir-row { text-decoration: none; }
 .bill-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .bill-presets button { padding: 7px 12px; border-radius: 99px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .bill-presets button.on { border-color: var(--gold-bright); background: rgba(184, 114, 12, 0.12); color: var(--gold-deep); }
+.fixed-list li.fixed-first { background: rgba(184, 114, 12, 0.07); margin: 0 -16px; padding: 12px 16px; border-top: 0; border-bottom: 1px solid var(--line); }
+.agent-detail .fixed-list li.fixed-first { margin: 0; padding: 12px 10px; border-radius: 12px; border-bottom: 0; }
+
+/* bola de neve */
+.snow { display: flex; flex-direction: column; gap: 14px; }
+.snow-win { display: flex; flex-direction: column; gap: 2px; padding: 16px; border-radius: 18px; background: rgba(31, 138, 76, 0.1); border: 1px solid rgba(31, 138, 76, 0.25); }
+.snow-label { font-size: 12.5px; font-weight: 700; color: var(--good); text-transform: uppercase; letter-spacing: 0.05em; }
+.snow-win b { font-size: 22px; letter-spacing: -0.015em; }
+.snow-win span:last-child { color: var(--text-soft); font-size: 14.5px; }
+.snow-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.snow-list li { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.snow-list li.first { border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(184, 114, 12, 0.1); }
+.snow-list li:not(.first) { opacity: 0.88; }
+.snow-n { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: var(--surface-2); color: var(--text-soft); border: 1px solid var(--line-strong); }
+.snow-list li.first .snow-n { background: var(--gold-bright); color: var(--on-accent); border-color: transparent; }
+.snow-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.snow-copy b { font-size: 15.5px; }
+.snow-copy small { color: var(--text-soft); font-size: 13px; }
+.snow-list li.first .snow-copy small { color: var(--gold-deep); font-weight: 700; }
+.snow-amount { font-size: 15.5px; font-weight: 700; white-space: nowrap; }
+.snow-total { margin: 0; color: var(--text-soft); font-size: 14.5px; }
+.snow.compact { gap: 10px; }
+.snow-extra { padding: 16px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.snow-q { margin: 0; font-weight: 700; font-size: 15px; }
+.snow-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.snow-chips button { padding: 9px 14px; border-radius: 99px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.snow-chips button.on { border-color: var(--gold-bright); background: var(--gold-bright); color: var(--on-accent); }
+.snow-gain { margin: 0; font-size: 16px; font-weight: 700; color: var(--good); }
+.snow-note { margin: 0; color: var(--text-faint); font-size: 12.5px; }
+.snow-msg-btn { width: 100%; justify-content: center; }
+.snow-msg p { margin: 0 0 8px; color: var(--text-soft); font-size: 13.5px; }
