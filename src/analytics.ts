@@ -92,6 +92,7 @@ export type AnalyticsEvent =
   | 'whatsapp_continuar'
   | 'objetivo_escolhido'
   | 'perfil_respondido'
+  | 'conselheiro_plano'
   | 'painel_conectado'
   | 'nome_informado'
   | 'login_whatsapp_clique'
