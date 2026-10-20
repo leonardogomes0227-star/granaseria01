@@ -4,8 +4,6 @@
 // Parâmetros de modelo não podem ter quebra de linha: cada um é uma frase.
 
 import type { Expense, Income } from './db.js';
-import { categoryEmoji } from './parse.js';
-import { QUOTES, dailyQuoteIndex } from '../../src/quotes.js';
 import { siteLink } from './site.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,17 +41,17 @@ export interface Summary {
   params: string[]; // pro modelo da Meta, na ordem {{1}}, {{2}}…
 }
 
-/** Uma dica só, a mais útil pro que aconteceu na semana. Sem nada especial, a frase do dia. */
-function weeklyTip(week: Expense[], top: { name: string; total: number } | null, left: number | null, now: Date): string {
+/** Uma frase só, a mais útil pro que aconteceu. Sem nada especial, o link do plano. Tom calmo: sem alarme. */
+function weeklyTip(week: Expense[], top: { name: string; total: number } | null, left: number | null): string {
   const total = sum(week);
-  if (left !== null && left < 0) return 'Neste mês saiu mais do que entrou. Antes da próxima compra grande, mande *quanto ainda posso gastar* e veja o que cabe.';
+  if (left !== null && left < 0) return `Este mês saiu mais do que entrou. Antes da próxima compra, veja o que cabe: ${siteLink('compra')}`;
   if (top && total > 0 && top.total / total >= 0.4 && top.name !== 'Moradia') {
-    return `${top.name} levou ${Math.round((top.total / total) * 100)}% da semana. Mande *quanto ainda posso gastar* pra ver o limite de cada coisa.`;
+    return `${top.name} foi ${Math.round((top.total / total) * 100)}% da semana. Veja o limite de cada coisa: mande *quanto ainda posso gastar*.`;
   }
   if (week.some((r) => /netflix|spotify|prime|disney|hbo|assinatura|anuidade|tarifa/i.test(r.description))) {
-    return `Teve assinatura ou tarifa na semana. Veja quais costumam pesar: ${siteLink('vazamentos')}`;
+    return `Teve assinatura ou tarifa na semana. Veja se alguma não vale: ${siteLink('vazamentos')}`;
   }
-  return `Frase da semana: ${QUOTES[dailyQuoteIndex(now)]}`;
+  return `Seu plano: ${siteLink('plano')}`;
 }
 
 export function weeklySummary({ recent, monthExpenses, monthIncomes, now }: WeeklyInput): Summary | null {
@@ -69,29 +67,30 @@ export function weeklySummary({ recent, monthExpenses, monthIncomes, now }: Week
   const left = income > 0 ? income - sum(monthExpenses) : null;
   const perDay = left !== null && left > 0 ? Math.floor(left / daysLeftInMonth(now)) : null;
 
-  const spentLine = `${brl(total)} em ${week.length} ${week.length === 1 ? 'anotação' : 'anotações'}`;
-  const compare =
-    prev > 0 ? (total <= prev ? `${Math.round(((prev - total) / prev) * 100)}% a menos que na semana anterior 👏` : `${Math.round(((total - prev) / prev) * 100)}% a mais que na semana anterior`) : '';
-  const topLine = top ? `${top.name} (${brl(top.total)})` : '—';
+  const compare = prev > 0 ? (total <= prev ? `${Math.round(((prev - total) / prev) * 100)}% a menos que na semana anterior` : `${Math.round(((total - prev) / prev) * 100)}% a mais que na semana anterior`) : '';
+  const spentLine = `${brl(total)}${compare ? `, ${compare}` : ''}`;
+  const topLine = top ? `${top.name}, ${brl(top.total)}` : 'nada em especial';
   const monthLine =
     left === null
-      ? 'ainda sem entradas anotadas neste mês (mande "recebi 3000 salário" pra eu calcular o saldo)'
-      : left >= 0
-        ? `saldo do mês ${brl(left)}${perDay !== null ? `, uns ${brl(perDay)} por dia até o fim do mês` : ''}`
-        : `o mês está ${brl(-left)} no vermelho`;
-  const tip = weeklyTip(week, top, left, now);
+      ? 'anote o que entrou (ex.: recebi 3000 salário) pra eu mostrar o saldo'
+      : left > 0
+        ? `pode gastar uns ${brl(perDay ?? 0)} por dia até o fim do mês`
+        : left === 0
+          ? 'tudo o que entrou já foi usado'
+          : `o que entrou já foi usado, e saíram mais ${brl(-left)}`;
+  const tip = weeklyTip(week, top, left);
 
   const text = [
-    `📊 *Sua semana* (${ddmm(new Date(weekStart))} a ${ddmm(now)})`,
+    `*Sua semana* (${ddmm(new Date(weekStart))} a ${ddmm(now)})`,
     '',
-    `💸 Gastou ${spentLine}${compare ? `, ${compare}` : ''}.`,
-    ...(top ? [`${categoryEmoji(top.name)} O que mais pesou: ${topLine}.`] : []),
-    `⚖️ No mês: ${monthLine}.`,
+    `Gastou ${spentLine}.`,
+    ...(top ? [`Mais pesou: ${topLine}.`] : []),
+    `No mês: ${monthLine}.`,
     '',
-    `💡 ${tip}`,
+    tip,
   ].join('\n');
 
-  return { text, params: [spentLine + (compare ? `, ${compare}` : ''), topLine, monthLine, tip] };
+  return { text, params: [spentLine, topLine, monthLine, tip] };
 }
 
 export interface MonthlyInput {
@@ -108,22 +107,22 @@ export function monthlySummary({ expenses, incomes, monthIndex }: MonthlyInput):
   const month = MONTHS[monthIndex];
   const result =
     inc === 0
-      ? 'sem entradas anotadas, então não dá pra saber quanto sobrou'
+      ? 'sem entradas anotadas, não dá pra saber quanto sobrou'
       : inc >= out
         ? `sobraram ${brl(inc - out)} (${Math.round(((inc - out) / inc) * 100)}% do que entrou)`
-        : `faltaram ${brl(out - inc)}`;
+        : `saíram ${brl(out - inc)} a mais do que entrou`;
   const tip =
     inc > 0 && inc - out >= inc * 0.1
-      ? 'Você guardou pelo menos 10% do que entrou: o primeiro hábito do livro. Separe esse valor logo que o salário cair.'
-      : 'Neste mês, tente separar 10% logo que o salário cair, antes de gastar. Pra saber quanto separar: ' + siteLink('diag');
+      ? 'Você guardou pelo menos 10%. No próximo mês, separe esse valor assim que o salário cair.'
+      : `No próximo mês, tente separar 10% assim que o salário cair. Seu plano: ${siteLink('plano')}`;
+  const topLine = top ? `${brl(out)}, mais em ${top.name} (${brl(top.total)})` : brl(out);
   const text = [
-    `🗓️ *Seu ${month}*`,
+    `*Seu ${month}*`,
     '',
-    `📥 Entrou: ${brl(inc)}`,
-    `📤 Saiu: ${brl(out)}${top ? ` (mais em ${top.name}: ${brl(top.total)})` : ''}`,
-    `⚖️ Resultado: ${result}.`,
+    `Entrou ${brl(inc)} e saiu ${topLine}.`,
+    `Resultado: ${result}.`,
     '',
-    `💡 ${tip}`,
+    tip,
   ].join('\n');
-  return { text, params: [month, brl(inc), `${brl(out)}${top ? `, mais em ${top.name}` : ''}`, `${result}. ${tip}`] };
+  return { text, params: [month, brl(inc), topLine, `${result}. ${tip}`] };
 }
