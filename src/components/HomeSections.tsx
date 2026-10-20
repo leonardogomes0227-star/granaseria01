@@ -121,14 +121,28 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
                     <ToolIcon tool={t} />
                     <b>{t.title}</b>
                   </span>
-                  <span className="dir-serve">{t.guide.serve}</span>
-                  <span className="dir-get">
-                    {done ? (
-                      <><CheckCircle2 size={13} /> {done.summary}</>
-                    ) : (
-                      <>Você recebe: {t.guide.recebe}</>
-                    )}
-                  </span>
+                  {done?.card ? (
+                    <span className="dir-done">
+                      <span className="dir-done-tag"><CheckCircle2 size={13} /> Você já usou</span>
+                      <small>{done.card.label}</small>
+                      <strong>{done.card.big}</strong>
+                      {done.card.rows.slice(0, 2).map(([k, v], i) => (
+                        <span className="dir-done-row" key={i}><em>{k}</em><b>{v}</b></span>
+                      ))}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="dir-serve">{t.guide.serve}</span>
+                      <span className="dir-get">
+                        {done ? (
+                          <><CheckCircle2 size={13} /> {done.summary}</>
+                        ) : (
+                          <>Você recebe: {t.guide.recebe}</>
+                        )}
+                      </span>
+                    </>
+                  )}
+                  <span className="dir-open">{done ? 'Abrir de novo' : 'Abrir'} <ArrowRight size={14} /></span>
                 </button>
               );
             })}
