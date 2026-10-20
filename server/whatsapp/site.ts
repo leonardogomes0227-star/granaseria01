@@ -8,9 +8,10 @@ import { buttons, txt } from './hubcore.js';
 // Fixo de propósito: a variável SITE_URL da Vercel já mandou link com domínio errado. O site é este.
 export const SITE_URL = 'https://granaseria.com.br';
 
-type SiteKey = 'diag' | 'painel' | 'plano' | 'dividas' | 'emprestimo' | 'meta' | 'longo' | 'extra' | 'vazamentos' | 'direitos' | 'fatura' | 'compra' | 'checkin' | 'selos' | 'frase';
+type SiteKey = 'coach' | 'diag' | 'painel' | 'plano' | 'dividas' | 'emprestimo' | 'meta' | 'longo' | 'extra' | 'vazamentos' | 'direitos' | 'fatura' | 'compra' | 'checkin' | 'selos' | 'frase';
 
 const TOOLS: Record<SiteKey, { title: string; path: string; why: string }> = {
+  coach: { title: 'Seu coach', path: '/coach/chat', why: 'o check-in do mês e o seu plano, numa conversa' },
   diag: { title: 'Diagnóstico', path: '/diagnostico', why: 'umas perguntas rápidas e você recebe sua nota e um plano com valores e datas' },
   painel: { title: 'Meu app', path: '/inicio', why: 'o seu plano e como você está indo' },
   plano: { title: 'Seu plano', path: '/inicio', why: 'o que fazer este mês, com valores e datas' },
