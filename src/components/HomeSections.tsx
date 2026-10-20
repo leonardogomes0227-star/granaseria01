@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, MessageCircle, Sparkles } from 'lucide-react';
 import { LISTED_TOOLS, faturaEnabled, getTool, type ToolId } from '../tools';
-import { getResults } from '../results';
+import { getResults, type ToolResult } from '../results';
+import { QUESTIONS, getAnswers, recommend, saveAnswers, type Answers } from '../profile';
+import { track } from '../analytics';
 import { fetchPainel, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
 import { WhatsAppButton } from './ContinueWhatsApp';
@@ -74,49 +76,12 @@ const GROUPS: { title: string; text: string; tools: ToolId[] }[] = [
 // de outubro a dezembro o 13º está chegando: a ferramenta dele sobe pro topo
 const isThirteenthSeason = () => [9, 10, 11].includes(new Date().getMonth()); // out a dez: a 1ª parcela sai até 30/11
 
-export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart: () => void; onOpenTool: (id: ToolId) => void; hasDiagnosis: boolean }) {
-  const [results] = useState(getResults);
-  const [fatura, setFatura] = useState(false);
-  useEffect(() => {
-    void faturaEnabled().then(setFatura);
-  }, []);
-  const listed = new Set(LISTED_TOOLS.map((t) => t.id));
-  const groups = GROUPS.map((g) => ({ ...g, tools: g.tools.filter((id) => listed.has(id) && (id !== 'fatura' || fatura)) }));
-  const season = isThirteenthSeason();
+
+function ToolCard({ id, done, why, onOpen }: { id: ToolId; done?: ToolResult; why?: string; onOpen: () => void }) {
+  const t = getTool(id);
   return (
-    <section className="section tools-dir" id="ferramentas">
-      <div className="section-head center">
-        <div className="kicker"><span className="wedge" />Ferramentas</div>
-        <h2>O que você quer fazer?</h2>
-        <p>Cada ferramenta resolve uma coisa. O que você faz em uma fica salvo e entra no seu plano de ação.</p>
-      </div>
-
-      <button type="button" className={`dir-diag ${hasDiagnosis ? 'done' : ''}`} onClick={onStart}>
-        <span className="tool-icon lg tone-gold"><Sparkles size={24} strokeWidth={1.9} /></span>
-        <span className="dir-copy">
-          <em className="pick-badge">{hasDiagnosis ? 'Feito · refazer quando quiser' : 'Comece por aqui'}</em>
-          <b>Diagnóstico e plano de ação</b>
-          <span>Umas perguntas sobre renda, gastos e dívidas. Você recebe sua nota e um plano com valores e datas, que as outras ferramentas usam.</span>
-        </span>
-        <ArrowRight size={20} className="pick-arrow" />
-      </button>
-
-      {season && (
-        <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>
-          🎁 <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
-          <ArrowRight size={18} />
-        </button>
-      )}
-
-      {groups.map((g) => (
-        <div className="dir-group" key={g.title}>
-          <h3>{g.title}{g.text && <small> · {g.text}</small>}</h3>
-          <div className="dir-grid">
-            {g.tools.map((id) => {
-              const t = getTool(id);
-              const done = results[id];
-              return (
-                <button type="button" key={id} className={`dir-card ${done ? 'done' : ''}`} onClick={() => onOpenTool(id)}>
+<button type="button" className={`dir-card ${done ? 'done' : ''} ${why ? 'picked' : ''}`} onClick={onOpen}>
+                  {why && <span className="dir-why">💡 {why}</span>}
                   <span className="dir-card-head">
                     <ToolIcon tool={t} />
                     <b>{t.title}</b>
@@ -144,8 +109,108 @@ export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart:
                   )}
                   <span className="dir-open">{done ? 'Abrir de novo' : 'Abrir'} <ArrowRight size={14} /></span>
                 </button>
-              );
-            })}
+  );
+}
+
+/** As perguntas da entrada, uma por vez: é só tocar. */
+function Quiz({ onDone }: { onDone: (a: Answers) => void }) {
+  const [i, setI] = useState(0);
+  const [a, setA] = useState<Partial<Answers>>({});
+  const q = QUESTIONS[i];
+  const pick = (v: string) => {
+    const next = { ...a, [q.id]: v } as Partial<Answers>;
+    setA(next);
+    if (i + 1 < QUESTIONS.length) setI(i + 1);
+    else onDone(next as Answers);
+  };
+  return (
+    <div className="quiz">
+      <p className="quiz-step">Pergunta {i + 1} de {QUESTIONS.length}</p>
+      <div className="quiz-bar"><i style={{ width: `${(i / QUESTIONS.length) * 100}%` }} /></div>
+      <h3>{q.q}</h3>
+      <div className="quiz-options">
+        {q.options.map(([v, label]) => (
+          <button key={v} type="button" onClick={() => pick(v)}>{label}</button>
+        ))}
+      </div>
+      {i > 0 && (
+        <button type="button" className="plan-more" onClick={() => setI(i - 1)}>← Voltar</button>
+      )}
+    </div>
+  );
+}
+
+export function ToolsDirectory({ onStart, onOpenTool, hasDiagnosis }: { onStart: () => void; onOpenTool: (id: ToolId) => void; hasDiagnosis: boolean }) {
+  const [results] = useState(getResults);
+  const [fatura, setFatura] = useState(false);
+  useEffect(() => {
+    void faturaEnabled().then(setFatura);
+  }, []);
+  const listed = new Set(LISTED_TOOLS.map((t) => t.id));
+  const groups = GROUPS.map((g) => ({ ...g, tools: g.tools.filter((id) => listed.has(id) && (id !== 'fatura' || fatura)) }));
+  const season = isThirteenthSeason();
+  const [answers, setAnswers] = useState<Answers | null>(getAnswers);
+  const [showOthers, setShowOthers] = useState(false);
+  const picks = answers ? recommend(answers, hasDiagnosis).filter((p) => listed.has(p.tool) && (p.tool !== 'fatura' || fatura)) : [];
+  const picked = new Set(picks.map((p) => p.tool));
+  const others = groups.map((g) => ({ ...g, tools: g.tools.filter((id) => !picked.has(id)) })).filter((g) => g.tools.length > 0);
+  const finish = (a: Answers) => {
+    saveAnswers(a);
+    setAnswers(a);
+    track('perfil_respondido', { ...a });
+  };
+  const redo = () => {
+    saveAnswers(null);
+    setAnswers(null);
+  };
+  return (
+    <section className="section tools-dir" id="ferramentas">
+      <div className="section-head center">
+        <div className="kicker"><span className="wedge" />Ferramentas</div>
+        <h2>{answers ? 'Suas ferramentas' : 'Vamos achar as ferramentas certas pra você'}</h2>
+        <p>{answers ? 'Escolhidas pelas suas respostas. O que você faz em uma fica salvo e entra no seu plano.' : '6 perguntas rápidas, é só tocar. Depois a gente mostra só o que vai te ajudar.'}</p>
+      </div>
+
+      {!answers ? (
+        <Quiz onDone={finish} />
+      ) : (
+        <>
+          <div className="dir-grid dir-picks">
+            {picks.map((p) => (
+              <ToolCard key={p.tool} id={p.tool} done={results[p.tool]} why={p.why} onOpen={() => onOpenTool(p.tool)} />
+            ))}
+          </div>
+          <div className="dir-actions">
+            <button type="button" className="btn-outline" aria-expanded={showOthers} onClick={() => setShowOthers((v) => !v)}>
+              {showOthers ? 'Esconder as outras' : 'Outras ferramentas, caso precise'}
+            </button>
+            <button type="button" className="plan-more" onClick={redo}>Refazer as perguntas</button>
+          </div>
+        </>
+      )}
+
+      <button type="button" className={`dir-diag ${hasDiagnosis ? 'done' : ''}`} onClick={onStart}>
+        <span className="tool-icon lg tone-gold"><Sparkles size={24} strokeWidth={1.9} /></span>
+        <span className="dir-copy">
+          <em className="pick-badge">{hasDiagnosis ? 'Feito · refazer quando quiser' : 'Comece por aqui'}</em>
+          <b>Diagnóstico e plano de ação</b>
+          <span>Umas perguntas sobre renda, gastos e dívidas. Você recebe sua nota e um plano com valores e datas, que as outras ferramentas usam.</span>
+        </span>
+        <ArrowRight size={20} className="pick-arrow" />
+      </button>
+
+      {season && (
+        <button type="button" className="dir-season" onClick={() => onOpenTool('extra')}>
+          🎁 <span><b>O 13º está chegando.</b> Veja onde colocar cada real e quantos meses ele adianta no seu plano.</span>
+          <ArrowRight size={18} />
+        </button>
+      )}
+
+      {answers && showOthers && others.map((g) => (
+        <div className="dir-group" key={g.title}>
+          <h3>{g.title}{g.text && <small> · {g.text}</small>}</h3>
+          <div className="dir-grid">
+            {g.tools.map((id) => <ToolCard key={id} id={id} done={results[id]} onOpen={() => onOpenTool(id)} />)}
           </div>
         </div>
       ))}
