@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
+import { ArrowRight, Bell, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
-import { todayBRT } from '../coach';
+import { todayBRT, type CoachTask } from '../coach';
+import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, type CustomAgent } from '../agents';
 import { markTaskDone } from '../results';
 import { fmtDue } from '../dates';
 import { getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
 import { useTasks } from './CoachPanel';
 import { PageHead } from './AppShell';
+import { AgentArt } from './AgentArt';
+import { AgentAvatar } from './AgentPage';
 
 /* ---------- Início ---------- */
 // Logado: o dia de hoje (o saldo do mês, o próximo passo e os conselheiros). Ainda não: o que é, em 3 linhas, e um botão.
@@ -53,50 +56,93 @@ function MonthCard() {
 }
 
 
-function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolean; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
+/* ---------- Seus agentes: quem está de olho nas suas finanças ---------- */
+// Cada conselheiro vigia o que a pessoa montou com ele (os passos dele, com data) e avisa no WhatsApp no dia.
+// Quem ainda não tem nada ativo aparece apagado, com o convite pra conversar. Os criados pela pessoa entram também.
+
+function loadCustom(): CustomAgent[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(CUSTOM_AGENTS_KEY) || '[]') as CustomAgent[];
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+interface Watcher {
+  id: string;
+  name: string;
+  role: string;
+  hue: number;
+  tool: ToolId | null; // a ferramenta dele (null = criado pela pessoa)
+  custom: boolean;
+  tasks: CoachTask[]; // os avisos abertos, do mais perto pro mais longe
+}
+
+function buildWatchers(tasks: CoachTask[], custom: CustomAgent[]): Watcher[] {
+  const open = tasks.filter((t) => !t.done).sort((a, b) => a.due.localeCompare(b.due));
+  const own = (source: string) => open.filter((t) => t.source === source || (source === 'tracker' && t.source === 'plano'));
+  const list: Watcher[] = AGENTS.map((a) => ({ id: a.id, name: a.name, role: a.role, hue: a.hue, tool: a.tool, custom: false, tasks: own(a.tool) }));
+  const goals = open.filter((t) => t.source === 'goal');
+  custom.forEach((c) => list.push({ id: c.id, name: c.name, role: customPlan(c).lines[0], hue: 45, tool: null, custom: true, tasks: goals }));
+  // quem está vigiando vem primeiro, e dentro deles o aviso mais próximo
+  return list.sort((x, y) => (x.tasks.length ? 0 : 1) - (y.tasks.length ? 0 : 1) || (x.tasks[0]?.due ?? '9').localeCompare(y.tasks[0]?.due ?? '9'));
+}
+
+function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolean; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
+  const navigate = useNavigate();
   const tasks = useTasks();
   const today = todayBRT();
-  const open = tasks.filter((t) => !t.done).sort((a, b) => a.due.localeCompare(b.due));
-  const [more, setMore] = useState(false);
-  const navigate = useNavigate();
-  if (!hasDiagnosis)
-    return (
-      <button type="button" className="card focus-card" onClick={onStart}>
-        <span className="card-label">Foco de hoje</span>
-        <b className="focus-title">Monte o seu plano</b>
-        <span className="focus-meta">10 minutos. Você recebe o que fazer, quanto e até quando.</span>
-        <span className="next-go">Começar <ArrowRight size={16} /></span>
-      </button>
-    );
-  if (open.length === 0)
-    return (
-      <div className="card focus-card">
-        <span className="card-label">Foco de hoje</span>
-        <b className="focus-title">Tudo em dia</b>
-        <span className="focus-meta">Nada pra fazer agora.</span>
-      </div>
-    );
-  const [focus, ...rest] = open;
-  const go = (t: typeof focus) => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId));
-  const meta = (t: typeof focus) => `${fmtDue(t.due, today)}${t.source !== 'plano' ? ` · ${getTool(t.source as ToolId).title}` : ''}`;
+  const watchers = buildWatchers(tasks, loadCustom());
+  const active = watchers.filter((w) => w.tasks.length > 0).length;
+  const [sel, setSel] = useState<string | null>(null);
+  const chosen = watchers.find((w) => w.id === sel) ?? null;
+  const meta = (t: CoachTask) => `${fmtDue(t.due, today)}${t.repeat === 'monthly' ? ' · todo mês' : ''}`;
+  const go = (t: CoachTask) => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId));
   return (
-    <div className="card focus-card">
-      <span className="card-label">Foco de hoje</span>
-      <button type="button" className="focus-main" onClick={() => go(focus)}>
-        <b className="focus-title">{focus.text}</b>
-        <span className="focus-meta">{meta(focus)}</span>
-      </button>
-      <button type="button" className="btn-outline focus-done" onClick={() => markTaskDone(focus.id)}>
-        <Check size={16} /> Marcar como feito
-      </button>
-      {rest.length > 0 && (
-        <>
-          <button type="button" className="link-btn focus-more" aria-expanded={more} onClick={() => setMore((v) => !v)}>
-            {more ? 'Esconder' : `Ver mais tarefas (${rest.length})`}
-          </button>
-          {more && (
+    <section className="home-block agents-panel" aria-label="Seus agentes">
+      <div className="block-head">
+        <h2>Seus agentes</h2>
+        <span className="agents-count">{active === 0 ? 'nenhum ativo' : `${active} de olho`}</span>
+      </div>
+      <div className="agent-strip live">
+        {watchers.map((w) => {
+          const first = w.tasks[0];
+          const on = w.tasks.length > 0;
+          return (
+            <button key={w.id} type="button" className={`agent-live ${on ? 'on' : 'off'} ${sel === w.id ? 'sel' : ''}`} aria-expanded={sel === w.id} onClick={() => setSel(sel === w.id ? null : w.id)}>
+              <span className="agent-live-art">
+                {w.custom ? <AgentAvatar name={w.name} hue={w.hue} size={52} /> : <AgentArt id={w.id} hue={w.hue} />}
+                {on && <i className="live-dot" aria-label="Ativo" />}
+              </span>
+              <b>{w.name}</b>
+              <small className="live-line">{on ? first.text : w.custom ? w.role : 'Em espera'}</small>
+              {on && (
+                <span className="live-when">
+                  <Bell size={12} /> {fmtDue(first.due, today)}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        <button type="button" className="agent-live create" onClick={() => navigate('/conselheiros#criar')}>
+          <span className="agent-live-art"><Plus size={26} /></span>
+          <b>Criar o meu</b>
+          <small className="live-line">Pro seu objetivo</small>
+        </button>
+      </div>
+
+      {chosen && (
+        <div className="card agent-detail">
+          <div className="agent-detail-head">
+            <span>
+              <b>{chosen.name}</b>
+              <small>{chosen.tasks.length > 0 ? 'De olho. Te aviso no WhatsApp no dia.' : chosen.role}</small>
+            </span>
+          </div>
+          {chosen.tasks.length > 0 ? (
             <ul className="focus-list">
-              {rest.map((t) => (
+              {chosen.tasks.map((t) => (
                 <li key={t.id}>
                   <button type="button" className="task-check" aria-label={`Marcar como feito: ${t.text}`} onClick={() => markTaskDone(t.id)}>
                     <Check size={15} />
@@ -108,10 +154,33 @@ function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolea
                 </li>
               ))}
             </ul>
+          ) : (
+            <p className="focus-meta">Ainda não está vigiando nada. Converse com ele e ele monta os seus avisos.</p>
           )}
-        </>
+          <div className="agent-detail-actions">
+            <Link className="btn-outline" to={chosen.custom ? '/conselheiros' : `/conselheiros/${chosen.id}`}>
+              <MessageCircle size={15} /> {chosen.tasks.length > 0 ? 'Conversar' : `Conversar com ${chosen.name}`}
+            </Link>
+            {chosen.tool && (
+              <button type="button" className="link-btn" onClick={() => onOpenTool(chosen.tool as ToolId)}>
+                Abrir {getTool(chosen.tool).title}
+              </button>
+            )}
+          </div>
+        </div>
       )}
-    </div>
+
+      {!hasDiagnosis && (
+        <button type="button" className="dir-row soft" style={{ marginTop: 14 }} onClick={onStart}>
+          <span className="tool-icon tone-gold"><ClipboardList size={20} strokeWidth={1.9} /></span>
+          <span className="dir-row-copy">
+            <b>Quer um plano completo de uma vez?</b>
+            <span>10 minutos e você recebe o que fazer, quanto e até quando.</span>
+          </span>
+          <ArrowRight size={18} className="dir-row-arrow" />
+        </button>
+      )}
+    </section>
   );
 }
 
@@ -204,7 +273,7 @@ export function HomePage({
       )}
       <div className="home-stack">
         <MonthCard />
-        {resume === null && <NextSteps hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
+        {resume === null && <AgentsPanel hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
       </div>
     </>
   );
