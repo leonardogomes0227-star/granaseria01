@@ -3,7 +3,7 @@ import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { buildPlan } from '../plan';
 import { richDad, passiveFrom } from '../richdad';
-import { ToolShell, ToolNavProps, MoneyField, useSaveResult } from './Tools';
+import { ToolShell, ToolNavProps, MoneyField, useSaveResult, useToolTasks } from './Tools';
 import { RichDadCard } from './RichDadCard';
 
 /* ---------- Placar Pai Rico, Pai Pobre ---------- */
@@ -50,6 +50,7 @@ export function RichDadTool({ data, onStart, ...nav }: { data: WizardData; onSta
   // o que já gera renda passiva: o investido ou, se a renda declarada for maior, o equivalente a ela
   const startPassive = Math.max(invested, passive / 0.005);
   const goals = [25, 50, 100].map((pct) => ({ pct, months: costs > 0 ? monthsTo((costs * pct) / 100, startPassive, monthly) : null }));
+  useToolTasks('richdad', costs > 0 ? [{ text: 'Ver de novo o seu placar Pai Rico (subiu?)', inDays: 30, repeat: 'monthly' }] : null);
   useSaveResult('richdad', costs > 0 ? `${r.level.label}: o dinheiro rendendo paga ${r.freedomPct.toFixed(0)}% das contas; vive ${r.monthsFree.toFixed(1).replace('.', ',')} meses sem trabalhar` : null, {
     label: 'Você está',
     big: r.level.label,

@@ -53,6 +53,7 @@ export function recommend(a: Answers, hasDiagnosis: boolean): Pick[] {
     if (!out.some((p) => p.tool === tool)) out.push({ tool, why });
   };
   if (a.dividas === 'nome-sujo' || a.dividas === 'apertando') add('rights', 'Suas dívidas estão apertando: a lei te dá jeitos de pagar menos juros, e a mensagem pro banco já vem pronta.');
+  if (a.dividas !== 'nao' || a.sobra === 'falta') add('bills', 'Organize suas contas e parcelas: o que vence quando, o que pagar primeiro quando o dinheiro entra aos poucos, e lembrete na véspera.');
   if (a.dividas !== 'nao') add('debts', 'Você tem dívidas: veja por qual começar e quando fica livre.');
   if (a.grande === 'emprestimo') add('loan', 'Você vai pegar um empréstimo: compare antes de assinar e pague menos.');
   if (a.sobra !== 'sobra' || a.quer === 'aperto') add('leaks', 'O dinheiro não está sobrando: ache assinaturas e tarifas que comem seu salário sem você ver.');

@@ -16,6 +16,8 @@ export const SYNC_KEYS = [
   'gs-metas', // metas da calculadora de meta, que entram no plano
   'gs-reset', // marca do recomeço do plano (src/reset.ts)
   'gs-perfil', // respostas das perguntas da entrada (src/profile.ts)
+  'gs-tarefas', // próximos passos do coach (src/coach.ts)
+  'gs-contas', // minhas contas e dívidas (src/bills.ts)
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
 

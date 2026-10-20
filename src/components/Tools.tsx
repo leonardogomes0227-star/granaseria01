@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useId, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Target } from 'lucide-react';
-import { getResults, saveGoal, saveResult, type ResultCard } from '../results';
+import { getResults, saveGoal, saveResult, setToolTasks, type ResultCard } from '../results';
+import type { NewTask, TaskSource } from '../coach';
 import { fetchPainel, painelToken } from '../painel';
 import { DebtItem, DebtKind, WizardData } from '../types';
 import { buildPlan, compareStrategies, effectiveRate, getDebtKind, DEBT_KINDS } from '../plan';
@@ -57,6 +58,16 @@ export function ToolShell({
       </div>
     </div>
   );
+}
+
+/** Os próximos passos que a ferramenta deixa pro coach (com data e lembrete), um instante depois de parar de mexer. */
+export function useToolTasks(source: TaskSource, tasks: NewTask[] | null) {
+  const json = tasks ? JSON.stringify(tasks) : '';
+  useEffect(() => {
+    if (!json) return;
+    const t = window.setTimeout(() => setToolTasks(source, JSON.parse(json) as NewTask[]), 1500);
+    return () => window.clearTimeout(t);
+  }, [source, json]);
 }
 
 /** Guarda o resultado da ferramenta no painel da pessoa, um instante depois de ela parar de mexer. */
@@ -213,6 +224,12 @@ export function ImpulseTool({ monthlyIncome, ...nav }: { monthlyIncome: number }
       : pctOfIncome >= 10
         ? { cls: 'status-warn', text: 'Vale esperar 48h e ver se a vontade continua' }
         : { cls: 'status-good', text: 'Cabe no orçamento, se não sair da poupança' };
+  useToolTasks(
+    'impulse',
+    income > 0 && price > 0 && pctOfIncome >= 10
+      ? [{ text: `Decidir se compra mesmo o item de ${brl(price)} (esperou ${pctOfIncome >= 30 ? '7 dias' : '48 horas'}?)`, inDays: pctOfIncome >= 30 ? 7 : 2 }]
+      : null
+  );
   useSaveResult('impulse', income > 0 && price > 0 ? `compra de ${brl(price)} = ${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho (${pctOfIncome.toFixed(0)}% da renda)` : null, {
     label: `Uma compra de ${brl(price)} custa`,
     big: `${daysOfWork.toFixed(1).replace('.', ',')} dias de trabalho`,
@@ -317,6 +334,17 @@ export function DebtSimulator({ debts, data, onStart, ...nav }: { debts: DebtIte
     : null;
   const label = (o: 'avalanche' | 'snowball') => (o === 'avalanche' ? 'Começar pela de juros mais alto' : 'Começar pela menor');
   const when = (m: number | null) => (m === null ? 'não fecha com esse valor' : m < 12 ? `em ${m} ${m === 1 ? 'mês' : 'meses'}` : `em ${(m / 12).toFixed(1).replace('.', ',')} anos`);
+  useToolTasks(
+    'debts',
+    best
+      ? [
+          { text: `Pagar o máximo que der em ${best.sequence[0]} (nas outras, só a parcela mínima)`, inDays: 5, repeat: 'monthly' },
+          { text: `Ver no seu banco quanto ainda falta de ${best.sequence[0]}`, inDays: 30, repeat: 'monthly' },
+        ]
+      : results && results[0].months === null
+        ? [{ text: 'Pedir pro banco renegociar as dívidas (veja "Seus direitos com o banco")', inDays: 1 }]
+        : null
+  );
   useSaveResult('debts', best ? `${label(best.order).toLowerCase()}: começa por ${best.sequence[0]}, livre ${when(best.months)}, ${formatBRL(best.interest)} de juros` : null, best ? {
     label: 'Comece por',
     big: best.sequence[0],
@@ -514,6 +542,7 @@ export function GoalCalculator({ data, ...nav }: { data: WizardData } & ToolNavP
         ['Cabe no plano?', capacity > 0 ? (required <= capacity ? 'Sim' : `Ainda não (o plano tem ${brl(capacity)}/mês)`) : 'Faça o diagnóstico pra saber'],
       ],
     });
+    setToolTasks('goal', [{ text: `Separar ${brl(required)} pra ${label} numa conta só pra isso`, inDays: 1, repeat: 'monthly' }]);
     setSavedGoal(true);
   };
 
@@ -646,6 +675,10 @@ export function LoanComparator(nav: ToolNavProps) {
   const bothFilled = pA > 0 && pB > 0;
   const tie = Math.abs(resA.total - resB.total) < 0.5;
   const cheaper = resA.total <= resB.total ? 'A' : 'B';
+  useToolTasks(
+    'loan',
+    bothFilled && !tie ? [{ text: `Pedir por escrito o custo total da proposta ${cheaper} antes de assinar`, inDays: 2 }, { text: 'Decidir o empréstimo (sem pressa: proposta boa não some em 2 dias)', inDays: 4 }] : null
+  );
   useSaveResult('loan', bothFilled ? (tie ? 'as duas propostas custam quase o mesmo' : `proposta ${cheaper} sai ${brl(Math.abs(resA.total - resB.total))} mais barata no total`) : null, {
     label: 'A melhor proposta',
     big: tie ? 'Empate' : `Proposta ${cheaper}`,
