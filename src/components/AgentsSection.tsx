@@ -6,6 +6,7 @@ import { getAnswers, recommend } from '../profile';
 import { saveGoal, setToolTasks } from '../results';
 import { formatBRL } from '../calculations';
 import { AgentAvatar } from './AgentPage';
+import { AgentArt } from './AgentArt';
 import { MoneyField } from './Tools';
 import { DecimalInput } from './DecimalInput';
 
@@ -46,12 +47,11 @@ export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean }) {
 
       <div className="agents-grid">
         {order.map((a) => {
-          const Icon = a.icon;
           const rec = picked.includes(a.id);
           return (
             <button key={a.id} type="button" className={`agent-card ${rec ? 'rec' : ''}`} onClick={() => navigate(`/conselheiros/${a.id}`)}>
-              <span className="agent-cover" style={{ background: `linear-gradient(150deg, hsl(${a.hue} 55% 38%), hsl(${(a.hue + 30) % 360} 40% 16%))` }}>
-                <Icon size={30} strokeWidth={1.6} />
+              <span className="agent-cover">
+                <AgentArt id={a.id} hue={a.hue} />
                 {rec && <em>Indicado pra você</em>}
               </span>
               <span className="agent-copy">
