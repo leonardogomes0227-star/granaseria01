@@ -182,112 +182,85 @@ export function ActionPlanView({
   onOpenTool: (id: ToolId) => void;
 }) {
   const pots = buildPots(plan);
-  const [potId, setPotId] = useState<PotId | null>(pots.find((p) => p.status === 'agora')?.id ?? pots[0]?.id ?? null);
-  const pot = pots.find((p) => p.id === potId) ?? pots[0];
-  const [extras, setExtras] = useState(false);
+  const [openId, setOpenId] = useState<PotId | null>(null);
+  const [more, setMore] = useState(false);
   const general = plan.steps.filter((s) => potOfStep(s, plan) === null);
-  const open = (id: PotId) => {
-    setPotId(id);
-    requestAnimationFrame(() => document.getElementById('pot-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  const focus = (id: PotId) => {
+    setOpenId(id);
+    requestAnimationFrame(() => document.getElementById(`pot-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   };
 
   return (
     <div className="plan">
-      {!locked && <PlanRoad plan={plan} />}
-      <ThisMonth plan={plan} general={general} onOpenTool={onOpenTool} onPick={locked ? undefined : open} />
+      <ThisMonth plan={plan} general={general} onOpenTool={onOpenTool} onPick={locked ? undefined : focus} />
 
       {locked ? (
         lockedSlot
       ) : (
-        pot && (
-          <>
-            <p className="section-label plan-steps-label">Seus objetivos</p>
-            <div className="pot-tabs" role="tablist" aria-label="Objetivos do plano">
-              {pots.map((p) => (
-                <button key={p.id} type="button" role="tab" aria-selected={p.id === pot.id} className={`pot-tab ${p.status} ${p.id === pot.id ? 'active' : ''}`} onClick={() => setPotId(p.id)}>
-                  <p.icon size={16} />
-                  <span>{p.title}</span>
-                  <i />
-                </button>
-              ))}
-            </div>
-            <PotDetail key={pot.id} pot={pot} onOpenTool={onOpenTool} />
-          </>
-        )
+        <ol className="timeline" aria-label="Seus objetivos">
+          {pots.map((p) => (
+            <PotCard key={p.id} pot={p} open={openId === p.id} onToggle={() => setOpenId(openId === p.id ? null : p.id)} onOpenTool={onOpenTool} />
+          ))}
+        </ol>
       )}
 
-      {!locked && !extras && (
-        <button type="button" className="link-btn plan-more-link" onClick={() => setExtras(true)}>
-          <ChevronDown size={14} /> Gráfico, calendário e mais detalhes
+      {!locked && !more && (
+        <button type="button" className="link-btn plan-more-link" onClick={() => setMore(true)}>
+          <ChevronDown size={14} /> Mais detalhes
         </button>
       )}
-      {extras && (
+      {more && (
         <>
           <GrowthChart plan={plan} />
           {plan.schedule.length > 0 && <ScheduleTable plan={plan} />}
           <RightsCard plan={plan} onOpenTool={onOpenTool} />
           <Boosters plan={plan} onOpenTool={onOpenTool} />
+          <button type="button" className="link-btn plan-more-link" onClick={() => onOpenTool('richdad')}>
+            Viver de renda: quanto falta <ArrowRight size={13} />
+          </button>
         </>
       )}
 
-      <p className="plan-legal">Estimativa com os seus números e taxas típicas de mercado. Não é recomendação de investimento.</p>
+      <p className="plan-legal">Estimativa com os seus números. Não é recomendação de investimento.</p>
     </div>
   );
 }
 
-/** Um objetivo do plano, sozinho: quanto, até quando, o progresso, pra que serve, como fazer e a ferramenta. */
-function PotDetail({ pot, onOpenTool }: { pot: Pot; onOpenTool: (id: ToolId) => void }) {
+/** Um objetivo na linha do tempo: o nome, o valor por mês e o prazo. Tocou, abre o como fazer. */
+function PotCard({ pot, open, onToggle, onOpenTool }: { pot: Pot; open: boolean; onToggle: () => void; onOpenTool: (id: ToolId) => void }) {
   const tool = pot.tool ? getTool(pot.tool) : null;
+  const line = [pot.amount?.replace(' por mês', '/mês'), pot.when].filter(Boolean).join(' · ');
   return (
-    <div className={`pot stat-card ${pot.status}`} id="pot-detail">
-      <div className="pot-head">
-        <span className="pot-icon" aria-hidden="true"><pot.icon size={20} /></span>
-        <h4>{pot.title}</h4>
-        <em className={`pot-status ${pot.status}`}>{pot.statusText}</em>
-      </div>
-      {(pot.amount || pot.when) && (
-        <div className="pot-nums">
-          {pot.amount && (
-            <span>
-              <small>Quanto</small>
-              <b>{pot.amount}</b>
-            </span>
+    <li id={`pot-${pot.id}`} className={`tl-item ${pot.status} ${open ? 'open' : ''}`}>
+      <span className="tl-dot" aria-hidden="true" />
+      <button type="button" className="tl-card" aria-expanded={open} onClick={onToggle}>
+        <span className="tl-head">
+          <b>{pot.title}</b>
+          <ChevronDown size={16} className="tl-chev" />
+        </span>
+        <span className="tl-line">{line || pot.statusText}</span>
+        {pot.progress && (
+          <span className="tl-bar" aria-hidden="true"><i style={{ width: `${Math.max(pot.progress.pct, 3)}%` }} /></span>
+        )}
+      </button>
+      {open && (
+        <div className="tl-body">
+          {pot.steps.length > 0 && (
+            <ol className="pot-steps">
+              {pot.steps.map((st, i) => (
+                <PotStep key={i} step={st} />
+              ))}
+            </ol>
           )}
-          {pot.when && (
-            <span>
-              <small>Quando</small>
-              <b>{pot.when}</b>
-            </span>
+          {pot.extra}
+          {tool && (
+            <button type="button" className="link-btn tl-tool" onClick={() => onOpenTool(tool.id)}>
+              Abrir {tool.title} <ArrowRight size={13} />
+            </button>
           )}
         </div>
       )}
-      {pot.progress && (
-        <div className="pot-progress">
-          <div className="jp-bar"><i style={{ width: `${Math.max(pot.progress.pct, 2)}%` }} /></div>
-          <p className="jp-nums">
-            <span>{pot.progress.now}</span>
-            <span>Meta: {pot.progress.goal}</span>
-          </p>
-        </div>
-      )}
-      <p className="pot-why">{pot.why}</p>
-      {pot.steps.length > 0 && (
-        <>
-          <p className="pot-sub">Como fazer</p>
-          <ol className="pot-steps">
-            {pot.steps.map((s, i) => (
-              <PotStep key={i} step={s} />
-            ))}
-          </ol>
-        </>
-      )}
-      {pot.extra}
-      {tool && (
-        <button type="button" className="btn-primary pot-tool" onClick={() => onOpenTool(tool.id)}>
-          Abrir {tool.title} <ArrowRight size={15} />
-        </button>
-      )}
-    </div>
+    </li>
   );
 }
 
@@ -351,81 +324,46 @@ function ThisMonth({ plan, general, onOpenTool, onPick }: { plan: ActionPlan; ge
     writeDone(next);
   };
   return (
-    <div className="this-month">
+    <section className="this-month">
       <div className="this-month-top">
-        <p className="this-month-head">
-          <b>Este mês ({month})</b>
-          <small>
-            {plan.powerAssumed
-              ? `O plano começa separando 10% da renda: ${formatBRL(plan.monthlyPower)} por mês.`
-              : `${formatBRL(plan.monthlyPower)} por mês pros seus objetivos.`}
-          </small>
-        </p>
+        <div>
+          <span className="tm-label">Este mês · {month}</span>
+          <b className="tm-big">{formatBRL(plan.monthlyPower)}</b>
+          <span className="tm-sub">pros seus objetivos</span>
+        </div>
         {items.length > 0 && <span className={`month-count ${all ? 'all' : ''}`}>{count}/{items.length}</span>}
       </div>
       {items.length > 0 && (
-        <>
-          <div className="jp-bar"><i style={{ width: `${Math.max(3, (count / items.length) * 100)}%` }} /></div>
-          <ul className="month-list">
-            {items.map(([Icon, what, amount, pot], i) => {
-              const ok = done.includes(what);
-              return (
-                <li key={i} className={ok ? 'ok' : ''}>
-                  <button type="button" className={`task-check ${ok ? 'on' : ''}`} aria-pressed={ok} aria-label={ok ? `Desmarcar: ${what}` : `Marcar como feito: ${what}`} onClick={() => toggle(what)}>
-                    <Check size={15} />
-                  </button>
-                  <button type="button" className="month-item" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
-                    <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
-                    <span className="this-month-what">{what}</span>
-                    <b>{amount}</b>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </>
+        <ul className="month-list">
+          {items.map(([Icon, what, amount, pot], i) => {
+            const ok = done.includes(what);
+            return (
+              <li key={i} className={ok ? 'ok' : ''}>
+                <button type="button" className={`task-check ${ok ? 'on' : ''}`} aria-pressed={ok} aria-label={ok ? `Desmarcar: ${what}` : `Marcar como feito: ${what}`} onClick={() => toggle(what)}>
+                  <Check size={15} />
+                </button>
+                <button type="button" className="month-item" disabled={!onPick || !pot} onClick={() => pot && onPick?.(pot)}>
+                  <span className="this-month-icon" aria-hidden="true"><Icon size={16} /></span>
+                  <span className="this-month-what">{what}</span>
+                  <b>{amount}</b>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
-      {all && <p className="month-ok">Mês cumprido. Bom trabalho.</p>}
-      {general.length > 0 && (
-        <>
-          <button type="button" className="plan-more" aria-expanded={how} onClick={() => setHow((v) => !v)}>
-            <ChevronDown size={14} style={{ transform: how ? 'rotate(180deg)' : undefined }} /> Como começar
+      <div className="tm-links">
+        {general.length > 0 && (
+          <button type="button" className="link-btn" aria-expanded={how} onClick={() => setHow((v) => !v)}>
+            Como começar
           </button>
-          {how && general.map((s, i) => <p key={i} className="step-detail"><b>{s.title}.</b> {s.detail}</p>)}
-        </>
-      )}
-      <button type="button" className={all ? 'btn-primary' : 'btn-outline'} onClick={() => onOpenTool('tracker')}>
-        {all ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={15} />
-      </button>
-    </div>
-  );
-}
-
-/** O caminho do plano inteiro: de hoje até o fim, com a data de cada etapa. */
-function PlanRoad({ plan }: { plan: ActionPlan }) {
-  const short = (n: number) => monthShort(plan.start, n);
-  const stops: { label: string; title: string; text: string }[] = [
-    { label: 'Começo', title: 'Hoje', text: `Separar ${formatBRL(plan.monthlyPower)} por mês` },
-  ];
-  for (const ph of plan.phases) {
-    if (ph.id === 'invest') continue;
-    stops.push({ label: ph.to === null ? 'Depois' : `Até ${short(ph.to)}`, title: ph.title, text: ph.id === 'debts' ? 'Uma dívida de cada vez' : `${formatBRL(plan.reserve.target)} guardados` });
-  }
-  stops.push({
-    label: 'Fim',
-    title: plan.investFrom !== null ? 'Dinheiro trabalhando por você' : 'Plano cumprido',
-    text: plan.investFrom !== null ? `Investindo a partir de ${short(plan.investFrom)}` : 'Tudo em dia',
-  });
-  return (
-    <p className="plan-line" aria-label="O caminho do seu plano">
-      {stops.map((st, i) => (
-        <span key={i} className={i === 0 ? 'now' : ''}>
-          {i > 0 && <ArrowRight size={13} aria-hidden="true" />}
-          <b>{st.title}</b>
-          {i > 0 && st.label !== 'Fim' && <small>{st.label.replace('Até ', '')}</small>}
-        </span>
-      ))}
-    </p>
+        )}
+        <button type="button" className="link-btn" onClick={() => onOpenTool('tracker')}>
+          {all ? 'Registrar o mês' : 'Acompanhar mês a mês'} <ArrowRight size={13} />
+        </button>
+      </div>
+      {how && general.map((s, i) => <p key={i} className="step-detail"><b>{s.title}.</b> {s.detail}</p>)}
+    </section>
   );
 }
 

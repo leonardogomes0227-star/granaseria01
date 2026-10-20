@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { accountsEnabled } from '../supabase';
-import { MessageCircle, LogOut, Landmark, ShoppingCart, RefreshCw, ArrowRight, ArrowDownLeft, Car, GraduationCap, HeartHandshake, HeartPulse, House, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
+import { MessageCircle, LogOut, ShoppingCart, RefreshCw, ArrowRight, ArrowDownLeft, Car, GraduationCap, HeartHandshake, HeartPulse, House, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
 import type { ToolId } from '../tools';
 import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
@@ -11,7 +11,6 @@ import { getGoals } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView } from './ActionPlanView';
 import { PageHead } from './AppShell';
-import { richDad } from '../richdad';
 import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
@@ -89,8 +88,6 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
   const hasDiag = data.monthlyIncome > 0;
   const plan = useMemo(() => (hasDiag ? buildPlan(data, { extraMonthly: leaksMonthlyTotal(), goals: getGoals() }) : null), [data, hasDiag]);
   const unlocked = isUnlocked() || !CHECKOUT_READY;
-  const months = hasDiag ? richDad(data).monthsFree : 0;
-  const freedom = months < 1 ? 'menos de 1 mês' : `${Math.floor(months)} ${months < 2 ? 'mês' : 'meses'}`;
 
   const expenses = painel?.month.expenses ?? [];
   const incomes = painel?.month.incomes ?? [];
@@ -125,21 +122,11 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
   if (section === 'plano')
     return (
       <div className="painel">
-        <PageHead title="Seu plano" sub={plan ? 'O que fazer este mês.' : undefined} />
+        <PageHead title="Seu plano" />
         {plan ? (
           <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
         ) : (
           <EmptyCard text="Responda o diagnóstico (uns 10 minutos) e o seu plano aparece aqui, com valores e datas." cta="Fazer meu diagnóstico" onClick={onStart} />
-        )}
-        {hasDiag && (
-          <button type="button" className="dir-row soft" style={{ marginTop: 18 }} onClick={() => onOpenTool('richdad')}>
-            <span className="tool-icon tone-lapis"><Landmark size={20} strokeWidth={1.9} /></span>
-            <span className="dir-row-copy">
-              <b>Viver de renda</b>
-              <span>Se o salário parasse hoje: {freedom}</span>
-            </span>
-            <ArrowRight size={18} className="dir-row-arrow" />
-          </button>
         )}
       </div>
     );
