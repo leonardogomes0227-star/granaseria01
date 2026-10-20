@@ -18,8 +18,10 @@ import { PlanTracker } from './components/PlanTracker';
 import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { HomePage } from './components/HomePage';
-import { AgentsSection } from './components/AgentsSection';
-import { AppShell, PageHead } from './components/AppShell';
+import { AppShell } from './components/AppShell';
+import { CoachHome } from './components/CoachHome';
+import { CoachPick } from './components/CoachPick';
+import { CoachChat } from './components/CoachChat';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -29,16 +31,13 @@ import { useSession } from './account';
 import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
-import { PainelPage } from './components/PainelPage';
-import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
+import { startPainelSync, captureLoginFromUrl, siteEvent, painelToken } from './painel';
 import { LoginGate } from './components/LoginGate';
 import { RichDadTool } from './components/RichDadTool';
 import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
-import { AgentPage } from './components/AgentPage';
-import { getAgent } from './agents';
 
 // recomeço do plano (src/reset.ts): o plano antigo deste navegador sai uma vez, antes de qualquer coisa ler ele
 try {
@@ -162,7 +161,7 @@ function App() {
     setSavedProgress(loadSavedProgress());
     // volta pra quem abriu (o agente); se a pessoa chegou direto no link, vai pros agentes
     if (window.history.length > 1) navigate(-1);
-    else navigate('/conselheiros');
+    else navigate('/inicio');
   };
 
   useEffect(() => {
@@ -188,11 +187,15 @@ function App() {
         <Route
           path="/"
           element={
-            <Titled title={null}>
-              <AppShell>
-                <HomePage savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
-              </AppShell>
-            </Titled>
+            painelToken() ? (
+              <Navigate to="/inicio" replace />
+            ) : (
+              <Titled title={null}>
+                <AppShell>
+                  <HomePage savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
+                </AppShell>
+              </Titled>
+            )
           }
         />
         <Route
@@ -224,44 +227,13 @@ function App() {
             </Titled>
           }
         />
-        <Route
-          path="/mes"
-          element={
-            <Titled title="Meu mês">
-              <AppShell>
-                <LoginGate what="o seu mês">
-                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/plano"
-          element={
-            <Titled title="Seu plano">
-              <AppShell>
-                <LoginGate what="o seu plano">
-                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route path="/painel" element={<PainelRedirect />} />
-        <Route
-          path="/conselheiros"
-          element={
-            <Titled title="Agentes">
-              <AppShell>
-                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
-                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route path="/conselheiros/:id" element={<AgentRoute data={data} onOpenTool={openTool} />} />
-        <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
+        <Route path="/inicio" element={<Titled title="Início"><CoachHome /></Titled>} />
+        <Route path="/coach" element={<Titled title="Seu coach"><CoachPick /></Titled>} />
+        <Route path="/coach/chat" element={<Titled title="Conversa com o coach"><CoachChat /></Titled>} />
+        {/* o app agora gira em torno do coach: as telas antigas levam pra Início */}
+        {['/mes', '/plano', '/painel', '/conselheiros', '/conselheiros/:id', '/ferramentas'].map((path) => (
+          <Route key={path} path={path} element={<Navigate to="/inicio" replace />} />
+        ))}
         <Route
           path="/ferramentas/:slug"
           element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
@@ -361,35 +333,11 @@ function WizardRoute({
   );
 }
 
-function AgentRoute({ data, onOpenTool }: { data: WizardData; onOpenTool: (id: ToolId) => void }) {
-  const agent = getAgent(useParams().id);
-  return (
-    <Titled title={agent ? `${agent.name}, seu conselheiro` : 'Página não encontrada'}>
-      <AppShell>
-        {agent ? (
-          <LoginGate what={`a conversa com ${agent.name}`}>
-            <AgentPage key={agent.id} agent={agent} data={data} onOpenTool={onOpenTool} />
-          </LoginGate>
-        ) : (
-          <NotFoundPage />
-        )}
-      </AppShell>
-    </Titled>
-  );
-}
-
 function GuideRoute({ onStart }: { onStart: () => void }) {
   const { slug } = useParams();
   const guide = getGuide(slug);
   useTitle(guide ? guide.title : 'Página não encontrada');
   return <AppShell>{guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}</AppShell>;
-}
-
-/** Os links antigos do painel (/painel#mes, #plano…) levam pra página nova de cada coisa. */
-function PainelRedirect() {
-  const { hash, search } = useLocation();
-  const to: Record<string, string> = { '#mes': '/mes', '#plano': '/plano', '#pairico': '/plano', '#ferramentas': '/ferramentas' };
-  return <Navigate to={`${to[hash] ?? '/'}${search}`} replace />;
 }
 
 function ToolRoute({
