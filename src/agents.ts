@@ -33,7 +33,7 @@ export const AGENTS: Agent[] = [
     id: 'dabasir',
     name: 'Dabasir',
     role: 'Te tira das dívidas, uma por uma',
-    does: 'Te lembra de pagar as dívidas, uma por uma, todo mês.',
+    does: 'Te lembra de pagar as dívidas, uma por uma',
     story: 'Vendedor de camelos que se afundou em dívidas e saiu delas pagando um pouco a cada credor, todo mês.',
     intro: 'Eu já devi pra muita gente e sei como pesa. O caminho que me tirou: viver com 70% do que ganho, guardar 10% e usar 20% pra pagar quem eu devia. Vamos montar o seu.',
     tool: 'debts',
@@ -50,7 +50,7 @@ export const AGENTS: Agent[] = [
     id: 'bansir',
     name: 'Bansir',
     role: 'Organiza as contas do mês pra nada vencer esquecido',
-    does: 'Te avisa no WhatsApp antes de cada conta vencer.',
+    does: 'Avisa no WhatsApp antes de cada conta vencer',
     story: 'Fazia carruagens, trabalhava de sol a sol e mesmo assim nunca sobrava nada. Até aprender pra onde o dinheiro ia.',
     intro: 'Eu trabalhava muito e o dinheiro sumia. Quando passei a anotar cada conta e cada vencimento, parei de pagar multa e comecei a sobrar. Vamos organizar as suas.',
     tool: 'bills',
@@ -66,7 +66,7 @@ export const AGENTS: Agent[] = [
     id: 'arkad',
     name: 'Arkad',
     role: 'Te ensina a guardar, mesmo ganhando pouco',
-    does: 'Te lembra de separar o seu dinheiro quando o salário cai.',
+    does: 'Te lembra de guardar quando o salário cai',
     story: 'O homem mais rico da Babilônia. Começou guardando uma moeda de cada dez que ganhava.',
     intro: 'Uma parte de tudo o que você ganha é sua pra guardar. Não o que sobra: o que você separa primeiro. Comece com 10%, ou com o que der. Vamos ver o seu caso.',
     tool: 'tracker',
@@ -83,7 +83,7 @@ export const AGENTS: Agent[] = [
     id: 'nomasir',
     name: 'Nomasir',
     role: 'Acha o dinheiro que escapa sem você ver',
-    does: 'Te lembra de cancelar o que você não usa e de olhar a fatura.',
+    does: 'Te lembra de cortar o que você não usa',
     story: 'Filho de Arkad, perdeu todo o ouro confiando em quem não devia. Aprendeu a vigiar cada moeda.',
     intro: 'Eu perdi tudo por não prestar atenção. Hoje eu olho tarifa, assinatura e seguro que ninguém lembra que paga. Vamos achar o que está escapando de você.',
     tool: 'leaks',
@@ -100,7 +100,7 @@ export const AGENTS: Agent[] = [
     id: 'mathon',
     name: 'Mathon',
     role: 'Te protege antes de pegar empréstimo',
-    does: 'Te ajuda a comparar propostas antes de pegar um empréstimo.',
+    does: 'Compara empréstimos antes de você assinar',
     story: 'O emprestador de ouro da Babilônia. Sabia que o empréstimo bom é o que a pessoa consegue devolver.',
     intro: 'Já emprestei muito ouro e vi gente se perder em parcela. Antes de assinar, a gente olha o custo total e se cabe no seu mês. Me conta.',
     tool: 'loan',
@@ -116,7 +116,7 @@ export const AGENTS: Agent[] = [
     id: 'rodan',
     name: 'Rodan',
     role: 'Faz o 13º e o dinheiro extra render de verdade',
-    does: 'Te ajuda a dar destino ao 13º e a qualquer dinheiro extra.',
+    does: 'Dá destino ao 13º e ao dinheiro extra',
     story: 'Fazedor de lanças que ganhou 50 moedas de ouro de uma vez e quase perdeu tudo sem saber o que fazer.',
     intro: 'Dinheiro extra some rápido se não tiver destino. Antes de cair, a gente decide onde vai cada real. Vamos lá.',
     tool: 'extra',
@@ -132,7 +132,7 @@ export const AGENTS: Agent[] = [
     id: 'sharru',
     name: 'Sharru Nada',
     role: 'Te mostra o caminho pra viver de renda',
-    does: 'Te mostra quanto falta pro seu dinheiro pagar as suas contas.',
+    does: 'Mostra quanto falta pra viver de renda',
     story: 'Mercador que fez o ouro trabalhar por ele. Ou, como diz o Pai Rico: compre ativos, não passivos.',
     intro: 'Rico não é quem ganha muito, é quem tem dinheiro entrando sem precisar trabalhar. Vamos ver quanto falta pra você e o primeiro passo.',
     tool: 'richdad',
@@ -261,3 +261,32 @@ export function customPlan(c: CustomAgent): AgentPlan {
     tasks: [{ text: `Conferir se gastou no máximo ${formatBRL(per)} com ${c.what}`, inDays, repeat: 'monthly' }],
   };
 }
+
+
+/* ---------- Os agentes que a pessoa escolheu ter no app ---------- */
+// Só aparecem na Home os que ela adicionou (e os que já têm avisos rodando). Não muda lembrete nenhum: é a vitrine dela.
+
+export const CHOSEN_KEY = 'gs-agentes';
+
+export function loadChosen(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHOSEN_KEY) || '[]') as unknown;
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveChosen(list: string[]) {
+  try {
+    localStorage.setItem(CHOSEN_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event('gs-agentes'));
+  } catch {
+    // segue sem salvar
+  }
+}
+
+export const addChosen = (id: string) => {
+  const cur = loadChosen();
+  if (!cur.includes(id)) saveChosen([...cur, id]);
+};

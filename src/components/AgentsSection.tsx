@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
-import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, type CustomAgent } from '../agents';
+import { Check, Plus, Trash2 } from 'lucide-react';
+import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, loadChosen, saveChosen, type CustomAgent } from '../agents';
 import { getAnswers, recommend } from '../profile';
 import { saveGoal, setToolTasks } from '../results';
 import { AgentAvatar } from './AgentPage';
-import { AgentArt } from './AgentArt';
 import { MoneyField } from './Tools';
 import { DecimalInput } from './DecimalInput';
 
@@ -27,73 +26,92 @@ function saveCustom(list: CustomAgent[]) {
   }
 }
 
-export function AgentsSection({ hasDiagnosis, bare = false }: { hasDiagnosis: boolean; bare?: boolean }) {
+export function AgentsSection({ hasDiagnosis }: { hasDiagnosis: boolean; bare?: boolean }) {
   const navigate = useNavigate();
   const answers = getAnswers();
-  // os indicados pelas perguntas da entrada vêm primeiro
+  // os indicados pelas perguntas da entrada vêm primeiro entre os disponíveis
   const picked = answers ? recommend(answers, hasDiagnosis).map((p) => AGENTS.find((a) => a.tool === p.tool)?.id).filter(Boolean) : ['dabasir', 'bansir', 'arkad'];
-  const order = [...AGENTS].sort((a, b) => (picked.indexOf(a.id) === -1 ? 99 : picked.indexOf(a.id)) - (picked.indexOf(b.id) === -1 ? 99 : picked.indexOf(b.id)));
+  const rank = (id: string) => (picked.indexOf(id) === -1 ? 99 : picked.indexOf(id));
   const [custom, setCustom] = useState<CustomAgent[]>(loadCustom);
+  const [chosen, setChosen] = useState<string[]>(loadChosen);
   const [creating, setCreating] = useState(() => window.location.hash === '#criar');
   useEffect(() => {
     if (creating) window.setTimeout(() => document.getElementById('criar')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
   }, [creating]);
+  const toggle = (id: string) => {
+    const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
+    setChosen(next);
+    saveChosen(next);
+  };
+  const mine = AGENTS.filter((a) => chosen.includes(a.id));
+  const free = AGENTS.filter((a) => !chosen.includes(a.id)).sort((x, y) => rank(x.id) - rank(y.id));
+
+  const row = (a: (typeof AGENTS)[number], on: boolean) => (
+    <li key={a.id} className="agent-row">
+      <button type="button" className="agent-row-main" onClick={() => navigate(`/conselheiros/${a.id}`)}>
+        <AgentAvatar id={a.id} name={a.name} hue={a.hue} size={48} />
+        <span>
+          <b>{a.name}</b>
+          <small>{a.does}</small>
+        </span>
+      </button>
+      <button type="button" className={`agent-pick ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => toggle(a.id)}>
+        {on ? <><Check size={14} /> No meu app</> : <><Plus size={14} /> Adicionar</>}
+      </button>
+    </li>
+  );
 
   return (
-    <section className={bare ? 'agents bare' : 'section agents'} id="conselheiros">
-      {!bare && <div className="section-head center">
-        <div className="kicker">Seus conselheiros</div>
-        <h2>Escolha quem vai te ajudar</h2>
-        <p>Cada um cuida de um problema, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. Ele conversa com você, monta o seu plano e te lembra no WhatsApp.</p>
-      </div>}
+    <section className="agents-page" id="conselheiros">
+      {(mine.length > 0 || custom.length > 0) && (
+        <>
+          <p className="section-label">Meus agentes</p>
+          <ul className="agent-rows">
+            {mine.map((a) => row(a, true))}
+            {custom.map((c) => (
+              <li key={c.id} className="agent-row">
+                <span className="agent-row-main static">
+                  <AgentAvatar name={c.name} hue={45} size={48} />
+                  <span>
+                    <b>{c.name}</b>
+                    <small>{customPlan(c).lines[0]}</small>
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="agent-pick remove"
+                  aria-label={`Remover ${c.name}`}
+                  onClick={() => {
+                    const next = custom.filter((x) => x.id !== c.id);
+                    setCustom(next);
+                    saveCustom(next);
+                    setToolTasks('goal', []);
+                  }}
+                >
+                  <Trash2 size={14} /> Remover
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
-      <div className="agents-grid">
-        {order.map((a) => {
-          const rec = picked.includes(a.id);
-          return (
-            <button key={a.id} type="button" className={`agent-card ${rec ? 'rec' : ''}`} onClick={() => navigate(`/conselheiros/${a.id}`)}>
-              <span className="agent-cover">
-                <AgentArt id={a.id} hue={a.hue} />
-                {rec && <em>Indicado pra você</em>}
-              </span>
-              <span className="agent-copy">
-                <b>{a.name}</b>
-                <span>{a.does}</span>
-              </span>
-            </button>
-          );
-        })}
-        {custom.map((c) => (
-          <div key={c.id} className="agent-card mine">
-            <span className="agent-cover mine-cover">
-              <AgentAvatar name={c.name} hue={45} size={52} />
-            </span>
-            <span className="agent-copy">
-              <b>{c.name}</b>
-              <span>{customPlan(c).lines[0]}</span>
-              <button
-                type="button"
-                className="plan-more danger"
-                onClick={() => {
-                  const next = custom.filter((x) => x.id !== c.id);
-                  setCustom(next);
-                  saveCustom(next);
-                  setToolTasks('goal', []);
-                }}
-              >
-                <Trash2 size={13} /> apagar
-              </button>
-            </span>
-          </div>
-        ))}
-        <button type="button" className="agent-card create" onClick={() => setCreating(true)}>
-          <span className="agent-cover create-cover"><Plus size={30} /></span>
-          <span className="agent-copy">
+      {free.length > 0 && (
+        <>
+          {(mine.length > 0 || custom.length > 0) && <p className="section-label">Disponíveis</p>}
+          <ul className="agent-rows">{free.map((a) => row(a, false))}</ul>
+        </>
+      )}
+
+      <button type="button" className="agent-row create" onClick={() => setCreating(true)}>
+        <span className="agent-row-main static">
+          <span className="agent-create-icon"><Plus size={22} /></span>
+          <span>
             <b>Criar o meu</b>
-            <span>Escolha o que ele vigia e quando te avisa no WhatsApp.</span>
+            <small>Você escolhe o que ele vigia e quando avisa</small>
           </span>
-        </button>
-      </div>
+        </span>
+      </button>
 
       {creating && (
         <CreateAgent
