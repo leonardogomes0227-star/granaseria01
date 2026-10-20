@@ -1462,7 +1462,9 @@ html { overflow-x: hidden; }
 .dir-group { margin-bottom: 28px; }
 .dir-group h3 { font-family: var(--sans); font-size: 15px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--ink); margin-bottom: 12px; }
 .dir-group h3 small { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--ink-soft); font-size: 14px; }
-.dir-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.dir-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 900px) { .dir-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .dir-grid { grid-template-columns: 1fr; } }
 .dir-card {
   display: flex; flex-direction: column; gap: 8px; padding: 16px; text-align: left; cursor: pointer; border-radius: 14px;
   background: var(--white); border: 1px solid var(--hairline); box-shadow: var(--shadow-sm); font-family: var(--sans); color: var(--ink);
@@ -1476,6 +1478,14 @@ html { overflow-x: hidden; }
 .dir-card.done { border-color: #8DB596; }
 .dir-card.done .dir-get { color: #2F6B45; font-weight: 600; }
 .dir-card.done .dir-get svg { vertical-align: -2px; }
+.dir-done { display: flex; flex-direction: column; gap: 2px; }
+.dir-done-tag { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start; margin-bottom: 6px; padding: 2px 9px; border-radius: 999px; background: #EEF5EC; color: #2F6B45; font-size: 12px; font-weight: 700; }
+.dir-done small { font-size: 12.5px; color: var(--ink-soft); }
+.dir-done strong { font-family: var(--display); font-size: 21px; font-weight: 500; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+.dir-done-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-top: 1px solid var(--hairline-soft); font-size: 13px; }
+.dir-done-row em { font-style: normal; color: var(--ink-soft); }
+.dir-done-row b { font-weight: 600; color: var(--ink); text-align: right; }
+.dir-open { margin-top: auto; padding-top: 8px; display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 700; color: var(--gold-deep); }
 @media (max-width: 600px) { .tools-dir { padding: 44px 16px 24px; } .dir-diag { padding: 16px; gap: 12px; } .dir-copy b { font-size: 16.5px; } }
 
 /* ---------- dentro de cada ferramenta: pra que serve ---------- */
