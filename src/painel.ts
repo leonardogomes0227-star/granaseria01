@@ -178,6 +178,9 @@ const onVisible = () => {
   else void push().catch(() => undefined);
 };
 
+/** Manda agora o que mudou aqui (antes de recarregar a página, pra o que foi apagado não voltar do servidor). */
+export const pushNow = () => push(true).catch(() => undefined);
+
 /** Liga a sincronização com o WhatsApp neste navegador (só se ele tiver o link pessoal). */
 export async function startPainelSync(): Promise<PainelData | null> {
   stopPainelSync();

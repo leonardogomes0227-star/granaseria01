@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Bell, Send } from 'lucide-react';
 import type { WizardData } from '../types';
-import { agentPlan, type Agent } from '../agents';
+import { addChosen, agentPlan, type Agent } from '../agents';
 import { faturaEnabled, getTool, type ToolId } from '../tools';
 import { setToolTasks } from '../results';
 import { painelToken } from '../painel';
@@ -68,6 +68,7 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
   useEffect(() => {
     if (!plan) return;
     setToolTasks(agent.tool, plan.tasks);
+    addChosen(agent.id);
     track('conselheiro_plano', { conselheiro: agent.id });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez quando a conversa termina
   }, [done]);

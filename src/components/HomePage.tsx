@@ -4,7 +4,7 @@ import { ArrowRight, Bell, Check, ClipboardList, MessageCircle, Plus, Users } fr
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
 import { todayBRT, type CoachTask } from '../coach';
-import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, type CustomAgent } from '../agents';
+import { AGENTS, CUSTOM_AGENTS_KEY, customPlan, loadChosen, type CustomAgent } from '../agents';
 import { markTaskDone } from '../results';
 import { fmtDue } from '../dates';
 import { faturaEnabled, getTool, type ToolId } from '../tools';
@@ -81,10 +81,10 @@ interface Watcher {
   tasks: CoachTask[]; // os avisos abertos, do mais perto pro mais longe
 }
 
-function buildWatchers(tasks: CoachTask[], custom: CustomAgent[]): Watcher[] {
+function buildWatchers(tasks: CoachTask[], custom: CustomAgent[], chosen: string[]): Watcher[] {
   const open = tasks.filter((t) => !t.done).sort((a, b) => a.due.localeCompare(b.due));
   const own = (source: string) => open.filter((t) => t.source === source || (source === 'tracker' && t.source === 'plano'));
-  const list: Watcher[] = AGENTS.map((a) => ({ id: a.id, name: a.name, role: a.role, does: a.does, extra: a.extra ?? [], hue: a.hue, tool: a.tool, custom: false, tasks: own(a.tool) }));
+  const list: Watcher[] = AGENTS.filter((a) => chosen.includes(a.id) || own(a.tool).length > 0).map((a) => ({ id: a.id, name: a.name, role: a.role, does: a.does, extra: a.extra ?? [], hue: a.hue, tool: a.tool, custom: false, tasks: own(a.tool) }));
   const goals = open.filter((t) => t.source === 'goal');
   custom.forEach((c) => list.push({ id: c.id, name: c.name, role: customPlan(c).lines[0], does: customPlan(c).lines[0], extra: [], hue: 45, tool: null, custom: true, tasks: goals }));
   // quem está vigiando vem primeiro, e dentro deles o aviso mais próximo
@@ -95,7 +95,13 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
   const navigate = useNavigate();
   const tasks = useTasks();
   const today = todayBRT();
-  const watchers = buildWatchers(tasks, loadCustom());
+  const [mine, setMine] = useState<string[]>(loadChosen);
+  useEffect(() => {
+    const on = () => setMine(loadChosen());
+    window.addEventListener('gs-agentes', on);
+    return () => window.removeEventListener('gs-agentes', on);
+  }, []);
+  const watchers = buildWatchers(tasks, loadCustom(), mine);
   const active = watchers.filter((w) => w.tasks.length > 0).length;
   const [sel, setSel] = useState<string | null>(null);
   const [fatura, setFatura] = useState(false);
@@ -111,7 +117,7 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
         <h2>Seus agentes ativos</h2>
         <span className="agents-count">{active === 0 ? 'nenhum ainda' : `${active} de olho`}</span>
       </div>
-      {active === 0 && <p className="agents-hint">Escolha um agente abaixo. Ele monta os seus avisos e te lembra no WhatsApp.</p>}
+      {watchers.length === 0 && <p className="agents-hint">Adicione um agente. Ele cuida de uma coisa por você e avisa no WhatsApp.</p>}
       <div className="agent-strip live">
         {watchers.map((w) => {
           const first = w.tasks[0];
@@ -130,10 +136,10 @@ function AgentsPanel({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: bool
             </button>
           );
         })}
-        <button type="button" className="agent-live create" onClick={() => navigate('/conselheiros#criar')}>
+        <button type="button" className="agent-live create" onClick={() => navigate('/conselheiros')}>
           <span className="agent-live-art"><Plus size={26} /></span>
-          <b>Criar o meu</b>
-          <small className="live-line">Pro seu objetivo</small>
+          <b>Adicionar agente</b>
+          <small className="live-line">Escolha os que fazem sentido pra você</small>
         </button>
       </div>
 

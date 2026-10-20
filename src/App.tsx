@@ -254,8 +254,8 @@ function App() {
           element={
             <Titled title="Agentes">
               <AppShell>
-                <PageHead title="Agentes" sub="Cada um cuida de uma coisa e te avisa no WhatsApp. Escolha um ou crie o seu." />
-                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} bare />
+                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
+                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
               </AppShell>
             </Titled>
           }

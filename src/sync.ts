@@ -19,6 +19,8 @@ export const SYNC_KEYS = [
   'gs-tarefas', // próximos passos do coach (src/coach.ts)
   'gs-contas', // minhas contas e dívidas (src/bills.ts)
   'gs-conselheiros', // conselheiros que a pessoa criou (src/agents.ts)
+  'gs-plano-fora', // partes do plano que a pessoa tirou do plano (ActionPlanView)
+  'gs-agentes', // os agentes que a pessoa escolheu ter no app (src/agents.ts)
   'gs-mes-feito', // o que já foi feito no mês, no plano (ActionPlanView)
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
