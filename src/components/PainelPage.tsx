@@ -15,6 +15,7 @@ import { richDad } from '../richdad';
 import { clearPainelToken, painelToken, setPainelToken, startPainelSync, type PainelData } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
+import { fmtDay } from '../dates';
 import { CountUp } from './motion';
 
 /* ---------- Meu painel: o app da pessoa, ligado ao WhatsApp ---------- */
@@ -31,7 +32,7 @@ const CATS: { key: keyof WizardData['expenses']; name: string; label: string }[]
 const brl = (n: number) => formatBRL(n);
 
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
-const day = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
+const day = fmtDay;
 
 // mesmos emojis do assistente (server/whatsapp/parse.ts), pra pessoa reconhecer o que anotou lá
 const CAT_ICON: Record<string, LucideIcon> = {
@@ -165,8 +166,10 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
         </div>
       )}
       {status === 'loading' && (
-        <div className="wallet wallet-loading" aria-label="Carregando seu painel">
-          <span /><span /><span />
+        <div className="skeleton-stack" aria-label="Carregando">
+          <span className="skeleton skeleton-card" />
+          <span className="skeleton skeleton-row" />
+          <span className="skeleton skeleton-row" />
         </div>
       )}
       {status === 'error' && (

@@ -247,3 +247,11 @@ a.dir-row { text-decoration: none; }
 .impulse-row { margin: 14px 0; }
 .dir-list.one { grid-template-columns: minmax(0, 1fr); }
 .dir-row { min-width: 0; }
+
+/* etapa 3: skeletons e datas */
+.skeleton-stack { display: flex; flex-direction: column; gap: 12px; }
+.skeleton-card { height: 170px; border-radius: 20px; }
+.skeleton-row { height: 64px; border-radius: 16px; }
+.result-cta { margin-top: 18px; padding: 18px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--line); }
+.result-cta p { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.result-cta .btn-primary { width: 100%; justify-content: center; }

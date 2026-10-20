@@ -48,7 +48,7 @@ export function LoginGate({ what, header, children }: { what: string; header?: R
     return (
       <>
         {header}
-        <div className="page-wrap"><p className="field-hint">Carregando sua conta…</p></div>
+        <div className="page-wrap skeleton-stack" aria-label="Carregando"><span className="skeleton skeleton-card" /><span className="skeleton skeleton-row" /></div>
       </>
     );
   }

@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
 import { fetchPainel, getName, painelToken, type PainelData } from '../painel';
 import { formatBRL } from '../calculations';
-import { daysBetween, todayBRT } from '../coach';
+import { todayBRT } from '../coach';
 import { markTaskDone } from '../results';
+import { fmtDue } from '../dates';
 import { getTool, type ToolId } from '../tools';
 import { WhatsAppButton } from './ContinueWhatsApp';
 import { useTasks } from './CoachPanel';
@@ -55,12 +56,6 @@ function MonthCard() {
   );
 }
 
-const when = (due: string, today: string) => {
-  const d = daysBetween(today, due);
-  if (d <= 0) return 'pra hoje';
-  if (d === 1) return 'amanhã';
-  return new Date(`${due}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-};
 
 function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolean; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
   const tasks = useTasks();
@@ -95,7 +90,7 @@ function NextSteps({ hasDiagnosis, onStart, onOpenTool }: { hasDiagnosis: boolea
               <button type="button" className="task-copy" onClick={() => (t.source === 'plano' ? navigate('/plano') : onOpenTool(t.source as ToolId))}>
                 <b>{t.text}</b>
                 <small>
-                  {when(t.due, today)}
+                  {fmtDue(t.due, today)}
                   {t.source !== 'plano' ? ` · ${getTool(t.source as ToolId).title}` : ''}
                 </small>
               </button>

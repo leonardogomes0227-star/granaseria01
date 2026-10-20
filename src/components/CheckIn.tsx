@@ -1,3 +1,4 @@
+import { fmtDay } from '../dates';
 import { useState } from 'react';
 import { CheckinEntry } from '../types';
 import { checkinActionPlan } from '../calculations';
@@ -45,7 +46,7 @@ export function CheckInTool(nav: ToolNavProps) {
         {!showForm && last && (
           <>
             <p className="wizard-sub">
-              Último check-in em {new Date(last.date).toLocaleDateString('pt-BR')}.
+              Último check-in em {fmtDay(last.date)}.
             </p>
 
             <div className="diag-section">

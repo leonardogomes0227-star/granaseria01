@@ -3,18 +3,11 @@ import { ArrowRight, Check, Undo2 } from 'lucide-react';
 import { daysBetween, todayBRT, type CoachTask } from '../coach';
 import { getTasks, markTaskDone, unmarkTask } from '../results';
 import { getTool, type ToolId } from '../tools';
+import { fmtDue } from '../dates';
 
 /* ---------- O coach: próximos passos com data, pra marcar como feito ---------- */
 // Cada ferramenta deixa compromissos aqui. O WhatsApp lembra no dia (server/coach.ts).
 
-const when = (due: string, today: string) => {
-  const d = daysBetween(today, due);
-  if (d < 0) return `atrasado ${-d} ${d === -1 ? 'dia' : 'dias'}`;
-  if (d === 0) return 'hoje';
-  if (d === 1) return 'amanhã';
-  if (d < 7) return `em ${d} dias`;
-  return new Date(`${due}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-};
 const sourceName = (t: CoachTask) => (t.source === 'plano' ? 'Seu plano de ação' : getTool(t.source as ToolId).title);
 
 export function useTasks(): CoachTask[] {
@@ -46,7 +39,7 @@ export function CoachPanel({ onOpenTool, onOpenPlan }: { onOpenTool: (id: ToolId
       <span className="coach-copy">
         <b>{t.text}</b>
         <small>
-          {when(t.due, today)}
+          {fmtDue(t.due, today)}
           {t.repeat === 'monthly' ? ' · todo mês' : ''} ·{' '}
           <button type="button" className="coach-src" onClick={() => (t.source === 'plano' ? onOpenPlan() : onOpenTool(t.source as ToolId))}>
             {sourceName(t)} <ArrowRight size={11} />

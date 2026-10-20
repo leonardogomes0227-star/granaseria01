@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronDown, Undo2 } from 'lucide-react';
 import { getResults, markTaskDone, unmarkTask, type ToolResult } from '../results';
-import { daysBetween, todayBRT } from '../coach';
+import { todayBRT } from '../coach';
+import { fmtDay, fmtDue } from '../dates';
 import { JOURNEYS } from '../journeys';
 import type { ToolId } from '../tools';
 import { useTasks } from './CoachPanel';
@@ -9,14 +10,6 @@ import { useTasks } from './CoachPanel';
 /* ---------- O painel de cada ferramenta ---------- */
 // Começo, meio e fim (com o passo em que a pessoa está), os números que ela salvou, os próximos passos pra marcar
 // e o histórico das outras vezes. Fica em cima da ferramenta: é o controle de tudo que ela fez ali.
-
-const dayMonth = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-const when = (due: string, today: string) => {
-  const d = daysBetween(today, due);
-  if (d <= 0) return 'pra hoje';
-  if (d === 1) return 'amanhã';
-  return new Date(`${due}T12:00:00Z`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', timeZone: 'UTC' });
-};
 
 export function useResult(id: ToolId): ToolResult | undefined {
   const [r, setR] = useState(() => getResults()[id]);
@@ -56,7 +49,7 @@ export function ToolPanel({ id }: { id: ToolId }) {
         <div className="card panel-card">
           <div className="card-row">
             <span className="card-label">{c?.label ?? 'Seu resultado'}</span>
-            <small className="panel-date">Atualizado em {dayMonth(result.at)}</small>
+            <small className="panel-date">Atualizado em {fmtDay(result.at)}</small>
           </div>
           <b className="panel-big">{c?.big ?? result.summary}</b>
           {c && c.rows.length > 0 && (
@@ -78,7 +71,7 @@ export function ToolPanel({ id }: { id: ToolId }) {
                 <ul className="panel-history">
                   {result.history.map((h, i) => (
                     <li key={i}>
-                      <small>{dayMonth(h.at)}</small>
+                      <small>{fmtDay(h.at)}</small>
                       <span>{h.summary}</span>
                     </li>
                   ))}
@@ -104,7 +97,7 @@ export function ToolPanel({ id }: { id: ToolId }) {
                 </button>
                 <span className="task-copy">
                   <b>{t.text}</b>
-                  <small>{when(t.due, today)}{t.repeat === 'monthly' ? ' · todo mês' : ''}</small>
+                  <small>{fmtDue(t.due, today)}{t.repeat === 'monthly' ? ' · todo mês' : ''}</small>
                 </span>
               </li>
             ))}
