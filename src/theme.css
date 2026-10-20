@@ -252,7 +252,12 @@ input[type='range'] { accent-color: var(--gold-bright); }
 .agent-card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
 .agent-card.rec { border-color: rgba(233, 176, 76, 0.45); }
 .agent-card.mine { cursor: default; }
-.agent-cover { position: relative; display: flex; align-items: center; justify-content: center; height: 108px; color: rgba(255, 255, 255, 0.92); }
+.agent-cover { position: relative; display: flex; align-items: center; justify-content: center; height: 150px; overflow: hidden; color: rgba(255, 255, 255, 0.92); }
+.agent-art { display: block; width: 100%; height: 100%; }
+.agent-card .agent-art { transition: transform .25s; }
+.agent-card:hover .agent-art { transform: scale(1.04); }
+.agent-avatar.art { overflow: hidden; box-shadow: 0 0 0 2px rgba(233, 176, 76, 0.5); }
+.agent-cover em { z-index: 1; }
 .agent-cover em { position: absolute; left: 10px; top: 10px; font-style: normal; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 99px; background: rgba(13, 11, 9, 0.6); color: var(--gold-bright); }
 .mine-cover { background: var(--surface-2); }
 .create-cover { background: var(--surface-2); color: var(--gold-bright); border-bottom: 1px dashed var(--line-strong); }
@@ -288,7 +293,7 @@ input[type='range'] { accent-color: var(--gold-bright); }
 .chat-ask .btn-primary { flex: none; padding: 0 16px; }
 @media (max-width: 520px) {
   .agents-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .agent-cover { height: 84px; }
+  .agent-cover { height: 118px; }
   .agent-copy > span { font-size: 13px; }
   .bubble { max-width: 92%; }
 }

@@ -7,6 +7,7 @@ import { getTool, type ToolId } from '../tools';
 import { saveResult, setToolTasks } from '../results';
 import { painelToken } from '../painel';
 import { track } from '../analytics';
+import { AgentArt, hasAgentArt } from './AgentArt';
 
 /* ---------- Conversa com um conselheiro ---------- */
 // Ele se apresenta, faz 3 perguntas de tocar, monta o plano dele com os números da pessoa e cria os próximos
@@ -14,7 +15,13 @@ import { track } from '../analytics';
 
 type Msg = { from: 'agent' | 'me'; text: string };
 
-export function AgentAvatar({ name, hue, size = 56 }: { name: string; hue: number; size?: number }) {
+export function AgentAvatar({ id, name, hue, size = 56 }: { id?: string; name: string; hue: number; size?: number }) {
+  if (id && hasAgentArt(id))
+    return (
+      <span className="agent-avatar art" style={{ width: size, height: size }} aria-hidden="true">
+        <AgentArt id={id} hue={hue} variant="avatar" />
+      </span>
+    );
   return (
     <span
       className="agent-avatar"
@@ -115,7 +122,7 @@ export function AgentPage({ agent, data, onOpenTool }: { agent: Agent; data: Wiz
         <ArrowLeft size={16} /> Conselheiros
       </button>
       <header className="agent-head">
-        <AgentAvatar name={agent.name} hue={agent.hue} size={72} />
+        <AgentAvatar id={agent.id} name={agent.name} hue={agent.hue} size={84} />
         <div>
           <h1>{agent.name}</h1>
           <p className="agent-role">{agent.role}</p>
