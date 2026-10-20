@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ChevronDown } from 'lucide-react';
+import { Car, Check, ChevronDown, CreditCard, Droplets, GraduationCap, HeartPulse, House, PiggyBank, Receipt, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
 import { formatBRL } from '../calculations';
 import { SAVE_SHARE, loadBills, loadSaved, monthOf, monthStatus, saveBills, saveSaved, savedThisMonth, type BillStatus } from '../bills';
 import { fetchPainel, painelToken } from '../painel';
@@ -41,6 +41,23 @@ export function useMonthIncome(): number {
       .catch(() => undefined);
   }, []);
   return income;
+}
+
+/** Ícone da conta pelo nome (aluguel, luz, carro…); sem pista, o recibo genérico. */
+const BILL_ICONS: [RegExp, LucideIcon][] = [
+  [/alug|condom|casa|moradia|financ.*(casa|imov)|imov/i, House],
+  [/luz|energia|el[eé]tric/i, Zap],
+  [/[aá]gua|esgoto/i, Droplets],
+  [/internet|wifi|banda/i, Wifi],
+  [/celular|telefone|plano m[oó]vel|chip/i, Smartphone],
+  [/carro|moto|ve[ií]culo|combust|ipva|seguro auto/i, Car],
+  [/cart[aã]o|fatura|empr[eé]stimo|financ/i, CreditCard],
+  [/escola|faculdade|curso|mensalidade/i, GraduationCap],
+  [/plano de sa|sa[uú]de|convenio|conv[eê]nio|farm/i, HeartPulse],
+];
+function BillIcon({ name }: { name: string }) {
+  const Icon = BILL_ICONS.find(([re]) => re.test(name))?.[1] ?? Receipt;
+  return <span className="fixed-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.9} /></span>;
 }
 
 const ddmm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
@@ -149,6 +166,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
           <ul className="fixed-list">
             {showSave && (
               <li className={`fixed-first ${saveDone ? 'ok' : ''}`}>
+                <span className="fixed-icon" aria-hidden="true"><PiggyBank size={18} strokeWidth={1.9} /></span>
                 <span className="fixed-copy">
                   <b>Pague-se primeiro</b>
                   <small>{saveDone ? 'guardado este mês' : `${Math.round(SAVE_SHARE * 100)}% do que entrou, antes de gastar`}</small>
@@ -168,6 +186,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
               const late = !ok && s.daysToDue < 0;
               return (
                 <li key={s.bill.id} className={ok ? 'ok' : late ? 'late' : ''}>
+                  <BillIcon name={s.bill.name} />
                   <span className="fixed-copy">
                     <b>{s.bill.name}</b>
                     <small>{dueText(s)}</small>
