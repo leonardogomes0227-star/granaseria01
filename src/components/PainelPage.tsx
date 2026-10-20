@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { accountsEnabled } from '../supabase';
-import { MessageCircle, LogOut, ShoppingCart, RefreshCw, ArrowRight, ArrowDownLeft, Car, GraduationCap, HeartHandshake, HeartPulse, House, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
+import { MessageCircle, LogOut, ShoppingCart, RefreshCw, ArrowRight, ArrowDownLeft, Plus, Car, GraduationCap, HeartHandshake, HeartPulse, House, PawPrint, PiggyBank, Receipt, Scissors, ShoppingBag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
 import type { ToolId } from '../tools';
 import type { WizardData } from '../types';
 import { formatBRL } from '../calculations';
@@ -178,30 +178,40 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
 
       {status === 'ok' && painel && (
         <>
-          <section className="hero-money month-hero" id="mes" aria-label={`Seu mês de ${clock.month}`}>
-            <span className="hero-label">{income > 0 ? 'Saldo' : 'Gastos'} de {clock.month}</span>
+          <section className="home-hero month-card" id="mes" aria-label={`Seu mês de ${clock.month}`}>
+            <span className="home-hero-top"><span>{income > 0 ? 'Saldo' : 'Gastos'} de {clock.month}</span></span>
             {income > 0 ? (
-              <b className={`hero-number ${left < 0 ? 'neg' : ''}`}>
+              <b className={`home-hero-number ${left < 0 ? 'neg' : ''}`}>
                 {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} />
               </b>
             ) : (
-              <b className="hero-number">{brl(spent)}</b>
+              <b className="home-hero-number">{brl(spent)}</b>
             )}
-            <span className="hero-sub">
+            <span className="home-hero-sub">
               {income === 0
                 ? 'Anote o que entrou (ex.: recebi 3000 salário) pra ver o saldo.'
                 : left > 0
                   ? `Dá pra gastar uns ${brl(perDay)} por dia`
                   : 'O que entrou este mês já foi usado'}
             </span>
-            <span className="month-flow">Entrou {brl(income)} · Saiu {brl(spent)}{billsPaid > 0 ? ` · Contas pagas ${brl(billsPaid)}` : ''}{putAside > 0 ? ` · Guardado ${brl(putAside)}` : ''}</span>
-            <a className="btn-primary hero-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar</a>
+            <div className="month-stats">
+              <span><small>Entrou</small><b>{brl(income)}</b></span>
+              <span><small>Saiu</small><b>{brl(spent)}</b></span>
+              {billsPaid > 0 && <span><small>Contas pagas</small><b>{brl(billsPaid)}</b></span>}
+              {putAside > 0 && <span><small>Guardado</small><b>{brl(putAside)}</b></span>}
+            </div>
+            <div className="quick-actions">
+              <a className="qa primary" href={waLink('menu')}>
+                <span className="qa-circle"><Plus size={22} /></span>
+                Anotar
+              </a>
+            </div>
           </section>
 
           <FixedBills />
 
           <button type="button" className="dir-row soft impulse-row" onClick={() => onOpenTool('impulse')}>
-            <span className="tool-icon tone-clay"><ShoppingCart size={20} strokeWidth={1.9} /></span>
+            <span className="tool-icon round"><ShoppingCart size={20} strokeWidth={1.9} /></span>
             <span className="dir-row-copy">
               <b>Posso comprar isso?</b>
               <span>Veja se cabe no mês antes de comprar.</span>
