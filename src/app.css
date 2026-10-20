@@ -276,3 +276,44 @@ a.dir-row { text-decoration: none; }
 .focus-list li { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .focus-list li:last-child { border-bottom: 0; }
 @media (max-width: 760px) { .hero-cta { width: 100%; } }
+
+/* fase 2: meu mês com um herói e categorias leves */
+.month-hero { padding-top: 10px; padding-bottom: 24px; }
+.hero-number.neg { color: var(--bad); }
+.month-flow { margin-top: 10px; color: var(--text-faint); font-size: 13.5px; }
+.painel > .month-hero + .impulse-row { margin: 8px 0 26px; }
+.painel .painel-two { gap: 26px; }
+.painel .painel-where, .painel .painel-recent { padding: 18px 18px 8px; }
+.painel .where-list { gap: 4px; margin-top: 8px; }
+.painel .where-list li { padding: 12px 0; border-top: 1px solid var(--line); }
+.painel .where-list li:first-child { border-top: 0; }
+.painel .where-track { height: 5px; }
+.painel .where-note { color: var(--bad); font-size: 12.5px; }
+.painel .painel-list li { padding: 12px 0; }
+.month-out { display: inline-flex; align-items: center; gap: 6px; margin: 22px auto 0; padding: 6px 10px; background: none; border: 0; color: var(--text-faint); font: inherit; font-size: 13px; cursor: pointer; }
+.month-out:hover { color: var(--text); }
+.painel { display: flex; flex-direction: column; }
+.painel .month-out { align-self: center; }
+
+/* agentes na Home */
+.agents-panel { margin-top: 8px; }
+.agents-count { color: var(--text-faint); font-size: 13px; font-weight: 600; }
+.agent-strip.live { gap: 12px; padding-top: 4px; }
+.agent-live { flex: none; width: 160px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 3px; padding: 0 0 12px; border-radius: 20px; overflow: hidden; background: var(--surface); border: 1.5px solid var(--line); box-shadow: var(--shadow-sm); color: var(--text); text-align: left; font: inherit; cursor: pointer; transition: border-color .15s; }
+.agent-live.sel { border-color: var(--gold-bright); }
+.agent-live-art { position: relative; display: flex; align-items: center; justify-content: center; height: 96px; margin-bottom: 8px; background: var(--surface-2); color: var(--gold-bright); overflow: hidden; }
+.agent-live b { padding: 0 12px; font-size: 15px; }
+.live-line { padding: 0 12px; color: var(--text-soft); font-size: 12.5px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
+.live-when { display: inline-flex; align-items: center; gap: 5px; margin: 6px 12px 0; align-self: flex-start; padding: 3px 9px; border-radius: 99px; background: rgba(184, 114, 12, 0.12); color: var(--gold-deep); font-size: 12px; font-weight: 700; }
+.live-dot { position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px rgba(31, 138, 76, 0.2); }
+.agent-live.off .agent-live-art > * { opacity: 0.55; filter: grayscale(0.5); }
+.agent-live.off b, .agent-live.off .live-line { opacity: 0.7; }
+.agent-live.create { border-style: dashed; }
+.agent-detail { margin-top: 14px; gap: 12px; }
+.agent-detail-head span { display: flex; flex-direction: column; gap: 2px; }
+.agent-detail-head b { font-size: 18px; }
+.agent-detail-head small { color: var(--text-soft); font-size: 13.5px; }
+.agent-detail .focus-list { margin: 0; border-top: 0; }
+.agent-detail-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.agent-strip { scroll-padding-left: 16px; }
+@media (min-width: 761px) { .agent-strip { scroll-padding-left: 0; } }

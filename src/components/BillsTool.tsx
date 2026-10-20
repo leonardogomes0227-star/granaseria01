@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { formatBRL } from '../calculations';
 import { BILLS_KEY, installmentNumber, monthOf, monthStatus, parseBills, splitMoney, type Bill, type BillStatus } from '../bills';
 import { todayBRT } from '../coach';
@@ -59,6 +59,35 @@ export function BillsTool(nav: ToolNavProps) {
     ]);
     setName('');
     setAmount(0);
+  };
+
+  // editar uma conta: muda nome, valor, vencimento e parcelas, sem perder o que já foi pago
+  const [editing, setEditing] = useState<string | null>(null);
+  const [eName, setEName] = useState('');
+  const [eAmount, setEAmount] = useState(0);
+  const [eDay, setEDay] = useState(10);
+  const [eParcelado, setEParcelado] = useState(false);
+  const [eTotal, setETotal] = useState(1);
+  const openEdit = (b: Bill) => {
+    setPaying(null);
+    setEditing(b.id);
+    setEName(b.name);
+    setEAmount(b.amount);
+    setEDay(b.dueDay);
+    setEParcelado(Boolean(b.installments));
+    setETotal(b.installments ?? 1);
+  };
+  const saveEdit = (id: string) => {
+    if (!eName.trim() || eAmount <= 0) return;
+    setBills(
+      bills.map((b) => {
+        if (b.id !== id) return b;
+        const { installments: _old, ...rest } = b;
+        void _old;
+        return { ...rest, name: eName.trim(), amount: eAmount, dueDay: Math.min(31, Math.max(1, Math.round(eDay))), ...(eParcelado ? { installments: Math.max(1, Math.round(eTotal)) } : {}) };
+      })
+    );
+    setEditing(null);
   };
 
   // pagar uma conta (com a data de verdade, pra calcular o atraso)
@@ -171,12 +200,45 @@ export function BillsTool(nav: ToolNavProps) {
                 {s.state === 'vence' && (s.daysToDue === 0 ? 'Vence hoje' : s.daysToDue === 1 ? 'Vence amanhã' : `Vence em ${s.daysToDue} dias`)}
                 {s.paid > 0 && s.left > 0 && ` · já pagou ${formatBRL(s.paid)}, falta ${formatBRL(s.left)}`}
               </p>
-              {s.left > 0 && paying !== s.bill.id && (
+              {paying !== s.bill.id && editing !== s.bill.id && (
                 <div className="bill-actions">
-                  <button type="button" className="btn-outline" onClick={() => openPay(s)}><Check size={15} /> Paguei</button>
+                  {s.left > 0 && <button type="button" className="btn-outline" onClick={() => { setEditing(null); openPay(s); }}><Check size={15} /> Paguei</button>}
+                  <button type="button" className="plan-more" onClick={() => openEdit(s.bill)}>
+                    <Pencil size={14} /> editar
+                  </button>
                   <button type="button" className="plan-more danger" onClick={() => window.confirm(`Apagar ${s.bill.name}?`) && setBills(bills.filter((b) => b.id !== s.bill.id))}>
                     <Trash2 size={14} /> apagar
                   </button>
+                </div>
+              )}
+              {editing === s.bill.id && (
+                <div className="bill-pay">
+                  <div className="field-group">
+                    <label className="field-label" htmlFor={`en-${s.bill.id}`}>Nome</label>
+                    <input id={`en-${s.bill.id}`} className="field-input" value={eName} maxLength={40} onChange={(e) => setEName(e.target.value)} />
+                  </div>
+                  <MoneyField label="Valor" value={eAmount} onChange={setEAmount} />
+                  <div className="field-group">
+                    <label className="field-label" htmlFor={`ed-${s.bill.id}`}>Dia do vencimento</label>
+                    <DecimalInput id={`ed-${s.bill.id}`} decimals={0} max={31} value={eDay} onChange={setEDay} />
+                  </div>
+                  <div className="seg" role="tablist" aria-label="Tipo" style={{ marginBottom: 12 }}>
+                    <button type="button" className={!eParcelado ? 'active' : ''} onClick={() => setEParcelado(false)}>Todo mês</button>
+                    <button type="button" className={eParcelado ? 'active' : ''} onClick={() => setEParcelado(true)}>Parcelado</button>
+                  </div>
+                  {eParcelado && (
+                    <div className="field-group">
+                      <label className="field-label" htmlFor={`et-${s.bill.id}`}>Quantas parcelas no total?</label>
+                      <DecimalInput id={`et-${s.bill.id}`} decimals={0} max={480} value={eTotal} onChange={setETotal} />
+                    </div>
+                  )}
+                  <div className="bill-actions">
+                    <button type="button" className="btn-primary" disabled={!eName.trim() || eAmount <= 0} onClick={() => saveEdit(s.bill.id)}>
+                      Salvar
+                    </button>
+                    <button type="button" className="btn-ghost" onClick={() => setEditing(null)}>Cancelar</button>
+                  </div>
+                  <p className="field-hint">Os pagamentos já marcados continuam salvos.</p>
                 </div>
               )}
               {paying === s.bill.id && (

@@ -61,7 +61,6 @@ function monthClock(): { today: number; last: number; month: string } {
   return { today: now.getUTCDate(), last, month };
 }
 
-const lastDigits = (phone: string) => phone.replace(/\D/g, '').slice(-4);
 
 export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'mes' | 'plano'; data: WizardData; onStart: () => void; onOpenTool: (id: ToolId) => void }) {
   const [params] = useSearchParams();
@@ -180,37 +179,24 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
 
       {status === 'ok' && painel && (
         <>
-          <section className="wallet" id="mes" aria-label={`Seu mês de ${clock.month}`}>
-            <div className="wallet-top">
-              <span className="wallet-month">{income > 0 ? 'Saldo' : 'Gastos'} de {clock.month}</span>
-              <span className="wallet-phone"><MessageCircle size={13} /> WhatsApp final {lastDigits(painel.phone)}</span>
-            </div>
+          <section className="hero-money month-hero" id="mes" aria-label={`Seu mês de ${clock.month}`}>
+            <span className="hero-label">{income > 0 ? 'Saldo' : 'Gastos'} de {clock.month}</span>
             {income > 0 ? (
-              <p className={`wallet-balance ${left < 0 ? 'neg' : ''}`}>
-                {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} />
-              </p>
+              <b className={`hero-number ${left < 0 ? 'neg' : ''}`}>
+                {left < 0 ? '−' : ''}R$ <CountUp value={Math.abs(left)} format={(n) => n.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} />
+              </b>
             ) : (
-              <p className="wallet-balance">Saiu {brl(spent)}</p>
+              <b className="hero-number">{brl(spent)}</b>
             )}
-            <div className="wallet-flow">
-              <span><small>Entrou</small><b>{brl(income)}</b></span>
-              <span><small>Saiu</small><b>{brl(spent)}</b></span>
-            </div>
-            <div className="wallet-clock">
-              <div className="wallet-clock-track"><i style={{ width: `${(clock.today / clock.last) * 100}%` }} /></div>
-              <small>Dia {clock.today} de {clock.last}</small>
-            </div>
-            <p className="wallet-perday">
+            <span className="hero-sub">
               {income === 0
-                ? <>Anote o que entrou no WhatsApp (ex.: <i>recebi 3000 salário</i>) pra ver o saldo e quanto dá por dia.</>
+                ? 'Anote o que entrou (ex.: recebi 3000 salário) pra ver o saldo.'
                 : left > 0
-                  ? <>Dá pra gastar uns <b>{brl(perDay)} por dia</b> até o fim do mês.</>
-                  : <>O mês passou do que entrou. Antes da próxima compra, mande <i>posso comprar</i> no WhatsApp.</>}
-            </p>
-            <div className="wallet-actions">
-              <a className="wallet-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar no WhatsApp</a>
-              <button type="button" className="wallet-out" onClick={disconnect}><LogOut size={13} /> Sair</button>
-            </div>
+                  ? `Dá pra gastar uns ${brl(perDay)} por dia`
+                  : 'O que entrou este mês já foi usado'}
+            </span>
+            <span className="month-flow">Entrou {brl(income)} · Saiu {brl(spent)}</span>
+            <a className="btn-primary hero-cta" href={waLink('menu')}><MessageCircle size={16} /> Anotar</a>
           </section>
 
           <button type="button" className="dir-row soft impulse-row" onClick={() => onOpenTool('impulse')}>
@@ -224,7 +210,7 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
 
           <div className="painel-two">
             <section className="painel-section stat-card painel-where">
-              <p className="diag-label">{hasDiag ? 'Quanto ainda dá em cada coisa' : 'Para onde foi o dinheiro'}</p>
+              <p className="section-label">{hasDiag ? 'Quanto ainda dá em cada coisa' : 'Para onde foi o dinheiro'}</p>
               {where.length === 0 ? (
                 <p className="field-hint">Ainda nada neste mês. Cada gasto que você manda no WhatsApp entra aqui, já separado.</p>
               ) : (
@@ -241,21 +227,17 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
                             <span>{brl(w.used)}{w.limit > 0 && <small> de {brl(w.limit)}</small>}</span>
                           </span>
                           <span className="where-track"><i className={over ? 'over' : w.limit > 0 && pct >= 80 ? 'warn' : ''} style={{ width: `${Math.max(pct, w.used > 0 ? 3 : 0)}%` }} /></span>
-                          {w.limit > 0 && (
-                            <small className={`where-note ${over ? 'tone-text-bad' : ''}`}>
-                              {over ? `passou ${brl(w.used - w.limit)}` : w.used === w.limit ? 'bateu o limite do mês' : `faltam ${brl(w.limit - w.used)}`}
-                            </small>
-                          )}
+                          {over && <small className="where-note">passou {brl(w.used - w.limit)}</small>}
                         </span>
                       </li>
                     );
                   })}
                 </ul>
               )}
-                          </section>
+            </section>
 
             <section className="painel-section stat-card painel-recent">
-              <p className="diag-label">Últimos lançamentos</p>
+              <p className="section-label">Últimos lançamentos</p>
               {recent.length === 0 ? (
                 <p className="field-hint">Nada anotado neste mês ainda. Mande no WhatsApp, por exemplo: <i>mercado 80 no pix</i>.</p>
               ) : (
@@ -274,6 +256,7 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
               )}
             </section>
           </div>
+          <button type="button" className="month-out" onClick={disconnect}><LogOut size={13} /> Sair da conta</button>
         </>
       )}
 
