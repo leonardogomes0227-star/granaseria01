@@ -23,6 +23,13 @@ export const SYNC_KEYS = [
   'gs-plano-fora', // partes do plano que a pessoa tirou do plano (ActionPlanView)
   'gs-agentes', // os agentes que a pessoa escolheu ter no app (src/agents.ts)
   'gs-mes-feito', // o que já foi feito no mês, no plano (ActionPlanView)
+  // spec v2 (docs/spec-v2.md): as entidades novas moram no mesmo estado, pro site e o WhatsApp lerem igual
+  'gs-eu', // perfil: renda, dia do salário, agente principal, onboarding (src/eu.ts)
+  'gs-missoes', // missões com passos e o que foi guardado/pago (src/missoes.ts)
+  'gs-conversas', // conversas com os agentes (src/chat/store.ts)
+  'gs-limites', // limite por categoria (Meu mês)
+  'gs-selos-v2', // selos conquistados e a data (src/selos.ts)
+  'gs-agentes-meta', // quando cada agente foi ativado, pausado, lembretes
 ];
 const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este aparelho viu/mandou
 

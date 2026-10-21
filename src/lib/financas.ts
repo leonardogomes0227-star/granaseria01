@@ -100,6 +100,7 @@ export function simularQuitacao(dividas: DividaCalc[], valorMensal: number, meto
   const minimo = fila.reduce((t, d) => t + Math.max(0, d.parcela), 0);
   const orcamento = Math.max(reais(valorMensal), minimo);
   let totalJuros = 0;
+  let saldoHaUmAno = fila.reduce((t, d) => t + d.saldo, 0);
   for (let mes = 1; mes <= maxMeses; mes++) {
     let jurosDoMes = 0;
     for (const d of fila) {
@@ -132,12 +133,17 @@ export function simularQuitacao(dividas: DividaCalc[], valorMensal: number, meto
     if (fila.every((d) => d.saldo === 0)) {
       return { meses: mes, porDivida: fila.map((d) => ({ id: d.id, mes: porDivida.get(d.id) ?? null })), totalJuros: arred2(totalJuros), travou: false };
     }
-    // não cobre nem os juros: a dívida só cresce
+    // não cobre nem os juros (a dívida só cresce), ou em um ano o total quase não caiu: precisa renegociar
+    const saldo = fila.reduce((t, d) => t + d.saldo, 0);
     if (mes === 1 && orcamento <= jurosDoMes) {
       return { meses: null, porDivida: fila.map((d) => ({ id: d.id, mes: null })), totalJuros: arred2(totalJuros), travou: true };
     }
+    if (mes % 12 === 0) {
+      if (saldo >= saldoHaUmAno * 0.97) return { meses: null, porDivida: fila.map((d) => ({ id: d.id, mes: porDivida.get(d.id) ?? null })), totalJuros: arred2(totalJuros), travou: true };
+      saldoHaUmAno = saldo;
+    }
   }
-  return { meses: null, porDivida: fila.map((d) => ({ id: d.id, mes: porDivida.get(d.id) ?? null })), totalJuros: arred2(totalJuros), travou: false };
+  return { meses: null, porDivida: fila.map((d) => ({ id: d.id, mes: porDivida.get(d.id) ?? null })), totalJuros: arred2(totalJuros), travou: true };
 }
 
 /* ---------- quanto posso gastar hoje ---------- */

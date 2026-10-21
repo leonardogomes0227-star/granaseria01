@@ -15,6 +15,8 @@ import { PageHead } from './AppShell';
 import { FixedBills, fixedSummary, useBills, useMonthIncome, useSaved } from './FixedBills';
 import { Snowball } from './Snowball';
 import { useCoach } from '../coachChat/store';
+import { lerEu } from '../eu';
+import { useArmazem } from '../lib/armazem';
 import { loadSavedData, openDebts } from '../debts';
 import { buildPlan } from '../plan';
 import { SAVE_SHARE } from '../bills';
@@ -344,14 +346,16 @@ function Welcome({ resume, onStart, onResume }: { resume: number | null; onStart
 
 /** Entrada do coach em chat: um recurso extra, que não substitui nenhuma tela. */
 function CoachEntry() {
-  const { coach, plano } = useCoach();
+  const { plano } = useCoach();
+  const eu = useArmazem(lerEu);
+  const feito = Boolean(eu.onboardingConcluido);
   return (
     <div className="coach-entry">
-      <Link to={coach ? '/coach/chat' : '/coach'} className="dir-row">
+      <Link to="/coach" className="dir-row">
         <span className="tool-icon round"><MessageCircle size={20} strokeWidth={1.9} /></span>
         <span className="dir-row-copy">
-          <b>Montar plano com o coach</b>
-          <span>Uma conversa rápida e o seu plano fica pronto.</span>
+          <b>{feito ? 'Refazer meu plano' : 'Montar plano com o coach'}</b>
+          <span>{feito ? 'Seu plano atual continua valendo até a conversa nova terminar.' : 'Uma conversa rápida e o seu plano fica pronto.'}</span>
         </span>
         <ArrowRight size={18} className="dir-row-arrow" />
       </Link>

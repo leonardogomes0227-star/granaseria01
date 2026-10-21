@@ -34,3 +34,10 @@ export function checkinMonths(planMonth: string, now: Date = new Date()): string
   out.push(cur);
   return out.filter((m) => m >= planMonth);
 }
+
+/** 'mar/27' (spec v2, seção 11: datas curtas). */
+export const monthAbbr = (month: string) => `${NAMES[Number(month.slice(5, 7)) - 1].slice(0, 3)}/${month.slice(2, 4)}`;
+/** '22 out' a partir de 'AAAA-MM-DD'. */
+export const dayAbbr = (day: string) => `${Number(day.slice(8, 10))} ${NAMES[Number(day.slice(5, 7)) - 1].slice(0, 3)}`;
+/** Quantos dias tem o mês 'AAAA-MM'. */
+export const daysInMonth = (month: string) => new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0)).getUTCDate();

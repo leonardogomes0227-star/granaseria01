@@ -23,6 +23,8 @@ import { AppShell, PageHead } from './components/AppShell';
 import { CoachHome } from './components/CoachHome';
 import { CoachPick } from './components/CoachPick';
 import { CoachChat } from './components/CoachChat';
+import { ChatScreen } from './components/chat/ChatScreen';
+import { Toaster } from './components/ui/Toast';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -270,6 +272,7 @@ function App() {
         <Route path="/coach" element={<Titled title="Seu coach"><CoachPick /></Titled>} />
         <Route path="/coach/chat" element={<Titled title="Conversa com o coach"><CoachChat /></Titled>} />
         <Route path="/coach/plano" element={<Titled title="Plano com o coach"><CoachHome /></Titled>} />
+        <Route path="/agentes/:id/chat" element={<Titled title="Conversa"><ChatScreen /></Titled>} />
         <Route
           path="/conselheiros"
           element={
@@ -303,6 +306,7 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
       </Routes>
+      <Toaster />
     </>
   );
 }

@@ -95,6 +95,12 @@ describe('dívidas', () => {
     expect(r.meses).toBe(4);
   });
 
+  it('trava quando em um ano a dívida quase não cai', () => {
+    const r = simularQuitacao([{ id: 'c', nome: 'Cartão', saldo: 3000, parcela: 200, jurosMes: 12 }, { id: 'l', nome: 'Loja', saldo: 500, parcela: 100 }], 400, 'juros');
+    expect(r.travou).toBe(true);
+    expect(r.meses).toBeNull();
+  });
+
   it('trava quando o valor não cobre os juros', () => {
     const r = simularQuitacao([{ id: 'a', nome: 'A', saldo: 10000, parcela: 50, jurosMes: 10 }], 50, 'juros');
     expect(r.travou).toBe(true);

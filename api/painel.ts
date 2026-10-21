@@ -9,7 +9,7 @@ import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } fr
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 
-const MAX_BYTES = 60_000;
+const MAX_BYTES = 200_000; // o estado cresceu com as conversas e missões da spec v2
 
 async function auth(request: Request): Promise<string | null> {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
