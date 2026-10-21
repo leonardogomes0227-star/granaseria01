@@ -70,8 +70,8 @@ export function makeCheckinScript(ctx: CheckinContext): Script {
           if (st.ok && valor < expected) {
             return [
               coach === 'nomasir'
-                ? `Anotado: ${brl(valor)}, abaixo dos ${brl(expected)} combinados. A data se mantém em ${whenText(ctx.plan.previsao)}, mas não vira rotina. Compense no próximo mês.`
-                : `Anotado: ${brl(valor)} em ${mes}. É menos que os ${brl(expected)} combinados, mas a previsão segue em ${whenText(ctx.plan.previsao)}. Se der, compense um pouco no próximo mês.`,
+                ? `Anotado: ${brl(valor)}, abaixo dos ${brl(expected)} do plano. A data se mantém em ${whenText(ctx.plan.previsao)}, mas não vira rotina. Compense no próximo mês.`
+                : `Anotado: ${brl(valor)} em ${mes}. É menos que os ${brl(expected)} do plano, mas a previsão segue em ${whenText(ctx.plan.previsao)}. Se der, compense um pouco no próximo mês.`,
             ];
           }
           if (st.ok) {

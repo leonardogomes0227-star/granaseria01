@@ -47,7 +47,7 @@ export const TOOLS: ToolInfo[] = [
     slug: 'meu-plano',
     title: 'Acompanhar meu plano',
     short: 'Meu plano',
-    description: 'Feche cada mês dizendo quanto pagou. O plano se recalcula sozinho e mostra se você está adiantado ou atrasado.',
+    description: 'Todo mês, diga quanto pagou. O plano se recalcula sozinho e mostra se você está adiantado ou atrasado.',
     icon: ClipboardCheck,
     tone: 'clay',
     needsDiagnosis: true,

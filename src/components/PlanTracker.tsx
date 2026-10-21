@@ -22,7 +22,7 @@ export function PlanTracker({ data, onStart, ...nav }: { data: WizardData; onSta
     return (
       <ToolShell id="tracker" {...nav}>
         <p className="wizard-sub">
-          Uma vez por mês você responde uma pergunta: fez o combinado? O plano ajusta as datas sozinho.
+          Uma vez por mês você responde uma pergunta: conseguiu fazer o que o plano pedia? O plano ajusta as datas sozinho.
         </p>
         {diag ? (
           <button className="btn-primary" type="button" onClick={() => {
@@ -97,15 +97,15 @@ function TrackerBody({
     const total = Object.values(paid).reduce((x, v) => x + v, 0);
     const combined = view.tasks.reduce((x, t) => x + t.suggested, 0);
     track('mes_fechado', { cumprido: total + 0.5 >= combined });
-    saveResult('tracker', `${month}: ${total + 0.5 >= combined ? 'fez o combinado' : `guardou/pagou ${formatBRL(total)} de ${formatBRL(combined)}`}`, {
-      label: `Último mês fechado: ${month}`,
-      big: total + 0.5 >= combined ? 'Fez o combinado' : `${formatBRL(total)} de ${formatBRL(combined)}`,
+    saveResult('tracker', `${month}: ${total + 0.5 >= combined ? 'fez tudo do plano' : `guardou/pagou ${formatBRL(total)} de ${formatBRL(combined)}`}`, {
+      label: `Último mês respondido: ${month}`,
+      big: total + 0.5 >= combined ? 'Fez tudo do plano' : `${formatBRL(total)} de ${formatBRL(combined)}`,
       rows: [
         ...view.tasks.map((t) => [t.label, `${formatBRL(paid[t.id] ?? 0)} de ${formatBRL(t.suggested)}`] as [string, string]),
-        ['Meses fechados', String(tracking.months.length + 1)],
+        ['Meses respondidos', String(tracking.months.length + 1)],
       ],
     });
-    setToolTasks('tracker', [{ text: `Fechar ${monthLong(start, view.openMonth + 1)} em Acompanhar meu plano`, inDays: 30 }]);
+    setToolTasks('tracker', [{ text: `Responder ${monthLong(start, view.openMonth + 1)} em Acompanhar meu plano`, inDays: 30 }]);
     setTracking(closeMonth(tracking, paid));
   };
 
@@ -121,7 +121,7 @@ function TrackerBody({
       : debtShift !== null && debtShift > 0
         ? { tone: 'good', text: `Você está ${debtShift} ${debtShift === 1 ? 'mês' : 'meses'} adiantado! Sai das dívidas em ${monthLong(start, view.debtFreeAbs ?? 0)}.` }
         : reserveShift < 0 && reserveDate
-          ? { tone: 'warn', text: `Você está ${-reserveShift} ${reserveShift === -1 ? 'mês' : 'meses'} atrás do combinado. Sem problema: sua reserva agora fica pronta em ${reserveDate}.` }
+          ? { tone: 'warn', text: `Você está ${-reserveShift} ${reserveShift === -1 ? 'mês' : 'meses'} atrás do plano. Sem problema: sua reserva agora fica pronta em ${reserveDate}.` }
           : reserveShift > 0 && reserveDate
             ? { tone: 'good', text: `Você está ${reserveShift} ${reserveShift === 1 ? 'mês' : 'meses'} adiantado! Sua reserva fica pronta em ${reserveDate}.` }
         : current.debts.length > 0 && view.debtFreeAbs !== null
@@ -152,7 +152,7 @@ function TrackerBody({
       <div className={`tk-status tk-${status.tone}`}>{status.text}</div>
 
       <div className="tk-month">
-        <p className="tk-q">{month.charAt(0).toUpperCase() + month.slice(1)}: você fez o combinado?</p>
+        <p className="tk-q">{month.charAt(0).toUpperCase() + month.slice(1)}: conseguiu fazer o que o plano pedia?</p>
         {from.length > 0 && <p className="tk-from">O valor vem do seu plano de ação: {from.join(' + ')}.</p>}
 
         {reserveTask && guardado > 0 && (
@@ -166,7 +166,7 @@ function TrackerBody({
         )}
 
         {view.tasks.length === 0 ? (
-          <p className="field-hint">Nada combinado pra este mês.</p>
+          <p className="field-hint">Nada no plano pra este mês.</p>
         ) : (
           view.tasks.map((t) => (
             <div className="tk-task" key={t.id}>
@@ -204,7 +204,7 @@ function TrackerBody({
           </button>
         )}
         {view.tasks.length > 0 && !canClose && (
-          <p className="field-hint">Este mês do plano fecha a partir de 1º de {monthNameSP(quandoPodeFechar(tracking))}.</p>
+          <p className="field-hint">Este mês do plano pode ser respondido a partir de 1º de {monthNameSP(quandoPodeFechar(tracking))}.</p>
         )}
         <p className="field-hint">Se não deu, tudo bem: o plano recalcula as datas sozinho.</p>
       </div>
@@ -219,7 +219,7 @@ function TrackerBody({
 
       {tracking.months.length > 0 && (
         <div className="stat-card" style={{ marginTop: 16 }}>
-          <p className="diag-label" style={{ marginBottom: 6 }}>Meses que você já fechou</p>
+          <p className="diag-label" style={{ marginBottom: 6 }}>Meses que você já respondeu</p>
           {tracking.months.map((m, i) => {
             const total = Object.values(m.paid).reduce((x, v) => x + v, 0);
             const ok = total >= view.original.monthlyPower * 0.95;

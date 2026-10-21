@@ -4,7 +4,7 @@ import type { ToolId } from './tools';
 export const JOURNEYS: Partial<Record<ToolId, [string, string, string]>> = {
   bills: ['Cadastre suas contas e dívidas', 'Marque cada uma como paga no dia', 'Mês sem atraso e sem multa'],
   debts: ['Coloque as dívidas e quanto dá pra pagar', 'Pague na ordem, uma de cada vez', 'Livre das dívidas'],
-  tracker: ['Comece a seguir o seu plano', 'Todo mês, diga se fez o combinado', 'Reserva pronta e dinheiro rendendo'],
+  tracker: ['Comece a seguir o seu plano', 'Todo mês, diga se fez o que o plano pedia', 'Reserva pronta e dinheiro rendendo'],
   goal: ['Diga o objetivo e o valor', 'Guarde a parte do mês, todo mês', 'Objetivo alcançado'],
   richdad: ['Veja o seu placar de hoje', 'Guarde e quite dívidas: o placar sobe', 'O dinheiro rendendo paga suas contas'],
   leaks: ['Marque o que você paga todo mês', 'Cancele o que você não usa', 'O que sobrava indo pro plano'],

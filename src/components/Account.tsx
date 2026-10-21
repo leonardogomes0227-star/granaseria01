@@ -197,7 +197,7 @@ function LoggedIn({ session }: { session: Session }) {
               Receber o lembrete do plano todo mês
             </label>
             <p className="field-hint">
-              No WhatsApp você também pode mandar <b>plano</b> pra ver o mês, <b>paguei</b> pra fechar o mês como combinado, ou registrar gastos (“gastei 35 no mercado”).
+              No WhatsApp você também pode mandar <b>plano</b> pra ver o mês, <b>paguei</b> quando fizer o que o plano pede no mês, ou registrar gastos (“gastei 35 no mercado”).
             </p>
             <button type="button" className="plan-more" onClick={unlink} disabled={busy}>Desvincular este WhatsApp</button>
           </>
@@ -214,7 +214,7 @@ function LoggedIn({ session }: { session: Session }) {
           </>
         ) : (
           <>
-            <p className="account-line">Receba no dia do pagamento o que fazer no mês e feche o mês respondendo “paguei”.</p>
+            <p className="account-line">Receba no dia do pagamento o que fazer no mês e responda “paguei” quando fizer.</p>
             <button type="button" className="btn-primary" onClick={newCode} disabled={busy}>
               <MessageCircle size={16} /> Vincular meu WhatsApp
             </button>
