@@ -1,0 +1,260 @@
+/* ==========================================================================
+   Ouro Antigo — item 1 (base): tokens, fontes, grão de papel, botões e toasts.
+   Vale só dentro do app: html.ouro (src/lib/visual.ts). Carregado por último (src/main.tsx).
+   Os tokens antigos (--bg, --surface, --hero, --verde-900…) passam a apontar pros novos (src/tokens.css),
+   então tudo o que já existe muda junto, sem mexer em cada componente.
+   ========================================================================== */
+
+html.ouro {
+  --bg: var(--papel);
+  --surface: var(--linho);
+  --surface-2: var(--papel-escuro);
+  --line: var(--fio);
+  --line-strong: var(--fio-forte);
+  --text: var(--tinta);
+  --text-soft: var(--tinta-2);
+  --text-faint: var(--tinta-3);
+  --good: var(--em-dia);
+  --warn: var(--atencao);
+  --bad: var(--estourou);
+  --on-accent: var(--linho);
+  --hero: var(--cofre-900);
+  --hero-2: var(--cofre-800);
+  --gold: var(--ouro-500);
+  --verde-900: var(--cofre-900);
+  --verde-800: var(--cofre-800);
+  --areia-50: var(--papel);
+  --areia-100: var(--papel-escuro);
+  --areia-200: var(--papel-escuro);
+  --dourado-500: var(--ouro-500);
+  --dourado-600: var(--ouro-700);
+  --ambar-500: var(--atencao);
+  --vermelho-500: var(--estourou);
+  --branco: var(--linho);
+  --tinta-900: var(--tinta);
+  --tinta-600: var(--tinta-2);
+  --tinta-400: var(--tinta-3);
+  --sombra-card: var(--sombra-linho);
+  --shadow-sm: var(--sombra-linho);
+  --sans: var(--fonte-ui);
+  background: var(--papel);
+  color-scheme: light;
+}
+/* dentro do app, o destaque que era dourado (e virou verde) continua no verde cofre */
+html.ouro .shell,
+html.ouro .cc-page {
+  --gold-bright: var(--cofre-900);
+  --gold-deep: var(--cofre-900);
+  --accent: var(--cofre-900);
+  --sand: var(--papel-escuro);
+  --sand-deep: var(--papel-escuro);
+}
+
+html.ouro body {
+  background: var(--papel) !important;
+  color: var(--tinta);
+  font-family: var(--fonte-ui);
+}
+
+/* grão de papel de algodão: materialidade sem pesar */
+html.ouro body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+html.ouro .shell { background: transparent; }
+
+/* ---------- tipografia (seção 3) ---------- */
+html.ouro .page-head h1,
+html.ouro .ouro-h1 {
+  font-family: var(--fonte-display) !important;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  color: var(--tinta);
+}
+html.ouro .block-head h2,
+html.ouro .ouro-h2 {
+  font-family: var(--fonte-display) !important;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+}
+html.ouro h3 { font-family: var(--fonte-ui) !important; font-size: 17px; line-height: 24px; font-weight: 600; }
+html.ouro .page-head p { color: var(--tinta-2); font-size: 15px; line-height: 22px; }
+
+/* rótulos de seção: overline */
+html.ouro .section-label,
+html.ouro .overline,
+html.ouro .ms-proximo small,
+html.ouro .hoje-copy small {
+  font-family: var(--fonte-ui);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+html.ouro .hoje-copy small { color: var(--ouro-700); }
+
+/* números: grandes em Fraunces, os da interface alinhados */
+html.ouro .hero-num,
+html.ouro .home-hero-number {
+  font-family: var(--fonte-display) !important;
+  font-size: 64px;
+  line-height: 64px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 144;
+  font-variant-numeric: lining-nums;
+}
+html.ouro .num-lg {
+  font-family: var(--fonte-display);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 96;
+}
+html.ouro .tabular,
+html.ouro .ms-numeros,
+html.ouro .painel-list b,
+html.ouro .fixed-amount { font-variant-numeric: tabular-nums; }
+
+/* valor em estilo cédula: "R$" pequeno no topo, centavos menores (src/components/ui/Valor.tsx) */
+.valor { display: inline-flex; align-items: flex-start; gap: 0.06em; white-space: nowrap; }
+.valor .moeda { font-size: 0.55em; line-height: 1.15; margin-top: 0.12em; font-weight: 600; letter-spacing: 0; opacity: 0.9; }
+.valor .centavos { font-size: 0.5em; line-height: 1.2; margin-top: 0.16em; color: var(--tinta-3); }
+.home-hero .valor .centavos { color: var(--cofre-100); }
+
+/* ---------- botões (seção 6.10) ---------- */
+html.ouro .btn-primary {
+  background: var(--cofre-900) !important;
+  color: var(--linho) !important;
+  min-height: 52px;
+  border-radius: var(--raio-botao) !important;
+  border: 0;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 2px rgba(15, 42, 32, 0.2) !important;
+  transition: transform 0.12s var(--curva), background 0.18s var(--curva), box-shadow 0.18s var(--curva);
+}
+@media (hover: hover) { html.ouro .btn-primary:hover { background: var(--cofre-800) !important; transform: none; } }
+html.ouro .btn-primary:active { transform: scale(0.97); }
+html.ouro .btn-primary:disabled { opacity: 0.45; transform: none; }
+html.ouro .btn-outline,
+html.ouro .btn-ghost {
+  background: transparent !important;
+  color: var(--tinta) !important;
+  border: 1px solid var(--fio) !important;
+  border-radius: var(--raio-botao) !important;
+  min-height: 48px;
+}
+html.ouro .btn-ghost { border-color: transparent !important; }
+@media (hover: hover) { html.ouro .btn-outline:hover, html.ouro .btn-ghost:hover { border-color: var(--fio-forte) !important; background: rgba(26, 24, 20, 0.03) !important; } }
+html.ouro .btn-danger { border-radius: var(--raio-botao) !important; min-height: 48px; background: var(--estourou) !important; color: var(--linho) !important; }
+html.ouro .link-btn { color: var(--cofre-900); font-weight: 600; text-decoration: none; text-underline-offset: 3px; }
+@media (hover: hover) { html.ouro .link-btn:hover { text-decoration: underline; } }
+/* botão de conquista: ouro folheado com brilho a cada 4s */
+.btn-ouro {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 0 22px; border: 0; border-radius: var(--raio-botao);
+  background: var(--ouro-foil); background-size: 220% 100%;
+  color: var(--cofre-950); font: inherit; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 16px -8px rgba(138, 100, 32, 0.6);
+  animation: ouro-brilho 4s var(--curva) infinite;
+}
+@keyframes ouro-brilho { 0%, 70% { background-position: 100% 0; } 85% { background-position: 0% 0; } 100% { background-position: 100% 0; } }
+/* texto folheado a ouro (só conquistas e logo) */
+.ouro-foil {
+  background: var(--ouro-foil); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: ouro-brilho-texto 1.6s var(--curva) 1;
+}
+@keyframes ouro-brilho-texto { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+
+/* cards linho (seção 4.3): o mesmo material em todos os cartões do app */
+html.ouro .card,
+html.ouro .stat-card,
+html.ouro .fixed-bills,
+html.ouro .dir-row:not(.soft),
+html.ouro .ms-card,
+html.ouro .ms-mini,
+html.ouro .hoje-card,
+html.ouro .ag-card,
+html.ouro .agent-live,
+html.ouro .onb-card,
+html.ouro .cc-resultado,
+html.ouro .ms-vazio,
+html.ouro .tl-card,
+html.ouro .dialog {
+  background: var(--linho);
+  border-color: var(--fio);
+  box-shadow: var(--sombra-linho);
+}
+
+/* ---------- toast (seção 6.11): pílula escura com blur e barra de tempo ---------- */
+html.ouro .toast {
+  overflow: hidden;
+  background: rgba(26, 24, 20, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--linho);
+  border-radius: 999px;
+  padding: 12px 10px 14px 20px;
+  box-shadow: 0 16px 40px -12px rgba(15, 42, 32, 0.5);
+  animation: toast-mola 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+html.ouro .toast button { background: rgba(255, 255, 255, 0.08); color: var(--ouro-300); border-radius: 999px; padding: 8px 14px; }
+html.ouro .toast > span:first-child { flex: 1; min-width: 0; line-height: 1.4; }
+/* celular: a pílula ocupa a largura (texto em até 2 linhas, sem virar bolha) */
+@media (max-width: 760px) {
+  html.ouro .toast { left: 16px; right: 16px; width: auto; max-width: none; transform: none; border-radius: 22px; animation-name: toast-mola-celular; }
+}
+@media (min-width: 761px) { html.ouro .toast { min-width: 320px; max-width: 560px; } }
+@keyframes toast-mola-celular { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+.toast-tempo { position: absolute; left: 18px; right: 18px; bottom: 5px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.toast-tempo i { display: block; height: 100%; background: var(--ouro-300); transform-origin: left center; animation: toast-esvazia linear forwards; }
+@keyframes toast-esvazia { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes toast-mola { from { opacity: 0; transform: translate(-50%, 24px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------- detalhes que fazem parecer caro (seção 9, os da base) ---------- */
+html.ouro ::selection { background: rgba(184, 137, 47, 0.3); color: inherit; }
+html.ouro :focus-visible { outline: 2px solid var(--ouro-300) !important; outline-offset: 2px; border-radius: 6px; }
+@media (min-width: 761px) {
+  html.ouro { scrollbar-width: thin; scrollbar-color: rgba(26, 24, 20, 0.18) transparent; }
+  html.ouro ::-webkit-scrollbar { width: 10px; height: 10px; }
+  html.ouro ::-webkit-scrollbar-thumb { background: rgba(26, 24, 20, 0.16); border-radius: 10px; border: 3px solid var(--papel); }
+  html.ouro ::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* ---------- modo escuro (preparado; o botão fica no Perfil) ---------- */
+html.ouro[data-tema='escuro'] {
+  --papel: #0E1411;
+  --papel-escuro: #1B2520;
+  --linho: #151D19;
+  --tinta: #EDE6D8;
+  --tinta-2: #C3BBAB;
+  --tinta-3: #948D7E;
+  --fio: rgba(237, 230, 216, 0.1);
+  --fio-forte: rgba(237, 230, 216, 0.18);
+  --cofre-100: #1E3A2E;
+  --sombra-linho: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+html.ouro[data-tema='escuro'] body::after { mix-blend-mode: screen; opacity: 0.05; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-ouro, .ouro-foil, html.ouro .toast, .toast-tempo i { animation: none !important; }
+}

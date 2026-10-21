@@ -7,6 +7,7 @@ import './index.css';
 import './site.css';
 import './theme.css';
 import './app.css';
+import './ouro.css';
 import { initAnalytics } from './analytics';
 
 initAnalytics();

@@ -4,6 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Ouro Antigo (src/tokens.css)
+        papel: { DEFAULT: 'var(--papel)', escuro: 'var(--papel-escuro)' },
+        linho: 'var(--linho)',
+        tinta: { DEFAULT: 'var(--tinta)', 2: 'var(--tinta-2)', 3: 'var(--tinta-3)' },
+        cofre: { 100: 'var(--cofre-100)', 800: 'var(--cofre-800)', 900: 'var(--cofre-900)', 950: 'var(--cofre-950)' },
+        ouro: { 300: 'var(--ouro-300)', 500: 'var(--ouro-500)', 700: 'var(--ouro-700)' },
+        estado: { emdia: 'var(--em-dia)', atencao: 'var(--atencao)', estourou: 'var(--estourou)' },
         // tokens da spec v2 (src/tokens.css); a paleta antiga abaixo continua
         verde: { 800: 'var(--verde-800)', 900: 'var(--verde-900)' },
         areia: { 50: 'var(--areia-50)', 100: 'var(--areia-100)', 200: 'var(--areia-200)' },
@@ -55,6 +62,8 @@ export default {
         },
       },
       fontFamily: {
+        fraunces: ['Fraunces', 'Georgia', 'serif'], // Ouro Antigo: títulos e números grandes
+        inter: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Cinzel', 'Georgia', 'serif'],
         serif: ['"EB Garamond"', 'Georgia', 'serif'],
         sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],

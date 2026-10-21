@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ClipboardList, House, UserRound, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
 import { BrandMark } from './Layout';
+import { useVisualDoApp } from '../lib/visual';
 
 /* ---------- A casca do app: as mesmas 4 abas no topo (PC) e embaixo (celular) ---------- */
 // Os agentes são o coração do app: Início (como estou hoje?), Agentes (quem cuida do quê?), Meu mês (pra onde foi?)
@@ -77,6 +78,7 @@ function MiniFooter() {
 
 /** Página do app: barra no topo, conteúdo, rodapé curto e as abas embaixo no celular. */
 export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+  useVisualDoApp();
   return (
     <div className="shell">
       <TopBar />

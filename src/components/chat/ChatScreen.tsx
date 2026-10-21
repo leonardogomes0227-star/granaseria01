@@ -15,6 +15,7 @@ import { AgentAvatar } from '../AgentPage';
 import { Confirmar } from '../ui/Confirmar';
 import { apagarComDesfazer, toast } from '../ui/Toast';
 import { Composer } from './Composer';
+import { useVisualDoApp } from '../../lib/visual';
 
 /* ---------- O chat com um agente (spec v2, seções 5 e 7.5): /agentes/:id/chat ---------- */
 
@@ -41,6 +42,7 @@ export function ChatScreen() {
 }
 
 function Conversa({ roteiro, editarPasso, refazer }: { roteiro: Roteiro; editarPasso?: string | null; refazer?: boolean }) {
+  useVisualDoApp(true);
   const navigate = useNavigate();
   const agente = roteiro.agente;
   const info = infoAgente(agente);

@@ -84,6 +84,9 @@ export function Toaster() {
   return (
     <div className="toast" role="status" aria-live="polite" key={t.id}>
       <span>{t.texto}</span>
+      <span className="toast-tempo" aria-hidden="true">
+        <i style={{ animationDuration: `${t.duracao}ms` }} />
+      </span>
       {t.acao && (
         <button
           type="button"

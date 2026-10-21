@@ -28,7 +28,7 @@ const DO_AGENTE: Partial<Record<AgenteId, Partial<Banco>>> = {
     em_dia: ['Uma de cada vez. Você está saindo.', 'Pagando em dia, quem cobra para de cobrar.'],
     atrasado: ['Eu também atrasei. O que importa é voltar a pagar.', 'Sem julgamento. Mês que vem a gente retoma.'],
     dica: ['Enquanto a gente paga, nada de dívida nova.', 'Sete partes pra viver, duas pra quem você deve, uma pra você.'],
-    passo: ['Uma parcela a menos te prendendo.', 'Pago. A corrente afrouxa.'],
+    passo: ['Uma parcela a menos te prendendo.', 'A corrente afrouxa.'],
   },
   nomasir: {
     em_dia: ['Nada escapando. Do jeito que tem que ser.', 'Os gastos estão no limite. Bom trabalho.'],
