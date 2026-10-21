@@ -14,7 +14,7 @@ export type AgenteId = 'arkad' | 'bansir' | 'nomasir' | 'dabasir' | 'mathon' | '
 /** Um item de uma resposta de lista (ex.: uma dívida). */
 export type ItemLista = Record<string, string | number | null>;
 /** O valor de uma resposta: dinheiro → número; botões, texto, data → texto; múltiplo → lista de textos; lista → itens. */
-export type Valor = number | string | string[] | ItemLista[];
+export type Valor = number | string | string[] | ItemLista[] | Record<string, number>;
 
 export interface Opcao {
   valor: string;
@@ -24,7 +24,7 @@ export interface Opcao {
 export interface Campo {
   id: string;
   rotulo: string;
-  tipo: 'texto' | 'dinheiro' | 'percentual';
+  tipo: 'texto' | 'dinheiro' | 'percentual' | 'dia';
   opcional?: boolean;
   placeholder?: string;
   max?: number;
@@ -37,6 +37,8 @@ export type Resposta =
   | { tipo: 'texto'; placeholder: string; max: number }
   | { tipo: 'data'; min?: string; max?: string } // 'AAAA-MM-DD'
   | { tipo: 'dia' } // dia do mês, 1 a 31
+  | { tipo: 'numero'; min: number; max: number; decimais?: number; sufixo?: string; sugestoes?: number[] } // ex.: 12 parcelas, 4,5% a.m.
+  | { tipo: 'divisao'; total: number; partes: { id: string; rotulo: string }[]; inicial: Record<string, number> } // % que soma 100
   | { tipo: 'lista'; campos: Campo[]; minItens?: number; rotuloItem: string; inicial?: ItemLista[] }
   | { tipo: 'nenhuma' }; // só fala e avança sozinho
 
@@ -67,6 +69,8 @@ export interface Resultado {
   agentes: AgenteId[]; // os que ficam ativos com este plano
   rodape?: string;
   botao?: string; // padrão "Começar missão"
+  lista?: string[]; // detalhes curtos (ex.: a linha do tempo das dívidas)
+  grafico?: { rotulo: string; valor: number }[]; // barras simples (ex.: projeção em 5, 10 e 20 anos)
 }
 
 export interface Roteiro {
@@ -87,6 +91,8 @@ export interface Conclusao {
   eu?: Partial<Eu>;
   /** Pra onde a tela vai depois (padrão: Início). */
   destino?: string;
+  /** O que mexe em coisas que já existem (registrar numa missão, salvar contas). Roda ao tocar no botão do cartão. */
+  efeitos?: () => void;
 }
 
 export interface RespostaDada {
@@ -176,6 +182,14 @@ export function rotuloDe(passo: Passo, valor: Valor, ctx: Ctx): string {
   if (r.tipo === 'multiplo' && Array.isArray(valor)) return (valor as string[]).map((v) => r.opcoes.find((o) => o.valor === v)?.rotulo ?? v).join(', ');
   if (r.tipo === 'dinheiro') return brlCurto(Number(valor));
   if (r.tipo === 'dia') return `Dia ${valor}`;
+  if (r.tipo === 'numero') return `${String(valor).replace('.', ',')}${r.sufixo ?? ''}`;
+  if (r.tipo === 'divisao' && valor && typeof valor === 'object' && !Array.isArray(valor)) {
+    const v = valor as Record<string, number>;
+    return r.partes
+      .filter((p) => (v[p.id] ?? 0) > 0)
+      .map((p) => `${p.rotulo}: ${brl((r.total * (v[p.id] ?? 0)) / 100)}`)
+      .join(' · ');
+  }
   if (r.tipo === 'data' && typeof valor === 'string') {
     const [y, m, d] = valor.split('-');
     return `${d}/${m}/${y}`;
@@ -206,6 +220,16 @@ export function conferir(passo: Passo, valor: Valor, ctx: Ctx): string | null {
     const d = Number(valor);
     if (!Number.isInteger(d) || d < 1 || d > 31) return 'Escolha um dia de 1 a 31.';
   }
+  if (r.tipo === 'numero') {
+    const n = Number(valor);
+    if (!Number.isFinite(n)) return 'Digite um número.';
+    if (n < r.min || n > r.max) return `Digite um número de ${String(r.min).replace('.', ',')} a ${String(r.max).replace('.', ',')}.`;
+  }
+  if (r.tipo === 'divisao') {
+    const v = valor && typeof valor === 'object' && !Array.isArray(valor) ? (valor as Record<string, number>) : {};
+    const soma = r.partes.reduce((t, p) => t + (v[p.id] ?? 0), 0);
+    if (Math.round(soma) !== 100) return 'A divisão precisa somar 100%.';
+  }
   if (r.tipo === 'data') {
     if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return 'Escolha uma data.';
     if (r.min && valor < r.min) return 'Essa data é cedo demais.';
@@ -217,6 +241,7 @@ export function conferir(passo: Passo, valor: Valor, ctx: Ctx): string | null {
     for (const it of itens) {
       for (const c of r.campos) {
         const v = it[c.id];
+        if (c.tipo === 'dia' && v !== null && v !== undefined && v !== '' && !(Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 31)) return 'O dia do vencimento vai de 1 a 31.';
         if (!c.opcional && (v === null || v === undefined || v === '' || (c.tipo === 'dinheiro' && !(Number(v) > 0)))) {
           return `Falta ${c.rotulo.toLowerCase()} em ${String(it[r.campos[0].id] || `um${r.rotuloItem.endsWith('a') ? 'a' : ''} ${r.rotuloItem}`)}.`;
         }
@@ -239,6 +264,10 @@ export const txt = (ctx: Ctx, id: string): string => {
 export const lista = (ctx: Ctx, id: string): ItemLista[] => {
   const v = ctx.respostas[id];
   return Array.isArray(v) && (v.length === 0 || typeof v[0] === 'object') ? (v as ItemLista[]) : [];
+};
+export const divisao = (ctx: Ctx, id: string): Record<string, number> => {
+  const v = ctx.respostas[id];
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, number>) : {};
 };
 export const varios = (ctx: Ctx, id: string): string[] => {
   const v = ctx.respostas[id];

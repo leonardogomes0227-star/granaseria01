@@ -34,7 +34,7 @@ export function ChatScreen() {
   const { id } = useParams();
   const [params] = useSearchParams();
   if (!ehAgente(id)) return <Navigate to="/conselheiros" replace />;
-  const roteiro = roteiroPara(id, params.get('roteiro'));
+  const roteiro = roteiroPara(id, params.get('roteiro'), Object.fromEntries(params.entries()));
   // agente ainda sem roteiro próprio: a página antiga dele continua
   if (!roteiro) return <Navigate to={`/conselheiros/${id}`} replace />;
   return <Conversa key={`${id}:${roteiro.id}`} roteiro={roteiro} editarPasso={params.get('editar')} refazer={params.get('refazer') === '1'} />;

@@ -50,6 +50,10 @@ export function Composer({ passo, ctx, inicial, onEnviar }: { passo: Passo; ctx:
   if (r.tipo === 'texto') return <ComposerTexto placeholder={r.placeholder} max={r.max} inicial={typeof inicial === 'string' ? inicial : ''} onEnviar={onEnviar} />;
   if (r.tipo === 'data') return <ComposerData min={r.min} max={r.max ?? ctx.dados.hoje} inicial={typeof inicial === 'string' ? inicial : ctx.dados.hoje} onEnviar={onEnviar} />;
   if (r.tipo === 'dia') return <ComposerDia inicial={typeof inicial === 'number' ? inicial : ctx.dados.diaSalario ?? null} onEnviar={onEnviar} />;
+  if (r.tipo === 'numero') return <ComposerNumero min={r.min} max={r.max} decimais={r.decimais ?? 0} sufixo={r.sufixo} sugestoes={r.sugestoes} inicial={typeof inicial === 'number' ? inicial : undefined} onEnviar={onEnviar} />;
+  if (r.tipo === 'divisao')
+    return <ComposerDivisao total={r.total} partes={r.partes} inicial={inicial && typeof inicial === 'object' && !Array.isArray(inicial) ? (inicial as Record<string, number>) : r.inicial} onEnviar={onEnviar} />;
+  if (r.tipo !== 'lista') return null;
   return <ComposerLista campos={r.campos} rotuloItem={r.rotuloItem} inicial={Array.isArray(inicial) ? (inicial as ItemLista[]) : r.inicial ?? []} onEnviar={onEnviar} />;
 }
 
@@ -144,6 +148,91 @@ function ComposerData({ min, max, inicial, onEnviar }: { min?: string; max?: str
   );
 }
 
+function ComposerNumero({ min, max, decimais, sufixo, sugestoes, inicial, onEnviar }: { min: number; max: number; decimais: number; sufixo?: string; sugestoes?: number[]; inicial?: number; onEnviar: (v: Valor) => void }) {
+  const [t, setT] = useState(inicial === undefined ? '' : String(inicial).replace('.', ','));
+  const n = Number(t.replace(',', '.'));
+  const ok = t.trim() !== '' && Number.isFinite(n);
+  return (
+    <form
+      className="cc-composer"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (ok) onEnviar(decimais ? Math.round(n * 10 ** decimais) / 10 ** decimais : Math.round(n));
+      }}
+    >
+      {sugestoes && sugestoes.length > 0 && (
+        <div className="cc-chips">
+          {sugestoes.map((s) => (
+            <button key={s} type="button" className="cc-chip" onClick={() => onEnviar(s)}>
+              {String(s).replace('.', ',')}
+              {sufixo ?? ''}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="cc-row">
+        <input
+          className="field-input cc-input"
+          inputMode={decimais ? 'decimal' : 'numeric'}
+          autoFocus
+          aria-label={`Número de ${min} a ${max}`}
+          placeholder={sufixo ? `0${sufixo}` : '0'}
+          value={t}
+          onChange={(e) => setT(e.target.value.replace(decimais ? /[^\d,.]/g : /\D/g, '').slice(0, 8))}
+        />
+        <button type="submit" className="btn-primary cc-send" disabled={!ok} aria-label="Enviar">
+          <Send size={18} />
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** Divide um valor em partes (%), sempre somando 100: mexer numa parte tira ou devolve das outras. */
+function ComposerDivisao({ total, partes, inicial, onEnviar }: { total: number; partes: { id: string; rotulo: string }[]; inicial: Record<string, number>; onEnviar: (v: Valor) => void }) {
+  const [pct, setPct] = useState<Record<string, number>>(() => ({ ...Object.fromEntries(partes.map((p) => [p.id, 0])), ...inicial }));
+  const mudar = (id: string, novo: number) => {
+    setPct((atual) => {
+      const v = Math.max(0, Math.min(100, Math.round(novo)));
+      const outras = partes.filter((p) => p.id !== id);
+      const somaOutras = outras.reduce((t, p) => t + (atual[p.id] ?? 0), 0);
+      const resto = 100 - v;
+      const next: Record<string, number> = { ...atual, [id]: v };
+      if (somaOutras <= 0) {
+        outras.forEach((p, i) => (next[p.id] = i === outras.length - 1 ? resto - Math.floor(resto / outras.length) * (outras.length - 1) : Math.floor(resto / outras.length)));
+      } else {
+        let usado = 0;
+        outras.forEach((p, i) => {
+          const parte = i === outras.length - 1 ? resto - usado : Math.round(((atual[p.id] ?? 0) / somaOutras) * resto);
+          next[p.id] = Math.max(0, parte);
+          usado += next[p.id];
+        });
+      }
+      return next;
+    });
+  };
+  return (
+    <div className="cc-composer cc-divisao">
+      {partes.map((p) => (
+        <label key={p.id} className="cc-slider">
+          <span>
+            <b>{p.rotulo}</b>
+            <small>
+              {pct[p.id] ?? 0}% · {brl2(Math.round((total * (pct[p.id] ?? 0)) / 100))}
+            </small>
+          </span>
+          <input type="range" min={0} max={100} step={5} value={pct[p.id] ?? 0} onChange={(e) => mudar(p.id, Number(e.target.value))} aria-label={`${p.rotulo} em porcentagem`} />
+        </label>
+      ))}
+      <div className="cc-row">
+        <button type="button" className="btn-primary cc-wide" onClick={() => onEnviar(pct)}>
+          Confirmar divisão
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ComposerDia({ inicial, onEnviar }: { inicial: number | null; onEnviar: (v: Valor) => void }) {
   return (
     <div className="cc-composer">
@@ -175,10 +264,15 @@ function ComposerLista({ campos, rotuloItem, inicial, onEnviar }: { campos: Camp
     for (const c of campos) {
       const raw = form[c.id] ?? '';
       if (c.tipo === 'dinheiro') it[c.id] = raw === '' ? null : parseInt(raw, 10) / 100;
+      else if (c.tipo === 'dia') it[c.id] = raw === '' ? null : Number(raw);
       else if (c.tipo === 'percentual') it[c.id] = raw.trim() === '' ? null : Number(raw.replace(',', '.'));
       else it[c.id] = raw.trim();
       if (!c.opcional && (it[c.id] === null || it[c.id] === '' || (c.tipo === 'dinheiro' && !(Number(it[c.id]) > 0)))) {
         setErro(`Falta ${c.rotulo.toLowerCase()}.`);
+        return null;
+      }
+      if (c.tipo === 'dia' && it[c.id] !== null && !(Number(it[c.id]) >= 1 && Number(it[c.id]) <= 31)) {
+        setErro('O dia vai de 1 a 31.');
         return null;
       }
       if (c.tipo === 'percentual' && it[c.id] !== null && !(Number(it[c.id]) >= 0 && Number(it[c.id]) <= 100)) {
@@ -221,7 +315,7 @@ function ComposerLista({ campos, rotuloItem, inicial, onEnviar }: { campos: Camp
   const resumo = (it: ItemLista) =>
     campos
       .slice(1)
-      .map((c) => (it[c.id] === null || it[c.id] === undefined || it[c.id] === '' ? null : c.tipo === 'dinheiro' ? brl2(Number(it[c.id])) : c.tipo === 'percentual' ? `${String(it[c.id]).replace('.', ',')}% a.m.` : String(it[c.id])))
+      .map((c) => (it[c.id] === null || it[c.id] === undefined || it[c.id] === '' ? null : c.tipo === 'dinheiro' ? brl2(Number(it[c.id])) : c.tipo === 'percentual' ? `${String(it[c.id]).replace('.', ',')}% a.m.` : c.tipo === 'dia' ? `dia ${it[c.id]}` : String(it[c.id])))
       .filter(Boolean)
       .join(' · ');
 
@@ -259,11 +353,11 @@ function ComposerLista({ campos, rotuloItem, inicial, onEnviar }: { campos: Camp
                 <input
                   ref={i === 0 ? primeiro : undefined}
                   className="field-input cc-input"
-                  inputMode={c.tipo === 'percentual' ? 'decimal' : undefined}
+                  inputMode={c.tipo === 'percentual' ? 'decimal' : c.tipo === 'dia' ? 'numeric' : undefined}
                   placeholder={c.placeholder}
                   maxLength={c.max ?? 40}
                   value={form[c.id] ?? ''}
-                  onChange={(e) => setForm((f) => ({ ...f, [c.id]: c.tipo === 'percentual' ? e.target.value.replace(/[^\d.,]/g, '').slice(0, 6) : e.target.value }))}
+                  onChange={(e) => setForm((f) => ({ ...f, [c.id]: c.tipo === 'percentual' ? e.target.value.replace(/[^\d.,]/g, '').slice(0, 6) : c.tipo === 'dia' ? e.target.value.replace(/\D/g, '').slice(0, 2) : e.target.value }))}
                 />
               )}
             </label>
