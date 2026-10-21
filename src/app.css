@@ -619,7 +619,7 @@ a.dir-row { text-decoration: none; }
 @media (max-width: 760px) { .shell-bottom a.on { color: var(--hero); background: rgba(26, 56, 43, 0.08); } }
 
 /* ---------- Plano e o resto do app: o destaque (antes dourado) passa a ser o verde floresta ---------- */
-.shell { --gold-bright: #1A382B; --gold-deep: #1A382B; --accent: #1A382B; }
+.shell { --gold-bright: var(--verde-900); --gold-deep: var(--verde-900); --accent: var(--verde-900); }
 .tl-item.agora .tl-dot { box-shadow: 0 0 0 5px rgba(26, 56, 43, 0.12); }
 .tl-item.pronto .tl-dot { background: var(--hero); border-color: var(--hero); }
 .tl-card { border-radius: 22px; padding: 16px 18px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
@@ -705,7 +705,7 @@ a.dir-row { text-decoration: none; }
 .coach-switch { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-soft); font-size: 14px; }
 .coach-switch .link-btn { padding: 0; }
 .coach-note { margin: 0; color: var(--text-faint); font-size: 13px; }
-.cc-page { --gold-bright: #1A382B; --gold-deep: #1A382B; }
+.cc-page { --gold-bright: var(--verde-900); --gold-deep: var(--verde-900); }
 .cc-page .btn-primary { background: var(--hero); color: #fff; border: 0; box-shadow: none; }
 .cc-page .btn-primary:hover { background: var(--hero-2); }
 .cc-page .btn-shine::after { display: none; }

@@ -1,0 +1,50 @@
+/* ==========================================================================
+   Grana Séria — tokens de design (spec v2, seção 10), num lugar só.
+   Os valores são as cores que o app já usa: nada muda na tela. O theme.css e o app.css apontam pra cá.
+   Carregado antes de tudo (src/main.tsx).
+   ========================================================================== */
+
+:root {
+  /* cores */
+  --verde-900: #1A382B; /* card principal, botões primários */
+  --verde-800: #234735; /* gradiente do card principal, hover */
+  --areia-50: #F8F7F4; /* fundo */
+  --areia-100: #F1EFEA; /* cartão secundário, trilha suave */
+  --areia-200: #E8E5DD; /* trilhas de barra, bordas */
+  --dourado-500: #C98A1E; /* destaques, conquistas, selos */
+  --dourado-600: #B8720C;
+  --ambar-500: #B26B0B; /* atenção (80–100% do limite) */
+  --vermelho-500: #C4422A; /* estourou (> 100%) */
+  --branco: #FFFFFF; /* cards */
+  --tinta-900: #16130E; /* texto */
+  --tinta-600: #5A5043; /* texto secundário */
+  --tinta-400: #877B69; /* legendas */
+
+  /* tipografia (escala da spec) */
+  --fs-numero-xl: 40px;
+  --fs-numero: 32px;
+  --fs-titulo: 24px;
+  --fs-subtitulo: 17px;
+  --fs-corpo: 15px;
+  --fs-legenda: 13px;
+
+  /* forma e espaço (base 8px) */
+  --raio-card: 22px; /* o app usa 22px hoje; a spec sugere 20px */
+  --raio-pilula: 999px;
+  --esp-1: 8px;
+  --esp-2: 16px;
+  --esp-3: 24px;
+  --esp-4: 32px;
+  --sombra-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+  /* camadas: o toast fica acima da barra de baixo e do chat */
+  --z-nav: 40;
+  --z-chat: 60;
+  --z-sheet: 80;
+  --z-toast: 100;
+
+  /* movimento */
+  --dur-rapida: 200ms;
+  --dur-contagem: 600ms;
+  --ease-saida: cubic-bezier(0.22, 1, 0.36, 1);
+}

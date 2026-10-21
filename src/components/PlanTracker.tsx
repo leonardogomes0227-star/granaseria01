@@ -4,6 +4,8 @@ import { WizardData } from '../types';
 import { formatBRL } from '../calculations';
 import { monthLong, monthShort } from '../plan';
 import { Tracking, getTracking, startTracking, trackingView, closeMonth, undoLastMonth } from '../tracking';
+import { podeFecharMes, quandoPodeFechar } from '../lib/mesesFuturos';
+import { monthName as monthNameSP } from '../coachChat/months';
 import { ToolShell, ToolNavProps } from './Tools';
 import { DecimalInput } from './DecimalInput';
 import { track } from '../analytics';
@@ -62,6 +64,8 @@ function TrackerBody({
   const { current, debtShift, original } = view;
   const month = monthLong(start, view.openMonth);
   const allChosen = view.tasks.every((t) => choice[t.id]);
+  // o mês do plano só fecha quando chega (o mesmo critério do WhatsApp)
+  const canClose = podeFecharMes(tracking);
 
   // o que a pessoa anotou como "guardei" no WhatsApp neste mês já serve de resposta pra reserva
   const [guardado, setGuardado] = useState(0);
@@ -195,9 +199,12 @@ function TrackerBody({
         )}
 
         {view.tasks.length > 0 && (
-          <button className="btn-primary tk-save" type="button" disabled={!allChosen} onClick={save}>
+          <button className="btn-primary tk-save" type="button" disabled={!allChosen || !canClose} onClick={save}>
             Salvar {month} <ArrowRight size={16} className="arrow" />
           </button>
+        )}
+        {view.tasks.length > 0 && !canClose && (
+          <p className="field-hint">Este mês do plano fecha a partir de 1º de {monthNameSP(quandoPodeFechar(tracking))}.</p>
         )}
         <p className="field-hint">Se não deu, tudo bem: o plano recalcula as datas sozinho.</p>
       </div>

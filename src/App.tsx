@@ -40,6 +40,7 @@ import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
+import { limparMesesFuturos } from './lib/mesesFuturos';
 import { AgentPage } from './components/AgentPage';
 import { getAgent } from './agents';
 
@@ -51,6 +52,20 @@ try {
   }
 } catch {
   // navegador sem localStorage: não há plano guardado
+}
+
+// nunca mês futuro (spec v2, regra 0.6): o que foi fechado ou registrado antes da hora sai (fica um backup)
+try {
+  const keys = ['selos-tracking', 'gs-guardado', 'gs-contas', 'gs-futuros-removidos'];
+  const local: Record<string, string> = {};
+  for (const k of keys) {
+    const v = localStorage.getItem(k);
+    if (v !== null) local[k] = v;
+  }
+  const clean = limparMesesFuturos(local);
+  if (clean.changed) for (const [k, v] of Object.entries(clean.state)) localStorage.setItem(k, v);
+} catch {
+  // navegador sem localStorage
 }
 
 // o link do WhatsApp (?t=…) vira login antes de o roteador ler o endereço

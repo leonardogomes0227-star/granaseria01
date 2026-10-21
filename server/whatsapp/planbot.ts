@@ -7,6 +7,8 @@ import { leaksMonthlyTotal, type LeakSelection } from '../../src/leaks.js';
 import { monthLong, monthShort } from '../../src/plan.js';
 import type { StateSnapshot } from '../account/db.js';
 import { siteLink } from './site.js';
+import { podeFecharMes, quandoPodeFechar } from '../../src/lib/mesesFuturos.js';
+import { monthName } from '../../src/coachChat/months.js';
 
 export type PlanCommand =
   | { kind: 'link'; code: string }
@@ -99,6 +101,10 @@ export function runPlanCommand(
   if (!tracking) return { reply: NOT_STARTED };
   if (cmd.kind === 'plan') return { reply: planStatusText(tracking, extraMonthly) };
 
+  // nunca fechar mês do plano que ainda não chegou (o mês N é pago durante o mês início + N - 1)
+  if (!podeFecharMes(tracking)) {
+    return { reply: `Este mês do plano fecha a partir de 1º de ${monthName(quandoPodeFechar(tracking))}. Até lá, é só seguir o combinado. 🙂` };
+  }
   const view = trackingView(tracking, extraMonthly);
   const paid = Object.fromEntries(view.tasks.map((t) => [t.id, cmd.kind === 'paid' ? Math.round(t.suggested * 100) / 100 : 0]));
   const next: Tracking = { ...tracking, months: [...tracking.months, { paid }] };

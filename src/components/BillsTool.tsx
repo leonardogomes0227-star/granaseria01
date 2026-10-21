@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Check, Pencil } from 'lucide-react';
 import { formatBRL } from '../calculations';
 import { installmentNumber, loadBills, monthOf, monthStatus, saveBills, splitMoney, type Bill, type BillStatus } from '../bills';
+import { podePagarMes } from '../lib/mesesFuturos';
 import { todayBRT } from '../coach';
 import { ToolShell, ToolNavProps, MoneyField, useSaveResult, useToolTasks } from './Tools';
 import { DecimalInput } from './DecimalInput';
@@ -25,6 +26,8 @@ export function BillsTool(nav: ToolNavProps) {
     saveBills(b);
   };
   const statuses = useMemo(() => monthStatus(bills, month, today), [bills, month, today]);
+  // mês que ainda não chegou: dá pra ver o que vai vencer, mas pagamento só entra quando ele chegar (regra 0.6)
+  const canPay = podePagarMes(month);
   const total = statuses.reduce((s, x) => s + x.bill.amount, 0);
   const paid = statuses.reduce((s, x) => s + Math.min(x.paid, x.bill.amount), 0);
   const fees = statuses.reduce((s, x) => s + x.fee, 0);
@@ -87,7 +90,7 @@ export function BillsTool(nav: ToolNavProps) {
     setPayValue(Math.round(s.left * 100) / 100);
   };
   const pay = (id: string, value: number, on: string) =>
-    bills.map((b) => (b.id === id ? { ...b, payments: [...b.payments, { month, paidOn: on, amount: value }] } : b));
+    !podePagarMes(month) ? bills : bills.map((b) => (b.id === id ? { ...b, payments: [...b.payments, { month, paidOn: on, amount: value }] } : b));
 
   // dinheiro picado: entrou agora, o que pagar primeiro
   const [money, setMoney] = useState(0);
@@ -132,7 +135,11 @@ export function BillsTool(nav: ToolNavProps) {
         </div>
       )}
 
-      {open.length > 0 && (
+      {!canPay && statuses.length > 0 && (
+        <p className="field-hint bills-future">Este mês ainda não chegou. Dá pra ver o que vai vencer; o pagamento entra quando o mês começar.</p>
+      )}
+
+      {canPay && open.length > 0 && (
         <div className="bills-money">
           <p className="bills-money-q">Entrou dinheiro agora? Diga quanto e eu digo o que pagar primeiro.</p>
           <MoneyField label="Quanto entrou" value={money} onChange={setMoney} />
@@ -207,7 +214,7 @@ export function BillsTool(nav: ToolNavProps) {
               )}
               {paying !== s.bill.id && editing !== s.bill.id && removing !== s.bill.id && (
                 <div className="bill-actions">
-                  {s.left > 0 && <button type="button" className="btn-outline" onClick={() => { setEditing(null); openPay(s); }}><Check size={15} /> Paguei</button>}
+                  {canPay && s.left > 0 && <button type="button" className="btn-outline" onClick={() => { setEditing(null); openPay(s); }}><Check size={15} /> Paguei</button>}
                   <button type="button" className="plan-more" onClick={() => openEdit(s.bill)}>
                     <Pencil size={14} /> editar
                   </button>

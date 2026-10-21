@@ -4,6 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        // tokens da spec v2 (src/tokens.css); a paleta antiga abaixo continua
+        verde: { 800: 'var(--verde-800)', 900: 'var(--verde-900)' },
+        areia: { 50: 'var(--areia-50)', 100: 'var(--areia-100)', 200: 'var(--areia-200)' },
+        dourado: { 500: 'var(--dourado-500)', 600: 'var(--dourado-600)' },
+        ambar: { 500: 'var(--ambar-500)' },
+        vermelho: { 500: 'var(--vermelho-500)' },
+        branco: 'var(--branco)',
         sand: {
           DEFAULT: '#F7EFDC',
           50: '#FDFAF1',

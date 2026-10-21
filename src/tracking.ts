@@ -1,6 +1,7 @@
 import type { WizardData } from './types.js';
 import { buildPlan, effectiveRate, type ActionPlan } from './plan.js';
 import { leaksMonthlyTotal } from './leaks.js';
+import { podeFecharMes } from './lib/mesesFuturos.js';
 
 // Acompanhamento do plano: a pessoa fecha cada mês dizendo quanto pagou de verdade.
 // O plano é sempre recalculado a partir do saldo real — atrasou, a data muda; adiantou, também.
@@ -133,6 +134,8 @@ export function trackingView(t: Tracking, extraMonthly: number = leaksMonthlyTot
 }
 
 export function closeMonth(t: Tracking, paid: Record<string, number>): Tracking {
+  // nunca fechar mês do plano que ainda não chegou (o mês N é pago durante o mês início + N - 1)
+  if (!podeFecharMes(t)) return t;
   const next = { ...t, months: [...t.months, { paid }] };
   saveTracking(next);
   return next;
