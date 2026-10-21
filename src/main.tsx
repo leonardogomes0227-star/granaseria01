@@ -8,6 +8,13 @@ import './site.css';
 import './theme.css';
 import './app.css';
 import './ouro.css';
+import './styles/ouro-chat.css';
+import './styles/ouro-mes.css';
+import './styles/ouro-missoes.css';
+import './styles/ouro-agentes.css';
+import './styles/ouro-selos.css';
+import './styles/ouro-perfil.css';
+import './styles/ouro-detalhes.css';
 import { initAnalytics } from './analytics';
 
 initAnalytics();

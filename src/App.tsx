@@ -25,6 +25,10 @@ import { CoachPick } from './components/CoachPick';
 import { CoachChat } from './components/CoachChat';
 import { ChatScreen } from './components/chat/ChatScreen';
 import { Toaster } from './components/ui/Toast';
+import { AnotarSheet } from './components/AnotarSheet';
+import { CelebracaoHost } from './components/ui/Celebracao';
+import { PerfilPage } from './components/perfil/PerfilPage';
+import { SelosPage } from './components/selos/SelosPage';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -329,6 +333,30 @@ function App() {
             </Titled>
           }
         />
+        <Route
+          path="/perfil"
+          element={
+            <Titled title="Perfil">
+              <AppShell>
+                <LoginGate what="o seu perfil">
+                  <PerfilPage />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/selos"
+          element={
+            <Titled title="Meus selos">
+              <AppShell>
+                <LoginGate what="os seus selos">
+                  <SelosPage />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
         <Route path="/conselheiros/:id" element={<AgentRoute data={data} onOpenTool={openTool} />} />
         <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
         <Route
@@ -351,6 +379,8 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
       </Routes>
+      <AnotarSheet />
+      <CelebracaoHost />
       <Toaster />
     </>
   );
