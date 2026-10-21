@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ClipboardList, House, UserRound, Users, Wallet, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
 import { BrandMark } from './Layout';
@@ -12,10 +12,18 @@ export const NAV: [string, string, LucideIcon][] = [
   ['/', 'Início', House],
   ['/conselheiros', 'Agentes', Users],
   ['/mes', 'Meu mês', Wallet],
-  ['/plano', 'Plano', ClipboardList],
+  ['/missoes', 'Missões', ClipboardList],
 ];
 
+// os nomes novos da spec v2 apontam pras mesmas telas: o item do menu fica aceso nos dois
+const IGUAIS: Record<string, string[]> = { '/': ['/', '/inicio'], '/conselheiros': ['/conselheiros', '/agentes'], '/mes': ['/mes', '/meu-mes'], '/missoes': ['/missoes', '/plano'] };
+function useAceso(): (to: string) => boolean {
+  const { pathname } = useLocation();
+  return (to) => (IGUAIS[to] ?? [to]).some((p) => (p === '/' ? pathname === '/' : pathname === p || pathname.startsWith(`${p}/`)));
+}
+
 function TopBar() {
+  const aceso = useAceso();
   const logged = Boolean(painelToken());
   const name = getName();
   return (
@@ -27,7 +35,7 @@ function TopBar() {
         </Link>
         <nav className="shell-links" aria-label="Seções">
           {NAV.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
+            <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
               {label}
             </NavLink>
           ))}
@@ -42,10 +50,11 @@ function TopBar() {
 }
 
 function BottomNav() {
+  const aceso = useAceso();
   return (
     <nav className="shell-bottom" aria-label="Seções">
       {NAV.map(([to, label, Icon]) => (
-        <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => (isActive ? 'on' : '')}>
+        <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
           <Icon size={21} strokeWidth={1.9} />
           <span>{label}</span>
         </NavLink>

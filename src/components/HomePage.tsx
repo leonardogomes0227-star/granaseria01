@@ -17,6 +17,11 @@ import { Snowball } from './Snowball';
 import { useCoach } from '../coachChat/store';
 import { lerEu } from '../eu';
 import { useArmazem } from '../lib/armazem';
+import { MissaoDeHoje, MissoesAtivas } from './missoes/HomeMissoes';
+import { lerMissoes, ativas as ativasMissoes } from '../missoes';
+import { quantoPossoGastarHoje } from '../lib/financas';
+import { daysInMonth } from '../coachChat/months';
+import { CountUp } from './motion';
 import { loadSavedData, openDebts } from '../debts';
 import { buildPlan } from '../plan';
 import { SAVE_SHARE } from '../bills';
@@ -28,11 +33,6 @@ import { AgentAvatar } from './AgentPage';
 // Logado: o dia de hoje (o saldo do mês, o próximo passo e os conselheiros). Ainda não: o que é, em 3 linhas, e um botão.
 
 const sum = (rows: { amount: number }[]) => rows.reduce((t, r) => t + r.amount, 0);
-
-function monthLeft(): { today: number; last: number } {
-  const now = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  return { today: now.getUTCDate(), last: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate() };
-}
 
 function QuickActions() {
   const [sending, setSending] = useState(false);
@@ -76,21 +76,56 @@ function MonthCard() {
       .finally(() => setLoaded(true));
   }, []);
   const income = painel ? sum(painel.month.incomes) : 0;
-  const spent = painel ? sum(painel.month.expenses) : 0;
+  const expenses = painel?.month.expenses ?? [];
   const bills = useBills();
   const saved = useSaved();
-  const left = income - spent - paidThisMonth(bills, monthOf(todayBRT())) - savedThisMonth(saved, monthOf(todayBRT()));
-  const { today, last } = monthLeft();
-  const perDay = left > 0 ? Math.floor(left / Math.max(1, last - today + 1)) : 0;
+  const eu = useArmazem(lerEu);
+  const missoes = useArmazem(lerMissoes);
+  const hojeISO = todayBRT();
+  const mes = monthOf(hojeISO);
+  const andando = ativasMissoes(missoes);
+  // a conta da spec (src/lib/financas.ts): com renda declarada, reserva as contas do mês e o combinado nas missões
+  const conta = quantoPossoGastarHoje({
+    hoje: hojeISO,
+    rendaDeclarada: eu.renda ?? 0,
+    entradasAnotadas: income,
+    gastosAnotados: sum(expenses.filter((e) => e.category !== 'Guardado')),
+    guardadoAnotado: sum(expenses.filter((e) => e.category === 'Guardado')),
+    contasDoMes: monthStatus(bills, mes, hojeISO).reduce((t, s) => t + Math.max(s.bill.amount, s.paid), 0),
+    contasPagas: paidThisMonth(bills, mes),
+    guardadoNoApp: savedThisMonth(saved, mes),
+    aportesPlanejados: andando.filter((m) => m.tipo === 'reserva' || m.tipo === 'investir').reduce((t, m) => t + m.valorMensal, 0),
+    parcelasPlanejadas: andando.filter((m) => m.tipo === 'divida').reduce((t, m) => t + m.valorMensal, 0),
+  });
+  const left = conta.disponivel;
+  const perDay = conta.porDia;
+  const semDados = conta.modo === 'real' && income === 0;
+  if (loaded && conta.estourou)
+    return (
+      <section className="home-hero estourou" aria-label="Quanto posso gastar hoje">
+        <Link to="/mes" className="home-hero-top">
+          <span>Quanto posso gastar hoje</span>
+          <span className="home-hero-more">Ver mês <ChevronRight size={15} /></span>
+        </Link>
+        <b className="home-hero-number">{formatBRL(0)}</b>
+        <span className="home-hero-sub">Você passou {formatBRL(conta.passou)} do limite do mês</span>
+        <div className="home-hero-nomasir">
+          <AgentAvatar id="nomasir" name="Nomasir" hue={200} size={30} />
+          <span>Vamos ver onde dá pra segurar até o dia {daysInMonth(mes)}?</span>
+          <Link to="/mes" className="btn-primary">Ver gastos</Link>
+        </div>
+        <QuickActions />
+      </section>
+    );
   return (
     <section className="home-hero" aria-label="Quanto posso gastar hoje">
       <Link to="/mes" className="home-hero-top">
         <span>Quanto posso gastar hoje</span>
         <span className="home-hero-more">Ver mês <ChevronRight size={15} /></span>
       </Link>
-      {!loaded ? <span className="skeleton skeleton-hero" aria-label="Carregando" /> : <b className="home-hero-number">{income === 0 ? '—' : formatBRL(perDay)}</b>}
+      {!loaded ? <span className="skeleton skeleton-hero" aria-label="Carregando" /> : <b className="home-hero-number">{semDados ? '—' : <CountUp value={perDay} duration={600} format={(n) => formatBRL(n)} />}</b>}
       <span className="home-hero-sub">
-        {!loaded ? '\u00a0' : income === 0 ? 'Anote o que entrou e o que saiu pra ver.' : left > 0 ? `Sobram ${formatBRL(left)} até o fim do mês` : 'O que entrou este mês já foi usado.'}
+        {!loaded ? '\u00a0' : semDados ? 'Anote o que entrou e o que saiu pra ver.' : left > 0 ? `Sobram ${formatBRL(left)} até o fim do mês` : 'O que entrou este mês já foi usado.'}
       </span>
       <QuickActions />
     </section>
@@ -392,7 +427,9 @@ export function HomePage({
       )}
       <div className="home-stack">
         <MonthCard />
+        <MissaoDeHoje />
         <CoachEntry />
+        <MissoesAtivas />
         {resume === null && <AgentsPanel hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
       </div>
     </>

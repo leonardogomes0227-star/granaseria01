@@ -186,7 +186,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (location.pathname === '/') setSavedProgress(loadSavedProgress());
+    if (location.pathname === '/' || location.pathname === '/inicio') setSavedProgress(loadSavedProgress());
   }, [location.pathname]);
 
   const session = useSession();
@@ -196,7 +196,7 @@ function App() {
 
   // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
   useEffect(() => {
-    if (!['/painel', '/mes', '/plano'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
+    if (!['/painel', '/mes', '/plano', '/meu-mes', '/missoes'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez ao abrir o site (o /painel liga sozinho)
   }, []);
 
@@ -207,6 +207,16 @@ function App() {
       <Routes>
         <Route
           path="/"
+          element={
+            <Titled title={null}>
+              <AppShell>
+                <HomePage savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/inicio"
           element={
             <Titled title={null}>
               <AppShell>
@@ -257,7 +267,31 @@ function App() {
           }
         />
         <Route
+          path="/meu-mes"
+          element={
+            <Titled title="Meu mês">
+              <AppShell>
+                <LoginGate what="o seu mês">
+                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
           path="/plano"
+          element={
+            <Titled title="Seu plano">
+              <AppShell>
+                <LoginGate what="o seu plano">
+                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/missoes"
           element={
             <Titled title="Seu plano">
               <AppShell>
@@ -275,6 +309,17 @@ function App() {
         <Route path="/agentes/:id/chat" element={<Titled title="Conversa"><ChatScreen /></Titled>} />
         <Route
           path="/conselheiros"
+          element={
+            <Titled title="Agentes">
+              <AppShell>
+                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
+                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/agentes"
           element={
             <Titled title="Agentes">
               <AppShell>

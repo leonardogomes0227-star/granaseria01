@@ -6,6 +6,7 @@ import { SAVE_SHARE, loadBills, loadSaved, monthOf, monthStatus, saveBills, save
 import { fetchPainel, painelToken } from '../painel';
 import { todayBRT } from '../coach';
 import { fmtDay } from '../dates';
+import { registrarNaMissao, reservaAtiva } from '../missoesAcoes';
 
 /* ---------- Gastos fixos do mês: casa, carro, financiamento, cartão… com baixa de um toque ---------- */
 // Usa as mesmas contas da tela Contas a pagar (src/bills.ts). "Paguei" marca o valor que falta como pago hoje e o saldo
@@ -84,7 +85,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
   const statuses = monthStatus(bills, month, today);
   const { total, paid, left } = fixedSummary(statuses);
   const [open, setOpen] = useState(!compact);
-  const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
+  const [undo, setUndo] = useState<{ id: string; name: string; desfazerMissao?: () => void } | null>(null);
   // pague-se primeiro: 10% do que entrou, separado antes de gastar
   const target = Math.round(income * SAVE_SHARE);
   const savedNow = savedThisMonth(savedList, month);
@@ -93,8 +94,11 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
   const saveDone = showSave && saveLeft < 1;
   const keep = () => {
     if (saveLeft < 1) return;
-    saveSaved([...savedList, { on: today, amount: saveLeft }]);
-    setUndo({ id: 'guardado', name: 'Pague-se primeiro' });
+    // o que é guardado aqui também conta na missão de reserva (uma fonte só)
+    const reserva = reservaAtiva();
+    saveSaved([...savedList, { on: today, amount: saveLeft, ...(reserva ? { missao: reserva.id } : {}) }]);
+    const r = reserva ? registrarNaMissao(reserva.id, saveLeft, { semGuardado: true }) : null;
+    setUndo({ id: 'guardado', name: 'Pague-se primeiro', desfazerMissao: r?.desfazer });
   };
 
   const pay = (s: BillStatus) => {
@@ -110,6 +114,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
       const i = list.map((e) => e.on).lastIndexOf(today);
       if (i >= 0) list.splice(i, 1);
       saveSaved(list);
+      undo.desfazerMissao?.();
       setUndo(null);
       return;
     }

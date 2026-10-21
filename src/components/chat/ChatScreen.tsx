@@ -4,7 +4,7 @@ import { ArrowLeft, MoreHorizontal, Pencil, RotateCcw } from 'lucide-react';
 import { addChosen } from '../../agents';
 import { getName } from '../../painel';
 import { gravarEu, primeiroNome } from '../../eu';
-import { salvarNovasMissoes } from '../../missoes';
+import { comecarMissoes } from '../../missoesAcoes';
 import { conferir, falasDoRoteiro, percorrer, rotuloDe, type Roteiro, type Valor } from '../../chat/engine';
 import { lerDados } from '../../chat/dados';
 import { ehAgente, infoAgente } from '../../chat/agentes';
@@ -37,10 +37,10 @@ export function ChatScreen() {
   const roteiro = roteiroPara(id, params.get('roteiro'));
   // agente ainda sem roteiro próprio: a página antiga dele continua
   if (!roteiro) return <Navigate to={`/conselheiros/${id}`} replace />;
-  return <Conversa key={`${id}:${roteiro.id}`} roteiro={roteiro} />;
+  return <Conversa key={`${id}:${roteiro.id}`} roteiro={roteiro} editarPasso={params.get('editar')} refazer={params.get('refazer') === '1'} />;
 }
 
-function Conversa({ roteiro }: { roteiro: Roteiro }) {
+function Conversa({ roteiro, editarPasso, refazer }: { roteiro: Roteiro; editarPasso?: string | null; refazer?: boolean }) {
   const navigate = useNavigate();
   const agente = roteiro.agente;
   const info = infoAgente(agente);
@@ -55,7 +55,8 @@ function Conversa({ roteiro }: { roteiro: Roteiro }) {
   const [editando, setEditando] = useState<number | null>(null);
   const [tocada, setTocada] = useState<number | null>(null);
   const [menu, setMenu] = useState(false);
-  const [perguntaRecomecar, setPerguntaRecomecar] = useState(false);
+  // "Refazer com o agente" (menu da missão) já abre a pergunta de recomeçar
+  const [perguntaRecomecar, setPerguntaRecomecar] = useState(Boolean(refazer && (salva?.respostas.length ?? 0) > 0));
   const [perguntaApagar, setPerguntaApagar] = useState(false);
   const [saindo, setSaindo] = useState(false);
 
@@ -186,7 +187,7 @@ function Conversa({ roteiro }: { roteiro: Roteiro }) {
   const comecar = () => {
     const c = roteiro.concluir?.(percurso.ctx, convId);
     if (c) {
-      salvarNovasMissoes(c.missoes);
+      comecarMissoes(c.missoes);
       for (const a of c.ativar) addChosen(a);
       if (c.eu) gravarEu(c.eu);
       concluirConversa(convId, c.missoes.map((m) => m.id));
@@ -197,6 +198,18 @@ function Conversa({ roteiro }: { roteiro: Roteiro }) {
     vibrar();
     window.setTimeout(() => navigate(c?.destino ?? '/'), poucoMovimento() ? 200 : 1100);
   };
+
+  // "Editar respostas" (menu da missão): abre direto a resposta daquele passo pra corrigir
+  const abriuEdicao = useRef(false);
+  useEffect(() => {
+    if (abriuEdicao.current || !editarPasso) return;
+    abriuEdicao.current = true;
+    const v = percurso.visitas.find((x) => x.passo.id === editarPasso && x.indice !== undefined);
+    if (v?.indice !== undefined) {
+      setTocada(v.indice);
+      setEditando(v.indice);
+    }
+  }, [editarPasso, percurso.visitas]);
 
   const editVisita = editando !== null ? percurso.visitas.find((v) => v.indice === editando) ?? null : null;
   const tudoNaTela = !proxima && !digitando;

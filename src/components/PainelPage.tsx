@@ -10,6 +10,7 @@ import { leaksMonthlyTotal } from '../leaks';
 import { getGoals } from '../results';
 import { CHECKOUT_READY, isUnlocked } from '../config';
 import { ActionPlanView, PlanUndo } from './ActionPlanView';
+import { MissoesSection } from './missoes/MissoesSection';
 import { FixedBills, useBills, useSaved } from './FixedBills';
 import { paidThisMonth, paymentsThisMonth, savedThisMonth } from '../bills';
 import { PageHead } from './AppShell';
@@ -131,7 +132,8 @@ export function PainelPage({ section, data, onStart, onOpenTool }: { section: 'm
   if (section === 'plano')
     return (
       <div className="painel">
-        <PageHead title="Seu plano" />
+        <MissoesSection />
+        <p className="section-label plan-block-label">Plano do diagnóstico</p>
         {plan ? (
           <ActionPlanView plan={plan} locked={!unlocked} onOpenTool={onOpenTool} />
         ) : (

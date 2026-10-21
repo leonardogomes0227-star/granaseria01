@@ -297,3 +297,44 @@ export function divisaoExtra(total: number, p: { temDivida: boolean; reservaComp
 
 /** O mês ('AAAA-MM') de uma data ISO completa ou 'AAAA-MM-DD'. */
 export const mesDe = (iso: string) => monthOf(iso);
+
+/* ---------- o número da Início ---------- */
+
+export interface Hoje {
+  modo: 'plano' | 'real'; // plano: a fórmula da spec (com renda declarada); real: o saldo do que foi anotado
+  disponivel: number;
+  porDia: number;
+  estourou: boolean;
+  passou: number;
+}
+
+/**
+ * "Quanto posso gastar hoje" (spec v2, seção 4).
+ * - Com renda declarada (onboarding/perfil): renda - contas fixas do mês (pagas ou não) - o que vai guardar - o que
+ *   vai pagar de dívida - o que já gastou. A renda vale o maior entre a declarada e o que já entrou anotado; o
+ *   guardado vale o maior entre o planejado e o que já foi guardado.
+ * - Sem renda declarada: o saldo real de sempre (entradas - saídas - contas pagas - guardado).
+ */
+export function quantoPossoGastarHoje(p: {
+  hoje: string;
+  rendaDeclarada: number;
+  entradasAnotadas: number;
+  gastosAnotados: number; // sem o que foi anotado como "Guardado"
+  guardadoAnotado: number; // gastos do WhatsApp na categoria "Guardado"
+  contasDoMes: number;
+  contasPagas: number;
+  guardadoNoApp: number; // Pague-se primeiro / missões
+  aportesPlanejados: number;
+  parcelasPlanejadas: number;
+}): Hoje {
+  const dias = diasRestantes(p.hoje);
+  if (p.rendaDeclarada > 0) {
+    const renda = Math.max(p.rendaDeclarada, p.entradasAnotadas);
+    const guardar = Math.max(p.aportesPlanejados, p.guardadoNoApp + p.guardadoAnotado);
+    const d = disponivelMes({ renda, contasFixasDoMes: p.contasDoMes, aportesPlanejados: guardar, parcelasDoMes: p.parcelasPlanejadas, gastosVariaveis: p.gastosAnotados });
+    const e = estouro(d);
+    return { modo: 'plano', disponivel: d, porDia: porDia(d, dias), estourou: e.estourou, passou: e.passou };
+  }
+  const d = saldoReal({ entradas: p.entradasAnotadas, saidas: p.gastosAnotados + p.guardadoAnotado, contasPagas: p.contasPagas, guardado: p.guardadoNoApp });
+  return { modo: 'real', disponivel: d, porDia: porDia(d, dias), estourou: false, passou: 0 };
+}

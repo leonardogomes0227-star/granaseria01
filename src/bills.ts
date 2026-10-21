@@ -143,6 +143,7 @@ export const SAVE_SHARE = 0.1;
 export interface SavedEntry {
   on: string; // AAAA-MM-DD em que a pessoa guardou
   amount: number;
+  missao?: string; // a missão de reserva em que isso também contou (src/missoesAcoes.ts)
 }
 
 export function loadSaved(): SavedEntry[] {

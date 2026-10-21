@@ -236,3 +236,26 @@ describe('números do coach que já existem não mudam', () => {
     expect(p.previsao).toBe('2028-05');
   });
 });
+
+import { quantoPossoGastarHoje } from './financas';
+
+describe('número da Início', () => {
+  const base = { hoje: '2026-10-21', entradasAnotadas: 4500, gastosAnotados: 135, guardadoAnotado: 0, contasDoMes: 0, contasPagas: 140, guardadoNoApp: 0, aportesPlanejados: 0, parcelasPlanejadas: 0 };
+  it('sem renda declarada: o saldo real de sempre (número trava)', () => {
+    const r = quantoPossoGastarHoje({ ...base, rendaDeclarada: 0 });
+    expect(r).toMatchObject({ modo: 'real', disponivel: 4225, porDia: 384, estourou: false });
+  });
+  it('com renda declarada: reserva as contas do mês e o combinado', () => {
+    const r = quantoPossoGastarHoje({ ...base, rendaDeclarada: 4000, contasDoMes: 2000, aportesPlanejados: 400, parcelasPlanejadas: 300, gastosAnotados: 800 });
+    // renda vale o maior (4500 anotado) → 4500 - 2000 - 400 - 300 - 800 = 1000 → 11 dias
+    expect(r).toMatchObject({ modo: 'plano', disponivel: 1000, porDia: 90, estourou: false });
+  });
+  it('estourou mostra quanto passou', () => {
+    const r = quantoPossoGastarHoje({ ...base, entradasAnotadas: 0, rendaDeclarada: 3000, contasDoMes: 2000, aportesPlanejados: 300, gastosAnotados: 900 });
+    expect(r).toMatchObject({ estourou: true, passou: 200, porDia: 0 });
+  });
+  it('o que já foi guardado além do planejado também sai', () => {
+    const r = quantoPossoGastarHoje({ ...base, rendaDeclarada: 4500, aportesPlanejados: 300, guardadoNoApp: 500, gastosAnotados: 0 });
+    expect(r.disponivel).toBe(4000);
+  });
+});

@@ -57,6 +57,7 @@ export interface Missao {
   limites?: Record<string, number>; // missão de gastos: teto por categoria
   economiaMensal?: number; // missão de gastos: quanto deixa de gastar por mês
   notas?: string; // uma frase do agente
+  editarPasso?: string; // o passo da conversa que "Editar respostas" reabre
   createdAt: string;
   updatedAt: string;
   concluidaEm?: string | null;
@@ -202,8 +203,34 @@ function marcarMarcos(m: Missao): PassoMissao[] {
   });
 }
 
+/**
+ * O passo está feito? Os de ação (guardar/pagar este mês) valem pelo mês: voltam a ficar pendentes no mês seguinte,
+ * até a meta ser batida. Os marcos (metade, meta) e os outros ficam feitos de vez.
+ */
+export function passoFeito(m: Missao, p: PassoMissao, hoje = todaySP()): boolean {
+  if (p.acao === 'guardar' || p.acao === 'pagar') return m.status === 'concluida' || registrouNoMes(m, monthOf(hoje));
+  return Boolean(p.concluidoEm);
+}
+
 /** O passo pendente mais importante (o primeiro não feito). */
-export const proximoPasso = (m: Missao): PassoMissao | null => [...m.passos].sort((a, b) => a.ordem - b.ordem).find((p) => !p.concluidoEm) ?? null;
+export const proximoPasso = (m: Missao, hoje = todaySP()): PassoMissao | null => [...m.passos].sort((a, b) => a.ordem - b.ordem).find((p) => !passoFeito(m, p, hoje)) ?? null;
+
+/** Concluir um passo sem valor (cancelar assinatura, conferir, conversar). */
+export const concluirPasso = (m: Missao, passoId: string): Missao => ({
+  ...m,
+  passos: m.passos.map((p) => (p.id === passoId ? { ...p, concluidoEm: new Date().toISOString() } : p)),
+  updatedAt: new Date().toISOString(),
+});
+export const reabrirPasso = (m: Missao, passoId: string): Missao => ({ ...m, passos: m.passos.map((p) => (p.id === passoId ? { ...p, concluidoEm: null } : p)) });
+
+/** "E se": quanto antes termina guardando/pagando um pouco a mais por mês. null se não muda a data. */
+export function eSe(m: Missao, extra = 100, hoje = todaySP()): { extra: number; previsao: string } | null {
+  if (m.status !== 'ativa' || !(m.metaValor > 0)) return null;
+  const agora = previsao(m, hoje);
+  const com = previsao({ ...m, valorMensal: m.valorMensal + extra }, hoje);
+  if (!com || (agora && com >= agora)) return null;
+  return { extra, previsao: com };
+}
 
 export const ativas = (list: Missao[]) => list.filter((m) => m.status === 'ativa').sort((a, b) => a.prioridade - b.prioridade || a.createdAt.localeCompare(b.createdAt));
 

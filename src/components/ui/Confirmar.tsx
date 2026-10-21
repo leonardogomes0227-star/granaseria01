@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /* ---------- Confirmação curta (spec v2, seção 8): só pra apagar missão/conversa, recomeçar e recomeçar do zero ---------- */
 // "digitar": a pessoa precisa escrever a palavra (ex.: RECOMEÇAR) pro botão funcionar.
@@ -24,22 +25,26 @@ export function Confirmar({
 }) {
   const [escrito, setEscrito] = useState('');
   const primeiro = useRef<HTMLButtonElement | HTMLInputElement | null>(null);
+  const cancelar = useRef(onCancelar);
+  cancelar.current = onCancelar;
+  // só ao abrir: zera o que foi digitado, põe o foco e escuta o Esc
   useEffect(() => {
     if (!aberto) return;
     setEscrito('');
     const t = window.setTimeout(() => primeiro.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancelar();
+      if (e.key === 'Escape') cancelar.current();
     };
     window.addEventListener('keydown', onKey);
     return () => {
       window.clearTimeout(t);
       window.removeEventListener('keydown', onKey);
     };
-  }, [aberto, onCancelar]);
+  }, [aberto]);
   if (!aberto) return null;
   const pode = !digitar || escrito.trim().toLocaleUpperCase('pt-BR') === digitar.toLocaleUpperCase('pt-BR');
-  return (
+  // no body: assim nada da página (animações, a barra de baixo) fica por cima
+  return createPortal(
     <div className="dialog-fundo" onClick={onCancelar}>
       <div className="dialog" role="alertdialog" aria-modal="true" aria-labelledby="dialog-titulo" onClick={(e) => e.stopPropagation()}>
         <h2 id="dialog-titulo">{titulo}</h2>
@@ -78,6 +83,7 @@ export function Confirmar({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
