@@ -73,11 +73,14 @@ export function CountUp({
   value,
   format = (n) => Math.round(n).toLocaleString('pt-BR'),
   duration = 1100,
+  render,
   className,
   style,
 }: {
   value: number;
   format?: (n: number) => string;
+  /** em vez de texto, desenha o número (ex.: o valor em estilo cédula) */
+  render?: (n: number) => ReactNode;
   duration?: number;
   className?: string;
   style?: CSSProperties;
@@ -111,7 +114,7 @@ export function CountUp({
 
   return (
     <span ref={ref} className={className} style={style}>
-      {format(display)}
+      {render ? render(display) : format(display)}
     </span>
   );
 }

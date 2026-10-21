@@ -123,7 +123,7 @@ export const RIGHTS: Right[] = [
     title: 'Renegociar tudo de uma vez, preservando o mínimo pra viver',
     law: 'Lei do Superendividamento — Lei 14.181/2021',
     summary:
-      'Se as dívidas não cabem mais na renda, você pode pedir uma conciliação com todos os credores juntos, pelo Procon ou pela Justiça, num plano de até 5 anos que preserve o mínimo pra suas despesas básicas.',
+      'Se as dívidas não cabem mais na renda, você pode pedir uma conciliação com todos os credores juntos, pelo Procon ou pela Justiça, num plano de até 5 anos que preserve o mínimo pros seus gastos básicos.',
   },
   {
     id: 'cobranca',
@@ -135,7 +135,7 @@ export const RIGHTS: Right[] = [
     id: 'negativacao',
     title: 'Nome negativado tem prazo',
     law: 'Código de Defesa do Consumidor, art. 43, § 1º',
-    summary: 'Seu nome não pode ficar nos cadastros de inadimplentes (Serasa, SPC) por mais de 5 anos pela mesma dívida.',
+    summary: 'Seu nome não pode ficar nos cadastros de devedores (Serasa, SPC) por mais de 5 anos pela mesma dívida.',
   },
 ];
 

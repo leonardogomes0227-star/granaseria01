@@ -4,17 +4,17 @@
    ========================================================================== */
 
 :root {
-  --bg: #F8F7F4;
-  --surface: #FFFFFF;
-  --surface-2: #F1EFEA;
-  --line: #E8E5DD;
+  --bg: var(--areia-50);
+  --surface: var(--branco);
+  --surface-2: var(--areia-100);
+  --line: var(--areia-200);
   --line-strong: #D9D5CA;
-  --text: #16130E;
-  --text-soft: #5A5043;
-  --text-faint: #877B69;
+  --text: var(--tinta-900);
+  --text-soft: var(--tinta-600);
+  --text-faint: var(--tinta-400);
   --good: #1F8A4C;
-  --warn: #B26B0B;
-  --bad: #C4422A;
+  --warn: var(--ambar-500);
+  --bad: var(--vermelho-500);
   --on-accent: #FFFFFF;
 
   /* os tokens antigos apontam pro tema claro */
@@ -30,8 +30,8 @@
   --sage: #2E8B57;
   --lapis: #2F6FA8;
   --clay: #C4553A;
-  --gold: #C98A1E;
-  --gold-bright: #B8720C;
+  --gold: var(--dourado-500);
+  --gold-bright: var(--dourado-600);
   --gold-deep: #9A5F08;
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --display: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -39,9 +39,9 @@
   --shadow-sm: 0 1px 2px rgba(22, 19, 14, 0.05);
   --shadow-md: 0 1px 3px rgba(22, 19, 14, 0.06), 0 6px 18px rgba(22, 19, 14, 0.04);
   --shadow-lg: 0 2px 6px rgba(22, 19, 14, 0.06), 0 12px 32px rgba(22, 19, 14, 0.06);
-  --hero: #1A382B;
-  --hero-2: #234735;
-  --radius-card: 22px;
+  --hero: var(--verde-900);
+  --hero-2: var(--verde-800);
+  --radius-card: var(--raio-card);
   color-scheme: light;
 }
 

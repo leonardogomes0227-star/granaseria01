@@ -77,7 +77,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (view.tasks.length > 0 && fresh && !view.current.stuck) {
     const inline = tasksInline(tracking, extraMonthly) ?? '';
     return [
-      buttons(`👉 *Seu primeiro combinado (${monthLabel}): ${inline}.*\n\nLogo que o dinheiro cair, faça isso antes de gastar. Quando fizer, mande *paguei*. Pra rever o combinado a qualquer hora, mande *plano*.`, [
+      buttons(`👉 *Seu primeiro passo (${monthLabel}): ${inline}.*\n\nLogo que o dinheiro cair, faça isso antes de gastar. Quando fizer, mande *paguei*. Pra rever o plano a qualquer hora, mande *plano*.`, [
         ['menu:plano', '📋 Ver o plano'],
         ['menu:menu', 'Ver opções'],
       ]),
@@ -86,7 +86,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   if (view.tasks.length > 0 && due) {
     const inline = tasksInline(tracking, extraMonthly) ?? '';
     return [
-      buttons(`${hi}Neste mês do plano (${monthLabel}), o combinado é: *${inline}*.\n\nJá deu pra fazer?`, [
+      buttons(`${hi}Neste mês do plano (${monthLabel}), o que fazer é: *${inline}*.\n\nJá deu pra fazer?`, [
         ['plan:paid', 'Já fiz ✅'],
         ['plan:notpaid', 'Não consegui'],
         ['menu:plano', 'Ver o plano'],
@@ -135,7 +135,7 @@ export function nextStep({ profile, now, name, expensesThisMonth = 0, greeting =
   }
 
   // 7. Tudo em dia
-  const upcoming = view.tasks.length > 0 && !due ? `\n\nO próximo combinado do plano é de *${monthLabel}*, e eu te aviso quando chegar.` : '';
+  const upcoming = view.tasks.length > 0 && !due ? `\n\nO próximo passo do plano é de *${monthLabel}*, e eu te aviso quando chegar.` : '';
   return [
     buttons(`${hi}Está tudo em dia por aqui. 🪙 Quem segue o plano mês após mês constrói riqueza sem pressa e sem susto.${upcoming}\n\nSe quiser, anote um gasto, veja uma frase ou explore as opções.`, [
       ['mais:frase', 'Frase do dia'],

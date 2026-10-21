@@ -1,0 +1,466 @@
+/* ==========================================================================
+   Ouro Antigo — item 1 (base): tokens, fontes, grão de papel, botões e toasts.
+   Vale só dentro do app: html.ouro (src/lib/visual.ts). Carregado por último (src/main.tsx).
+   Os tokens antigos (--bg, --surface, --hero, --verde-900…) passam a apontar pros novos (src/tokens.css),
+   então tudo o que já existe muda junto, sem mexer em cada componente.
+   ========================================================================== */
+
+html.ouro {
+  --bg: var(--papel);
+  --surface: var(--linho);
+  --surface-2: var(--papel-escuro);
+  --line: var(--fio);
+  --line-strong: var(--fio-forte);
+  --text: var(--tinta);
+  --text-soft: var(--tinta-2);
+  --text-faint: var(--tinta-3);
+  --good: var(--em-dia);
+  --warn: var(--atencao);
+  --bad: var(--estourou);
+  --on-accent: var(--linho);
+  --hero: var(--cofre-900);
+  --hero-2: var(--cofre-800);
+  --gold: var(--ouro-500);
+  --verde-900: var(--cofre-900);
+  --verde-800: var(--cofre-800);
+  --areia-50: var(--papel);
+  --areia-100: var(--papel-escuro);
+  --areia-200: var(--papel-escuro);
+  --dourado-500: var(--ouro-500);
+  --dourado-600: var(--ouro-700);
+  --ambar-500: var(--atencao);
+  --vermelho-500: var(--estourou);
+  --branco: var(--linho);
+  --tinta-900: var(--tinta);
+  --tinta-600: var(--tinta-2);
+  --tinta-400: var(--tinta-3);
+  --sombra-card: var(--sombra-linho);
+  --shadow-sm: var(--sombra-linho);
+  --sans: var(--fonte-ui);
+  background: var(--papel);
+  color-scheme: light;
+}
+/* dentro do app, o destaque que era dourado (e virou verde) continua no verde cofre */
+html.ouro .shell,
+html.ouro .cc-page {
+  --gold-bright: var(--cofre-900);
+  --gold-deep: var(--cofre-900);
+  --accent: var(--cofre-900);
+  --sand: var(--papel-escuro);
+  --sand-deep: var(--papel-escuro);
+}
+
+html.ouro body {
+  background: var(--papel) !important;
+  color: var(--tinta);
+  font-family: var(--fonte-ui);
+}
+
+/* grão de papel de algodão: materialidade sem pesar */
+html.ouro body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 180px 180px;
+}
+
+html.ouro .shell { background: transparent; }
+
+/* ---------- tipografia (seção 3) ---------- */
+html.ouro .page-head h1,
+html.ouro .ouro-h1 {
+  font-family: var(--fonte-display) !important;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  color: var(--tinta);
+}
+html.ouro .block-head h2,
+html.ouro .ouro-h2 {
+  font-family: var(--fonte-display) !important;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+}
+html.ouro h3 { font-family: var(--fonte-ui) !important; font-size: 17px; line-height: 24px; font-weight: 600; }
+html.ouro .page-head p { color: var(--tinta-2); font-size: 15px; line-height: 22px; }
+
+/* rótulos de seção: overline */
+html.ouro .section-label,
+.sobrelinha,
+html.ouro .ms-proximo small,
+html.ouro .hoje-copy small {
+  font-family: var(--fonte-ui);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tinta-3);
+}
+html.ouro .hoje-copy small { color: var(--ouro-700); }
+
+/* números: grandes em Fraunces, os da interface alinhados */
+html.ouro .hero-num,
+html.ouro .home-hero-number {
+  font-family: var(--fonte-display) !important;
+  font-size: 64px;
+  line-height: 64px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 144;
+  font-variant-numeric: lining-nums;
+}
+html.ouro .num-lg {
+  font-family: var(--fonte-display);
+  font-size: 40px;
+  line-height: 44px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 96;
+}
+html.ouro .tabular,
+html.ouro .ms-numeros,
+html.ouro .painel-list b,
+html.ouro .fixed-amount { font-variant-numeric: tabular-nums; }
+
+/* valor em estilo cédula: "R$" pequeno no topo, centavos menores (src/components/ui/Valor.tsx) */
+.valor { display: inline-flex; align-items: flex-start; gap: 0.06em; white-space: nowrap; }
+.valor .moeda { font-size: 0.55em; line-height: 1.15; margin-top: 0.12em; font-weight: 600; letter-spacing: 0; opacity: 0.9; }
+.valor .centavos { font-size: 0.5em; line-height: 1.2; margin-top: 0.16em; color: var(--tinta-3); }
+.home-hero .valor .centavos { color: var(--cofre-100); }
+
+/* ---------- botões (seção 6.10) ---------- */
+html.ouro .btn-primary {
+  background: var(--cofre-900) !important;
+  color: var(--linho) !important;
+  min-height: 52px;
+  border-radius: var(--raio-botao) !important;
+  border: 0;
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 1px 2px rgba(15, 42, 32, 0.2) !important;
+  transition: transform 0.12s var(--curva), background 0.18s var(--curva), box-shadow 0.18s var(--curva);
+}
+@media (hover: hover) { html.ouro .btn-primary:hover { background: var(--cofre-800) !important; transform: none; } }
+html.ouro .btn-primary:active { transform: scale(0.97); }
+html.ouro .btn-primary:disabled { opacity: 0.45; transform: none; }
+html.ouro .btn-outline,
+html.ouro .btn-ghost {
+  background: transparent !important;
+  color: var(--tinta) !important;
+  border: 1px solid var(--fio) !important;
+  border-radius: var(--raio-botao) !important;
+  min-height: 48px;
+}
+html.ouro .btn-ghost { border-color: transparent !important; }
+@media (hover: hover) { html.ouro .btn-outline:hover, html.ouro .btn-ghost:hover { border-color: var(--fio-forte) !important; background: rgba(26, 24, 20, 0.03) !important; } }
+html.ouro .btn-danger { border-radius: var(--raio-botao) !important; min-height: 48px; background: var(--estourou) !important; color: var(--linho) !important; }
+html.ouro .link-btn { color: var(--cofre-900); font-weight: 600; text-decoration: none; text-underline-offset: 3px; }
+@media (hover: hover) { html.ouro .link-btn:hover { text-decoration: underline; } }
+/* botão de conquista: ouro folheado com brilho a cada 4s */
+.btn-ouro {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 52px; padding: 0 22px; border: 0; border-radius: var(--raio-botao);
+  background: var(--ouro-foil); background-size: 220% 100%;
+  color: var(--cofre-950); font: inherit; font-weight: 700; cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 6px 16px -8px rgba(138, 100, 32, 0.6);
+  animation: ouro-brilho 4s var(--curva) infinite;
+}
+@keyframes ouro-brilho { 0%, 70% { background-position: 100% 0; } 85% { background-position: 0% 0; } 100% { background-position: 100% 0; } }
+/* texto folheado a ouro (só conquistas e logo) */
+.ouro-foil {
+  background: var(--ouro-foil); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: ouro-brilho-texto 1.6s var(--curva) 1;
+}
+@keyframes ouro-brilho-texto { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+
+/* cards linho (seção 4.3): o mesmo material em todos os cartões do app */
+html.ouro .card,
+html.ouro .stat-card,
+html.ouro .fixed-bills,
+html.ouro .dir-row:not(.soft),
+html.ouro .ms-card,
+html.ouro .ms-mini,
+html.ouro .hoje-card,
+html.ouro .ag-card,
+html.ouro .agent-live,
+html.ouro .onb-card,
+html.ouro .cc-resultado,
+html.ouro .ms-vazio,
+html.ouro .tl-card,
+html.ouro .dialog {
+  background: var(--linho);
+  border-color: var(--fio);
+  box-shadow: var(--sombra-linho);
+}
+
+/* ---------- toast (seção 6.11): pílula escura com blur e barra de tempo ---------- */
+html.ouro .toast {
+  overflow: hidden;
+  background: rgba(26, 24, 20, 0.92);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--linho);
+  border-radius: 999px;
+  padding: 12px 10px 14px 20px;
+  box-shadow: 0 16px 40px -12px rgba(15, 42, 32, 0.5);
+  animation: toast-mola 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+html.ouro .toast button { background: rgba(255, 255, 255, 0.08); color: var(--ouro-300); border-radius: 999px; padding: 8px 14px; }
+html.ouro .toast > span:first-child { flex: 1; min-width: 0; line-height: 1.4; }
+/* celular: a pílula ocupa a largura (texto em até 2 linhas, sem virar bolha) */
+@media (max-width: 760px) {
+  html.ouro .toast { left: 16px; right: 16px; width: auto; max-width: none; transform: none; border-radius: 22px; animation-name: toast-mola-celular; }
+}
+@media (min-width: 761px) { html.ouro .toast { min-width: 320px; max-width: 560px; } }
+@keyframes toast-mola-celular { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+.toast-tempo { position: absolute; left: 18px; right: 18px; bottom: 5px; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.toast-tempo i { display: block; height: 100%; background: var(--ouro-300); transform-origin: left center; animation: toast-esvazia linear forwards; }
+@keyframes toast-esvazia { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes toast-mola { from { opacity: 0; transform: translate(-50%, 24px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------- detalhes que fazem parecer caro (seção 9, os da base) ---------- */
+html.ouro ::selection { background: rgba(184, 137, 47, 0.3); color: inherit; }
+html.ouro :focus-visible { outline: 2px solid var(--ouro-300) !important; outline-offset: 2px; border-radius: 6px; }
+@media (min-width: 761px) {
+  html.ouro { scrollbar-width: thin; scrollbar-color: rgba(26, 24, 20, 0.18) transparent; }
+  html.ouro ::-webkit-scrollbar { width: 10px; height: 10px; }
+  html.ouro ::-webkit-scrollbar-thumb { background: rgba(26, 24, 20, 0.16); border-radius: 10px; border: 3px solid var(--papel); }
+  html.ouro ::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* ---------- modo escuro (preparado; o botão fica no Perfil) ---------- */
+html.ouro[data-tema='escuro'] {
+  --papel: #0E1411;
+  --papel-escuro: #1B2520;
+  --linho: #151D19;
+  --tinta: #EDE6D8;
+  --tinta-2: #C3BBAB;
+  --tinta-3: #948D7E;
+  --fio: rgba(237, 230, 216, 0.1);
+  --fio-forte: rgba(237, 230, 216, 0.18);
+  --cofre-100: #1E3A2E;
+  --sombra-linho: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -12px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+html.ouro[data-tema='escuro'] body::after { mix-blend-mode: screen; opacity: 0.05; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-ouro, .ouro-foil, html.ouro .toast, .toast-tempo i { animation: none !important; }
+}
+
+/* ==========================================================================
+   Item 2 — navegação (6.9)
+   ========================================================================== */
+.brand-ouro { display: none; }
+html.ouro .brand-antiga { display: none; }
+html.ouro .brand-ouro { display: block; filter: drop-shadow(0 1px 1px rgba(138, 100, 32, 0.35)); }
+
+html.ouro .shell-top {
+  background: rgba(246, 242, 234, 0.8);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--fio);
+}
+html.ouro .shell-brand span { font-family: var(--fonte-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; font-variation-settings: 'SOFT' 50, 'WONK' 0; color: var(--tinta); }
+html.ouro .shell-links a { position: relative; color: var(--tinta-2); font-weight: 600; }
+html.ouro .shell-links a:hover { color: var(--tinta); }
+html.ouro .shell-links a.on { background: var(--papel-escuro); color: var(--tinta); }
+html.ouro .shell-links a.on::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ouro-500); }
+html.ouro .shell-me { border-color: var(--fio); background: var(--linho); }
+html.ouro .shell-avatar { background: var(--cofre-900); color: var(--linho); font-family: var(--fonte-display); font-weight: 600; }
+html.ouro .shell-login { background: var(--cofre-900); color: var(--linho); }
+
+@media (max-width: 760px) {
+  /* espaço pra barra flutuante não cobrir o fim da página */
+  html.ouro .shell-foot { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  html.ouro .shell-bottom.flutuante {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    grid-template-columns: 1fr 1fr 72px 1fr 1fr;
+    align-items: center;
+    padding: 6px;
+    border: 1px solid var(--fio);
+    border-radius: 24px;
+    background: rgba(255, 253, 248, 0.86);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 32px -12px rgba(26, 24, 20, 0.28), 0 2px 6px rgba(26, 24, 20, 0.06);
+  }
+  html.ouro .shell-bottom.flutuante a { min-height: 48px; justify-content: center; gap: 2px; padding: 6px 2px; border-radius: 18px; color: var(--tinta-3); }
+  /* inativos só o ícone; o ativo mostra o rótulo */
+  html.ouro .shell-bottom.flutuante a span { display: none; font-size: 11px; font-weight: 600; }
+  html.ouro .shell-bottom.flutuante a.on { color: var(--cofre-900); background: transparent; }
+  html.ouro .shell-bottom.flutuante a.on span { display: block; }
+  html.ouro .nav-anotar {
+    justify-self: center;
+    width: 56px;
+    height: 56px;
+    margin-top: -24px; /* sobe 12px além da barra */
+    border-radius: 50%;
+    border: 1.5px solid var(--ouro-300);
+    background: var(--fundo-cofre);
+    color: var(--linho);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 10px 22px -8px rgba(15, 42, 32, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    transition: transform 0.15s var(--curva);
+  }
+  html.ouro .nav-anotar:active { transform: scale(0.94); }
+  /* o toast sobe acima da barra flutuante */
+  html.ouro .toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
+
+/* ==========================================================================
+   Item 3 — Início (6.1 card cofre, 6.4 missão de hoje, 5 medalhões, 7.1)
+   ========================================================================== */
+
+/* medalhão do agente: retrato no círculo, anel duplo de ouro, fundo na cor dele */
+.medalhao {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  border-radius: 50%;
+  background: var(--cor-agente, var(--cofre-800));
+  box-shadow: 0 0 0 1.5px var(--ouro-300), 0 0 0 3px var(--linho), 0 0 0 4px rgba(184, 137, 47, 0.55), 0 6px 14px -6px rgba(26, 24, 20, 0.45);
+}
+.medalhao-retrato { position: absolute; inset: 2px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), transparent 60%), var(--cor-agente, var(--cofre-800)); }
+.medalhao-retrato .agent-art { width: 100%; height: 100%; display: block; }
+.medalhao-retrato b { font-family: var(--fonte-display); font-weight: 600; font-size: 1em; line-height: 1; color: var(--linho); }
+.medalhao.sepia .medalhao-retrato { filter: sepia(0.75) saturate(0.55) brightness(0.98); }
+.medalhao.sepia { box-shadow: 0 0 0 1.5px var(--fio-forte), 0 0 0 3px var(--linho), 0 0 0 4px var(--fio); }
+
+/* guilhochê e divisor ornamentado */
+.guilloche { position: absolute; right: -90px; top: -110px; width: 360px; height: 360px; color: var(--ouro-300); opacity: 0.09; pointer-events: none; transition: transform 0.6s var(--curva); }
+.ornamento { display: flex; align-items: center; gap: 8px; color: var(--ouro-500); }
+.ornamento i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--ouro-300), transparent); }
+.ornamento b { width: 7px; height: 7px; transform: rotate(45deg); background: var(--ouro-500); box-shadow: 0 0 0 2px var(--linho), 0 0 0 3px var(--ouro-300); }
+
+/* card cofre: verde-noite com filete dourado e guilhochê */
+html.ouro .home-hero.cofre {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 22px 22px 18px;
+  border-radius: var(--raio-cofre);
+  background: var(--fundo-cofre);
+  box-shadow: var(--sombra-cofre);
+  color: var(--linho);
+}
+html.ouro .home-hero.cofre::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: calc(var(--raio-cofre) - 6px);
+  border: 1px solid var(--filete-ouro);
+  pointer-events: none;
+}
+html.ouro .home-hero.cofre > :not(.guilloche) { position: relative; z-index: 1; }
+html.ouro .home-hero.cofre .home-hero-top .sobrelinha { color: rgba(217, 183, 106, 0.85); }
+html.ouro .home-hero.cofre .home-hero-more { color: rgba(255, 253, 248, 0.6); }
+html.ouro .home-hero.cofre .home-hero-number { margin: 14px 0 6px; color: var(--linho); }
+html.ouro .home-hero.cofre .home-hero-number .valor .moeda { color: var(--ouro-300); }
+html.ouro .home-hero.cofre .home-hero-sub { color: rgba(255, 253, 248, 0.74); font-size: 15px; }
+.home-hero-barra { display: block; height: 3px; margin-top: 14px; border-radius: 3px; background: rgba(255, 253, 248, 0.12); overflow: hidden; }
+.home-hero-barra i { display: block; height: 100%; border-radius: 3px; background: var(--ouro-300); transition: width 0.8s var(--curva); }
+html.ouro .home-hero.cofre .quick-actions { border-top-color: rgba(217, 183, 106, 0.16); margin-top: 18px; }
+html.ouro .home-hero.cofre .qa-circle { background: rgba(255, 253, 248, 0.09); border: 1px solid rgba(255, 253, 248, 0.08); color: var(--linho); }
+@media (hover: hover) { html.ouro .home-hero.cofre .qa:hover .qa-circle { background: rgba(255, 253, 248, 0.16); } }
+html.ouro .home-hero.cofre .qa.primary .qa-circle { background: var(--linho); color: var(--cofre-900); border-color: transparent; box-shadow: 0 0 0 1px var(--ouro-300), 0 6px 14px -6px rgba(0, 0, 0, 0.5); }
+html.ouro .home-hero.cofre .qa:active .qa-circle { transform: scale(0.94); }
+/* estourou: o cofre fica tijolo, sem alarme */
+html.ouro .home-hero.cofre.estourou { background: radial-gradient(120% 140% at 0% 0%, #8E4A2C 0%, #6E3420 50%, #4A2214 100%); box-shadow: 0 24px 48px -24px rgba(110, 52, 32, 0.6); }
+html.ouro .home-hero.cofre.estourou .guilloche { color: #F4D9B8; }
+html.ouro .home-hero.cofre .home-hero-nomasir { background: rgba(255, 253, 248, 0.08); border: 1px solid rgba(255, 253, 248, 0.08); border-radius: 18px; }
+html.ouro .home-hero.cofre .home-hero-nomasir .btn-primary { background: var(--linho) !important; color: #6E3420 !important; min-height: 40px; }
+
+/* chip da sequência, ao lado do "Oi" */
+.chip-sequencia { display: inline-flex; align-items: center; gap: 6px; flex: none; padding: 7px 12px; border-radius: 999px; background: var(--linho); border: 1px solid rgba(184, 137, 47, 0.35); color: var(--ouro-700); font-size: 13px; font-weight: 700; box-shadow: var(--sombra-linho); white-space: nowrap; }
+.chip-sequencia svg { color: var(--ouro-500); }
+html.ouro .page-head { align-items: center; }
+
+/* sua missão de hoje: faixa na cor do agente, frase em itálico, giro ao concluir */
+html.ouro .hoje-card { position: relative; padding: 18px 18px 18px 22px; border-radius: 22px; box-shadow: inset 4px 0 0 var(--cor-agente, var(--cofre-800)), var(--sombra-linho); }
+html.ouro .hoje-copy b { font-family: var(--fonte-display); font-size: 21px; line-height: 26px; font-weight: 500; letter-spacing: -0.01em; font-variation-settings: 'SOFT' 50, 'WONK' 0; }
+.hoje-frase { grid-column: 1 / -1; display: block; margin: 2px 0 0; text-wrap: pretty; padding-top: 12px; border-top: 1px dashed var(--fio); font-family: var(--fonte-display); font-style: italic; font-size: 15.5px; line-height: 22px; color: var(--tinta-2); quotes: '“' '”'; }
+.hoje-copy .hoje-frase { border-top: 0; padding-top: 4px; }
+.hoje-quem { font-family: var(--fonte-ui); font-style: normal; font-size: 12px; font-weight: 600; color: var(--tinta-3); margin-left: 4px; }
+.hoje-quem::before { content: '— '; }
+.hoje-flip { perspective: 1200px; }
+html.ouro .hoje-flip { display: block; padding: 0; background: transparent; border: 0; box-shadow: none; }
+.hoje-inner { display: grid; transition: transform 0.7s cubic-bezier(0.34, 1.3, 0.64, 1); transform-style: preserve-3d; }
+.hoje-face { grid-area: 1 / 1; position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr; gap: 12px 14px; align-items: center; padding: 18px 18px 18px 22px; border-radius: 22px; background: var(--linho); border: 1px solid var(--fio); box-shadow: inset 4px 0 0 var(--cor-agente, var(--cofre-800)), var(--sombra-linho); -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.hoje-face.verso { transform: rotateY(180deg); grid-template-columns: 1fr; justify-items: center; align-content: center; text-align: center; background: var(--fundo-cofre); color: var(--linho); border-color: transparent; box-shadow: var(--sombra-cofre); }
+.hoje-face.verso b { font-family: var(--fonte-display); font-size: 26px; font-weight: 500; }
+.hoje-face.verso .hoje-frase { border: 0; padding: 0; color: rgba(255, 253, 248, 0.78); }
+.hoje-check { width: 52px; height: 52px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--ouro-foil); color: var(--cofre-950); box-shadow: 0 0 0 4px rgba(217, 183, 106, 0.2); }
+.hoje-flip.virado .hoje-inner { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .hoje-inner { transition: none; transform: none !important; }
+  .hoje-face.verso { transform: none; }
+  .hoje-flip.virado .frente { visibility: hidden; }
+  .guilloche, .home-hero-barra i { transition: none; }
+}
+
+/* faixa dos agentes: medalhão sobre a cor dele */
+html.ouro .agent-live { padding: 0; gap: 0; border-radius: 22px; border-width: 1px; }
+html.ouro .agent-live.sel { border-color: var(--ouro-500); }
+.agent-live-main { display: flex; flex-direction: column; gap: 3px; width: 100%; padding: 0 0 4px; background: none; border: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+html.ouro .agent-live-art { height: 88px; margin-bottom: 10px; background: radial-gradient(120% 120% at 50% 0%, color-mix(in srgb, var(--cor-agente, var(--cofre-800)) 22%, var(--linho)) 0%, color-mix(in srgb, var(--cor-agente, var(--cofre-800)) 8%, var(--linho)) 100%); border-bottom: 1px solid var(--fio); }
+html.ouro .agent-live.create .agent-live-art { background: var(--papel-escuro); color: var(--ouro-700); }
+html.ouro .agent-live b { font-family: var(--fonte-display); font-size: 17px; font-weight: 500; letter-spacing: -0.01em; }
+html.ouro .agent-live.off .agent-live-art > * { opacity: 1; filter: none; }
+html.ouro .agent-live.off b, html.ouro .agent-live.off .live-line { opacity: 0.8; }
+html.ouro .live-when { display: flex; align-items: flex-start; gap: 6px; margin: 6px 10px 12px; padding: 6px 10px; border-radius: 12px; text-align: left; line-height: 1.3; border: 0; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--cor-agente, var(--cofre-800)) 12%, transparent); color: var(--cor-agente, var(--cofre-900)); }
+html.ouro .live-when.idle { background: var(--papel-escuro); color: var(--tinta-3); }
+html.ouro .live-dot { background: var(--em-dia); box-shadow: 0 0 0 3px var(--linho); }
+html.ouro .live-when svg { flex: none; margin-top: 2px; }
+html.ouro .agent-live { width: 168px; }
+html.ouro .agent-live.create { padding-bottom: 12px; }
+
+/* mensagem da semana: balão do agente principal */
+.semana { display: flex; align-items: flex-end; gap: 12px; margin-top: 4px; }
+.semana .medalhao { margin-bottom: 4px; }
+.semana-balao { position: relative; flex: 1; min-width: 0; padding: 14px 16px 12px; border-radius: 20px 20px 20px 6px; background: var(--linho); border: 1px solid var(--fio); box-shadow: var(--sombra-linho); }
+.semana-balao small { display: block; margin-bottom: 4px; color: var(--ouro-700); }
+.semana-balao p { margin: 0; font-family: var(--fonte-display); font-size: 17px; line-height: 24px; font-weight: 400; font-variation-settings: 'SOFT' 50, 'WONK' 0; color: var(--tinta); }
+.semana-balao > span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--tinta-3); }
+.semana-balao > span::before { content: '— '; }
+.hoje-acao .link-btn { align-self: center; }
+
+/* link pros selos, no fim da Início */
+.selos-link { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; border-radius: 20px; border: 1px solid var(--fio); background: var(--linho); box-shadow: var(--sombra-linho); color: var(--tinta); text-decoration: none; }
+.selos-link > span { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.selos-link b { font-family: var(--fonte-display); font-weight: 500; font-size: 17px; }
+.selos-link small { color: var(--tinta-3); font-size: 13px; }
+.selos-link > svg:last-child { color: var(--tinta-3); }
+@media (hover: hover) { .selos-link:hover { border-color: rgba(184, 137, 47, 0.4); } }
+
+/* primeira vez: o convite com o Arkad (spec 12) */
+html.ouro .convite-novo { gap: 14px; padding: 24px 22px 20px; }
+html.ouro .convite-novo .sobrelinha { color: rgba(217, 183, 106, 0.85); }
+.convite-novo-quem { display: flex; align-items: center; gap: 16px; }
+.convite-novo-quem > span { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.convite-novo-quem b { font-family: var(--fonte-display); font-size: 26px; line-height: 30px; font-weight: 500; letter-spacing: -0.01em; color: var(--linho); }
+.convite-novo-quem small { font-size: 15px; line-height: 22px; color: rgba(255, 253, 248, 0.76); }
+.convite-novo-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn-linho, .btn-vidro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 20px; border-radius: var(--raio-botao); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform 0.12s var(--curva), background 0.18s var(--curva); }
+.btn-linho { flex: 1 1 220px; border: 0; background: var(--linho); color: var(--cofre-900); box-shadow: 0 0 0 1px var(--ouro-300), 0 8px 18px -10px rgba(0, 0, 0, 0.6); }
+.btn-vidro { flex: 1 1 160px; border: 1px solid rgba(255, 253, 248, 0.16); background: rgba(255, 253, 248, 0.08); color: var(--linho); }
+.btn-linho:active, .btn-vidro:active { transform: scale(0.97); }
+@media (hover: hover) { .btn-vidro:hover { background: rgba(255, 253, 248, 0.14); } }
+.convite-novo-outro { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: rgba(255, 253, 248, 0.7); font-size: 14px; font-weight: 600; text-decoration: none; }
+@media (hover: hover) { .convite-novo-outro:hover { color: var(--linho); } }

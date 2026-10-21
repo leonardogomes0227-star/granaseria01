@@ -45,6 +45,7 @@ Os mesmos eventos chegam lá como eventos personalizados. Nenhum evento manda va
 Use o mesmo projeto do assistente de WhatsApp, se já tiver criado.
 
 1. **SQL Editor → New query**: rode [`supabase/whatsapp.sql`](../supabase/whatsapp.sql) (se ainda não rodou) e depois [`supabase/conta.sql`](../supabase/conta.sql).
+   Depois, as migrations mais novas, na ordem: [`supabase/entradas.sql`](../supabase/entradas.sql), [`supabase/whatsapp-hub.sql`](../supabase/whatsapp-hub.sql), [`supabase/coach.sql`](../supabase/coach.sql) e [`supabase/fundacao.sql`](../supabase/fundacao.sql) (spec v2: apagar com desfazer, origem dos lançamentos e correção de meses futuros). Todas são só aditivas e podem ser rodadas de novo sem problema.
 2. **Authentication → URL Configuration**:
    - **Site URL:** `https://granaseria.com.br`
    - **Redirect URLs:** adicione `https://granaseria.com.br/conta`

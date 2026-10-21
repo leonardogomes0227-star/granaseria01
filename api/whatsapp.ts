@@ -22,6 +22,7 @@ import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
 import { resetIfOld } from '../src/reset.js';
+import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { transcribe, transcribeConfigured } from '../server/transcribe.js';
 import { planBudgets } from '../src/plan.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
@@ -36,8 +37,10 @@ async function loadHub(user: UserRow | null, phone: string): Promise<{ session: 
     const [session, loaded] = await Promise.all([getSession(phone), user ? Promise.resolve(user.state ?? {}) : getProfile(phone)]);
     // recomeço do plano (src/reset.ts): o diagnóstico antigo não vale mais nem pros limites do dia a dia
     const reset = resetIfOld(loaded);
-    if (reset.changed) await (user ? saveState(user.user_id, reset.state) : saveProfile(phone, reset.state)).catch(() => undefined);
-    const profile = reset.state;
+    // e nunca mês futuro (src/lib/mesesFuturos.ts): mesma faxina do site
+    const clean = limparMesesFuturos(reset.state);
+    if (reset.changed || clean.changed) await (user ? saveState(user.user_id, clean.state) : saveProfile(phone, clean.state)).catch(() => undefined);
+    const profile = clean.state;
     return { session, profile };
   } catch (err) {
     console.error('WhatsApp: ferramentas indisponíveis (rodou o SQL supabase/whatsapp-hub.sql?)', err);

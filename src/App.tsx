@@ -23,6 +23,12 @@ import { AppShell, PageHead } from './components/AppShell';
 import { CoachHome } from './components/CoachHome';
 import { CoachPick } from './components/CoachPick';
 import { CoachChat } from './components/CoachChat';
+import { ChatScreen } from './components/chat/ChatScreen';
+import { Toaster } from './components/ui/Toast';
+import { AnotarSheet } from './components/AnotarSheet';
+import { CelebracaoHost } from './components/ui/Celebracao';
+import { PerfilPage } from './components/perfil/PerfilPage';
+import { SelosPage } from './components/selos/SelosPage';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -40,6 +46,8 @@ import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
+import { limparMesesFuturos } from './lib/mesesFuturos';
+import { checarVirada } from './lib/virada';
 import { AgentPage } from './components/AgentPage';
 import { getAgent } from './agents';
 
@@ -51,6 +59,20 @@ try {
   }
 } catch {
   // navegador sem localStorage: não há plano guardado
+}
+
+// nunca mês futuro (spec v2, regra 0.6): o que foi fechado ou registrado antes da hora sai (fica um backup)
+try {
+  const keys = ['selos-tracking', 'gs-guardado', 'gs-contas', 'gs-futuros-removidos'];
+  const local: Record<string, string> = {};
+  for (const k of keys) {
+    const v = localStorage.getItem(k);
+    if (v !== null) local[k] = v;
+  }
+  const clean = limparMesesFuturos(local);
+  if (clean.changed) for (const [k, v] of Object.entries(clean.state)) localStorage.setItem(k, v);
+} catch {
+  // navegador sem localStorage
 }
 
 // o link do WhatsApp (?t=…) vira login antes de o roteador ler o endereço
@@ -169,7 +191,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (location.pathname === '/') setSavedProgress(loadSavedProgress());
+    if (location.pathname === '/' || location.pathname === '/inicio') setSavedProgress(loadSavedProgress());
   }, [location.pathname]);
 
   const session = useSession();
@@ -177,9 +199,21 @@ function App() {
     void startSync(session);
   }, [session]);
 
+  // dia/mês novo com o app aberto: as contas do mês recomeçam e as telas se atualizam
+  useEffect(() => {
+    checarVirada();
+    const t = window.setInterval(() => checarVirada(), 60_000);
+    const onVolta = () => document.visibilityState === 'visible' && checarVirada();
+    document.addEventListener('visibilitychange', onVolta);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', onVolta);
+    };
+  }, []);
+
   // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
   useEffect(() => {
-    if (!['/painel', '/mes', '/plano'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
+    if (!['/painel', '/mes', '/plano', '/meu-mes', '/missoes'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez ao abrir o site (o /painel liga sozinho)
   }, []);
 
@@ -190,6 +224,16 @@ function App() {
       <Routes>
         <Route
           path="/"
+          element={
+            <Titled title={null}>
+              <AppShell>
+                <HomePage savedProgress={savedProgress} onStart={startWizard} onResume={resumeWizard} onOpenTool={openTool} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/inicio"
           element={
             <Titled title={null}>
               <AppShell>
@@ -240,7 +284,31 @@ function App() {
           }
         />
         <Route
+          path="/meu-mes"
+          element={
+            <Titled title="Meu mês">
+              <AppShell>
+                <LoginGate what="o seu mês">
+                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
           path="/plano"
+          element={
+            <Titled title="Seu plano">
+              <AppShell>
+                <LoginGate what="o seu plano">
+                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/missoes"
           element={
             <Titled title="Seu plano">
               <AppShell>
@@ -255,6 +323,7 @@ function App() {
         <Route path="/coach" element={<Titled title="Seu coach"><CoachPick /></Titled>} />
         <Route path="/coach/chat" element={<Titled title="Conversa com o coach"><CoachChat /></Titled>} />
         <Route path="/coach/plano" element={<Titled title="Plano com o coach"><CoachHome /></Titled>} />
+        <Route path="/agentes/:id/chat" element={<Titled title="Conversa"><ChatScreen /></Titled>} />
         <Route
           path="/conselheiros"
           element={
@@ -262,6 +331,41 @@ function App() {
               <AppShell>
                 <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
                 <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/agentes"
+          element={
+            <Titled title="Agentes">
+              <AppShell>
+                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
+                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/perfil"
+          element={
+            <Titled title="Perfil">
+              <AppShell>
+                <LoginGate what="o seu perfil">
+                  <PerfilPage />
+                </LoginGate>
+              </AppShell>
+            </Titled>
+          }
+        />
+        <Route
+          path="/selos"
+          element={
+            <Titled title="Meus selos">
+              <AppShell>
+                <LoginGate what="os seus selos">
+                  <SelosPage />
+                </LoginGate>
               </AppShell>
             </Titled>
           }
@@ -288,6 +392,9 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
       </Routes>
+      <AnotarSheet />
+      <CelebracaoHost />
+      <Toaster />
     </>
   );
 }

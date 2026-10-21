@@ -7,6 +7,8 @@ import { leaksMonthlyTotal, type LeakSelection } from '../../src/leaks.js';
 import { monthLong, monthShort } from '../../src/plan.js';
 import type { StateSnapshot } from '../account/db.js';
 import { siteLink } from './site.js';
+import { podeFecharMes, quandoPodeFechar } from '../../src/lib/mesesFuturos.js';
+import { monthName } from '../../src/coachChat/months.js';
 
 export type PlanCommand =
   | { kind: 'link'; code: string }
@@ -67,9 +69,9 @@ export function planStatusText(tracking: Tracking, extraMonthly: number): string
   const view = trackingView(tracking, extraMonthly);
   const start = new Date(tracking.createdAt);
   const lines = [`📋 *Mês ${view.openMonth} do seu plano* (${monthShort(start, view.openMonth)})`, ''];
-  if (view.tasks.length === 0) lines.push('Nada combinado pra este mês.');
+  if (view.tasks.length === 0) lines.push('Nada no plano pra este mês.');
   else {
-    lines.push('Combinado:');
+    lines.push('O que fazer:');
     for (const t of view.tasks) lines.push(`• ${brl(t.suggested)} — ${t.label}`);
   }
   lines.push('');
@@ -99,12 +101,16 @@ export function runPlanCommand(
   if (!tracking) return { reply: NOT_STARTED };
   if (cmd.kind === 'plan') return { reply: planStatusText(tracking, extraMonthly) };
 
+  // nunca fechar mês do plano que ainda não chegou (o mês N é pago durante o mês início + N - 1)
+  if (!podeFecharMes(tracking)) {
+    return { reply: `Este mês do plano pode ser marcado a partir de 1º de ${monthName(quandoPodeFechar(tracking))}. Até lá, é só seguir o plano. 🙂` };
+  }
   const view = trackingView(tracking, extraMonthly);
   const paid = Object.fromEntries(view.tasks.map((t) => [t.id, cmd.kind === 'paid' ? Math.round(t.suggested * 100) / 100 : 0]));
   const next: Tracking = { ...tracking, months: [...tracking.months, { paid }] };
   const head =
     cmd.kind === 'paid'
-      ? `✅ Fechei ${monthShort(new Date(tracking.createdAt), view.openMonth)} como combinado. Mais uma moeda no lugar certo. 🪙`
+      ? `✅ Marquei ${monthShort(new Date(tracking.createdAt), view.openMonth)} como feito. Mais uma moeda no lugar certo. 🪙`
       : `Anotado: ${monthShort(new Date(tracking.createdAt), view.openMonth)} sem pagamento. Sem culpa — já recalculei o plano.`;
   return {
     reply: `${head}\n\n${planStatusText(next, extraMonthly)}`,
@@ -116,7 +122,7 @@ export const PLAN_HELP = [
   '',
   'Seu plano:',
   '• *plano* — o que pagar este mês',
-  '• *paguei* — fecha o mês como combinado',
+  '• *paguei* — marca o mês como feito',
   '• *não paguei* — recalcula o plano',
   '• *lembrete 5* — muda o dia do lembrete',
   '• *parar lembretes* — desliga o lembrete',

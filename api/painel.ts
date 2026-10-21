@@ -7,8 +7,9 @@ import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
+import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 
-const MAX_BYTES = 60_000;
+const MAX_BYTES = 200_000; // o estado cresceu com as conversas e missões da spec v2
 
 async function auth(request: Request): Promise<string | null> {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
@@ -23,9 +24,11 @@ async function loadState(phone: string): Promise<{ state: StateSnapshot; updated
     : await getProfileWithDate(phone).then((p) => ({ state: p.state, updatedAt: p.updated_at, userId: null }));
   // recomeço do plano (src/reset.ts): uma vez por pessoa, o plano antigo sai
   const reset = resetIfOld(loaded.state);
-  if (!reset.changed) return loaded;
-  await (loaded.userId ? saveState(loaded.userId, reset.state) : saveProfile(phone, reset.state));
-  return { state: reset.state, updatedAt: new Date().toISOString(), userId: loaded.userId };
+  // e nunca mês futuro (src/lib/mesesFuturos.ts): o que foi fechado antes da hora sai, com backup no próprio estado
+  const clean = limparMesesFuturos(reset.state);
+  if (!reset.changed && !clean.changed) return loaded;
+  await (loaded.userId ? saveState(loaded.userId, clean.state) : saveProfile(phone, clean.state));
+  return { state: clean.state, updatedAt: new Date().toISOString(), userId: loaded.userId };
 }
 
 const masked = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phone.slice(-4)}`;
@@ -40,7 +43,8 @@ export async function GET(request: Request): Promise<Response> {
     listExpensesSince(phone, since),
     listIncomesSince(phone, since).catch(() => []),
   ]);
-  const pick = (r: { amount: number; created_at: string; description: string }) => ({ amount: r.amount, created_at: r.created_at, description: r.description });
+  // o id vai junto pra o site poder editar e apagar (api/lancamentos.ts)
+  const pick = (r: { id: number; amount: number; created_at: string; description: string }) => ({ id: r.id, amount: r.amount, created_at: r.created_at, description: r.description });
   return Response.json({
     phone: masked(phone),
     state,

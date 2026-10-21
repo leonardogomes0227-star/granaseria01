@@ -1,0 +1,102 @@
+/* ==========================================================================
+   Grana Séria — tokens de design (spec v2, seção 10), num lugar só.
+   Os valores são as cores que o app já usa: nada muda na tela. O theme.css e o app.css apontam pra cá.
+   Carregado antes de tudo (src/main.tsx).
+   ========================================================================== */
+
+:root {
+  /* cores */
+  --verde-900: #1A382B; /* card principal, botões primários */
+  --verde-800: #234735; /* gradiente do card principal, hover */
+  --areia-50: #F8F7F4; /* fundo */
+  --areia-100: #F1EFEA; /* cartão secundário, trilha suave */
+  --areia-200: #E8E5DD; /* trilhas de barra, bordas */
+  --dourado-500: #C98A1E; /* destaques, conquistas, selos */
+  --dourado-600: #B8720C;
+  --ambar-500: #B26B0B; /* atenção (80–100% do limite) */
+  --vermelho-500: #C4422A; /* estourou (> 100%) */
+  --branco: #FFFFFF; /* cards */
+  --tinta-900: #16130E; /* texto */
+  --tinta-600: #5A5043; /* texto secundário */
+  --tinta-400: #877B69; /* legendas */
+
+  /* tipografia (escala da spec) */
+  --fs-numero-xl: 40px;
+  --fs-numero: 32px;
+  --fs-titulo: 24px;
+  --fs-subtitulo: 17px;
+  --fs-corpo: 15px;
+  --fs-legenda: 13px;
+
+  /* forma e espaço (base 8px) */
+  --raio-card: 22px; /* o app usa 22px hoje; a spec sugere 20px */
+  --raio-pilula: 999px;
+  --esp-1: 8px;
+  --esp-2: 16px;
+  --esp-3: 24px;
+  --esp-4: 32px;
+  --sombra-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+  /* camadas: o toast fica acima da barra de baixo e do chat */
+  --z-nav: 40;
+  --z-chat: 60;
+  --z-sheet: 80;
+  --z-toast: 100;
+
+  /* movimento */
+  --dur-rapida: 200ms;
+  --dur-contagem: 600ms;
+  --ease-saida: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ==========================================================================
+   Ouro Antigo (direção de design): "um banco privado suíço que guarda segredos da Babilônia".
+   Os nomes novos ficam aqui; dentro do app (html.ouro, src/lib/visual.ts) os tokens antigos passam a apontar
+   pra eles. A landing e as páginas públicas continuam com o visual de antes.
+   ========================================================================== */
+:root {
+  /* base */
+  --papel: #F6F2EA;
+  --papel-escuro: #EDE6D8;
+  --linho: #FFFDF8;
+  --tinta: #1A1814;
+  --tinta-2: #5C564B;
+  --tinta-3: #8E8778;
+  --fio: rgba(26, 24, 20, 0.08);
+  --fio-forte: rgba(26, 24, 20, 0.16);
+  /* verde cofre */
+  --cofre-950: #0F2A20;
+  --cofre-900: #163A2C;
+  --cofre-800: #1F4A39;
+  --cofre-100: #E3EDE7;
+  /* ouro: joia, não tinta */
+  --ouro-500: #B8892F;
+  --ouro-300: #D9B76A;
+  --ouro-700: #8A6420;
+  --ouro-foil: linear-gradient(135deg, #8A6420 0%, #D9B76A 28%, #F4E2AE 45%, #C79A3E 62%, #8A6420 100%);
+  /* estados */
+  --em-dia: #2F7A55;
+  --atencao: #C2802A;
+  --atencao-texto: #8A5416; /* âmbar escurecido pra texto (contraste AA) */
+  --estourou: #B2483A;
+  /* cores de assinatura dos agentes */
+  --ag-arkad: #9C7A2B;
+  --ag-dabasir: #9A4A2E;
+  --ag-nomasir: #2E4A6B;
+  --ag-sharru: #2D6B5C;
+  --ag-bansir: #7A7466;
+  --ag-mathon: #5B3B6E;
+  --ag-rodan: #4E6B2F;
+  /* tipografia */
+  --fonte-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --fonte-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* material */
+  --sombra-linho: 0 1px 2px rgba(26, 24, 20, 0.04), 0 8px 24px -12px rgba(26, 24, 20, 0.08);
+  --sombra-cofre: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 48px -24px rgba(15, 42, 32, 0.55);
+  --fundo-cofre: radial-gradient(120% 140% at 0% 0%, var(--cofre-800) 0%, var(--cofre-900) 45%, var(--cofre-950) 100%);
+  --filete-ouro: rgba(217, 183, 106, 0.18);
+  --raio-cofre: 28px;
+  --raio-botao: 16px;
+  /* movimento */
+  --curva: cubic-bezier(0.22, 1, 0.36, 1);
+}

@@ -14,6 +14,7 @@ const SEEN_KEY = 'gs-painel-seen'; // updatedAt da última versão do WhatsApp q
 type Snapshot = Record<string, string>;
 
 export interface PainelEntry {
+  id?: number; // pra editar e apagar pelo site (api/lancamentos.ts)
   amount: number;
   created_at: string;
   description: string;

@@ -186,7 +186,7 @@ export function agentPlan(agent: Agent, a: Record<string, string>, data: WizardD
       if (a.sobra !== 'sobra') lines.push('Se hoje não sobra, comece cortando um gasto escondido: o Nomasir te ajuda a achar.');
       lines.push(a.reserva === 'meses' ? 'Sua reserva já existe: agora o que você guarda pode ir pra investimento.' : 'Primeiro objetivo: uma reserva de emergência, num lugar que rende e deixa sacar na hora.');
       tasks.push({ text: 'Abrir uma conta ou "caixinha" só pra guardar', inDays: 3 });
-      tasks.push({ text: a.quanto === 'fixo' ? 'Guardar o valor combinado no dia do pagamento' : `Guardar ${pct(p)} no dia do pagamento`, inDays: 5, repeat: 'monthly' });
+      tasks.push({ text: a.quanto === 'fixo' ? 'Guardar o valor do plano no dia do pagamento' : `Guardar ${pct(p)} no dia do pagamento`, inDays: 5, repeat: 'monthly' });
       break;
     }
     case 'nomasir':
@@ -212,7 +212,7 @@ export function agentPlan(agent: Agent, a: Record<string, string>, data: WizardD
       lines.push(a.reserva === 'nao' ? 'Depois, comece a reserva de emergência.' : 'Com a reserva pronta, uma parte pode ir pra investimento.');
       lines.push('Separe uma parte pequena (uns 10%) pra você aproveitar sem culpa.');
       tasks.push({ text: 'Simular onde vai cada real em Usar bem o 13º e extras', inDays: 1 });
-      tasks.push({ text: 'No dia em que o dinheiro cair, fazer o combinado antes de gastar', inDays: a.tipo === '13' ? 30 : 10 });
+      tasks.push({ text: 'No dia em que o dinheiro cair, dar o destino planejado antes de gastar', inDays: a.tipo === '13' ? 30 : 10 });
       break;
     case 'sharru':
       if (a.dividas === 'sim') lines.push('Primeiro as dívidas: dívida é um passivo que tira dinheiro do seu bolso todo mês.');
@@ -220,7 +220,7 @@ export function agentPlan(agent: Agent, a: Record<string, string>, data: WizardD
       lines.push(`A meta: o rendimento dos seus investimentos pagar suas contas. Em ${a.prazo === '30' ? 'mais de 20' : a.prazo} anos isso pede disciplina todo mês.`);
       if (a.investe !== 'sim') lines.push('Comece com um valor fixo todo mês, mesmo pequeno, num investimento de longo prazo como o Tesouro IPCA+.');
       tasks.push({ text: 'Ver quanto falta em Viver de renda', inDays: 1 });
-      tasks.push({ text: 'Investir o valor combinado no dia do pagamento', inDays: 5, repeat: 'monthly' });
+      tasks.push({ text: 'Investir o valor do plano no dia do pagamento', inDays: 5, repeat: 'monthly' });
       break;
   }
   return { lines, tasks };

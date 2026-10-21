@@ -2,14 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Check, ChevronDown, CreditCard, Droplets, GraduationCap, HeartPulse, House, PiggyBank, Receipt, Smartphone, Wifi, Zap, type LucideIcon } from 'lucide-react';
 import { formatBRL } from '../calculations';
-import { SAVE_SHARE, loadBills, loadSaved, monthOf, monthStatus, saveBills, saveSaved, savedThisMonth, type BillStatus } from '../bills';
+import { SAVE_SHARE, loadBills, loadSaved, monthOf, monthStatus, saveBills, saveSaved, savedThisMonth, type Bill, type BillStatus } from '../bills';
 import { fetchPainel, painelToken } from '../painel';
 import { todayBRT } from '../coach';
 import { fmtDay } from '../dates';
+import { registrarNaMissao, reservaAtiva } from '../missoesAcoes';
+import { apagarComDesfazer, toast } from './ui/Toast';
+import { LinhaDeslizante } from './mes/LinhaDeslizante';
+import { ContaForm } from './mes/ContaForm';
 
 /* ---------- Gastos fixos do mês: casa, carro, financiamento, cartão… com baixa de um toque ---------- */
 // Usa as mesmas contas da tela Contas a pagar (src/bills.ts). "Paguei" marca o valor que falta como pago hoje e o saldo
 // do mês já desconta. Errou? "Desfazer" logo depois. Outro valor ou outra data: toque em Gerenciar.
+// Cada conta também edita e apaga ali mesmo (spec v2, seção 8): deslizar no celular, menu ⋯ no PC; apagar não pede
+// confirmação, o toast "Desfazer" traz a conta de volta.
 
 export function useBills() {
   const [bills, setBills] = useState(loadBills);
@@ -84,7 +90,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
   const statuses = monthStatus(bills, month, today);
   const { total, paid, left } = fixedSummary(statuses);
   const [open, setOpen] = useState(!compact);
-  const [undo, setUndo] = useState<{ id: string; name: string } | null>(null);
+  const [undo, setUndo] = useState<{ id: string; name: string; desfazerMissao?: () => void } | null>(null);
   // pague-se primeiro: 10% do que entrou, separado antes de gastar
   const target = Math.round(income * SAVE_SHARE);
   const savedNow = savedThisMonth(savedList, month);
@@ -93,8 +99,33 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
   const saveDone = showSave && saveLeft < 1;
   const keep = () => {
     if (saveLeft < 1) return;
-    saveSaved([...savedList, { on: today, amount: saveLeft }]);
-    setUndo({ id: 'guardado', name: 'Pague-se primeiro' });
+    // o que é guardado aqui também conta na missão de reserva (uma fonte só)
+    const reserva = reservaAtiva();
+    saveSaved([...savedList, { on: today, amount: saveLeft, ...(reserva ? { missao: reserva.id } : {}) }]);
+    const r = reserva ? registrarNaMissao(reserva.id, saveLeft, { semGuardado: true }) : null;
+    setUndo({ id: 'guardado', name: 'Pague-se primeiro', desfazerMissao: r?.desfazer });
+  };
+
+  // editar: o mesmo formulário da criação, preenchido; apagar: some na hora, "Desfazer" traz de volta no mesmo lugar
+  const [editando, setEditando] = useState<string | null>(null);
+  const salvarConta = (b: Bill) => {
+    saveBills(loadBills().map((x) => (x.id === b.id ? b : x)));
+    setEditando(null);
+    toast(`Salvo: ${b.name}. O saldo do mês já usa o valor novo.`);
+  };
+  const apagarConta = (b: Bill) => {
+    const antes = loadBills();
+    const onde = antes.findIndex((x) => x.id === b.id);
+    if (onde < 0) return;
+    const conta = antes[onde];
+    saveBills(antes.filter((x) => x.id !== b.id));
+    if (editando === b.id) setEditando(null);
+    if (undo?.id === b.id) setUndo(null);
+    apagarComDesfazer(`Apagado: ${conta.name}`, () => {
+      const agora = loadBills();
+      if (agora.some((x) => x.id === conta.id)) return;
+      saveBills([...agora.slice(0, onde), conta, ...agora.slice(onde)]);
+    });
   };
 
   const pay = (s: BillStatus) => {
@@ -110,6 +141,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
       const i = list.map((e) => e.on).lastIndexOf(today);
       if (i >= 0) list.splice(i, 1);
       saveSaved(list);
+      undo.desfazerMissao?.();
       setUndo(null);
       return;
     }
@@ -185,7 +217,14 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
               const ok = s.left < 0.01;
               const late = !ok && s.daysToDue < 0;
               return (
-                <li key={s.bill.id} className={ok ? 'ok' : late ? 'late' : ''}>
+                <LinhaDeslizante
+                  key={s.bill.id}
+                  nome={s.bill.name}
+                  className={ok ? 'ok' : late ? 'late' : ''}
+                  onEditar={() => setEditando(editando === s.bill.id ? null : s.bill.id)}
+                  onApagar={() => apagarConta(s.bill)}
+                  depois={editando === s.bill.id && <ContaForm conta={s.bill} onSalvar={salvarConta} onCancelar={() => setEditando(null)} />}
+                >
                   <BillIcon name={s.bill.name} />
                   <span className="fixed-copy">
                     <b>{s.bill.name}</b>
@@ -199,7 +238,7 @@ export function FixedBills({ compact = false, savingOnly = false }: { compact?: 
                       Paguei
                     </button>
                   )}
-                </li>
+                </LinhaDeslizante>
               );
             })}
           </ul>
