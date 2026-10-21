@@ -47,6 +47,7 @@ import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
 import { limparMesesFuturos } from './lib/mesesFuturos';
+import { checarVirada } from './lib/virada';
 import { AgentPage } from './components/AgentPage';
 import { getAgent } from './agents';
 
@@ -197,6 +198,18 @@ function App() {
   useEffect(() => {
     void startSync(session);
   }, [session]);
+
+  // dia/mês novo com o app aberto: as contas do mês recomeçam e as telas se atualizam
+  useEffect(() => {
+    checarVirada();
+    const t = window.setInterval(() => checarVirada(), 60_000);
+    const onVolta = () => document.visibilityState === 'visible' && checarVirada();
+    document.addEventListener('visibilitychange', onVolta);
+    return () => {
+      window.clearInterval(t);
+      document.removeEventListener('visibilitychange', onVolta);
+    };
+  }, []);
 
   // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
   useEffect(() => {
