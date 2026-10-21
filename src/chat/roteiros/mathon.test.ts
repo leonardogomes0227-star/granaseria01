@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { conferir, falasDoRoteiro, percorrer, respostaDe, rotuloDe, type RespostaDada, type Valor } from '../engine';
 import { dadosDeEstado } from '../dados';
-import { melhorProposta, parecerDoChat, propostaDoChat, propostasDoChat, ROTEIRO_EMPRESTIMO, taxaTexto } from './mathon';
+import { melhoresPropostas, melhorProposta, parecerDoChat, propostaDoChat, propostasDoChat, reais, ROTEIRO_EMPRESTIMO, taxaTexto } from './mathon';
 
 const NOW = new Date('2026-10-21T15:00:00Z'); // hoje = 2026-10-21
 const base = (state: Record<string, string> = {}, nome = 'Ana') => ({ agente: 'mathon' as const, nome, dados: dadosDeEstado(state, NOW) });
@@ -173,6 +173,7 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     const p = responder(SEM_JUROS);
     expect(falasAtuais(p)).toEqual(['Você vai pagar R$ 1.200 por R$ 1.200. Não tem juros nessa conta.', 'Confira se não tem tarifa ou seguro escondido no contrato. E só assine se a parcela couber no seu mês.']);
     expect(propostaDoChat(p.ctx, 1)).toMatchObject({ taxa: 0, juros: 0 });
+    expect(ROTEIRO_EMPRESTIMO.resultado!(responder([...SEM_JUROS, ['p1_parecer', 'salvar']]).ctx).lista).toEqual(['Pra quê: Celular', 'Proposta 1: 12x de R$ 100 · sem juros']);
     const aperta = responder(SEM_JUROS, comRenda(300));
     expect(falasAtuais(aperta)[1]).toBe('Confira se não tem tarifa ou seguro escondido no contrato. E a parcela de R$ 100 passa de 30% do que entra por mês. Eu pegaria um valor menor.');
     // taxa zero também dá "sem juros"
@@ -185,6 +186,45 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     const p = responder([['p1_valor', 1000], ['p1_parcelas', 3], ['p1_sabe', 'parcela'], ['p1_parcela', 333.33], ['para', 'Fogão']]);
     expect(propostaDoChat(p.ctx, 1)).toMatchObject({ taxa: 0, juros: 0 });
     expect(falasAtuais(p)[0]).toBe('Você vai pagar R$ 1.000 por R$ 1.000. Não tem juros nessa conta.');
+  });
+
+  it('arredondada pra cima (3x de 333,34): taxa 0,00% e sem juros em todo lugar, não "R$ 0 de juros"', () => {
+    const fim = responder([['p1_valor', 1000], ['p1_parcelas', 3], ['p1_sabe', 'parcela'], ['p1_parcela', 333.34], ['para', 'Fogão'], ['p1_parecer', 'salvar']]);
+    expect(propostaDoChat(fim.ctx, 1)).toMatchObject({ taxa: 0, total: 1000.02, juros: 0 });
+    expect(falasDe(fim, 'p1_parecer')).toEqual(['Você vai pagar R$ 1.000 por R$ 1.000. Não tem juros nessa conta.', 'Confira se não tem tarifa ou seguro escondido no contrato. E só assine se a parcela couber no seu mês.']);
+    const res = ROTEIRO_EMPRESTIMO.resultado!(fim.ctx);
+    expect(res.linhas).toEqual(['1. Proposta 1: R$ 1.000 no total · 0,00% a.m.']);
+    expect(res.lista).toEqual(['Pra quê: Fogão', 'Proposta 1: 3x de R$ 333 · sem juros']);
+  });
+
+  it('valores pequenos aparecem com centavos (nada de "R$ 0"), e a fala bate com a taxa', () => {
+    expect([reais(0.5), reais(5), reais(99.99), reais(100.4), reais(1_000_000)]).toEqual(['R$ 0,50', 'R$ 5', 'R$ 99,99', 'R$ 100', 'R$ 1.000.000']);
+    // R$ 10 em 2x de R$ 5,10: 1,33% a.m. (antes, os R$ 0,20 de juros sumiam e a fala dizia "não tem juros")
+    const pouco = responder([['p1_valor', 10], ['p1_parcelas', 2], ['p1_sabe', 'parcela'], ['p1_parcela', 5.1], ['para', 'Passagem']]);
+    expect(falasAtuais(pouco)).toEqual(['Você vai pagar R$ 10,20 por R$ 10. São R$ 0,20 só de juros.', 'A taxa está dentro do comum. Mesmo assim, só assine se a parcela couber no seu mês.']);
+    // caro e pequeno: R$ 10 em 2x de R$ 5,60 (7,90% a.m.)
+    const caro = responder([['p1_valor', 10], ['p1_parcelas', 2], ['p1_sabe', 'parcela'], ['p1_parcela', 5.6], ['para', 'Passagem']]);
+    expect(falasAtuais(caro)).toEqual(['Você vai pagar R$ 11,20 por R$ 10. São R$ 1,20 só de juros.', 'Esse ouro sai caro. Se puder esperar 2 meses guardando R$ 5,60, você compra sem pagar juros.']);
+    // parcela de centavos pela taxa: R$ 5 em 12x sem juros (paga os R$ 5, não 12 × 0,42)
+    const fim = responder([['p1_valor', 5], ['p1_parcelas', 12], ['p1_sabe', 'taxa'], ['p1_taxa', 0], ['para', 'Lanche'], ['p1_parecer', 'salvar']]);
+    expect(propostaDoChat(fim.ctx, 1)).toMatchObject({ parcela: 0.42, total: 5, juros: 0 });
+    expect(falasDe(fim, 'p1_parecer')[0]).toBe('Você vai pagar R$ 5 por R$ 5. Não tem juros nessa conta.');
+    expect(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx).lista).toEqual(['Pra quê: Lanche', 'Proposta 1: 12x de R$ 0,42 · sem juros']);
+    // e a parcela pequena também entra pelo caminho da parcela
+    expect(erro([['p1_valor', 5], ['p1_parcelas', 12], ['p1_sabe', 'parcela']], 0.42)).toBeNull();
+  });
+
+  it('valores enormes (R$ 1.000.000) não quebram as contas nem o texto', () => {
+    const pelaParcela = responder([['p1_valor', 1_000_000], ['p1_parcelas', 120], ['p1_sabe', 'parcela'], ['p1_parcela', 20_000], ['para', 'Comprar a casa']]);
+    expect(propostaDoChat(pelaParcela.ctx, 1)).toMatchObject({ taxa: 1.75, total: 2_400_000, juros: 1_400_000 });
+    expect(falasAtuais(pelaParcela)[0]).toBe('Você vai pagar R$ 2.400.000 por R$ 1.000.000. São R$ 1.400.000 só de juros.');
+    const fim = responder([['p1_valor', 1_000_000], ['p1_parcelas', 120], ['p1_sabe', 'taxa'], ['p1_taxa', 1.5], ['para', 'Comprar a casa'], ['p1_parecer', 'salvar']], comRenda(10_000));
+    expect(propostaDoChat(fim.ctx, 1)).toMatchObject({ parcela: 18018.52, total: 2162222.4, juros: 1162222.4 });
+    expect(falasDe(fim, 'p1_parecer')).toEqual([
+      'Você vai pagar R$ 2.162.222 por R$ 1.000.000. São R$ 1.162.222 só de juros.',
+      'A taxa está dentro do comum. Mas a parcela de R$ 18.019 passa de 30% do que entra por mês. Eu pegaria um valor menor.',
+    ]);
+    expect(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx).linhas).toEqual(['1. Proposta 1: R$ 2.162.222 no total · 1,50% a.m.']);
   });
 
   it('compara até 3 propostas com o mesmo valor: a melhor é a que custa menos no total', () => {
@@ -264,6 +304,8 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     expect(falasDe(mesma, 'p2_parecer')[2]).toBe('Os valores são diferentes, então comparo pela taxa. É a mesma da proposta 1.');
     expect(falasDe(mesma, 'fim')).toEqual(['As taxas ficam quase iguais, Ana.', 'Escolha a parcela que cabe melhor no seu mês.', CALMA]);
     expect(melhorProposta(propostasDoChat(mesma.ctx))).toBeNull();
+    expect(ROTEIRO_EMPRESTIMO.resultado!(mesma.ctx).linhas.every((l) => !l.includes('a melhor'))).toBe(true);
+    expect(parecerDoChat(mesma.ctx).resumo).toBe('As 2 propostas têm quase a mesma taxa'); // totais diferentes: não "custam o mesmo"
   });
 
   it('empate no total: nenhuma marcada como a melhor', () => {
@@ -281,6 +323,57 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     expect(p.registro.melhor).toBeNull();
   });
 
+  // P1 e P2: R$ 10.000 (12x a 3% = 12.055,44; 24x a 2% = 12.689,04)
+  const DUAS_IGUAIS: [string, Valor][] = [
+    ['p1_valor', 10000], ['p1_parcelas', 12], ['p1_sabe', 'taxa'], ['p1_taxa', 3], ['para', 'Quitar o cartão'], ['p1_parecer', 'comparar'],
+    ['p2_valor', 10000], ['p2_parcelas', 24], ['p2_sabe', 'taxa'], ['p2_taxa', 2], ['p2_parecer', 'comparar'],
+  ];
+
+  it('3ª proposta com outro valor: compara pela taxa com a melhor taxa das anteriores, como o veredito do fim', () => {
+    // a proposta 3 pega R$ 8.000 a 2,5%: entre as três, os valores diferem, então vale a taxa (a melhor é a 2, a 2%)
+    const fim = responder([...DUAS_IGUAIS, ['p3_valor', 8000], ['p3_parcelas', 12], ['p3_sabe', 'taxa'], ['p3_taxa', 2.5], ['p3_parecer', 'salvar']]);
+    expect(falasDe(fim, 'p2_parecer')[2]).toBe('Essa sai R$ 634 mais cara que a proposta 1.'); // até aqui, mesmo valor: pelo total
+    expect(falasDe(fim, 'p3_parecer')[2]).toBe('Os valores são diferentes, então comparo pela taxa. Essa é maior que a da proposta 2.');
+    expect(falasDe(fim, 'fim')).toEqual(['Pela taxa, a proposta 2 é a melhor, Ana.', CALMA]);
+    expect(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx).linhas).toEqual([
+      '1. Proposta 1: R$ 12.055 no total · 3,00% a.m.',
+      '2. Proposta 2: R$ 12.689 no total · 2,00% a.m. · a melhor',
+      '3. Proposta 3: R$ 9.359 no total · 2,50% a.m.',
+    ]);
+    expect(parecerDoChat(fim.ctx).registro.melhor).toBe(2);
+  });
+
+  it('empate em primeiro com uma terceira mais cara: as duas melhores ficam marcadas, a terceira não', () => {
+    const fim = responder([
+      ['p1_valor', 10000], ['p1_parcelas', 12], ['p1_sabe', 'taxa'], ['p1_taxa', 3], ['para', 'Moto'], ['p1_parecer', 'comparar'],
+      ['p2_valor', 10000], ['p2_parcelas', 12], ['p2_sabe', 'parcela'], ['p2_parcela', 1004.62], ['p2_parecer', 'comparar'],
+      ['p3_valor', 10000], ['p3_parcelas', 24], ['p3_sabe', 'taxa'], ['p3_taxa', 2], ['p3_parecer', 'salvar'],
+    ]);
+    expect(falasDe(fim, 'p3_parecer')[2]).toBe('Essa sai R$ 634 mais cara que a proposta 1.');
+    // antes dizia "As propostas custam quase o mesmo", mesmo com a 3 custando R$ 634 a mais
+    expect(falasDe(fim, 'fim')).toEqual(['Pelo total, as propostas 1 e 2 empatam em primeiro, Ana.', 'Escolha a parcela que cabe melhor no seu mês.', CALMA]);
+    const ps = propostasDoChat(fim.ctx);
+    expect(melhorProposta(ps)).toBeNull();
+    expect(melhoresPropostas(ps).map((p) => p.n)).toEqual([1, 2]);
+    expect(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx).linhas).toEqual([
+      '1. Proposta 1: R$ 12.055 no total · 3,00% a.m. · a melhor',
+      '2. Proposta 2: R$ 12.055 no total · 3,00% a.m. · a melhor',
+      '3. Proposta 3: R$ 12.689 no total · 2,00% a.m.',
+    ]);
+    const p = parecerDoChat(fim.ctx);
+    expect(p.resumo).toBe('Propostas 1 e 2 empatam em primeiro entre as 3');
+    expect(p.card).toMatchObject({ label: 'As melhores propostas', big: 'Propostas 1 e 2' });
+    expect(p.registro.melhor).toBeNull();
+  });
+
+  it('editar "Comparar" pra "Salvar" na proposta 1 descarta a proposta 2 e termina', () => {
+    const p = ate([...CARA, ['p1_parecer', 'salvar'], ['p2_valor', 5000], ['p2_parcelas', 12], ['p2_sabe', 'taxa'], ['p2_taxa', 2], ['p2_parecer', 'salvar']]);
+    expect(p.fim).toBe(true);
+    expect(p.validas.map((r) => r.passo)).toEqual(['p1_valor', 'p1_parcelas', 'p1_sabe', 'p1_parcela', 'para', 'p1_parecer']);
+    expect(propostasDoChat(p.ctx)).toHaveLength(1);
+    expect(ROTEIRO_EMPRESTIMO.resultado!(p.ctx).linhas).toEqual(['1. Proposta 1: R$ 8.400 no total · 9,05% a.m.']);
+  });
+
   it('valida os números com a voz do Mathon', () => {
     expect(erro([], 0)).toBe('Digite pelo menos R$ 1,00.');
     expect(erro([['p1_valor', 5000]], 0)).toBe('Digite um número de 1 a 120.');
@@ -289,7 +382,12 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     expect(erro([['p1_valor', 5000], ['p1_parcelas', 12]], 'outra')).toBe('Escolha uma das opções.');
     const naParcela = CARA.slice(0, 3);
     expect(erro(naParcela, 400)).toBe('Assim você pagaria menos do que pegou. Confere o valor da parcela?'); // 12 × 400 < 5.000
-    expect(erro(naParcela, 0)).toBe('Digite pelo menos R$ 1,00.');
+    expect(erro(naParcela, 0)).toBe('Digite pelo menos R$ 0,01.');
+    // até 1 centavo a menos por parcela é arredondamento; mais que isso, não (12 × 416,60 = 4.999,20)
+    expect(erro(naParcela, 416.6)).toBe('Assim você pagaria menos do que pegou. Confere o valor da parcela?');
+    expect(erro(naParcela, 416.66)).toBeNull();
+    expect(erro([['p1_valor', 100], ['p1_parcelas', 1], ['p1_sabe', 'parcela']], 99.1)).toBe('Assim você pagaria menos do que pegou. Confere o valor da parcela?');
+    expect(erro([], 10_000_001)).toBe('Esse valor parece alto demais. Confere e digita de novo?');
     expect(erro([['p1_valor', 1000], ['p1_parcelas', 12], ['p1_sabe', 'parcela']], 1100)).toBe('Com essa parcela, os juros passariam de 100% ao mês. Confere os números?');
     const naTaxa: [string, Valor][] = [['p1_valor', 5000], ['p1_parcelas', 12], ['p1_sabe', 'taxa']];
     expect(erro(naTaxa, 31)).toBe('Digite um número de 0 a 30.');
@@ -324,13 +422,35 @@ describe('6.6 Mathon — antes de pegar empréstimo', () => {
     expect(taxaTexto(3)).toBe('3,00% a.m.');
   });
 
+  describe('efeitos sem proposta', () => {
+    afterEach(() => vi.unstubAllGlobals());
+    it('não grava nada (não troca o parecer anterior por um vazio)', () => {
+      // stubs em memória: se os efeitos tentassem gravar, apareceria aqui (nada toca o localStorage de verdade)
+      const setItem = vi.fn();
+      const dispatchEvent = vi.fn();
+      vi.stubGlobal('localStorage', { getItem: () => null, setItem, removeItem: vi.fn() });
+      vi.stubGlobal('window', { dispatchEvent });
+      ROTEIRO_EMPRESTIMO.concluir!(ate([]).ctx, 'x').efeitos!();
+      expect(setItem).not.toHaveBeenCalled();
+      expect(dispatchEvent).not.toHaveBeenCalled();
+    });
+  });
+
   it('textos sem as palavras proibidas', () => {
-    const fim = responder([...CARA, ['p1_parecer', 'comparar'], ['p2_valor', 5000], ['p2_parcelas', 12], ['p2_sabe', 'taxa'], ['p2_taxa', 2], ['p2_parecer', 'salvar']], comRenda(1000));
-    const textos = [
-      ...fim.visitas.flatMap((v) => falasDoRoteiro.falas(v.passo, v.ctx)),
-      ...Object.values(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx)).flat().map(String),
-      parecerDoChat(fim.ctx).resumo,
-    ].join(' ').toLowerCase();
+    const fluxos = [
+      responder([...CARA, ['p1_parecer', 'comparar'], ['p2_valor', 5000], ['p2_parcelas', 12], ['p2_sabe', 'taxa'], ['p2_taxa', 2], ['p2_parecer', 'salvar']], comRenda(1000)),
+      responder([...DUAS_IGUAIS, ['p3_valor', 8000], ['p3_parcelas', 12], ['p3_sabe', 'taxa'], ['p3_taxa', 2.5], ['p3_parecer', 'salvar']], comRenda(3000)),
+      responder([['p1_valor', 1200], ['p1_parcelas', 12], ['p1_sabe', 'parcela'], ['p1_parcela', 100], ['para', 'Celular'], ['p1_parecer', 'salvar']], comRenda(300)),
+    ];
+    const textos = fluxos
+      .flatMap((fim) => [
+        ...fim.visitas.flatMap((v) => falasDoRoteiro.falas(v.passo, v.ctx)),
+        ...Object.values(ROTEIRO_EMPRESTIMO.resultado!(fim.ctx)).flat().map(String),
+        parecerDoChat(fim.ctx).resumo,
+        ...parecerDoChat(fim.ctx).card.rows.flat(),
+      ])
+      .join(' ')
+      .toLowerCase();
     for (const proibida of ['aporte', 'despesa', 'fechar o mês', 'o combinado', 'inadimplência']) expect(textos).not.toContain(proibida);
   });
 });

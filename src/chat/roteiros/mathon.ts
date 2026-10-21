@@ -7,11 +7,12 @@
 // pula pros passos da próxima. O "pra quê" é perguntado uma vez só (é o mesmo dinheiro nas três).
 //
 // A melhor proposta: com o mesmo valor, a que custa menos no total ("eu olho o total, não só a parcela"); com valores
-// diferentes, o total não dá pra comparar e vale a menor taxa.
+// diferentes, o total não dá pra comparar e vale a menor taxa. O critério vale pra todas as propostas juntas, então a
+// comparação de cada parecer bate com o veredito do fim.
 
 import { parcelaPrice, taxaEmprestimo } from '../../lib/financas';
 import { saveResult, type ResultCard } from '../../results';
-import { brl, num, respondeu, txt, type Ctx, type Passo, type Roteiro } from '../engine';
+import { brl, brlCurto, num, respondeu, txt, type Ctx, type Passo, type Roteiro } from '../engine';
 import { falas, fim } from './comum';
 
 export const MAX_PROPOSTAS = 3;
@@ -34,6 +35,8 @@ export interface Proposta {
 }
 
 const centavos = (x: number) => Math.round(x * 100) / 100;
+/** "R$ 1.225" (sem centavos); abaixo de R$ 100, com centavos quando tem, pra um valor pequeno não virar "R$ 0". */
+export const reais = (n: number) => (Math.abs(n) < 100 ? brlCurto(n) : brl(n));
 /** "3,50% a.m." */
 export const taxaTexto = (t: number) => `${t.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% a.m.`;
 const mesesTexto = (m: number) => (m === 1 ? '1 mês' : `${m} meses`);
@@ -50,16 +53,20 @@ export function propostaDoChat(ctx: Ctx, n: number): Proposta | null {
   const sabe = txt(ctx, id(n, 'sabe'));
   let parcela: number;
   let taxa: number;
+  let total: number;
   if (sabe === 'parcela' && respondeu(ctx, id(n, 'parcela'))) {
     parcela = num(ctx, id(n, 'parcela'));
     if (!(parcela > 0)) return null;
     taxa = taxaEmprestimo(valor, parcelas, parcela) ?? 100; // acima de 100% a.m. a validação não deixa passar
+    total = centavos(parcela * parcelas); // o que a pessoa paga de verdade
   } else if (sabe === 'taxa' && respondeu(ctx, id(n, 'taxa'))) {
     taxa = Math.max(0, num(ctx, id(n, 'taxa')));
     parcela = parcelaPrice(valor, parcelas, taxa);
+    total = taxa === 0 ? valor : centavos(parcela * parcelas); // sem juros paga o que pegou (o centavo da parcela não conta)
   } else return null;
-  const total = centavos(parcela * parcelas);
-  return { n, valor, parcelas, parcela, taxa, total, juros: centavos(Math.max(0, total - valor)) };
+  // taxa 0,00% é arredondamento da parcela: sem juros, pra fala, linha e lista dizerem a mesma coisa
+  const juros = taxa > 0 ? centavos(Math.max(0, total - valor)) : 0;
+  return { n, valor, parcelas, parcela, taxa, total, juros };
 }
 
 /** As propostas completas, em ordem. */
@@ -77,26 +84,39 @@ export const paraDe = (ctx: Ctx) => txt(ctx, 'para').trim().replace(/\s+/g, ' ')
 /* ---------- comparação ---------- */
 
 const mesmoValor = (ps: Proposta[]) => ps.every((p) => Math.round(p.valor) === Math.round(ps[0].valor));
-const ordenadas = (ps: Proposta[]) => {
-  const porTotal = mesmoValor(ps);
-  return [...ps].sort((a, b) => (porTotal ? a.total - b.total : a.taxa - b.taxa) || a.n - b.n);
-};
+/** Da melhor pra pior: pelo total (todas com o mesmo valor) ou pela taxa (valores diferentes). */
+const ordenadas = (ps: Proposta[], porTotal = mesmoValor(ps)) => [...ps].sort((a, b) => (porTotal ? a.total - b.total : a.taxa - b.taxa) || a.n - b.n);
 const quaseIgual = (a: Proposta, b: Proposta, porTotal: boolean) => (porTotal ? Math.abs(a.total - b.total) < 1 : Math.abs(a.taxa - b.taxa) < 0.005);
 
-/** A melhor entre 2 ou mais propostas (null com uma só ou quando as melhores empatam). */
-export function melhorProposta(ps: Proposta[]): Proposta | null {
-  if (ps.length < 2) return null;
-  const [a, b] = ordenadas(ps);
-  return quaseIgual(a, b, mesmoValor(ps)) ? null : a;
+/** As melhores entre 2 ou mais propostas: a que ganha, ou as que empatam com ela, em ordem (vazio com uma só). */
+export function melhoresPropostas(ps: Proposta[]): Proposta[] {
+  if (ps.length < 2) return [];
+  const porTotal = mesmoValor(ps);
+  const [a] = ordenadas(ps, porTotal);
+  return ps.filter((p) => quaseIgual(p, a, porTotal));
 }
 
-/** A fala que compara a proposta de agora com a melhor das anteriores. */
+/** A melhor, quando só uma ganha (null com uma proposta só ou com empate em primeiro). */
+export function melhorProposta(ps: Proposta[]): Proposta | null {
+  const m = melhoresPropostas(ps);
+  return m.length === 1 ? m[0] : null;
+}
+
+/** As que levam " · a melhor" no cartão: as melhores, menos quando todas empatam (aí nenhuma se destaca). */
+const marcadas = (ps: Proposta[]) => {
+  const m = melhoresPropostas(ps);
+  return m.length < ps.length ? m : [];
+};
+const numeros = (ps: Proposta[]) => ps.map((p) => p.n).join(' e ');
+
+/** A fala que compara a proposta de agora com a melhor das anteriores (pelo mesmo critério do veredito). */
 function comparacao(p: Proposta, anteriores: Proposta[]): string {
-  const ref = ordenadas(anteriores)[0];
-  if (mesmoValor([p, ref])) {
+  const porTotal = mesmoValor([...anteriores, p]);
+  const ref = ordenadas(anteriores, porTotal)[0];
+  if (porTotal) {
     const d = ref.total - p.total;
     if (Math.abs(d) < 1) return `Custa quase o mesmo que a proposta ${ref.n}.`;
-    return d > 0 ? `Essa sai ${brl(d)} mais barata que a proposta ${ref.n}.` : `Essa sai ${brl(-d)} mais cara que a proposta ${ref.n}.`;
+    return d > 0 ? `Essa sai ${reais(d)} mais barata que a proposta ${ref.n}.` : `Essa sai ${reais(-d)} mais cara que a proposta ${ref.n}.`;
   }
   const antes = 'Os valores são diferentes, então comparo pela taxa.';
   if (Math.abs(p.taxa - ref.taxa) < 0.005) return `${antes} É a mesma da proposta ${ref.n}.`;
@@ -105,16 +125,16 @@ function comparacao(p: Proposta, anteriores: Proposta[]): string {
 
 /* ---------- o parecer ---------- */
 
-const temJuros = (p: Proposta) => p.juros >= 0.5;
+const temJuros = (p: Proposta) => p.juros > 0;
 
 /** O que o Mathon acha da taxa (e da parcela, quando sabe quanto entra). */
 function opiniao(ctx: Ctx, p: Proposta): string {
   if (p.taxa > TAXA_CARA) {
     const meses = Math.ceil(p.valor / p.parcela);
-    return `Esse ouro sai caro. Se puder esperar ${mesesTexto(meses)} guardando ${brl(p.parcela)}, você compra sem pagar juros.`;
+    return `Esse ouro sai caro. Se puder esperar ${mesesTexto(meses)} guardando ${reais(p.parcela)}, você compra sem pagar juros.`;
   }
   const aperta = ctx.dados.renda > 0 && p.parcela > ctx.dados.renda * PARCELA_MAX_RENDA;
-  const aviso = `a parcela de ${brl(p.parcela)} passa de 30% do que entra por mês. Eu pegaria um valor menor.`;
+  const aviso = `a parcela de ${reais(p.parcela)} passa de 30% do que entra por mês. Eu pegaria um valor menor.`;
   if (!temJuros(p)) return `Confira se não tem tarifa ou seguro escondido no contrato. ${aperta ? `E ${aviso}` : 'E só assine se a parcela couber no seu mês.'}`;
   return `A taxa está dentro do comum. ${aperta ? `Mas ${aviso}` : 'Mesmo assim, só assine se a parcela couber no seu mês.'}`;
 }
@@ -123,7 +143,7 @@ function opiniao(ctx: Ctx, p: Proposta): string {
 export function falasDoParecer(ctx: Ctx, n: number): string[] {
   const p = propostaDoChat(ctx, n);
   if (!p) return ['Faltou algum número dessa proposta.', 'Toque numa resposta pra corrigir.'];
-  const custo = temJuros(p) ? `Você vai pagar ${brl(p.total)} por ${brl(p.valor)}. São ${brl(p.juros)} só de juros.` : `Você vai pagar ${brl(p.total)} por ${brl(p.valor)}. Não tem juros nessa conta.`;
+  const custo = `Você vai pagar ${reais(p.total)} por ${reais(p.valor)}. ${temJuros(p) ? `São ${reais(p.juros)} só de juros.` : 'Não tem juros nessa conta.'}`;
   const anteriores = propostasDoChat(ctx, n - 1);
   return [custo, opiniao(ctx, p), anteriores.length ? comparacao(p, anteriores) : ''].filter(Boolean);
 }
@@ -132,17 +152,20 @@ export function falasDoParecer(ctx: Ctx, n: number): string[] {
 export function parecerDoChat(ctx: Ctx) {
   const ps = propostasDoChat(ctx);
   const melhor = melhorProposta(ps);
+  const empatadas = melhor ? [] : marcadas(ps); // empate em primeiro, com outra atrás (2 de 3)
   const para = paraDe(ctx);
-  const linha = (p: Proposta) => `${p.parcelas}x de ${brl(p.parcela)} = ${brl(p.total)} · ${taxaTexto(p.taxa)}`;
+  const linha = (p: Proposta) => `${p.parcelas}x de ${reais(p.parcela)} = ${reais(p.total)} · ${taxaTexto(p.taxa)}`;
   const unica = ps.length === 1 ? ps[0] : null;
   const resumo = unica
-    ? `${brl(unica.valor)} em ${linha(unica)}`
+    ? `${reais(unica.valor)} em ${linha(unica)}`
     : melhor
-      ? `Proposta ${melhor.n} é a melhor de ${ps.length}: ${brl(melhor.total)} no total · ${taxaTexto(melhor.taxa)}`
-      : `As ${ps.length} propostas custam quase o mesmo`;
+      ? `Proposta ${melhor.n} é a melhor de ${ps.length}: ${reais(melhor.total)} no total · ${taxaTexto(melhor.taxa)}`
+      : empatadas.length
+        ? `Propostas ${numeros(empatadas)} empatam em primeiro entre as ${ps.length}`
+        : `As ${ps.length} propostas ${mesmoValor(ps) ? 'custam quase o mesmo' : 'têm quase a mesma taxa'}`;
   const card: ResultCard = {
-    label: unica ? 'Custo total' : 'A melhor proposta',
-    big: unica ? brl(unica.total) : melhor ? `Proposta ${melhor.n}` : 'Empate',
+    label: unica ? 'Custo total' : empatadas.length ? 'As melhores propostas' : 'A melhor proposta',
+    big: unica ? reais(unica.total) : melhor ? `Proposta ${melhor.n}` : empatadas.length ? `Propostas ${numeros(empatadas)}` : 'Empate',
     rows: [...ps.map((p): [string, string] => [`Proposta ${p.n}`, linha(p)]), ...(para ? [['Pra quê', para] as [string, string]] : [])],
   };
   const registro = {
@@ -169,7 +192,7 @@ function passosDaProposta(n: number): Passo[] {
         max: 10_000_000,
         sugestao: () => {
           const v = num(ctx, id(1, 'valor'));
-          return n > 1 && v > 0 ? { valor: v, rotulo: `${brl(v)} (o mesmo)` } : null;
+          return n > 1 && v > 0 ? { valor: v, rotulo: `${reais(v)} (o mesmo)` } : null;
         },
       }),
       proximo: id(n, 'parcelas'),
@@ -196,12 +219,13 @@ function passosDaProposta(n: number): Passo[] {
     {
       id: id(n, 'parcela'),
       falas: ['Qual o valor de cada parcela?'],
-      resposta: { tipo: 'dinheiro', min: 1, max: 10_000_000 },
+      resposta: { tipo: 'dinheiro', min: 0.01, max: 10_000_000 },
       validar: (v, ctx) => {
         const parcela = Number(v);
         const valor = num(ctx, id(n, 'valor'));
         const parcelas = num(ctx, id(n, 'parcelas'));
-        if (parcela * parcelas < valor - 1) return 'Assim você pagaria menos do que pegou. Confere o valor da parcela?';
+        // até 1 centavo a menos por parcela é arredondamento (3x de 333,33 por 1.000); mais que isso é engano
+        if (parcela * parcelas < valor - 0.01 * parcelas - 1e-9) return 'Assim você pagaria menos do que pegou. Confere o valor da parcela?';
         if (taxaEmprestimo(valor, parcelas, parcela) === null) return 'Com essa parcela, os juros passariam de 100% ao mês. Confere os números?';
         return null;
       },
@@ -244,12 +268,15 @@ const passos: Passo[] = [
   ...passosDaProposta(3),
   fim('fim', (ctx) => {
     const ps = propostasDoChat(ctx);
-    const melhor = melhorProposta(ps);
+    const melhores = melhoresPropostas(ps);
     const calma = 'Proposta boa não some em dois dias. Leia o contrato com calma antes de assinar.';
+    const cabe = 'Escolha a parcela que cabe melhor no seu mês.';
     if (ps.length < 2) return falas(ctx, ['Esse é o meu parecer, {nome}.', calma]);
     const porTotal = mesmoValor(ps);
-    if (melhor) return falas(ctx, [`${porTotal ? 'Pelo total' : 'Pela taxa'}, a proposta ${melhor.n} é a melhor, {nome}.`, calma]);
-    return falas(ctx, [porTotal ? 'As propostas custam quase o mesmo, {nome}.' : 'As taxas ficam quase iguais, {nome}.', 'Escolha a parcela que cabe melhor no seu mês.', calma]);
+    const criterio = porTotal ? 'Pelo total' : 'Pela taxa';
+    if (melhores.length === 1) return falas(ctx, [`${criterio}, a proposta ${melhores[0].n} é a melhor, {nome}.`, calma]);
+    if (melhores.length < ps.length) return falas(ctx, [`${criterio}, as propostas ${numeros(melhores)} empatam em primeiro, {nome}.`, cabe, calma]);
+    return falas(ctx, [porTotal ? 'As propostas custam quase o mesmo, {nome}.' : 'As taxas ficam quase iguais, {nome}.', cabe, calma]);
   }),
 ];
 
@@ -261,12 +288,12 @@ export const ROTEIRO_EMPRESTIMO: Roteiro = {
   passos,
   resultado: (ctx) => {
     const ps = propostasDoChat(ctx);
-    const melhor = melhorProposta(ps);
+    const melhores = marcadas(ps);
     const para = paraDe(ctx);
     return {
       titulo: 'Parecer do Mathon',
-      linhas: ps.map((p, i) => `${i + 1}. Proposta ${p.n}: ${brl(p.total)} no total · ${taxaTexto(p.taxa)}${melhor?.n === p.n ? ' · a melhor' : ''}`),
-      lista: [...(para ? [`Pra quê: ${para}`] : []), ...ps.map((p) => `Proposta ${p.n}: ${p.parcelas}x de ${brl(p.parcela)} · ${brl(p.juros)} de juros`)],
+      linhas: ps.map((p, i) => `${i + 1}. Proposta ${p.n}: ${reais(p.total)} no total · ${taxaTexto(p.taxa)}${melhores.includes(p) ? ' · a melhor' : ''}`),
+      lista: [...(para ? [`Pra quê: ${para}`] : []), ...ps.map((p) => `Proposta ${p.n}: ${p.parcelas}x de ${reais(p.parcela)} · ${temJuros(p) ? `${reais(p.juros)} de juros` : 'sem juros'}`)],
       agentes: ['mathon'],
       rodape: 'Estimativa com os números da proposta. Não é recomendação de crédito.',
       botao: 'Salvar parecer',
@@ -279,6 +306,7 @@ export const ROTEIRO_EMPRESTIMO: Roteiro = {
       missoes: [],
       ativar: ['mathon'],
       efeitos: () => {
+        if (!p.propostas.length) return; // nada pra salvar: não troca o parecer anterior por um vazio
         try {
           localStorage.setItem(PARECER_KEY, JSON.stringify(p.registro));
         } catch {

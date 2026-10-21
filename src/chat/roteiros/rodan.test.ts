@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { conferir, falasDoRoteiro, percorrer, respostaDe, rotuloDe, type RespostaDada, type Valor } from '../engine';
 import { dadosDeEstado } from '../dados';
 import type { Missao } from '../../missoes';
-import { DESTINO_KEY, dividir, fraseDaDivisao, lancamentos, linhaDoDestino, partesDoAjuste, percentuais, registroDoDestino, ROTEIRO_EXTRA, situacao, sugestao, valores } from './rodan';
+import { DESTINO_KEY, dividir, faltaDivida, faltaReserva, fraseDaDivisao, lancamentos, linhaDoDestino, maxPctDivida, partesDoAjuste, percentuais, registroDoDestino, ROTEIRO_EXTRA, situacao, sugestao, valores } from './rodan';
 
 const NOW = new Date('2026-10-21T15:00:00Z'); // hoje = 2026-10-21
 const base = (state: Record<string, string> = {}, nome = 'Ana') => ({ agente: 'rodan' as const, nome, dados: dadosDeEstado(state, NOW) });
@@ -70,6 +70,14 @@ const DIAG_COM_DIVIDA = { 'selos-wizard-progress': JSON.stringify({ data: { mont
 
 const COM_DIVIDA_E_RESERVA = estado([DIVIDA, RESERVA]);
 
+// já pagou R$ 2.700 dos R$ 3.000: faltam R$ 300 (ou R$ 300,40)
+const pago = (valor: number) => [{ mes: '2026-09', valor, em: '2026-09-10', origem: 'site' as const }];
+const DIVIDA_QUASE = missao({ ...DIVIDA, registros: pago(2700) });
+const DIVIDA_QUASE_CENTAVOS = missao({ ...DIVIDA, registros: pago(2699.6) });
+const DIVIDA_PAGA = missao({ ...DIVIDA, registros: pago(3000) }); // ainda ativa, mas sem saldo
+// a reserva de R$ 9.000 com R$ 8.500: faltam R$ 500
+const RESERVA_QUASE = missao({ ...RESERVA, valorInicial: 8500 });
+
 /* ---------- testes ---------- */
 
 describe('6.7 Rodan — dinheiro extra', () => {
@@ -134,7 +142,7 @@ describe('6.7 Rodan — dinheiro extra', () => {
     ]);
     const res = ROTEIRO_EXTRA.resultado!(fim.ctx);
     expect(res.linhas).toEqual(['1. R$ 1.350 pra reserva (comece a missão com o Arkad)', '2. R$ 150 pra você']);
-    expect(res.rodape).toBe('Ao lançar, o destino fica anotado. Quando a missão começar, é só guardar lá.');
+    expect(res.rodape).toBe('Ao lançar, o destino fica anotado. Quando a missão estiver ativa, é só registrar lá.');
     const c = ROTEIRO_EXTRA.concluir!(fim.ctx, 'x');
     expect(c).toMatchObject({ missoes: [], ativar: ['rodan'] });
     expect(lancamentos(fim.ctx)).toEqual([]);
@@ -237,7 +245,7 @@ describe('6.7 Rodan — dinheiro extra', () => {
     const res = ROTEIRO_EXTRA.resultado!(fim.ctx);
     expect(res.linhas).toEqual(['1. R$ 400 pra dívida (Sair das dívidas)', '2. R$ 200 pra reserva (comece a missão com o Arkad)', '3. R$ 200 pra investir (comece a missão com o Sharru Nada)']);
     expect(res.lista).toEqual(['R$ 400 pra dívida (Sair das dívidas)', 'R$ 200 pra reserva (comece a missão com o Arkad)', 'R$ 200 pra investir (comece a missão com o Sharru Nada)', 'R$ 200 pra você']);
-    expect(res.rodape).toBe('Ao lançar, as partes com missão entram nela neste mês. As outras ficam anotadas.');
+    expect(res.rodape).toBe('Ao lançar, as partes com missão ativa entram nela neste mês. As outras ficam anotadas.');
     expect(lancamentos(fim.ctx)).toEqual([{ missao: 'm-div', parte: 'divida', valor: 400 }]);
   });
 
@@ -322,6 +330,171 @@ describe('6.7 Rodan — dinheiro extra', () => {
       expect(res.linhas.length).toBeLessThanOrEqual(3);
       res.linhas.forEach((l, i) => expect(l.startsWith(`${i + 1}. `)).toBe(true));
       for (const v of fim.visitas) expect(falasDoRoteiro.falas(v.passo, v.ctx).length).toBeLessThanOrEqual(3);
+    }
+  });
+  it('dívida quase no fim: a dívida recebe só o que falta e o resto desce pra reserva', () => {
+    const fim = responder([['valor', 2000], ['origem', '13'], ['sugestao', 'usar']], estado([DIVIDA_QUASE, RESERVA]));
+    expect(faltaDivida(fim.ctx)).toBe(300);
+    expect(falasDe(fim, 'sugestao').slice(1)).toEqual(['Minha sugestão: R$ 300 pra dívida, R$ 1.500 pra reserva e R$ 200 pra você aproveitar sem culpa.', 'Com isso a sua dívida fica quitada. Que alívio!']);
+    expect(ROTEIRO_EXTRA.resultado!(fim.ctx).linhas).toEqual(['1. R$ 300 pra dívida (Sair das dívidas)', '2. R$ 1.500 pra reserva', '3. R$ 200 pra você']);
+    expect(lancamentos(fim.ctx)).toEqual([
+      { missao: 'm-div', parte: 'divida', valor: 300 },
+      { missao: 'm-res', parte: 'reserva', valor: 1500 },
+    ]);
+  });
+
+  it('dívida com centavos: quita certinho e a soma continua sendo o total', () => {
+    const p = ate([['valor', 2000], ['origem', '13']], estado([DIVIDA_QUASE_CENTAVOS, RESERVA]));
+    expect(faltaDivida(p.ctx)).toBe(300.4);
+    const v = sugestao(p.ctx);
+    expect(v).toEqual({ divida: 300.4, reserva: 1499.6, investir: 0, voce: 200 });
+    expect(v.divida + v.reserva + v.investir + v.voce).toBeCloseTo(2000, 6);
+  });
+
+  it('dívida só do diagnóstico: o teto é a soma das dívidas que o app conhece', () => {
+    const p = ate([['valor', 5000], ['origem', 'bonus']], DIAG_COM_DIVIDA);
+    expect(faltaDivida(p.ctx)).toBe(1500);
+    expect(sugestao(p.ctx)).toEqual({ divida: 1500, reserva: 3000, investir: 0, voce: 500 });
+    expect(falasAtuais(p)[2]).toBe('Com isso a sua dívida fica quitada. Que alívio!');
+  });
+
+  it('reserva quase completa: a reserva recebe o que falta e o resto vai pra investir (que entra no ajuste)', () => {
+    const p = ate([['valor', 1000], ['origem', '13']], estado([RESERVA_QUASE]));
+    expect(situacao(p.ctx)).toEqual({ temDivida: false, reservaCompleta: false });
+    expect(faltaReserva(p.ctx)).toBe(500);
+    expect(falasAtuais(p).slice(1)).toEqual(['Minha sugestão: R$ 500 pra reserva, R$ 400 pra investir e R$ 100 pra você aproveitar sem culpa.', 'Com isso a sua reserva fica completa, e o resto já pode trabalhar pra você.']);
+    const fim = responder([['valor', 1000], ['origem', '13'], ['sugestao', 'usar']], estado([RESERVA_QUASE]));
+    expect(ROTEIRO_EXTRA.resultado!(fim.ctx).linhas).toEqual(['1. R$ 500 pra reserva', '2. R$ 400 pra investir (comece a missão com o Sharru Nada)', '3. R$ 100 pra você']);
+    const a = ate([['valor', 1000], ['origem', '13'], ['sugestao', 'ajustar']], estado([RESERVA_QUASE]));
+    const r = respostaDe(a.atual!, a.ctx);
+    expect(r.tipo === 'divisao' && r.partes.map((x) => x.id)).toEqual(['reserva', 'investir', 'voce']);
+    expect(r.tipo === 'divisao' && r.inicial).toEqual({ reserva: 50, investir: 40, voce: 10 });
+  });
+
+  it('dívida quitada e reserva completa com o mesmo dinheiro: as quatro partes, três linhas e a lista', () => {
+    const fim = responder([['valor', 2000], ['origem', '13'], ['sugestao', 'usar']], estado([DIVIDA_QUASE, RESERVA_QUASE]));
+    expect(valores(fim.ctx)).toEqual({ divida: 300, reserva: 500, investir: 1000, voce: 200 });
+    expect(falasDe(fim, 'sugestao').slice(1)).toEqual([
+      'Minha sugestão: R$ 300 pra dívida, R$ 500 pra reserva, R$ 1.000 pra investir e R$ 200 pra você aproveitar sem culpa.',
+      'Com isso a dívida fica quitada e a reserva fica completa. Que passo!',
+    ]);
+    const res = ROTEIRO_EXTRA.resultado!(fim.ctx);
+    expect(res.linhas).toEqual(['1. R$ 300 pra dívida (Sair das dívidas)', '2. R$ 500 pra reserva', '3. R$ 1.000 pra investir (comece a missão com o Sharru Nada)']);
+    expect(res.lista).toHaveLength(4);
+    expect(res.lista![3]).toBe('R$ 200 pra você');
+  });
+
+  it('reserva completa e dívida quase no fim: o que passa da dívida vai pra investir', () => {
+    const p = ate([['valor', 1000], ['origem', '13']], estado([DIVIDA_QUASE, RESERVA_CONCLUIDA, INVESTIR]));
+    expect(sugestao(p.ctx)).toEqual({ divida: 300, reserva: 0, investir: 600, voce: 100 });
+    const fim = responder([['valor', 1000], ['origem', '13'], ['sugestao', 'usar']], estado([DIVIDA_QUASE, RESERVA_CONCLUIDA, INVESTIR]));
+    expect(lancamentos(fim.ctx)).toEqual([
+      { missao: 'm-div', parte: 'divida', valor: 300 },
+      { missao: 'm-inv', parte: 'investir', valor: 600 },
+    ]);
+  });
+
+  it('ajuste: a dívida aceita no máximo o % que quita; o % inicial sempre passa', () => {
+    const state = estado([DIVIDA_QUASE, RESERVA]);
+    const a = ate([['valor', 2000], ['origem', '13'], ['sugestao', 'ajustar']], state);
+    expect(maxPctDivida(a.ctx)).toBe(15);
+    const r = respostaDe(a.atual!, a.ctx);
+    expect(r.tipo === 'divisao' && r.inicial).toEqual({ divida: 15, reserva: 75, voce: 10 });
+    expect(conferir(a.atual!, (r as { inicial: Record<string, number> }).inicial, a.ctx)).toBeNull();
+    expect(conferir(a.atual!, { divida: 20, reserva: 70, voce: 10 }, a.ctx)).toBe('Pra quitar a dívida, faltam só R$ 300. Coloque até 15% nela e mande o resto pra outra parte.');
+    expect(conferir(a.atual!, { divida: 0, reserva: 90, voce: 10 }, a.ctx)).toBeNull();
+
+    // com centavos: 16% (R$ 320) é o primeiro que quita; a dívida recebe R$ 300,40 e a sobra fica com a pessoa
+    const c = ate([['valor', 2000], ['origem', '13'], ['sugestao', 'ajustar']], estado([DIVIDA_QUASE_CENTAVOS, RESERVA]));
+    expect(maxPctDivida(c.ctx)).toBe(16);
+    expect(conferir(c.atual!, { divida: 17, reserva: 73, voce: 10 }, c.ctx)).toBe('Pra quitar a dívida, faltam só R$ 300. Coloque até 16% nela e mande o resto pra outra parte.');
+    const fim = responder([['valor', 2000], ['origem', '13'], ['sugestao', 'ajustar'], ['ajuste', { divida: 16, reserva: 74, voce: 10 }]], estado([DIVIDA_QUASE_CENTAVOS, RESERVA]));
+    expect(valores(fim.ctx)).toEqual({ divida: 300.4, reserva: 1480, investir: 0, voce: 219.6 });
+
+    // o % inicial passa na validação em qualquer total
+    for (const total of [1, 7, 301, 999, 2000, 12345.67]) {
+      const x = ate([['valor', total], ['origem', '13'], ['sugestao', 'ajustar']], estado([DIVIDA_QUASE_CENTAVOS, RESERVA_QUASE]));
+      const rx = respostaDe(x.atual!, x.ctx);
+      expect(rx.tipo).toBe('divisao');
+      expect(conferir(x.atual!, (rx as { inicial: Record<string, number> }).inicial, x.ctx)).toBeNull();
+    }
+    // dívida maior que o total: qualquer % serve
+    expect(maxPctDivida(ate([['valor', 100]], COM_DIVIDA_E_RESERVA).ctx)).toBeNull();
+  });
+
+  it('missão pausada: a dívida ainda conta, mas não recebe; o cartão diz que está pausada', () => {
+    const pausada = missao({ ...DIVIDA, status: 'pausada' });
+    const fim = responder([['valor', 2000], ['origem', '13'], ['sugestao', 'usar']], estado([pausada, RESERVA]));
+    expect(situacao(fim.ctx).temDivida).toBe(true);
+    const res = ROTEIRO_EXTRA.resultado!(fim.ctx);
+    expect(res.linhas).toEqual(['1. R$ 1.260 pra dívida (Sair das dívidas, pausada)', '2. R$ 540 pra reserva', '3. R$ 200 pra você']);
+    expect(res.rodape).toBe('Ao lançar, as partes com missão ativa entram nela neste mês. As outras ficam anotadas.');
+    expect(lancamentos(fim.ctx)).toEqual([{ missao: 'm-res', parte: 'reserva', valor: 540 }]);
+
+    const reservaPausada = missao({ ...RESERVA, status: 'pausada' });
+    const r = responder([['valor', 1000], ['origem', '13'], ['sugestao', 'usar']], estado([reservaPausada]));
+    expect(ROTEIRO_EXTRA.resultado!(r.ctx).linhas).toEqual(['1. R$ 900 pra reserva (missão pausada)', '2. R$ 100 pra você']);
+    expect(ROTEIRO_EXTRA.resultado!(r.ctx).rodape).toBe('Ao lançar, o destino fica anotado. Quando a missão estiver ativa, é só registrar lá.');
+    expect(lancamentos(r.ctx)).toEqual([]);
+    // pausada já na meta: completa (a mesma regra do Sharru Nada)
+    expect(situacao(ate([['valor', 1000]], estado([missao({ ...RESERVA_CHEIA, status: 'pausada' })])).ctx).reservaCompleta).toBe(true);
+  });
+
+  it('missão de dívida ativa mas sem saldo: não conta como dívida', () => {
+    const p = ate([['valor', 1000], ['origem', '13']], estado([DIVIDA_PAGA, RESERVA]));
+    expect(faltaDivida(p.ctx)).toBe(0);
+    expect(situacao(p.ctx).temDivida).toBe(false);
+    expect(sugestao(p.ctx)).toEqual({ divida: 0, reserva: 900, investir: 0, voce: 100 });
+  });
+
+  it('editar uma resposta: voltar de "Ajustar" pra "Usar a sugestão" ignora o ajuste antigo; mudar o valor refaz tudo', () => {
+    const state = COM_DIVIDA_E_RESERVA;
+    const respostas: RespostaDada[] = [
+      { passo: 'valor', valor: 2000 },
+      { passo: 'origem', valor: '13' },
+      { passo: 'sugestao', valor: 'usar' },
+      { passo: 'ajuste', valor: { divida: 10, reserva: 10, voce: 80 } }, // sobrou da versão anterior
+    ];
+    const p = percorrer(ROTEIRO_EXTRA, respostas, base(state));
+    expect(p.fim).toBe(true);
+    expect(p.validas).toHaveLength(3);
+    expect(valores(p.ctx)).toEqual({ divida: 1260, reserva: 540, investir: 0, voce: 200 });
+
+    // o motor corta as respostas depois da editada: com o valor novo, a conversa segue da origem
+    const editada = percorrer(ROTEIRO_EXTRA, [{ passo: 'valor', valor: 1000 }], base(state));
+    expect(editada.atual?.id).toBe('origem');
+    const fim = responder([['valor', 1000], ['origem', '13'], ['sugestao', 'usar']], state);
+    expect(ROTEIRO_EXTRA.resultado!(fim.ctx).linhas[0]).toBe('1. R$ 630 pra dívida (Sair das dívidas)');
+  });
+
+  it('valores enormes e pequenos: R$ 1.000.000, R$ 1,50 e R$ 0,50', () => {
+    const grande = responder([['valor', 1_000_000], ['origem', '13'], ['sugestao', 'usar']]);
+    expect(falasDe(grande, 'origem')[0]).toBe('Que bom, Ana. R$ 1.000.000 a mais faz diferença.');
+    expect(ROTEIRO_EXTRA.resultado!(grande.ctx).linhas).toEqual(['1. R$ 900.000 pra reserva (comece a missão com o Arkad)', '2. R$ 100.000 pra você']);
+
+    const pequeno = ate([['valor', 1.5], ['origem', '13']]);
+    const v = sugestao(pequeno.ctx);
+    expect(v.divida + v.reserva + v.investir + v.voce).toBeCloseTo(1.5, 6);
+
+    const inicio = ate([]);
+    expect(conferir(inicio.atual!, 0.5, inicio.ctx)).toBe('Digite pelo menos R$ 1,00.');
+  });
+
+  it('em qualquer situação: a soma é o total, nada negativo e a dívida nunca passa do que falta', () => {
+    const estados = [{}, DIAG_COM_DIVIDA, COM_DIVIDA_E_RESERVA, estado([DIVIDA_QUASE, RESERVA_QUASE]), estado([DIVIDA_QUASE_CENTAVOS, RESERVA_CONCLUIDA]), estado([RESERVA_QUASE, INVESTIR]), estado([DIVIDA_PAGA])];
+    for (const state of estados) {
+      for (const total of [1, 1.5, 9, 301, 1000, 2345.67, 1_000_000]) {
+        const p = ate([['valor', total], ['origem', '13']], state);
+        const v = sugestao(p.ctx);
+        expect(v.divida + v.reserva + v.investir + v.voce).toBeCloseTo(total, 6);
+        expect(Math.min(v.divida, v.reserva, v.investir, v.voce)).toBeGreaterThanOrEqual(0);
+        expect(v.divida).toBeLessThanOrEqual(faltaDivida(p.ctx) + 0.005);
+        const ids = partesDoAjuste(p.ctx);
+        for (const parte of ['divida', 'reserva', 'investir', 'voce'] as const) if (v[parte] > 0) expect(ids).toContain(parte);
+        const pct = percentuais(v, total, ids);
+        expect(Object.values(pct).reduce((t, x) => t + x, 0)).toBe(100);
+        expect(falasDoRoteiro.falas(p.atual!, p.ctx).length).toBeLessThanOrEqual(3);
+      }
     }
   });
 });

@@ -5,6 +5,12 @@ import type { AgenteId, Roteiro } from '../engine';
 import { AGENTES_PRINCIPAIS, ONBOARDING, ROTEIRO_ONBOARDING } from './onboarding';
 import { ROTEIRO_RESERVA } from './arkad';
 import { ROTEIRO_DIVIDAS } from './dabasir';
+import { ROTEIRO_CONTAS } from './bansir';
+import { ROTEIRO_GASTOS } from './nomasir';
+import { ROTEIRO_EMPRESTIMO } from './mathon';
+import { ROTEIRO_EXTRA } from './rodan';
+import { ROTEIRO_INVESTIR } from './sharru';
+import { CHECKIN, ROTEIRO_CHECKIN } from './checkin';
 
 export type Parametros = Record<string, string>;
 type Fabrica = (agente: AgenteId, params: Parametros) => Roteiro | null;
@@ -13,14 +19,23 @@ const REGISTRO: Record<string, Fabrica> = {
   [ONBOARDING]: (a) => (AGENTES_PRINCIPAIS.includes(a) ? ROTEIRO_ONBOARDING(a) : null),
   reserva: () => ROTEIRO_RESERVA,
   dividas: () => ROTEIRO_DIVIDAS,
-  // Fase 4 em andamento: contas (Bansir), gastos (Nomasir), empréstimo (Mathon), extra (Rodan), investir (Sharru)
-  // e o check-in do mês entram aqui. Até lá, esses agentes abrem a página antiga deles.
+  contas: () => ROTEIRO_CONTAS,
+  gastos: () => ROTEIRO_GASTOS,
+  emprestimo: () => ROTEIRO_EMPRESTIMO,
+  extra: () => ROTEIRO_EXTRA,
+  investir: () => ROTEIRO_INVESTIR,
+  [CHECKIN]: (a, p) => ROTEIRO_CHECKIN(a, p.missao ?? '', p.mes ?? ''),
 };
 
 /** O roteiro "da casa" de cada agente (o que abre quando a pessoa toca nele). */
 export const ROTEIRO_DO_AGENTE: Partial<Record<AgenteId, string>> = {
   arkad: 'reserva',
   dabasir: 'dividas',
+  bansir: 'contas',
+  nomasir: 'gastos',
+  mathon: 'emprestimo',
+  rodan: 'extra',
+  sharru: 'investir',
 };
 
 /** O roteiro pedido (se ele vale pra esse agente); sem pedido, o do agente. */
@@ -33,4 +48,4 @@ export function roteiroPara(agente: AgenteId, pedido?: string | null, params: Pa
   return r;
 }
 
-export { ONBOARDING, AGENTES_PRINCIPAIS };
+export { ONBOARDING, AGENTES_PRINCIPAIS, CHECKIN };

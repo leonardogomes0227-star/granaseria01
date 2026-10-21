@@ -394,9 +394,15 @@ describe('6.9 Check-in do mês — mês que passou (até o dia 10)', () => {
     const manter = responder(SETEMBRO_DABASIR, [['como_foi', 'nao'], ['nao_deu', 'manter']]);
     expect(falasDe(manter.fim, 'manter_fim')[1]).toBe('Este mês é uma nova chance. Eu te lembro na hora de pagar.');
 
-    // um valor que não vence os juros (6% de R$ 3.000 = R$ 180) não passa
+    // abaixo das parcelas não passa
     const ajuste = ate(SETEMBRO_DABASIR, [['como_foi', 'nao'], ['nao_deu', 'ajustar']]);
-    expect(conferir(ajuste.atual!, 100, ajuste.ctx)).toBe('Com esse valor, os juros crescem mais rápido que o pagamento. Tente um valor um pouco maior.');
+    expect(conferir(ajuste.atual!, 100, ajuste.ctx)).toBe('As parcelas das suas dívidas somam R$ 200 por mês. Coloque pelo menos esse valor.');
+    expect(conferir(ajuste.atual!, 200, ajuste.ctx)).toBeNull();
+    // um valor que não vence os juros (10% de R$ 3.000 = R$ 300) também não
+    const cara = missao({ ...DIVIDA, dividas: [{ id: 'd1', nome: 'Cartão', saldo: 3000, parcela: 0, jurosMes: 10 }] });
+    const caro = ate({ ...SETEMBRO_DABASIR, state: estado([cara]) }, [['como_foi', 'nao'], ['nao_deu', 'ajustar']]);
+    expect(conferir(caro.atual!, 250, caro.ctx)).toBe('Com esse valor, os juros crescem mais rápido que o pagamento. Tente um valor um pouco maior.');
+    expect(conferir(caro.atual!, 500, caro.ctx)).toBeNull();
     const ajustou = responder(SETEMBRO_DABASIR, [['como_foi', 'nao'], ['nao_deu', 'ajustar'], ['novo_valor', 300]]);
     expect(falasDe(ajustou.fim, 'ajuste_fim')[0]).toBe('Pronto. Com R$ 300 por mês, sua previsão fica para jan/28.');
     const depois = aplicarCheckin(DIVIDA, mudancaDe(ajustou.fim.ctx, DIVIDA), '2026-09', '2026-10-05');

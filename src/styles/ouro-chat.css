@@ -1,1 +1,516 @@
 /* Ouro Antigo — chat. Vale só dentro do app (html.ouro). Carregado depois de src/ouro.css. */
+/* Design 6.5: cabeçalho translúcido com o medalhão, balões linho e cofre, "digitando" em ouro, campo de dinheiro em
+   Fraunces, chips com fio dourado e o cartão de resultado em cofre. Só o chat dos agentes (.cc-page.chat): o chat
+   antigo do coach (.cc-page sem .chat) fica como está. */
+
+html.ouro .cc-page.chat {
+  --chat-col: 720px;
+  --chat-topo: calc(64px + env(safe-area-inset-top));
+  background: var(--papel);
+  color: var(--tinta);
+}
+
+/* ---------- cabeçalho: translúcido, por cima da conversa ---------- */
+html.ouro .cc-page.chat .cc-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  display: block;
+  padding: env(safe-area-inset-top) 10px 0;
+  background: color-mix(in srgb, var(--papel) 78%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  backdrop-filter: blur(16px) saturate(1.15);
+  border-bottom: 1px solid var(--fio);
+}
+html.ouro .cc-page.chat .cc-head-linha { display: flex; align-items: center; gap: 6px; height: 64px; max-width: var(--chat-col); margin: 0 auto; }
+html.ouro .cc-page.chat .cc-close,
+html.ouro .cc-page.chat .cc-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--tinta-2);
+  cursor: pointer;
+  transition: background 0.18s var(--curva), color 0.18s var(--curva);
+}
+html.ouro .cc-page.chat .cc-close { color: var(--tinta); }
+@media (hover: hover) {
+  html.ouro .cc-page.chat .cc-close:hover,
+  html.ouro .cc-page.chat .cc-icon:not(:disabled):hover { background: var(--papel-escuro); color: var(--tinta); }
+}
+html.ouro .cc-page.chat .cc-icon:disabled { opacity: 0.35; cursor: default; }
+html.ouro .cc-page.chat .cc-icon[aria-expanded='true'] { background: var(--papel-escuro); color: var(--tinta); }
+html.ouro .cc-page.chat .cc-quem-foto { position: relative; flex: none; display: inline-flex; margin: 0 6px 0 2px; }
+html.ouro .cc-page.chat .cc-online {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--em-dia);
+  box-shadow: 0 0 0 2.5px var(--papel);
+}
+html.ouro .cc-page.chat .cc-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+html.ouro .cc-page.chat .cc-who b {
+  font-family: var(--fonte-display);
+  font-size: 19px;
+  line-height: 22px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  color: var(--tinta);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html.ouro .cc-page.chat .cc-who small { font-size: 12.5px; line-height: 16px; color: var(--tinta-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* menu ⋯ */
+html.ouro .cc-page.chat .cc-menu {
+  top: 50px;
+  right: 0;
+  z-index: 6;
+  min-width: 236px;
+  padding: 6px;
+  gap: 2px;
+  border-radius: 18px;
+  background: var(--linho);
+  border: 1px solid var(--fio);
+  box-shadow: var(--sombra-linho), 0 22px 44px -20px color-mix(in srgb, var(--tinta) 40%, transparent);
+  transform-origin: top right;
+  animation: cc-menu-entra 0.18s var(--curva) both;
+}
+html.ouro .cc-page.chat .cc-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--tinta);
+  font-size: 15px;
+  font-weight: 500;
+}
+html.ouro .cc-page.chat .cc-menu button svg { flex: none; color: var(--tinta-3); }
+@media (hover: hover) { html.ouro .cc-page.chat .cc-menu button:not(:disabled):hover { background: var(--papel-escuro); } }
+html.ouro .cc-page.chat .cc-menu button.danger,
+html.ouro .cc-page.chat .cc-menu button.danger svg { color: var(--estourou); }
+html.ouro .cc-page.chat .cc-menu button:disabled { opacity: 0.4; }
+@keyframes cc-menu-entra { from { opacity: 0; transform: translateY(-4px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+/* ---------- a conversa ---------- */
+html.ouro .cc-page.chat .cc-scroll {
+  padding: calc(var(--chat-topo) + 18px) 16px 18px;
+  scroll-padding-top: calc(var(--chat-topo) + 8px);
+  overscroll-behavior: contain;
+}
+html.ouro .cc-page.chat .cc-msgs { max-width: var(--chat-col); margin: 0 auto; gap: 6px; }
+html.ouro .cc-page.chat .cc-linha { gap: 10px; }
+html.ouro .cc-page.chat .cc-linha.agente.inicio { margin-top: 10px; }
+html.ouro .cc-page.chat .cc-linha.agente .medalhao { margin-bottom: 4px; }
+html.ouro .cc-page.chat .cc-linha.eu { margin: 8px 0; gap: 6px; }
+html.ouro .cc-page.chat .cc-avatar-vazio { width: 30px; }
+
+html.ouro .cc-page.chat .cc-bubble {
+  animation: none; /* quem anima é o framer-motion (mola) */
+  padding: 11px 15px;
+  border-radius: 20px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+html.ouro .cc-page.chat .cc-bubble.coach {
+  background: var(--linho);
+  color: var(--tinta);
+  border: 1px solid var(--fio);
+  border-bottom-left-radius: 6px;
+  box-shadow: var(--sombra-linho);
+}
+html.ouro .cc-page.chat .cc-bubble.erro {
+  background: color-mix(in srgb, var(--atencao) 10%, var(--linho));
+  border-color: color-mix(in srgb, var(--atencao) 38%, transparent);
+}
+html.ouro .cc-page.chat button.cc-bubble.me {
+  max-width: 85%;
+  min-height: 46px;
+  border: 0;
+  background: var(--cofre-900);
+  color: var(--linho);
+  border-bottom-right-radius: 6px;
+  font: inherit;
+  font-size: 15.5px;
+  font-weight: 500;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--linho) 10%, transparent), 0 8px 18px -12px color-mix(in srgb, var(--cofre-950) 70%, transparent);
+  transition: background 0.18s var(--curva);
+}
+@media (hover: hover) { html.ouro .cc-page.chat button.cc-bubble.me:hover { background: var(--cofre-800); } }
+html.ouro .cc-page.chat .cc-linha.editando .cc-bubble.me { outline: 2px dashed var(--ouro-500); outline-offset: 3px; }
+html.ouro .cc-page.chat .cc-editar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--ouro-300);
+  background: var(--linho);
+  color: var(--cofre-900);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--sombra-linho);
+}
+@media (hover: hover) { html.ouro .cc-page.chat .cc-editar:hover { background: color-mix(in srgb, var(--ouro-300) 14%, var(--linho)); } }
+
+/* "digitando…": três pontos dourados */
+html.ouro .cc-page.chat .cc-bubble.typing { display: inline-flex; align-items: center; gap: 5px; min-height: 46px; padding: 0 17px; }
+html.ouro .cc-page.chat .cc-bubble.typing i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ouro-500);
+  animation: cc-ponto-ouro 1.1s var(--curva) infinite;
+}
+html.ouro .cc-page.chat .cc-bubble.typing i:nth-child(2) { animation-delay: 0.16s; }
+html.ouro .cc-page.chat .cc-bubble.typing i:nth-child(3) { animation-delay: 0.32s; }
+@keyframes cc-ponto-ouro { 0%, 70%, 100% { opacity: 0.35; transform: none; } 35% { opacity: 1; transform: translateY(-3px); } }
+
+/* ---------- o campo embaixo (fixo, acima da área segura) ---------- */
+html.ouro .cc-page.chat .cc-base { position: relative; z-index: 3; flex: none; }
+html.ouro .cc-page.chat .cc-composer {
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--linho) 92%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--fio);
+  box-shadow: 0 -14px 30px -24px color-mix(in srgb, var(--tinta) 40%, transparent);
+}
+html.ouro .cc-page.chat .cc-composer > * { max-width: var(--chat-col); margin-left: auto; margin-right: auto; }
+html.ouro .cc-page.chat .cc-editbar {
+  gap: 10px;
+  padding: 6px max(16px, calc((100% - var(--chat-col)) / 2));
+  background: color-mix(in srgb, var(--ouro-300) 20%, var(--linho));
+  border-top: 1px solid color-mix(in srgb, var(--ouro-300) 55%, transparent);
+  color: var(--tinta);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+html.ouro .cc-page.chat .cc-editbar > span { display: inline-flex; align-items: center; gap: 6px; color: var(--ouro-700); }
+html.ouro .cc-page.chat .cc-editbar .link-btn { min-height: 44px; padding: 0 4px; background: none; border: 0; cursor: pointer; font: inherit; font-weight: 700; }
+
+html.ouro .cc-page.chat .cc-row { gap: 10px; align-items: center; }
+
+/* chips de resposta: linho com fio dourado, do lado da pessoa (o tocado vira o balão dela) */
+html.ouro .cc-page.chat .cc-options { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+html.ouro .cc-page.chat .cc-options button,
+html.ouro .cc-page.chat .cc-chip,
+html.ouro .cc-page.chat .cc-multi button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 46px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--ouro-300);
+  background: var(--linho);
+  color: var(--cofre-900);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  box-shadow: var(--sombra-linho);
+  transition: background 0.18s var(--curva), border-color 0.18s var(--curva), color 0.18s var(--curva);
+}
+@media (hover: hover) {
+  html.ouro .cc-page.chat .cc-options button:hover,
+  html.ouro .cc-page.chat .cc-chip:hover,
+  html.ouro .cc-page.chat .cc-multi button:hover { background: color-mix(in srgb, var(--ouro-300) 14%, var(--linho)); border-color: var(--ouro-500); color: var(--cofre-900); }
+}
+html.ouro .cc-page.chat .cc-options button.on,
+html.ouro .cc-page.chat .cc-multi button.on { background: var(--cofre-900); border-color: var(--cofre-900); color: var(--linho); }
+html.ouro .cc-page.chat .cc-chips { justify-content: center; gap: 8px; margin-bottom: 10px; }
+html.ouro .cc-page.chat .cc-chip { min-height: 44px; padding: 8px 16px; font-size: 14.5px; }
+html.ouro .cc-page.chat .cc-multi { justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
+html.ouro .cc-page.chat .cc-multi button { font-weight: 500; color: var(--tinta); border-color: var(--fio-forte); }
+html.ouro .cc-page.chat .cc-multi button[aria-pressed='true'] { font-weight: 600; }
+
+/* dinheiro e número: grande, em Fraunces, no centro; "R$" pequeno no alto */
+html.ouro .cc-page.chat .cc-grande {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: var(--linho);
+  border: 1px solid var(--fio-forte);
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--tinta) 6%, transparent);
+  cursor: text;
+  transition: border-color 0.18s var(--curva), box-shadow 0.18s var(--curva);
+}
+html.ouro .cc-page.chat .cc-grande:focus-within { border-color: var(--ouro-300); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ouro-300) 28%, transparent); }
+html.ouro .cc-page.chat .cc-grande .cc-rs { align-self: flex-start; margin-top: 11px; font-size: 13px; line-height: 1; font-weight: 600; letter-spacing: 0.02em; color: var(--ouro-700); }
+html.ouro .cc-page.chat .cc-grande .cc-sufixo { align-self: flex-end; margin-bottom: 15px; font-size: 14px; line-height: 1; font-weight: 600; color: var(--tinta-3); white-space: nowrap; }
+html.ouro .cc-page.chat .cc-grande .cc-input {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--fonte-display);
+  font-size: 28px;
+  line-height: 48px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 72;
+  font-variant-numeric: tabular-nums lining-nums;
+  text-align: center;
+  color: var(--tinta);
+}
+html.ouro .cc-page.chat .cc-grande .cc-input::placeholder { color: var(--tinta-3); opacity: 0.6; }
+/* o anel de foco fica na caixa toda (acima), não só no número */
+html.ouro .cc-page.chat .cc-grande .cc-input:focus-visible { outline: none !important; }
+
+/* campos comuns (texto, data, os da lista) */
+html.ouro .cc-page.chat .cc-input {
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid var(--fio-forte);
+  background: var(--linho);
+  color: var(--tinta);
+  font-size: 16px; /* 16px: o iPhone não dá zoom ao tocar */
+}
+html.ouro .cc-page.chat .cc-input::placeholder { color: var(--tinta-3); }
+html.ouro .cc-page.chat .cc-input:focus { border-color: var(--ouro-300); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ouro-300) 24%, transparent); }
+html.ouro .cc-page.chat .cc-input[type='date'] { font-variant-numeric: tabular-nums; }
+
+/* enviar: botão redondo cofre */
+html.ouro .cc-page.chat .cc-send { flex: none; width: 56px; height: 56px; min-height: 56px; padding: 0; border-radius: 50% !important; }
+html.ouro .cc-page.chat .btn-primary,
+html.ouro .cc-page.chat .btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+html.ouro .cc-page.chat .cc-wide { min-height: 52px; }
+
+/* dia do mês: grade de 7 */
+html.ouro .cc-page.chat .cc-composer > .cc-dias { max-width: 440px; }
+html.ouro .cc-page.chat .cc-dias { gap: 6px; }
+html.ouro .cc-page.chat .cc-dias button {
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--fio-forte);
+  background: var(--linho);
+  color: var(--tinta);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.18s var(--curva), border-color 0.18s var(--curva);
+}
+@media (hover: hover) { html.ouro .cc-page.chat .cc-dias button:hover { background: color-mix(in srgb, var(--ouro-300) 16%, var(--linho)); border-color: var(--ouro-300); color: var(--tinta); } }
+html.ouro .cc-page.chat .cc-dias button.on { background: var(--cofre-900); border-color: var(--cofre-900); color: var(--linho); }
+
+/* divisão em partes: réguas com a trilha preenchida em cofre */
+html.ouro .cc-page.chat .cc-divisao { display: flex; flex-direction: column; gap: 4px; }
+html.ouro .cc-page.chat .cc-divisao > .cc-slider { width: 100%; }
+html.ouro .cc-page.chat .cc-slider { display: flex; flex-direction: column; gap: 0; padding: 8px 14px 2px; border-radius: 16px; background: var(--linho); border: 1px solid var(--fio); }
+html.ouro .cc-page.chat .cc-slider > span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+html.ouro .cc-page.chat .cc-slider b { font-size: 15px; font-weight: 600; color: var(--tinta); }
+html.ouro .cc-page.chat .cc-slider small { font-size: 13px; font-weight: 600; color: var(--tinta-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.ouro .cc-page.chat .cc-slider input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 40px; margin: 0; background: transparent; cursor: pointer; }
+html.ouro .cc-page.chat .cc-slider input[type='range']::-webkit-slider-runnable-track { height: 6px; border-radius: 6px; background: linear-gradient(90deg, var(--cofre-900) var(--pct, 0%), var(--papel-escuro) var(--pct, 0%)); }
+html.ouro .cc-page.chat .cc-slider input[type='range']::-moz-range-track { height: 6px; border-radius: 6px; background: var(--papel-escuro); }
+html.ouro .cc-page.chat .cc-slider input[type='range']::-moz-range-progress { height: 6px; border-radius: 6px; background: var(--cofre-900); }
+html.ouro .cc-page.chat .cc-slider input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; margin-top: -10px; border-radius: 50%; background: var(--linho); border: 2px solid var(--ouro-500); box-shadow: var(--sombra-linho); }
+html.ouro .cc-page.chat .cc-slider input[type='range']::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: var(--linho); border: 2px solid var(--ouro-500); }
+html.ouro .cc-page.chat .cc-divisao .cc-row { margin-top: 8px; }
+
+/* lista (dívidas, contas): itens em linho, formulário limpo */
+html.ouro .cc-page.chat .cc-lista { max-height: 62vh; overflow-y: auto; }
+html.ouro .cc-page.chat .cc-itens { gap: 6px; }
+html.ouro .cc-page.chat .cc-itens li { gap: 4px; padding: 6px 6px 6px 14px; border-radius: 16px; background: var(--linho); border: 1px solid var(--fio); box-shadow: var(--sombra-linho); }
+html.ouro .cc-page.chat .cc-itens b { font-size: 15px; font-weight: 600; color: var(--tinta); overflow-wrap: anywhere; }
+html.ouro .cc-page.chat .cc-itens small { color: var(--tinta-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+html.ouro .cc-page.chat .cc-itens button { width: 44px; height: 44px; color: var(--tinta-3); }
+@media (hover: hover) { html.ouro .cc-page.chat .cc-itens button:hover { background: var(--papel-escuro); color: var(--tinta); } }
+html.ouro .cc-page.chat .cc-campo { gap: 6px; font-size: 13px; font-weight: 600; color: var(--tinta-2); }
+html.ouro .cc-page.chat .cc-campo small { color: var(--tinta-3); font-weight: 500; }
+html.ouro .cc-page.chat .cc-error { color: var(--estourou); font-size: 13.5px; }
+html.ouro .cc-page.chat .cc-lista .cc-row { flex-wrap: wrap; }
+html.ouro .cc-page.chat .cc-lista .cc-row > * { flex: 1 1 160px; }
+
+/* ---------- cartão de resultado: card cofre com filete, guilhochê e ornamento ---------- */
+html.ouro .cc-page.chat .cc-resultado.cofre {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 16px 0 8px;
+  padding: 24px 22px 20px;
+  border: 0;
+  border-radius: var(--raio-cofre);
+  background: var(--fundo-cofre);
+  box-shadow: var(--sombra-cofre);
+  color: var(--linho);
+  animation: none;
+}
+html.ouro .cc-page.chat .cc-resultado.cofre::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: calc(var(--raio-cofre) - 6px);
+  border: 1px solid var(--filete-ouro);
+  pointer-events: none;
+}
+html.ouro .cc-page.chat .cc-resultado.cofre > :not(.guilloche) { position: relative; z-index: 1; }
+html.ouro .cc-page.chat .cc-res-topo { display: flex; align-items: center; gap: 12px; min-width: 0; }
+html.ouro .cc-page.chat .cc-res-topo .sobrelinha { color: var(--ouro-300); min-width: 0; }
+html.ouro .cc-page.chat .cc-resultado .cc-faces { display: inline-flex; flex: none; padding-left: 4px; }
+html.ouro .cc-page.chat .cc-resultado .cc-faces .medalhao { box-shadow: 0 0 0 1.5px var(--ouro-300), 0 0 0 3.5px var(--cofre-900), 0 6px 14px -6px color-mix(in srgb, var(--cofre-950) 80%, transparent); }
+html.ouro .cc-page.chat .cc-resultado .cc-faces .medalhao + .medalhao { margin-left: -10px; }
+html.ouro .cc-page.chat .cc-res-titulo {
+  margin: 0;
+  font-family: var(--fonte-display);
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  color: var(--linho);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+html.ouro .cc-page.chat .cc-res-ornamento b { box-shadow: 0 0 0 2px var(--cofre-900), 0 0 0 3px var(--ouro-300); }
+html.ouro .cc-page.chat .cc-res-linhas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+html.ouro .cc-page.chat .cc-res-linhas li {
+  display: grid;
+  grid-template-columns: 2.7em minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px;
+  font-size: 16px;
+  line-height: 23px;
+  font-weight: 500;
+  color: var(--linho);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+html.ouro .cc-page.chat .cc-romano {
+  font-family: var(--fonte-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variation-settings: 'SOFT' 50, 'WONK' 0;
+  color: var(--ouro-300);
+}
+
+/* gráfico: barras simples, rótulo e valor em cima */
+html.ouro .cc-page.chat .cc-grafico {
+  list-style: none;
+  margin: 0;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--linho) 5%, transparent);
+  border: 1px solid var(--filete-ouro);
+}
+html.ouro .cc-page.chat .cc-grafico li { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+html.ouro .cc-page.chat .cc-grafico-rotulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; color: color-mix(in srgb, var(--linho) 74%, transparent); }
+html.ouro .cc-page.chat .cc-grafico-rotulo b { color: var(--linho); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html.ouro .cc-page.chat .cc-grafico-trilha { display: block; height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--linho) 10%, transparent); overflow: hidden; }
+html.ouro .cc-page.chat .cc-grafico-trilha i { display: block; height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--ouro-500), var(--ouro-300)); transform-origin: left center; }
+
+/* lista: linha do tempo com losangos dourados */
+html.ouro .cc-page.chat .cc-res-lista { list-style: none; margin: 0; padding: 4px 0 0; display: flex; flex-direction: column; border-top: 1px solid var(--filete-ouro); }
+html.ouro .cc-page.chat .cc-res-lista li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  padding: 8px 0 8px 22px;
+  font-size: 14px;
+  line-height: 20px;
+}
+html.ouro .cc-page.chat .cc-res-lista li::before { content: ''; position: absolute; left: 2px; top: 15px; z-index: 1; width: 7px; height: 7px; transform: rotate(45deg); background: var(--ouro-300); box-shadow: 0 0 0 2px var(--cofre-900); }
+html.ouro .cc-page.chat .cc-res-lista li::after { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--ouro-300) 30%, transparent); }
+html.ouro .cc-page.chat .cc-res-lista li:first-child::after { top: 18px; }
+html.ouro .cc-page.chat .cc-res-lista li:last-child::after { bottom: calc(100% - 18px); }
+html.ouro .cc-page.chat .cc-res-item { min-width: 0; color: var(--linho); font-weight: 500; overflow-wrap: anywhere; }
+html.ouro .cc-page.chat .cc-res-detalhe { margin-left: auto; color: color-mix(in srgb, var(--linho) 72%, transparent); font-variant-numeric: tabular-nums; text-align: right; }
+
+html.ouro .cc-page.chat .cc-resultado .cc-rodape { margin: 0; font-size: 12.5px; line-height: 18px; color: color-mix(in srgb, var(--linho) 64%, transparent); }
+
+/* botões: linho sólido (texto cofre) e um contorno fino */
+html.ouro .cc-page.chat .cc-resultado-acoes { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+@media (min-width: 560px) {
+  html.ouro .cc-page.chat .cc-resultado-acoes { flex-direction: row; }
+  html.ouro .cc-page.chat .cc-resultado-acoes .cc-botao-linho { flex: 1; }
+  html.ouro .cc-page.chat .cc-resultado-acoes .cc-botao-fio { flex: none; padding: 0 22px; }
+}
+html.ouro .cc-page.chat .cc-botao-linho {
+  min-height: 52px;
+  background: var(--linho) !important;
+  color: var(--cofre-900) !important;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--ouro-300), 0 12px 24px -14px color-mix(in srgb, var(--cofre-950) 90%, transparent) !important;
+}
+@media (hover: hover) { html.ouro .cc-page.chat .cc-botao-linho:not(:disabled):hover { background: color-mix(in srgb, var(--ouro-300) 18%, var(--linho)) !important; } }
+html.ouro .cc-page.chat .cc-botao-fio {
+  min-height: 52px;
+  background: transparent !important;
+  color: var(--linho) !important;
+  border: 1px solid color-mix(in srgb, var(--linho) 24%, transparent) !important;
+  font-weight: 600;
+}
+@media (hover: hover) { html.ouro .cc-page.chat .cc-botao-fio:not(:disabled):hover { background: color-mix(in srgb, var(--linho) 8%, transparent) !important; border-color: color-mix(in srgb, var(--linho) 40%, transparent) !important; } }
+html.ouro .cc-page.chat .cc-resultado :focus-visible { outline-color: var(--ouro-300) !important; outline-offset: 3px; }
+
+/* ---------- celular pequeno ---------- */
+@media (max-width: 380px) {
+  html.ouro .cc-page.chat .cc-head { padding-left: 6px; padding-right: 6px; }
+  html.ouro .cc-page.chat .cc-head-linha { gap: 4px; }
+  html.ouro .cc-page.chat .cc-who b { font-size: 18px; }
+  html.ouro .cc-page.chat .cc-resultado.cofre { padding: 22px 18px 18px; }
+}
+
+/* ---------- pouco movimento: nada pula, nada pisca ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html.ouro .cc-page.chat .cc-bubble.typing i { animation: none; opacity: 0.7; }
+  html.ouro .cc-page.chat .cc-menu { animation: none; }
+  html.ouro .cc-page.chat .cc-bubble,
+  html.ouro .cc-page.chat .cc-options button,
+  html.ouro .cc-page.chat .cc-chip,
+  html.ouro .cc-page.chat .cc-multi button,
+  html.ouro .cc-page.chat .cc-dias button,
+  html.ouro .cc-page.chat .cc-grande,
+  html.ouro .cc-page.chat .cc-close,
+  html.ouro .cc-page.chat .cc-icon { transition: none; }
+}

@@ -1,15 +1,52 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Check, Pencil, Plus, Send, X } from 'lucide-react';
 import { brl2, respostaDe, type Campo, type Ctx, type ItemLista, type Passo, type Valor } from '../../chat/engine';
 
-/* ---------- O campo fixo embaixo do chat: muda conforme o tipo de resposta (spec v2, seção 5) ---------- */
+/* ---------- O campo fixo embaixo do chat: muda conforme o tipo de resposta (spec v2, seção 5; design 6.5) ---------- */
+// voo: os chips (botões, sugestões, dias) levam um layoutId; o tocado "voa" até o balão da pessoa (ChatScreen).
+
+type Enviar = (v: Valor, voo?: string) => void;
 
 const centavos = (n: number | null | undefined) => (n === null || n === undefined || !Number.isFinite(n) ? '' : String(Math.round(n * 100)));
-const mostrar = (digits: string) => (digits === '' ? '' : `R$ ${(parseInt(digits, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+const numero = (digits: string) => (digits === '' ? '' : (parseInt(digits, 10) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const mostrar = (digits: string) => (digits === '' ? '' : `R$ ${numero(digits)}`);
 const limpa = (s: string) => s.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 11);
+/** Mola leve no toque (design 5); com pouco movimento o MotionConfig do chat desliga. */
+const TOQUE = { scale: 0.97 };
+/** O layoutId do chip (só quando o voo está ligado). */
+const idDoVoo = (voo: string | undefined, v: string | number) => (voo ? `${voo}-${v}` : undefined);
+/** Largura do campo grande: cresce com o número, e o "R$" fica colado nele, no centro. */
+const largura = (texto: string, minimo: number) => ({ width: `${Math.max(minimo, texto.length) + 0.4}ch` });
 
 /** Campo de dinheiro com máscara: o teclado numérico digita os centavos (1 → R$ 0,01; 1234 → R$ 12,34). */
-function Dinheiro({ valor, onChange, rotulo, autoFocus, onEnter }: { valor: string; onChange: (d: string) => void; rotulo: string; autoFocus?: boolean; onEnter?: () => void }) {
+function Dinheiro({ valor, onChange, rotulo, autoFocus, onEnter, grande }: { valor: string; onChange: (d: string) => void; rotulo: string; autoFocus?: boolean; onEnter?: () => void; grande?: boolean }) {
+  // o campo grande (resposta do chat): "R$" pequeno no alto e o valor em Fraunces, no centro
+  if (grande)
+    return (
+      <label className="cc-grande">
+        <span className="cc-rs" aria-hidden="true">
+          R$
+        </span>
+        <input
+          className="field-input cc-input"
+          inputMode="numeric"
+          autoComplete="off"
+          autoFocus={autoFocus}
+          aria-label={rotulo}
+          placeholder="0,00"
+          value={numero(valor)}
+          style={largura(numero(valor), 4)}
+          onChange={(e) => onChange(limpa(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onEnter?.();
+            }
+          }}
+        />
+      </label>
+    );
   return (
     <input
       className="field-input cc-input"
@@ -30,18 +67,18 @@ function Dinheiro({ valor, onChange, rotulo, autoFocus, onEnter }: { valor: stri
   );
 }
 
-export function Composer({ passo, ctx, inicial, onEnviar }: { passo: Passo; ctx: Ctx; inicial?: Valor; onEnviar: (v: Valor) => void }) {
+export function Composer({ passo, ctx, inicial, voo, onEnviar }: { passo: Passo; ctx: Ctx; inicial?: Valor; voo?: string; onEnviar: Enviar }) {
   const r = respostaDe(passo, ctx);
   if (r.tipo === 'nenhuma') return null;
-  if (r.tipo === 'dinheiro') return <ComposerDinheiro sugestao={r.sugestao?.(ctx) ?? null} inicial={typeof inicial === 'number' ? inicial : undefined} onEnviar={onEnviar} />;
+  if (r.tipo === 'dinheiro') return <ComposerDinheiro sugestao={r.sugestao?.(ctx) ?? null} inicial={typeof inicial === 'number' ? inicial : undefined} voo={voo} onEnviar={onEnviar} />;
   if (r.tipo === 'botoes')
     return (
       <div className="cc-composer">
         <div className="cc-options" role="group" aria-label="Escolha uma resposta">
           {r.opcoes.map((o) => (
-            <button key={o.valor} type="button" className={inicial === o.valor ? 'on' : ''} onClick={() => onEnviar(o.valor)}>
+            <motion.button key={o.valor} type="button" whileTap={TOQUE} layoutId={idDoVoo(voo, o.valor)} className={inicial === o.valor ? 'on' : ''} onClick={() => onEnviar(o.valor, idDoVoo(voo, o.valor))}>
               {o.rotulo}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
@@ -49,15 +86,15 @@ export function Composer({ passo, ctx, inicial, onEnviar }: { passo: Passo; ctx:
   if (r.tipo === 'multiplo') return <ComposerMultiplo opcoes={r.opcoes} inicial={Array.isArray(inicial) ? (inicial as string[]) : []} onEnviar={onEnviar} />;
   if (r.tipo === 'texto') return <ComposerTexto placeholder={r.placeholder} max={r.max} inicial={typeof inicial === 'string' ? inicial : ''} onEnviar={onEnviar} />;
   if (r.tipo === 'data') return <ComposerData min={r.min} max={r.max ?? ctx.dados.hoje} inicial={typeof inicial === 'string' ? inicial : ctx.dados.hoje} onEnviar={onEnviar} />;
-  if (r.tipo === 'dia') return <ComposerDia inicial={typeof inicial === 'number' ? inicial : ctx.dados.diaSalario ?? null} onEnviar={onEnviar} />;
-  if (r.tipo === 'numero') return <ComposerNumero min={r.min} max={r.max} decimais={r.decimais ?? 0} sufixo={r.sufixo} sugestoes={r.sugestoes} inicial={typeof inicial === 'number' ? inicial : undefined} onEnviar={onEnviar} />;
+  if (r.tipo === 'dia') return <ComposerDia inicial={typeof inicial === 'number' ? inicial : ctx.dados.diaSalario ?? null} voo={voo} onEnviar={onEnviar} />;
+  if (r.tipo === 'numero') return <ComposerNumero min={r.min} max={r.max} decimais={r.decimais ?? 0} sufixo={r.sufixo} sugestoes={r.sugestoes} inicial={typeof inicial === 'number' ? inicial : undefined} voo={voo} onEnviar={onEnviar} />;
   if (r.tipo === 'divisao')
     return <ComposerDivisao total={r.total} partes={r.partes} inicial={inicial && typeof inicial === 'object' && !Array.isArray(inicial) ? (inicial as Record<string, number>) : r.inicial} onEnviar={onEnviar} />;
   if (r.tipo !== 'lista') return null;
   return <ComposerLista campos={r.campos} rotuloItem={r.rotuloItem} inicial={Array.isArray(inicial) ? (inicial as ItemLista[]) : r.inicial ?? []} onEnviar={onEnviar} />;
 }
 
-function ComposerDinheiro({ sugestao, inicial, onEnviar }: { sugestao: { valor: number; rotulo: string } | null; inicial?: number; onEnviar: (v: Valor) => void }) {
+function ComposerDinheiro({ sugestao, inicial, voo, onEnviar }: { sugestao: { valor: number; rotulo: string } | null; inicial?: number; voo?: string; onEnviar: Enviar }) {
   const [digits, setDigits] = useState(centavos(inicial));
   const enviar = () => {
     if (digits !== '') onEnviar(parseInt(digits, 10) / 100);
@@ -71,14 +108,14 @@ function ComposerDinheiro({ sugestao, inicial, onEnviar }: { sugestao: { valor: 
       }}
     >
       {sugestao && (
-        <div className="cc-chips">
-          <button type="button" className="cc-chip" onClick={() => onEnviar(sugestao.valor)}>
+        <div className="cc-chips" role="group" aria-label="Sugestão">
+          <motion.button type="button" whileTap={TOQUE} layoutId={idDoVoo(voo, sugestao.valor)} className="cc-chip" onClick={() => onEnviar(sugestao.valor, idDoVoo(voo, sugestao.valor))}>
             {sugestao.rotulo}
-          </button>
+          </motion.button>
         </div>
       )}
       <div className="cc-row">
-        <Dinheiro valor={digits} onChange={setDigits} rotulo="Valor em reais" autoFocus onEnter={enviar} />
+        <Dinheiro valor={digits} onChange={setDigits} rotulo="Valor em reais" autoFocus onEnter={enviar} grande />
         <button type="submit" className="btn-primary cc-send" disabled={digits === ''} aria-label="Enviar">
           <Send size={18} />
         </button>
@@ -87,7 +124,7 @@ function ComposerDinheiro({ sugestao, inicial, onEnviar }: { sugestao: { valor: 
   );
 }
 
-function ComposerMultiplo({ opcoes, inicial, onEnviar }: { opcoes: { valor: string; rotulo: string }[]; inicial: string[]; onEnviar: (v: Valor) => void }) {
+function ComposerMultiplo({ opcoes, inicial, onEnviar }: { opcoes: { valor: string; rotulo: string }[]; inicial: string[]; onEnviar: Enviar }) {
   const [sel, setSel] = useState<string[]>(inicial);
   const toggle = (v: string) => setSel((s) => (s.includes(v) ? s.filter((x) => x !== v) : [...s, v]));
   return (
@@ -95,7 +132,7 @@ function ComposerMultiplo({ opcoes, inicial, onEnviar }: { opcoes: { valor: stri
       <div className="cc-multi" role="group" aria-label="Escolha uma ou mais">
         {opcoes.map((o) => (
           <button key={o.valor} type="button" aria-pressed={sel.includes(o.valor)} className={sel.includes(o.valor) ? 'on' : ''} onClick={() => toggle(o.valor)}>
-            {sel.includes(o.valor) && <Check size={15} />} {o.rotulo}
+            {sel.includes(o.valor) && <Check size={15} strokeWidth={2.2} aria-hidden="true" />} {o.rotulo}
           </button>
         ))}
       </div>
@@ -108,7 +145,7 @@ function ComposerMultiplo({ opcoes, inicial, onEnviar }: { opcoes: { valor: stri
   );
 }
 
-function ComposerTexto({ placeholder, max, inicial, onEnviar }: { placeholder: string; max: number; inicial: string; onEnviar: (v: Valor) => void }) {
+function ComposerTexto({ placeholder, max, inicial, onEnviar }: { placeholder: string; max: number; inicial: string; onEnviar: Enviar }) {
   const [t, setT] = useState(inicial);
   return (
     <form
@@ -128,7 +165,7 @@ function ComposerTexto({ placeholder, max, inicial, onEnviar }: { placeholder: s
   );
 }
 
-function ComposerData({ min, max, inicial, onEnviar }: { min?: string; max?: string; inicial: string; onEnviar: (v: Valor) => void }) {
+function ComposerData({ min, max, inicial, onEnviar }: { min?: string; max?: string; inicial: string; onEnviar: Enviar }) {
   const [d, setD] = useState(inicial);
   return (
     <form
@@ -148,7 +185,7 @@ function ComposerData({ min, max, inicial, onEnviar }: { min?: string; max?: str
   );
 }
 
-function ComposerNumero({ min, max, decimais, sufixo, sugestoes, inicial, onEnviar }: { min: number; max: number; decimais: number; sufixo?: string; sugestoes?: number[]; inicial?: number; onEnviar: (v: Valor) => void }) {
+function ComposerNumero({ min, max, decimais, sufixo, sugestoes, inicial, voo, onEnviar }: { min: number; max: number; decimais: number; sufixo?: string; sugestoes?: number[]; inicial?: number; voo?: string; onEnviar: Enviar }) {
   const [t, setT] = useState(inicial === undefined ? '' : String(inicial).replace('.', ','));
   const n = Number(t.replace(',', '.'));
   const ok = t.trim() !== '' && Number.isFinite(n);
@@ -161,25 +198,34 @@ function ComposerNumero({ min, max, decimais, sufixo, sugestoes, inicial, onEnvi
       }}
     >
       {sugestoes && sugestoes.length > 0 && (
-        <div className="cc-chips">
+        <div className="cc-chips" role="group" aria-label="Sugestões">
           {sugestoes.map((s) => (
-            <button key={s} type="button" className="cc-chip" onClick={() => onEnviar(s)}>
+            <motion.button key={s} type="button" whileTap={TOQUE} layoutId={idDoVoo(voo, s)} className="cc-chip" onClick={() => onEnviar(s, idDoVoo(voo, s))}>
               {String(s).replace('.', ',')}
               {sufixo ?? ''}
-            </button>
+            </motion.button>
           ))}
         </div>
       )}
       <div className="cc-row">
-        <input
-          className="field-input cc-input"
-          inputMode={decimais ? 'decimal' : 'numeric'}
-          autoFocus
-          aria-label={`Número de ${min} a ${max}`}
-          placeholder={sufixo ? `0${sufixo}` : '0'}
-          value={t}
-          onChange={(e) => setT(e.target.value.replace(decimais ? /[^\d,.]/g : /\D/g, '').slice(0, 8))}
-        />
+        {/* número grande no centro, com o sufixo pequeno ao lado (12x, 4,5% a.m.) */}
+        <label className="cc-grande">
+          <input
+            className="field-input cc-input"
+            inputMode={decimais ? 'decimal' : 'numeric'}
+            autoFocus
+            aria-label={`Número de ${min} a ${max}`}
+            placeholder="0"
+            value={t}
+            style={largura(t, 1)}
+            onChange={(e) => setT(e.target.value.replace(decimais ? /[^\d,.]/g : /\D/g, '').slice(0, 8))}
+          />
+          {sufixo && (
+            <span className="cc-sufixo" aria-hidden="true">
+              {sufixo.trim()}
+            </span>
+          )}
+        </label>
         <button type="submit" className="btn-primary cc-send" disabled={!ok} aria-label="Enviar">
           <Send size={18} />
         </button>
@@ -189,7 +235,7 @@ function ComposerNumero({ min, max, decimais, sufixo, sugestoes, inicial, onEnvi
 }
 
 /** Divide um valor em partes (%), sempre somando 100: mexer numa parte tira ou devolve das outras. */
-function ComposerDivisao({ total, partes, inicial, onEnviar }: { total: number; partes: { id: string; rotulo: string }[]; inicial: Record<string, number>; onEnviar: (v: Valor) => void }) {
+function ComposerDivisao({ total, partes, inicial, onEnviar }: { total: number; partes: { id: string; rotulo: string }[]; inicial: Record<string, number>; onEnviar: Enviar }) {
   const [pct, setPct] = useState<Record<string, number>>(() => ({ ...Object.fromEntries(partes.map((p) => [p.id, 0])), ...inicial }));
   const mudar = (id: string, novo: number) => {
     setPct((atual) => {
@@ -221,7 +267,16 @@ function ComposerDivisao({ total, partes, inicial, onEnviar }: { total: number; 
               {pct[p.id] ?? 0}% · {brl2(Math.round((total * (pct[p.id] ?? 0)) / 100))}
             </small>
           </span>
-          <input type="range" min={0} max={100} step={5} value={pct[p.id] ?? 0} onChange={(e) => mudar(p.id, Number(e.target.value))} aria-label={`${p.rotulo} em porcentagem`} />
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={pct[p.id] ?? 0}
+            onChange={(e) => mudar(p.id, Number(e.target.value))}
+            aria-label={`${p.rotulo} em porcentagem`}
+            style={{ ['--pct' as string]: `${pct[p.id] ?? 0}%` }}
+          />
         </label>
       ))}
       <div className="cc-row">
@@ -233,14 +288,14 @@ function ComposerDivisao({ total, partes, inicial, onEnviar }: { total: number; 
   );
 }
 
-function ComposerDia({ inicial, onEnviar }: { inicial: number | null; onEnviar: (v: Valor) => void }) {
+function ComposerDia({ inicial, voo, onEnviar }: { inicial: number | null; voo?: string; onEnviar: Enviar }) {
   return (
     <div className="cc-composer">
       <div className="cc-dias" role="group" aria-label="Escolha o dia do mês">
         {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-          <button key={d} type="button" className={inicial === d ? 'on' : ''} onClick={() => onEnviar(d)} aria-label={`Dia ${d}`}>
+          <motion.button key={d} type="button" whileTap={TOQUE} layoutId={idDoVoo(voo, d)} className={inicial === d ? 'on' : ''} onClick={() => onEnviar(d, idDoVoo(voo, d))} aria-label={`Dia ${d}`}>
             {d}
-          </button>
+          </motion.button>
         ))}
       </div>
     </div>
@@ -248,7 +303,7 @@ function ComposerDia({ inicial, onEnviar }: { inicial: number | null; onEnviar: 
 }
 
 /** Lista (ex.: as dívidas): adicionar várias, editar e tirar, e "Pronto". */
-function ComposerLista({ campos, rotuloItem, inicial, onEnviar }: { campos: Campo[]; rotuloItem: string; inicial: ItemLista[]; onEnviar: (v: Valor) => void }) {
+function ComposerLista({ campos, rotuloItem, inicial, onEnviar }: { campos: Campo[]; rotuloItem: string; inicial: ItemLista[]; onEnviar: Enviar }) {
   const vazio = (): Record<string, string> => Object.fromEntries(campos.map((c) => [c.id, '']));
   const [itens, setItens] = useState<ItemLista[]>(inicial);
   const [form, setForm] = useState<Record<string, string>>(() => (inicial.length ? vazio() : vazio()));
