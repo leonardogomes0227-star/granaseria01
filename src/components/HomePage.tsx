@@ -28,6 +28,7 @@ import { abrirAnotar } from '../lib/anotar';
 import { Guilloche } from './ui/Guilloche';
 import { Medalhao } from './ui/Medalhao';
 import { Valor } from './ui/Valor';
+import { Moeda } from './ui/Moeda';
 import { mesesGuardados, sequencia } from '../lib/sequencia';
 import { mensagemDaSemana } from '../lib/mensagemSemana';
 import { fraseAgente } from '../lib/mensagensAgente';
@@ -432,6 +433,35 @@ function Welcome({ resume, onStart, onResume }: { resume: number | null; onStart
   );
 }
 
+/** Primeira vez no app: um convite só, com o Arkad, e o anotar. */
+function ConviteNovo() {
+  const info = infoAgente('arkad');
+  return (
+    <section className="home-hero cofre convite-novo" aria-label="Comece por aqui">
+      <Guilloche />
+      <span className="sobrelinha">Comece por aqui</span>
+      <div className="convite-novo-quem">
+        <Medalhao id="arkad" nome={info.nome} tamanho={64} />
+        <span>
+          <b>Vamos montar o seu plano?</b>
+          <small>Uma conversa rápida com o {info.nome}. Em 3 minutos você sabe o que fazer hoje.</small>
+        </span>
+      </div>
+      <div className="convite-novo-acoes">
+        <Link className="btn-linho" to="/agentes/arkad/chat?roteiro=onboarding">
+          <MessageCircle size={17} /> Conversar com o {info.nome}
+        </Link>
+        <button type="button" className="btn-vidro" onClick={() => abrirAnotar({ origem: 'inicio' })}>
+          <Plus size={17} /> Anotar um gasto
+        </button>
+      </div>
+      <Link to="/coach" className="convite-novo-outro">
+        Prefiro escolher outro agente <ChevronRight size={14} />
+      </Link>
+    </section>
+  );
+}
+
 /** Entrada do coach em chat: um recurso extra, que não substitui nenhuma tela. */
 function CoachEntry() {
   const { plano } = useCoach();
@@ -474,12 +504,33 @@ function Inicio({ resume, hasDiagnosis, onStart, onResume, onOpenTool }: { resum
   const [painel, setPainel] = useState<PainelData | null>(null);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-    void fetchPainel()
-      .then(setPainel)
-      .catch(() => undefined)
-      .finally(() => setLoaded(true));
+    const carregar = () =>
+      void fetchPainel()
+        .then(setPainel)
+        .catch(() => undefined)
+        .finally(() => setLoaded(true));
+    carregar();
+    // anotou pela folha do "+ Anotar": o card recalcula na hora
+    window.addEventListener('gs-lancamentos', carregar);
+    return () => window.removeEventListener('gs-lancamentos', carregar);
   }, []);
   const name = primeiroNome(getName());
+  const missoes = useArmazem(lerMissoes);
+  const eu = useArmazem(lerEu);
+  const tasks = useTasks();
+  const bills = useBills();
+  const temLancamento = Boolean(painel && (painel.month.incomes.length > 0 || painel.month.expenses.length > 0));
+  // pessoa nova (spec 12): só o convite pra montar o plano com o Arkad e o botão de anotar
+  const novo = loaded && resume === null && !hasDiagnosis && missoes.length === 0 && !eu.onboardingConcluido && loadChosen().length === 0 && tasks.length === 0 && bills.length === 0 && !temLancamento;
+  if (novo)
+    return (
+      <>
+        <PageHead title={name ? `Oi, ${name}` : 'Oi!'} />
+        <div className="home-stack">
+          <ConviteNovo />
+        </div>
+      </>
+    );
   return (
     <>
       <PageHead title={name ? `Oi, ${name}` : 'Oi!'} right={<ChipSequencia />} />
@@ -497,6 +548,14 @@ function Inicio({ resume, hasDiagnosis, onStart, onResume, onOpenTool }: { resum
         <MissoesAtivas />
         {resume === null && <AgentsPanel painel={painel} hasDiagnosis={hasDiagnosis} onStart={onStart} onOpenTool={onOpenTool} />}
         <MensagemSemana painel={painel} />
+        <Link to="/selos" className="selos-link">
+          <Moeda tamanho={30} />
+          <span>
+            <b>Meus selos</b>
+            <small>As conquistas do seu caminho</small>
+          </span>
+          <ChevronRight size={18} aria-hidden="true" />
+        </Link>
       </div>
     </>
   );

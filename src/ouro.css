@@ -440,3 +440,27 @@ html.ouro .agent-live.create { padding-bottom: 12px; }
 .semana-balao > span { display: block; margin-top: 6px; font-size: 12px; font-weight: 600; color: var(--tinta-3); }
 .semana-balao > span::before { content: '— '; }
 .hoje-acao .link-btn { align-self: center; }
+
+/* link pros selos, no fim da Início */
+.selos-link { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 12px 16px; border-radius: 20px; border: 1px solid var(--fio); background: var(--linho); box-shadow: var(--sombra-linho); color: var(--tinta); text-decoration: none; }
+.selos-link > span { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.selos-link b { font-family: var(--fonte-display); font-weight: 500; font-size: 17px; }
+.selos-link small { color: var(--tinta-3); font-size: 13px; }
+.selos-link > svg:last-child { color: var(--tinta-3); }
+@media (hover: hover) { .selos-link:hover { border-color: rgba(184, 137, 47, 0.4); } }
+
+/* primeira vez: o convite com o Arkad (spec 12) */
+html.ouro .convite-novo { gap: 14px; padding: 24px 22px 20px; }
+html.ouro .convite-novo .sobrelinha { color: rgba(217, 183, 106, 0.85); }
+.convite-novo-quem { display: flex; align-items: center; gap: 16px; }
+.convite-novo-quem > span { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.convite-novo-quem b { font-family: var(--fonte-display); font-size: 26px; line-height: 30px; font-weight: 500; letter-spacing: -0.01em; color: var(--linho); }
+.convite-novo-quem small { font-size: 15px; line-height: 22px; color: rgba(255, 253, 248, 0.76); }
+.convite-novo-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.btn-linho, .btn-vidro { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 20px; border-radius: var(--raio-botao); font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform 0.12s var(--curva), background 0.18s var(--curva); }
+.btn-linho { flex: 1 1 220px; border: 0; background: var(--linho); color: var(--cofre-900); box-shadow: 0 0 0 1px var(--ouro-300), 0 8px 18px -10px rgba(0, 0, 0, 0.6); }
+.btn-vidro { flex: 1 1 160px; border: 1px solid rgba(255, 253, 248, 0.16); background: rgba(255, 253, 248, 0.08); color: var(--linho); }
+.btn-linho:active, .btn-vidro:active { transform: scale(0.97); }
+@media (hover: hover) { .btn-vidro:hover { background: rgba(255, 253, 248, 0.14); } }
+.convite-novo-outro { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: rgba(255, 253, 248, 0.7); font-size: 14px; font-weight: 600; text-decoration: none; }
+@media (hover: hover) { .convite-novo-outro:hover { color: var(--linho); } }
