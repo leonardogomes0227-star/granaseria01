@@ -258,3 +258,68 @@ html.ouro[data-tema='escuro'] body::after { mix-blend-mode: screen; opacity: 0.0
 @media (prefers-reduced-motion: reduce) {
   .btn-ouro, .ouro-foil, html.ouro .toast, .toast-tempo i { animation: none !important; }
 }
+
+/* ==========================================================================
+   Item 2 — navegação (6.9)
+   ========================================================================== */
+.brand-ouro { display: none; }
+html.ouro .brand-antiga { display: none; }
+html.ouro .brand-ouro { display: block; filter: drop-shadow(0 1px 1px rgba(138, 100, 32, 0.35)); }
+
+html.ouro .shell-top {
+  background: rgba(246, 242, 234, 0.8);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--fio);
+}
+html.ouro .shell-brand span { font-family: var(--fonte-display); font-size: 20px; font-weight: 600; letter-spacing: -0.01em; font-variation-settings: 'SOFT' 50, 'WONK' 0; color: var(--tinta); }
+html.ouro .shell-links a { position: relative; color: var(--tinta-2); font-weight: 600; }
+html.ouro .shell-links a:hover { color: var(--tinta); }
+html.ouro .shell-links a.on { background: var(--papel-escuro); color: var(--tinta); }
+html.ouro .shell-links a.on::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--ouro-500); }
+html.ouro .shell-me { border-color: var(--fio); background: var(--linho); }
+html.ouro .shell-avatar { background: var(--cofre-900); color: var(--linho); font-family: var(--fonte-display); font-weight: 600; }
+html.ouro .shell-login { background: var(--cofre-900); color: var(--linho); }
+
+@media (max-width: 760px) {
+  /* espaço pra barra flutuante não cobrir o fim da página */
+  html.ouro .shell-foot { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+  html.ouro .shell-bottom.flutuante {
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    grid-template-columns: 1fr 1fr 72px 1fr 1fr;
+    align-items: center;
+    padding: 6px;
+    border: 1px solid var(--fio);
+    border-radius: 24px;
+    background: rgba(255, 253, 248, 0.86);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 12px 32px -12px rgba(26, 24, 20, 0.28), 0 2px 6px rgba(26, 24, 20, 0.06);
+  }
+  html.ouro .shell-bottom.flutuante a { min-height: 48px; justify-content: center; gap: 2px; padding: 6px 2px; border-radius: 18px; color: var(--tinta-3); }
+  /* inativos só o ícone; o ativo mostra o rótulo */
+  html.ouro .shell-bottom.flutuante a span { display: none; font-size: 11px; font-weight: 600; }
+  html.ouro .shell-bottom.flutuante a.on { color: var(--cofre-900); background: transparent; }
+  html.ouro .shell-bottom.flutuante a.on span { display: block; }
+  html.ouro .nav-anotar {
+    justify-self: center;
+    width: 56px;
+    height: 56px;
+    margin-top: -24px; /* sobe 12px além da barra */
+    border-radius: 50%;
+    border: 1.5px solid var(--ouro-300);
+    background: var(--fundo-cofre);
+    color: var(--linho);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 10px 22px -8px rgba(15, 42, 32, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    transition: transform 0.15s var(--curva);
+  }
+  html.ouro .nav-anotar:active { transform: scale(0.94); }
+  /* o toast sobe acima da barra flutuante */
+  html.ouro .toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+}
