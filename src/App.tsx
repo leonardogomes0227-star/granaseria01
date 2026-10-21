@@ -18,17 +18,8 @@ import { PlanTracker } from './components/PlanTracker';
 import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { HomePage } from './components/HomePage';
-import { AgentsSection } from './components/AgentsSection';
 import { AppShell, PageHead } from './components/AppShell';
-import { CoachHome } from './components/CoachHome';
-import { CoachPick } from './components/CoachPick';
-import { CoachChat } from './components/CoachChat';
-import { ChatScreen } from './components/chat/ChatScreen';
 import { Toaster } from './components/ui/Toast';
-import { AnotarSheet } from './components/AnotarSheet';
-import { CelebracaoHost } from './components/ui/Celebracao';
-import { PerfilPage } from './components/perfil/PerfilPage';
-import { SelosPage } from './components/selos/SelosPage';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -38,7 +29,21 @@ import { useSession } from './account';
 import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
-import { PainelPage } from './components/PainelPage';
+import { MeuMes } from './gs/MeuMes';
+import { Plano } from './gs/Plano';
+import { Dividas } from './gs/Dividas';
+import { PossoComprar } from './gs/PossoComprar';
+import { Assinaturas } from './gs/Assinaturas';
+import { Reserva } from './gs/Reserva';
+import { Renda } from './gs/Renda';
+import { Emprestimos } from './gs/Emprestimos';
+import { Extras } from './gs/Extras';
+import { Investir } from './gs/Investir';
+import { Assistentes } from './gs/Assistentes';
+import { MeusDados } from './gs/MeusDados';
+import { Sobre } from './gs/Sobre';
+import { Porteiro } from './gs/Porteiro';
+import { ErroGlobal } from './gs/ErroGlobal';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
 import { RichDadTool } from './components/RichDadTool';
@@ -46,10 +51,6 @@ import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
-import { limparMesesFuturos } from './lib/mesesFuturos';
-import { checarVirada } from './lib/virada';
-import { AgentPage } from './components/AgentPage';
-import { getAgent } from './agents';
 
 // recomeço do plano (src/reset.ts): o plano antigo deste navegador sai uma vez, antes de qualquer coisa ler ele
 try {
@@ -59,20 +60,6 @@ try {
   }
 } catch {
   // navegador sem localStorage: não há plano guardado
-}
-
-// nunca mês futuro (spec v2, regra 0.6): o que foi fechado ou registrado antes da hora sai (fica um backup)
-try {
-  const keys = ['selos-tracking', 'gs-guardado', 'gs-contas', 'gs-futuros-removidos'];
-  const local: Record<string, string> = {};
-  for (const k of keys) {
-    const v = localStorage.getItem(k);
-    if (v !== null) local[k] = v;
-  }
-  const clean = limparMesesFuturos(local);
-  if (clean.changed) for (const [k, v] of Object.entries(clean.state)) localStorage.setItem(k, v);
-} catch {
-  // navegador sem localStorage
 }
 
 // o link do WhatsApp (?t=…) vira login antes de o roteador ler o endereço
@@ -199,21 +186,9 @@ function App() {
     void startSync(session);
   }, [session]);
 
-  // dia/mês novo com o app aberto: as contas do mês recomeçam e as telas se atualizam
-  useEffect(() => {
-    checarVirada();
-    const t = window.setInterval(() => checarVirada(), 60_000);
-    const onVolta = () => document.visibilityState === 'visible' && checarVirada();
-    document.addEventListener('visibilitychange', onVolta);
-    return () => {
-      window.clearInterval(t);
-      document.removeEventListener('visibilitychange', onVolta);
-    };
-  }, []);
-
   // navegador ligado ao WhatsApp pelo link do painel: mantém tudo salvo nos dois lados, em qualquer página
   useEffect(() => {
-    if (!['/painel', '/mes', '/plano', '/meu-mes', '/missoes'].includes(location.pathname)) void startPainelSync().catch(() => undefined);
+    void startPainelSync().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez ao abrir o site (o /painel liga sozinho)
   }, []);
 
@@ -271,106 +246,24 @@ function App() {
             </Titled>
           }
         />
-        <Route
-          path="/mes"
-          element={
-            <Titled title="Meu mês">
-              <AppShell>
-                <LoginGate what="o seu mês">
-                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/meu-mes"
-          element={
-            <Titled title="Meu mês">
-              <AppShell>
-                <LoginGate what="o seu mês">
-                  <PainelPage section="mes" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/plano"
-          element={
-            <Titled title="Seu plano">
-              <AppShell>
-                <LoginGate what="o seu plano">
-                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/missoes"
-          element={
-            <Titled title="Seu plano">
-              <AppShell>
-                <LoginGate what="o seu plano">
-                  <PainelPage section="plano" data={data} onStart={startWizard} onOpenTool={openTool} />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
+        <Route path="/mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
+        <Route path="/meu-mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
+        <Route path="/plano" element={<Pagina titulo="Plano" o="o seu plano"><Plano /></Pagina>} />
+        <Route path="/plano/dividas" element={<Pagina titulo="Quitar dívidas" o="as suas dívidas"><Dividas /></Pagina>} />
+        <Route path="/plano/comprar" element={<Pagina titulo="Posso comprar isso?" o="a ferramenta"><PossoComprar /></Pagina>} />
+        <Route path="/plano/assinaturas" element={<Pagina titulo="Gastos escondidos" o="as suas assinaturas"><Assinaturas /></Pagina>} />
+        <Route path="/plano/reserva" element={<Pagina titulo="Reserva" o="a sua reserva"><Reserva /></Pagina>} />
+        <Route path="/plano/renda" element={<Pagina titulo="Liberdade de renda" o="a ferramenta"><Renda /></Pagina>} />
+        <Route path="/plano/emprestimos" element={<Pagina titulo="Empréstimos" o="a ferramenta"><Emprestimos /></Pagina>} />
+        <Route path="/plano/extras" element={<Pagina titulo="Dinheiro extra" o="a ferramenta"><Extras /></Pagina>} />
+        <Route path="/investir" element={<Pagina titulo="Investir" o="a aba Investir"><Investir /></Pagina>} />
+        <Route path="/assistentes" element={<Pagina titulo="Assistentes" o="os seus assistentes"><Assistentes /></Pagina>} />
+        <Route path="/dados" element={<Pagina titulo="Meus dados" o="os seus dados"><MeusDados /></Pagina>} />
+        <Route path="/sobre" element={<Pagina titulo="Sobre e avisos" o="" aberto><Sobre /></Pagina>} />
         <Route path="/painel" element={<PainelRedirect />} />
-        <Route path="/coach" element={<Titled title="Seu coach"><CoachPick /></Titled>} />
-        <Route path="/coach/chat" element={<Titled title="Conversa com o coach"><CoachChat /></Titled>} />
-        <Route path="/coach/plano" element={<Titled title="Plano com o coach"><CoachHome /></Titled>} />
-        <Route path="/agentes/:id/chat" element={<Titled title="Conversa"><ChatScreen /></Titled>} />
-        <Route
-          path="/conselheiros"
-          element={
-            <Titled title="Agentes">
-              <AppShell>
-                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
-                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/agentes"
-          element={
-            <Titled title="Agentes">
-              <AppShell>
-                <PageHead title="Agentes" sub="Escolha só os que fazem sentido pra você." />
-                <AgentsSection hasDiagnosis={Boolean(savedProgress && savedProgress.step >= 7)} />
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/perfil"
-          element={
-            <Titled title="Perfil">
-              <AppShell>
-                <LoginGate what="o seu perfil">
-                  <PerfilPage />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route
-          path="/selos"
-          element={
-            <Titled title="Meus selos">
-              <AppShell>
-                <LoginGate what="os seus selos">
-                  <SelosPage />
-                </LoginGate>
-              </AppShell>
-            </Titled>
-          }
-        />
-        <Route path="/conselheiros/:id" element={<AgentRoute data={data} onOpenTool={openTool} />} />
+        {['/missoes', '/conselheiros', '/agentes', '/perfil', '/selos', '/coach', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
+          <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/plano' : de === '/perfil' ? '/dados' : de === '/selos' ? '/' : '/assistentes'} replace />} />
+        ))}
         <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
         <Route
           path="/ferramentas/:slug"
@@ -392,8 +285,6 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
       </Routes>
-      <AnotarSheet />
-      <CelebracaoHost />
       <Toaster />
     </>
   );
@@ -474,17 +365,19 @@ function WizardRoute({
   );
 }
 
-function AgentRoute({ data, onOpenTool }: { data: WizardData; onOpenTool: (id: ToolId) => void }) {
-  const agent = getAgent(useParams().id);
+/** Página do app: casca com as 5 abas, login e (na primeira vez) a pergunta da renda. */
+function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: string; children: ReactNode; aberto?: boolean }) {
   return (
-    <Titled title={agent ? `${agent.name}, seu conselheiro` : 'Página não encontrada'}>
+    <Titled title={titulo}>
       <AppShell>
-        {agent ? (
-          <LoginGate what={`a conversa com ${agent.name}`}>
-            <AgentPage key={agent.id} agent={agent} data={data} onOpenTool={onOpenTool} />
-          </LoginGate>
+        {aberto ? (
+          children
         ) : (
-          <NotFoundPage />
+          <LoginGate what={o}>
+            <ErroGlobal>
+              <Porteiro>{children}</Porteiro>
+            </ErroGlobal>
+          </LoginGate>
         )}
       </AppShell>
     </Titled>
