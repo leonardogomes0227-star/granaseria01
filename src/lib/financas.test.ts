@@ -259,3 +259,18 @@ describe('número da Início', () => {
     expect(r.disponivel).toBe(4000);
   });
 });
+
+import { mesesGuardados, sequencia } from './sequencia';
+
+describe('sequência de meses guardando', () => {
+  const ms = [{ tipo: 'reserva', registros: [{ mes: '2026-08', valor: 100 }, { mes: '2026-09', valor: 100 }] }];
+  it('conta até o mês passado quando este ainda não tem', () => {
+    expect(sequencia(mesesGuardados(ms), '2026-10-05')).toBe(2);
+  });
+  it('o mês atual entra quando já tem (também pelo Pague-se primeiro)', () => {
+    expect(sequencia(mesesGuardados(ms, [{ on: '2026-10-02', amount: 50 }]), '2026-10-05')).toBe(3);
+  });
+  it('um buraco zera', () => {
+    expect(sequencia(mesesGuardados([{ tipo: 'reserva', registros: [{ mes: '2026-07', valor: 1 }] }]), '2026-10-05')).toBe(0);
+  });
+});

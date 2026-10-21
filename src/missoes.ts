@@ -58,6 +58,7 @@ export interface Missao {
   economiaMensal?: number; // missão de gastos: quanto deixa de gastar por mês
   notas?: string; // uma frase do agente
   editarPasso?: string; // o passo da conversa que "Editar respostas" reabre
+  lembrarVespera?: boolean; // contas (Bansir): lembrar um dia antes de cada conta vencer
   createdAt: string;
   updatedAt: string;
   concluidaEm?: string | null;
