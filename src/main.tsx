@@ -12,6 +12,9 @@ import { initAnalytics } from './analytics';
 
 initAnalytics();
 
+// PWA: guarda só o casco do app; nunca mexe em /api (public/sw.js)
+if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => undefined));
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

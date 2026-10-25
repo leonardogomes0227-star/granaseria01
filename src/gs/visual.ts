@@ -18,9 +18,13 @@ export function useVisualDoApp(forcar?: boolean) {
   useEffect(() => {
     const el = document.documentElement;
     el.classList.toggle('gs-app', on);
+    const icone = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    const antes = icone?.getAttribute('href');
+    if (on && icone) icone.setAttribute('href', '/moeda.svg');
     el.style.setProperty('color-scheme', on ? 'light' : '');
     return () => {
       el.classList.remove('gs-app');
+      if (icone && antes) icone.setAttribute('href', antes);
     };
   }, [on]);
   return on;

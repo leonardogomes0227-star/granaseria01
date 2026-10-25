@@ -4,6 +4,7 @@ import { useEstado } from './store';
 import { Onboarding } from './Onboarding';
 import { useImportarServidor } from './servidor';
 import { BannerAvisos } from './BannerAvisos';
+import { InstalarApp } from './InstalarApp';
 
 /* ---------- Porteiro: na primeira abertura, só pergunta a renda. Também traz o WhatsApp e mostra os avisos. ---------- */
 
@@ -15,6 +16,7 @@ export function Porteiro({ children }: { children: ReactNode }) {
   return (
     <>
       <BannerAvisos />
+      <InstalarApp />
       {children}
     </>
   );

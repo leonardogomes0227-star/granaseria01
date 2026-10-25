@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ClipboardList, MessageCircle, Plus, Users } from 'lucide-react';
 import { painelToken } from '../painel';
 import { Inicio } from '../gs/Inicio';
+import { Porteiro } from '../gs/Porteiro';
+import { ErroGlobal } from '../gs/ErroGlobal';
 
 /* ---------- Início ---------- */
 // Logado: o dashboard do app (src/gs/Inicio.tsx). Ainda não: o que é, em 3 linhas, e um botão.
@@ -82,5 +84,11 @@ export function HomePage({
   const logged = Boolean(painelToken());
   const resume = savedProgress && savedProgress.step > 0 && savedProgress.step < 7 ? savedProgress.step : null;
   if (!logged) return <Welcome resume={resume} onStart={onStart} onResume={onResume} />;
-  return <Inicio />;
+  return (
+    <ErroGlobal>
+      <Porteiro>
+        <Inicio />
+      </Porteiro>
+    </ErroGlobal>
+  );
 }

@@ -74,7 +74,6 @@ function deLegado(leg: Record<string, string | null>): Estado {
 export function migrar(bruto: unknown, legado?: Record<string, string | null>): Estado {
   if (!bruto) return legado ? deLegado(legado) : ESTADO_INICIAL();
   const b = obj(bruto);
-  const base = ESTADO_INICIAL();
   const cfg = obj(b.config);
   const av = obj(cfg.avisos);
   const inv = obj(b.investir);

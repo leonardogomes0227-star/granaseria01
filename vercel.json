@@ -32,6 +32,12 @@
     },
     "api/admin.ts": {
       "maxDuration": 60
+    },
+    "api/investimentos/chat.ts": {
+      "maxDuration": 60
+    },
+    "api/mercado.ts": {
+      "maxDuration": 30
     }
   },
   "crons": [

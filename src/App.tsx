@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
 import {
   IncomeStep,
@@ -38,7 +38,7 @@ import { Reserva } from './gs/Reserva';
 import { Renda } from './gs/Renda';
 import { Emprestimos } from './gs/Emprestimos';
 import { Extras } from './gs/Extras';
-import { Investir } from './gs/Investir';
+const Investir = lazy(() => import('./gs/investir/Investir').then((m) => ({ default: m.Investir })));
 import { Assistentes } from './gs/Assistentes';
 import { MeusDados } from './gs/MeusDados';
 import { Sobre } from './gs/Sobre';
@@ -256,7 +256,7 @@ function App() {
         <Route path="/plano/renda" element={<Pagina titulo="Liberdade de renda" o="a ferramenta"><Renda /></Pagina>} />
         <Route path="/plano/emprestimos" element={<Pagina titulo="Empréstimos" o="a ferramenta"><Emprestimos /></Pagina>} />
         <Route path="/plano/extras" element={<Pagina titulo="Dinheiro extra" o="a ferramenta"><Extras /></Pagina>} />
-        <Route path="/investir" element={<Pagina titulo="Investir" o="a aba Investir"><Investir /></Pagina>} />
+        <Route path="/investir" element={<Pagina titulo="Investir" o="a aba Investir"><Suspense fallback={null}><Investir /></Suspense></Pagina>} />
         <Route path="/assistentes" element={<Pagina titulo="Assistentes" o="os seus assistentes"><Assistentes /></Pagina>} />
         <Route path="/dados" element={<Pagina titulo="Meus dados" o="os seus dados"><MeusDados /></Pagina>} />
         <Route path="/sobre" element={<Pagina titulo="Sobre e avisos" o="" aberto><Sobre /></Pagina>} />

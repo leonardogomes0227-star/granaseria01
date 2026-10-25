@@ -175,3 +175,15 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 @media (prefers-reduced-motion: reduce) {
   .gs-barra > i, .gs-rosca circle, .gs-btn, .gs-check, .gs-folha, .gs-fundo, .gs-esqueleto { transition: none !important; animation: none !important; }
 }
+
+/* ---------- toast (usa o componente de sempre, no visual novo) ---------- */
+html.gs-app .toast { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 120; display: flex; align-items: center; gap: 12px; max-width: 520px; margin: 0 auto; padding: 12px 14px 14px 18px; border-radius: 18px; background: var(--ink); color: var(--ivory); box-shadow: 0 16px 40px -12px rgba(44, 34, 30, 0.5); overflow: hidden; transform: none; width: auto; }
+html.gs-app .toast > span:first-child { flex: 1; font-size: 14.5px; line-height: 20px; }
+html.gs-app .toast button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: rgba(197, 160, 89, 0.2); color: var(--gold); font: inherit; font-weight: 700; cursor: pointer; }
+html.gs-app .toast-tempo { position: absolute; left: 16px; right: 16px; bottom: 5px; height: 2px; background: rgba(255, 255, 255, 0.14); }
+html.gs-app .toast-tempo i { display: block; height: 100%; background: var(--gold); transform-origin: left; animation: toast-esvazia linear forwards; }
+@keyframes toast-esvazia { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (min-width: 761px) { html.gs-app .toast { bottom: 24px; } }
+html.gs-app .gs-menu-pontos:hover { background: var(--bg-2); color: var(--ink); }
+@media (max-width: 380px) { .gs-grande { font-size: 36px; line-height: 40px; } .gs-titulo { font-size: 26px; line-height: 32px; } }
+.gs-sobre .gs-card p { line-height: 24px; }
