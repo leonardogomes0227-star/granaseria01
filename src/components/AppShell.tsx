@@ -1,111 +1,121 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ClipboardList, House, Plus, UserRound, Users, Wallet, type LucideIcon } from 'lucide-react';
+import { ChartLine, House, Sparkles, Target, UserRound, Wallet, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
-import { primeiroNome } from '../eu';
-import { abrirAnotar } from '../lib/anotar';
-import { Moeda } from './ui/Moeda';
+import { useVisualDoApp } from '../gs/visual';
 import { BrandMark } from './Layout';
-import { useVisualDoApp } from '../lib/visual';
+import { Moeda } from './ui/Moeda';
+import { useEstado } from '../gs/store';
 
-/* ---------- A casca do app: as mesmas 4 abas no topo (PC) e embaixo (celular) ---------- */
-// Os agentes são o coração do app: Início (como estou hoje?), Agentes (quem cuida do quê?), Meu mês (pra onde foi?)
-// e Plano (o que faço?). Não há lista de ferramentas: cada tela de cálculo abre de dentro do agente dela.
+/* ---------- A casca do app: 5 abas (embaixo no celular, no topo no PC) ---------- */
+// Início (como estou hoje?) · Meu mês (pra onde foi?) · Plano (o que faço?) · Investir · Assistentes.
+// O avatar abre "Meus dados". As páginas públicas (guias, termos, landing) mantêm a barra de sempre.
 
 export const NAV: [string, string, LucideIcon][] = [
   ['/', 'Início', House],
-  ['/conselheiros', 'Agentes', Users],
   ['/mes', 'Meu mês', Wallet],
-  ['/missoes', 'Missões', ClipboardList],
+  ['/plano', 'Plano', Target],
+  ['/investir', 'Investir', ChartLine],
+  ['/assistentes', 'Assistentes', Sparkles],
 ];
 
-// os nomes novos da spec v2 apontam pras mesmas telas: o item do menu fica aceso nos dois
-const IGUAIS: Record<string, string[]> = { '/': ['/', '/inicio'], '/conselheiros': ['/conselheiros', '/agentes'], '/mes': ['/mes', '/meu-mes'], '/missoes': ['/missoes', '/plano'] };
+// rotas-irmãs acendem a mesma aba
+const IGUAIS: Record<string, string[]> = { '/': ['/', '/inicio'], '/mes': ['/mes', '/meu-mes'], '/plano': ['/plano', '/missoes'], '/assistentes': ['/assistentes', '/agentes', '/conselheiros'] };
 function useAceso(): (to: string) => boolean {
   const { pathname } = useLocation();
   return (to) => (IGUAIS[to] ?? [to]).some((p) => (p === '/' ? pathname === '/' : pathname === p || pathname.startsWith(`${p}/`)));
 }
 
-function TopBar() {
-  const aceso = useAceso();
-  const logged = Boolean(painelToken());
-  const name = primeiroNome(getName());
-  return (
-    <header className="shell-top">
-      <div className="shell-top-in">
-        <Link to="/" className="shell-brand" aria-label="Grana Séria, início">
-          <span className="brand-antiga"><BrandMark /></span>
-          <Moeda tamanho={28} className="brand-ouro" />
-          <span>Grana Séria</span>
-        </Link>
-        <nav className="shell-links" aria-label="Seções">
-          {NAV.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        <Link className={logged ? 'shell-me' : 'shell-login'} to={logged ? '/perfil' : '/entrar'} aria-label={logged ? 'Meu perfil' : 'Entrar'}>
-          {logged ? <span className="shell-avatar">{(name || 'V').charAt(0).toUpperCase()}</span> : <UserRound size={16} />}
-          <span>{logged ? name || 'Minha conta' : 'Entrar'}</span>
-        </Link>
-      </div>
-    </header>
-  );
+function inicialDo(nome?: string | null) {
+  return ((nome ?? '').trim().charAt(0) || 'V').toUpperCase();
 }
 
-/** Celular: no app, barra flutuante com o "+ Anotar" no meio; fora dele (landing), a barra de sempre. */
-function BottomNav({ ouro }: { ouro: boolean }) {
+/** Dentro do app: visual areia e dourado. */
+function Casca({ children }: { children: ReactNode }) {
   const aceso = useAceso();
-  const item = ([to, label, Icon]: (typeof NAV)[number]) => {
-    const on = aceso(to);
-    return (
-      <NavLink key={to} to={to} end={to === '/'} className={() => (on ? 'on' : '')} aria-label={label}>
-        <Icon size={22} strokeWidth={1.75} fill={on && ouro ? 'currentColor' : 'none'} fillOpacity={on && ouro ? 0.16 : 0} />
-        <span>{label}</span>
-      </NavLink>
-    );
-  };
-  if (!ouro)
-    return (
-      <nav className="shell-bottom" aria-label="Seções">
-        {NAV.map(item)}
+  const { config } = useEstado();
+  const nome = config.nome || getName() || '';
+  return (
+    <div className="gs-casca">
+      <header className="gs-topo">
+        <div className="gs-topo-in">
+          <Link to="/" className="gs-marca" aria-label="Grana Séria, início">
+            <Moeda tamanho={30} />
+            <span>Grana Séria</span>
+          </Link>
+          <nav className="gs-abas-topo" aria-label="Seções">
+            {NAV.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <Link to="/dados" className="gs-avatar" aria-label="Meus dados">
+            {inicialDo(nome)}
+          </Link>
+        </div>
+      </header>
+      <main className="gs-principal">{children}</main>
+      <nav className="gs-abas" aria-label="Seções">
+        {NAV.map(([to, label, Icon]) => (
+          <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')} aria-label={label}>
+            <Icon size={22} strokeWidth={1.75} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
       </nav>
-    );
-  return (
-    <nav className="shell-bottom flutuante" aria-label="Seções">
-      {NAV.slice(0, 2).map(item)}
-      <button type="button" className="nav-anotar" aria-label="Anotar um gasto ou entrada" onClick={() => abrirAnotar({ origem: 'barra' })}>
-        <Plus size={26} strokeWidth={2} />
-      </button>
-      {NAV.slice(2).map(item)}
-    </nav>
-  );
-}
-
-function MiniFooter() {
-  return (
-    <footer className="shell-foot">
-      <p>
-        <Link to="/guias">Guias</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> ·{' '}
-        <Link to="/admin" className="foot-admin">Painel</Link>
-      </p>
-      <p>Grana Séria · conteúdo educacional, não é consultoria financeira · CNPJ 69.557.683/0001-89</p>
-    </footer>
-  );
-}
-
-/** Página do app: barra no topo, conteúdo, rodapé curto e as abas embaixo no celular. */
-export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
-  const ouro = useVisualDoApp();
-  return (
-    <div className={`shell ${ouro ? 'no-app' : ''}`}>
-      <TopBar />
-      <main className={`shell-main ${wide ? 'wide' : ''}`}>{children}</main>
-      <MiniFooter />
-      <BottomNav ouro={ouro} />
     </div>
   );
+}
+
+/** Páginas públicas e landing: a barra de sempre. */
+function CascaPublica({ children, wide }: { children: ReactNode; wide: boolean }) {
+  const aceso = useAceso();
+  const logged = Boolean(painelToken());
+  return (
+    <div className="shell">
+      <header className="shell-top">
+        <div className="shell-top-in">
+          <Link to="/" className="shell-brand" aria-label="Grana Séria, início">
+            <BrandMark />
+            <span>Grana Séria</span>
+          </Link>
+          <nav className="shell-links" aria-label="Seções">
+            {NAV.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+          <Link className={logged ? 'shell-me' : 'shell-login'} to={logged ? '/dados' : '/entrar'} aria-label={logged ? 'Meus dados' : 'Entrar'}>
+            {logged ? <span className="shell-avatar">{inicialDo(getName())}</span> : <UserRound size={16} />}
+            <span>{logged ? getName() || 'Minha conta' : 'Entrar'}</span>
+          </Link>
+        </div>
+      </header>
+      <main className={`shell-main ${wide ? 'wide' : ''}`}>{children}</main>
+      <footer className="shell-foot">
+        <p>
+          <Link to="/guias">Guias</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> ·{' '}
+          <Link to="/admin" className="foot-admin">Painel</Link>
+        </p>
+        <p>Grana Séria · conteúdo educacional, não é consultoria financeira · CNPJ 69.557.683/0001-89</p>
+      </footer>
+      <nav className="shell-bottom" aria-label="Seções">
+        {NAV.map(([to, label, Icon]) => (
+          <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')} aria-label={label}>
+            <Icon size={22} strokeWidth={1.75} />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+  const app = useVisualDoApp();
+  return app ? <Casca>{children}</Casca> : <CascaPublica wide={wide}>{children}</CascaPublica>;
 }
 
 /** Título de cada página: curto, com uma linha embaixo se precisar. */

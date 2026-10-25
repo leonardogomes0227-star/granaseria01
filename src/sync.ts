@@ -6,6 +6,7 @@ import { supabase } from './supabase';
 // O assistente do WhatsApp também escreve aqui (ex.: "paguei" fecha o mês do plano).
 
 export const SYNC_KEYS = [
+  'grana-seria:v1', // o app novo: renda, contas, gastos, dívidas, assistentes (src/gs/store.ts)
   'selos-wizard-progress',
   'selos-tracking',
   'selos-leaks',
