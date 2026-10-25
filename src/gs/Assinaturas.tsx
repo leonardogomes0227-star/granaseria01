@@ -27,7 +27,7 @@ export function Assinaturas() {
         <div className="gs-tres">
           <div><span className="gs-mudo">Por mês</span><b className="gs-tab">{brl0(total)}</b></div>
           <div><span className="gs-mudo">Por ano</span><b className="gs-tab">{brl0(total * 12)}</b></div>
-          <div><span className="gs-mudo">Já cortou</span><b className="gs-tab">{brl0(economia)}/mês</b></div>
+          <div><span className="gs-mudo">Já cortou /mês</span><b className="gs-tab">{brl0(economia)}</b></div>
         </div>
       </section>
       {total > 0 && (
