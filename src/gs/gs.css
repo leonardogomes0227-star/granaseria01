@@ -239,3 +239,11 @@ html.gs-app .gs-landing h1 { font-weight: 500; }
 .gs-cal .vazio { background: none; border: 0; }
 .gs-cal i { position: absolute; left: 50%; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); transform: translateX(-50%); }
 .gs-cal i.p { background: var(--success); }
+
+.gs-ferr { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 0; color: inherit; text-decoration: none; border-top: 1px solid var(--line); }
+.gs-ferr:first-child { border-top: 0; }
+.gs-ferr .ic { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--gold-soft); color: var(--gold-strong); display: grid; place-items: center; font-family: var(--serif); font-size: 18px; font-weight: 600; }
+.gs-ferr .gs-corpo { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.gs-ferr b { font-weight: 600; }
+.gs-ferr small { color: var(--ink-muted); font-size: 13px; }
+.gs-ferr > svg { flex: none; color: var(--ink-muted); }
