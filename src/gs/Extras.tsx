@@ -3,7 +3,8 @@ import { useEstado } from './store';
 import { dividirExtra } from './ferramentas';
 import { guardar, pagarDivida, removerAporte, desfazerPagamentoDivida, configurarAssistente } from './acoes';
 import { paraSim, passoDoMes, saldoAtual } from './dividas';
-import { CampoDinheiro, CampoNumero, Titulo } from './ui';
+import { Aprende, CampoDinheiro, CampoNumero, Titulo } from './ui';
+import { Rosquinha } from './graficos';
 import { brl0, hoje as hojeSP } from './datas';
 import { toast } from '../components/ui/Toast';
 
@@ -60,7 +61,8 @@ export function Extras() {
       </section>
       {valor > 0 && (
         <section className="gs-card destaque">
-          <div className="gs-tres">
+          <Rosquinha fatias={[{ id: 'd', cor: 'var(--danger)', valor: div.divida }, { id: 'r', cor: 'var(--gold-strong)', valor: div.reserva }, { id: 'l', cor: 'var(--ink-muted)', valor: div.lazer }]} centro={brl0(valor)} sub={origem} />
+          <div className="gs-tres" style={{ marginTop: 10 }}>
             <div><span className="gs-mudo">Dívida</span><b className="gs-tab">{brl0(div.divida)}</b></div>
             <div><span className="gs-mudo">Reserva</span><b className="gs-tab">{brl0(div.reserva)}</b></div>
             <div><span className="gs-mudo">Pra você</span><b className="gs-tab">{brl0(div.lazer)}</b></div>
@@ -75,6 +77,7 @@ export function Extras() {
           <p className="gs-nota">Aplicar guarda a parte da reserva e abate a parte da dívida. Dá pra desfazer logo em seguida.</p>
         </section>
       )}
+      <Aprende titulo="Por que dividir?" texto="Dinheiro que chega de uma vez some rápido. Dar um destino antes de gastar faz uma parte atacar a dívida, outra proteger você e outra ser aproveitada sem culpa. Você pode mudar os percentuais." />
     </>
   );
 }

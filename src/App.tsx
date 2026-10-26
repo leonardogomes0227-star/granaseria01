@@ -38,6 +38,10 @@ import { Reserva } from './gs/Reserva';
 import { Renda } from './gs/Renda';
 import { Emprestimos } from './gs/Emprestimos';
 import { Extras } from './gs/Extras';
+import { Orcamento } from './gs/Orcamento';
+import { Calendario } from './gs/Calendario';
+import { ParceladoTela } from './gs/Parcelado';
+import { CartaoTela } from './gs/Cartao';
 const Investir = lazy(() => import('./gs/investir/Investir').then((m) => ({ default: m.Investir })));
 import { Assistentes } from './gs/Assistentes';
 import { MeusDados } from './gs/MeusDados';
@@ -255,6 +259,10 @@ function App() {
         <Route path="/plano/reserva" element={<Pagina titulo="Reserva" o="a sua reserva"><Reserva /></Pagina>} />
         <Route path="/plano/renda" element={<Pagina titulo="Liberdade de renda" o="a ferramenta"><Renda /></Pagina>} />
         <Route path="/plano/emprestimos" element={<Pagina titulo="Empréstimos" o="a ferramenta"><Emprestimos /></Pagina>} />
+        <Route path="/plano/orcamento" element={<Pagina titulo="Orçamento" o="o seu orçamento"><Orcamento /></Pagina>} />
+        <Route path="/plano/calendario" element={<Pagina titulo="Calendário de contas" o="o calendário"><Calendario /></Pagina>} />
+        <Route path="/plano/parcelado" element={<Pagina titulo="À vista ou parcelado?" o="a ferramenta"><ParceladoTela /></Pagina>} />
+        <Route path="/plano/cartao" element={<Pagina titulo="Cartão de crédito" o="o seu cartão"><CartaoTela /></Pagina>} />
         <Route path="/plano/extras" element={<Pagina titulo="Dinheiro extra" o="a ferramenta"><Extras /></Pagina>} />
         <Route path="/investir" element={<Pagina titulo="Investir" o="a aba Investir"><Suspense fallback={null}><Investir /></Suspense></Pagina>} />
         <Route path="/assistentes" element={<Pagina titulo="Assistentes" o="os seus assistentes"><Assistentes /></Pagina>} />

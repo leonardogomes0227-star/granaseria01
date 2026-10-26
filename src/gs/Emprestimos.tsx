@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { useEstado } from './store';
 import { compararOfertas } from './ferramentas';
 import { configurarAssistente } from './acoes';
-import { CampoDinheiro, CampoNumero, Titulo } from './ui';
+import { Aprende, CampoDinheiro, CampoNumero, Dica, Titulo } from './ui';
+import { Barras } from './graficos';
 import { brl, brl0, pct } from './datas';
 import { toast } from '../components/ui/Toast';
 
@@ -58,12 +59,18 @@ export function Emprestimos() {
               </p>
             </div>
           ))}
+          <section className="gs-card">
+            <span className="gs-rotulo">Quanto de cada oferta é juros</span>
+            <Barras dados={r.custos.map((c) => [c.valor, Math.max(0, c.juros)] as [number, number])} rotulos={validas.map(({ i }) => `Oferta ${i + 1}`)} nomes={['Valor recebido', 'Juros']} rotulo="Valor recebido e juros por oferta" />
+          </section>
           {r.custos.length > 1 && r.diferenca > 0 && <p className="gs-banner">A mais barata economiza <b>{brl(r.diferenca)}</b> em relação à mais cara.</p>}
           <button type="button" className="gs-btn cheio" onClick={() => { configurarAssistente('emprestimos', { ofertas: JSON.stringify(ofertas) }); toast('Comparação salva'); }}>Salvar comparação</button>
         </>
       ) : (
         <p className="gs-mudo">Preencha valor, parcelas e a parcela de pelo menos uma oferta.</p>
       )}
+      <Dica>Compare sempre o total que você paga, não só a parcela. Parcela pequena em muitos meses costuma custar mais.</Dica>
+      <Aprende titulo="O que é a taxa ao mês?" texto="É o juro de verdade que você paga a cada mês, já contando todas as parcelas. Dois bancos podem anunciar parcelas parecidas e cobrar taxas bem diferentes. Por isso eu calculo a taxa a partir do valor e das parcelas." />
     </>
   );
 }

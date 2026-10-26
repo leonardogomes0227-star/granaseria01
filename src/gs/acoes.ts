@@ -164,3 +164,13 @@ export function desfazerRegistroAgente(id: string) {
 
 /* ---------- dados ---------- */
 export const salvarConfig = (patch: Partial<import('./tipos').Config>) => atualizar((e) => ({ ...e, config: { ...e.config, ...patch } }));
+
+/* ---------- orçamento e cartão ---------- */
+export const definirLimite = (categoria: string, valor: number) =>
+  atualizar((e) => {
+    const limites = { ...e.limites };
+    if (valor > 0) limites[categoria] = arred(valor);
+    else delete limites[categoria];
+    return { ...e, limites };
+  });
+export const salvarCartao = (c: import('./tipos').Cartao | null) => atualizar((e) => ({ ...e, cartao: c && c.limite > 0 ? { ...c, usado: Math.max(0, c.usado) } : null }));
