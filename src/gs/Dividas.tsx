@@ -6,6 +6,9 @@ import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, paraSim, passoDo
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
 import { Aprende, Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Linha } from './graficos';
+import { livreParaGastar } from './selectores';
+import { mesDe } from './datas';
+import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 import type { Divida, Estrategia } from './tipos';
 
@@ -24,6 +27,8 @@ export function Dividas() {
   );
 }
 
+const anual = (mensalPct: number) => ((1 + mensalPct / 100) ** 12 - 1) * 100;
+
 /* ---------- acompanhamento: o plano vivo, com gráfico, controle de quanto pagar e a comparação das estratégias ---------- */
 function Acompanhamento({ onEditar }: { onEditar: () => void }) {
   const e = useEstado();
@@ -39,6 +44,16 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
   const totalAtual = e.dividas.reduce((t, d) => t + saldoAtual(d), 0);
   const progresso = totalOriginal > 0 ? ((totalOriginal - totalAtual) / totalOriginal) * 100 : 0;
   const serie = useMemo(() => [totalAtual, ...resultado.cronograma.map((m) => m.saldoTotal)], [resultado, totalAtual]);
+  const hojeISO = useHoje();
+  const livre = livreParaGastar(e, mesDe(hojeISO));
+  const maisPagando = useMemo(
+    () => [100, 200, 500].map((m) => {
+      const r = simular(sim, plano.pagamentoMensal + m, plano.estrategia);
+      return { m, ok: r.quita && resultado.quita, meses: resultado.meses - r.meses, juros: resultado.totalJuros - r.totalJuros };
+    }),
+    [sim, plano, resultado],
+  );
+  const ordem = useMemo(() => Object.entries(resultado.quitaEm).sort((a, b) => a[1] - b[1]).map(([id]) => id), [resultado]);
   const mudar = (patch: Partial<typeof plano>) => salvarPlanoDividas({ ...plano, ...patch });
   if (totalAtual <= 0)
     return <Vazio titulo="Você quitou tudo" texto="Nenhuma dívida em aberto. Agora o dinheiro que ia pra elas pode ir pra sua reserva." acao="Guardar na reserva" rota="/plano/reserva" avatar="dividas" />;
@@ -61,6 +76,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
 
       <section className="gs-card">
         <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={Math.max(100, Math.floor(minimo / 50) * 50)} max={Math.max(3000, Math.ceil((plano.pagamentoMensal * 1.5) / 100) * 100)} passo={50} formato={brl0} extra={`mínimo ${brl0(minimo)}`} onChange={(n) => mudar({ pagamentoMensal: n })} />
+        {e.config.renda > 0 && <p className="gs-sub" style={{ margin: '4px 0 0' }}>Isso é <b>{Math.round((plano.pagamentoMensal / e.config.renda) * 100)}%</b> da sua renda.{plano.pagamentoMensal > livre + minimo && livre > 0 ? ' Pode apertar este mês: confira o que ainda está livre.' : ''}</p>}
         <div className="gs-chips" role="group" aria-label="Estratégia" style={{ marginTop: 12 }}>
           {(['bola-de-neve', 'maior-juro'] as const).map((id) => <button key={id} type="button" className={`gs-chip ${plano.estrategia === id ? 'on' : ''}`} aria-pressed={plano.estrategia === id} onClick={() => mudar({ estrategia: id })}>{id === 'bola-de-neve' ? 'Bola de neve' : 'Maior juro primeiro'}</button>)}
         </div>
@@ -70,6 +86,22 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         </div>
         {comp.economia >= 1 && <Dica>{comp.melhor === 'maior-juro' ? 'Maior juro' : 'Bola de neve'} economiza <b>{brl0(comp.economia)}</b> em juros. {comp.melhor === 'maior-juro' ? 'A bola de neve dá a vitória mais cedo, e isso ajuda a não desistir.' : 'E ainda quita a primeira mais rápido.'}</Dica>}
       </section>
+
+      {resultado.quita && !resultado.insuficiente && (
+        <section className="gs-card">
+          <span className="gs-rotulo">E se eu pagasse mais?</span>
+          <div className="gs-grid2" style={{ marginTop: 8 }}>
+            {maisPagando.map((x) => (
+              <button key={x.m} type="button" className="gs-mini" style={{ textAlign: 'left', cursor: 'pointer', minHeight: 44 }} onClick={() => mudar({ pagamentoMensal: plano.pagamentoMensal + x.m })}>
+                <small>+{brl0(x.m)} por mês</small>
+                <b>{x.meses > 0 ? `${x.meses} ${x.meses === 1 ? 'mês' : 'meses'} antes` : 'sem mudança'}</b>
+                <small>{x.juros >= 1 ? `economiza ${brl0(x.juros)}` : ' '}</small>
+              </button>
+            ))}
+          </div>
+          <p className="gs-nota">Toque pra usar esse valor no plano.</p>
+        </section>
+      )}
 
       {passo && !resultado.insuficiente && (
         <section className="gs-card">
@@ -92,8 +124,8 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
           return (
             <div key={d.id} className="gs-linha" style={{ flexWrap: 'wrap' }}>
               <div className="gs-corpo">
-                <b>{d.nome}</b>
-                <small>{brl(saldoAtual(d))} · {pct(d.jurosMensal, 1)} ao mês{q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}{pagoMes > 0 ? ` · pago este mês: ${brl0(pagoMes)}` : ''}</small>
+                <b>{ordem.indexOf(d.id) >= 0 ? `${ordem.indexOf(d.id) + 1}ª · ` : ''}{d.nome}{anual(d.jurosMensal) >= 100 && <span className="gs-etiqueta perigo" style={{ marginLeft: 8 }}>juro altíssimo</span>}</b>
+                <small>{brl(saldoAtual(d))} · {pct(d.jurosMensal, 1)} ao mês ({Math.round(anual(d.jurosMensal))}% ao ano){q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}{pagoMes > 0 ? ` · pago este mês: ${brl0(pagoMes)}` : ''}</small>
               </div>
               <button type="button" className="gs-btn pequeno" onClick={() => setPagar(d)}>Paguei</button>
               <div style={{ flexBasis: '100%' }}><Barra pct={d.saldo > 0 ? ((d.saldo - saldoAtual(d)) / d.saldo) * 100 : 0} tom="ok" rotulo={`Quitação de ${d.nome}`} /></div>
@@ -105,6 +137,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         <button type="button" className="gs-btn sec" onClick={onEditar}>Editar plano e dívidas</button>
         <button type="button" className="gs-btn sec" onClick={() => { salvarPlanoDividas({ ...plano, passo: 4 }); onEditar(); }}>Proposta pro banco</button>
       </div>
+      <Aprende titulo="Negociar antes de pagar" texto="Antes de quitar, ligue pro credor e peça desconto pra pagar à vista ou uma taxa menor. Anote o protocolo. Pagar dívida antiga pode dar desconto grande, e o botão “Proposta pro banco” gera o texto pronto pra enviar." />
       <Aprende titulo="Por que o cartão vem primeiro" texto="O rotativo do cartão chega a mais de 400% ao ano. Por isso a dívida de juro mais alto pesa mais do que a de maior valor: cada mês parado custa mais do que o anterior. Pagar o mínimo de todas e concentrar o resto numa só é o jeito mais rápido de acabar." />
       <PagarSheet divida={pagar} sugerido={passo && pagar && passo.divida.id === pagar.id ? passo.valor : pagar?.parcelaMinima ?? 0} onFechar={() => setPagar(null)} />
     </>
