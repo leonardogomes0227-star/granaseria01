@@ -45,6 +45,8 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
   const totalAtual = e.dividas.reduce((t, d) => t + saldoAtual(d), 0);
   const progresso = totalOriginal > 0 ? ((totalOriginal - totalAtual) / totalOriginal) * 100 : 0;
   const serie = useMemo(() => [totalAtual, ...resultado.cronograma.map((m) => m.saldoTotal)], [resultado, totalAtual]);
+  const semJuros = sim.length > 0 && sim.every((d) => d.jurosMensal === 0);
+  const simples = !resultado.insuficiente && resultado.quita && (semJuros || resultado.meses <= 2);
   const hojeISO = useHoje();
   const livre = livreParaGastar(e, mesDe(hojeISO));
   const maisPagando = useMemo(
@@ -70,26 +72,43 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
               ? <>Você zera tudo em <b>{resultado.meses} {resultado.meses === 1 ? 'mês' : 'meses'}</b> ({mesCurto(resultado.dataFinal!)}), pagando {brl0(resultado.totalJuros)} de juros.</>
               : 'Com esse valor a dívida não zera. Aumente o pagamento mensal.'}
         </p>
-        {!resultado.insuficiente && resultado.quita && <Linha serie={serie} fim={mesCurto(resultado.dataFinal!)} rotulo="Saldo das dívidas caindo mês a mês" />}
+        {!simples && !resultado.insuficiente && resultado.quita && <Linha serie={serie} fim={mesCurto(resultado.dataFinal!)} rotulo="Saldo das dívidas caindo mês a mês" />}
         <div style={{ marginTop: 10 }}><Barra pct={progresso} tom="ok" rotulo="Progresso da quitação" /></div>
         <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>Você já quitou {Math.round(progresso)}% do que devia.</p>
       </section>
 
+      {simples && (
+        <section className="gs-card">
+          <span className="gs-rotulo">{semJuros ? 'Dívida sem juros' : 'Dívida curta'}</span>
+          {livre >= totalAtual ? (
+            <p style={{ margin: '6px 0 0' }}>Você tem <b>{brl0(livre)}</b> livre este mês. Dá pra <b>quitar tudo agora</b> e se livrar dela.</p>
+          ) : (
+            <p style={{ margin: '6px 0 0' }}>Este mês você tem <b>{brl0(Math.max(0, livre))}</b> livre. Pagando <b>{brl0(plano.pagamentoMensal)}</b> por mês, você termina em {resultado.meses} {resultado.meses === 1 ? 'mês' : 'meses'}.</p>
+          )}
+          {semJuros && <p className="gs-sub" style={{ margin: '8px 0 0' }}>Está com juro 0%. Se essa dívida tem juros (cartão, cheque especial), informe pra eu calcular certo.</p>}
+          <div className="gs-acoes">
+            {semJuros && <button type="button" className="gs-btn sec" onClick={onEditar}>Informar juros</button>}
+            <button type="button" className="gs-btn" onClick={() => setPagar(e.dividas.find((d) => saldoAtual(d) > 0) ?? null)}>Paguei</button>
+          </div>
+        </section>
+      )}
       <Marcos progresso={progresso} quitadas={e.dividas.filter((d) => saldoAtual(d) <= 0).length} />
+      {!simples && (
       <section className="gs-card">
         <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={Math.max(100, Math.floor(minimo / 50) * 50)} max={Math.max(3000, Math.ceil((plano.pagamentoMensal * 1.5) / 100) * 100)} passo={50} formato={brl0} extra={`mínimo ${brl0(minimo)}`} onChange={(n) => mudar({ pagamentoMensal: n })} />
         {e.config.renda > 0 && <p className="gs-sub" style={{ margin: '4px 0 0' }}>Isso é <b>{Math.round((plano.pagamentoMensal / e.config.renda) * 100)}%</b> da sua renda.{plano.pagamentoMensal > livre + minimo && livre > 0 ? ' Pode apertar este mês: confira o que ainda está livre.' : ''}</p>}
-        <div className="gs-chips" role="group" aria-label="Estratégia" style={{ marginTop: 12 }}>
+        {sim.length > 1 && !simples && <div className="gs-chips" role="group" aria-label="Estratégia" style={{ marginTop: 12 }}>
           {(['bola-de-neve', 'maior-juro'] as const).map((id) => <button key={id} type="button" className={`gs-chip ${plano.estrategia === id ? 'on' : ''}`} aria-pressed={plano.estrategia === id} onClick={() => mudar({ estrategia: id })}>{id === 'bola-de-neve' ? 'Bola de neve' : 'Maior juro primeiro'}</button>)}
-        </div>
-        <div className="gs-dois" style={{ marginTop: 4 }}>
-          <div className={`gs-mini ${comp.melhor === 'bola-de-neve' ? 'm' : ''}`}><small>Bola de neve</small><b>{comp.bola.meses} meses</b><small>{brl0(comp.bola.totalJuros)} de juros</small></div>
-          <div className={`gs-mini ${comp.melhor === 'maior-juro' ? 'm' : ''}`}><small>Maior juro</small><b>{comp.juro.meses} meses</b><small>{brl0(comp.juro.totalJuros)} de juros</small></div>
-        </div>
-        {comp.economia >= 1 && <Dica>{comp.melhor === 'maior-juro' ? 'Maior juro' : 'Bola de neve'} economiza <b>{brl0(comp.economia)}</b> em juros. {comp.melhor === 'maior-juro' ? 'A bola de neve dá a vitória mais cedo, e isso ajuda a não desistir.' : 'E ainda quita a primeira mais rápido.'}</Dica>}
+        </div>}
+        {!simples && <div className="gs-dois" style={{ marginTop: 4 }}>
+          <div className={`gs-mini ${comp.melhor === 'bola-de-neve' ? 'm' : ''}`}><small>Bola de neve</small><b>{comp.bola.meses} {comp.bola.meses === 1 ? 'mês' : 'meses'}</b><small>{brl0(comp.bola.totalJuros)} de juros</small></div>
+          <div className={`gs-mini ${comp.melhor === 'maior-juro' ? 'm' : ''}`}><small>Maior juro</small><b>{comp.juro.meses} {comp.juro.meses === 1 ? 'mês' : 'meses'}</b><small>{brl0(comp.juro.totalJuros)} de juros</small></div>
+        </div>}
+        {!simples && comp.economia >= 1 && <Dica>{comp.melhor === 'maior-juro' ? 'Maior juro' : 'Bola de neve'} economiza <b>{brl0(comp.economia)}</b> em juros. {comp.melhor === 'maior-juro' ? 'A bola de neve dá a vitória mais cedo, e isso ajuda a não desistir.' : 'E ainda quita a primeira mais rápido.'}</Dica>}
       </section>
+      )}
 
-      {resultado.quita && !resultado.insuficiente && (
+      {!simples && resultado.quita && !resultado.insuficiente && (
         <section className="gs-card">
           <span className="gs-rotulo">E se eu pagasse mais?</span>
           <div className="gs-grid2" style={{ marginTop: 8 }}>
@@ -105,7 +124,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         </section>
       )}
 
-      {passo && !resultado.insuficiente && (
+      {!simples && passo && !resultado.insuficiente && (
         <section className="gs-card">
           <span className="gs-rotulo">Este mês</span>
           {[
@@ -139,9 +158,9 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         <button type="button" className="gs-btn sec" onClick={onEditar}>Editar plano e dívidas</button>
         <button type="button" className="gs-btn sec" onClick={() => { salvarPlanoDividas({ ...plano, passo: 4 }); onEditar(); }}>Proposta pro banco</button>
       </div>
-      {!resultado.insuficiente && <MaisRapido sim={sim} pagamento={plano.pagamentoMensal} estrategia={plano.estrategia} />}
+      {!resultado.insuficiente && <MaisRapido sim={sim} pagamento={plano.pagamentoMensal} estrategia={plano.estrategia} simples={simples} />}
       <Aprende titulo="Negociar antes de pagar" texto="Antes de quitar, ligue pro credor e peça desconto pra pagar à vista ou uma taxa menor. Anote o protocolo. Pagar dívida antiga pode dar desconto grande, e o botão “Proposta pro banco” gera o texto pronto pra enviar." />
-      <Aprende titulo="Por que o cartão vem primeiro" texto="O rotativo do cartão chega a mais de 400% ao ano. Por isso a dívida de juro mais alto pesa mais do que a de maior valor: cada mês parado custa mais do que o anterior. Pagar o mínimo de todas e concentrar o resto numa só é o jeito mais rápido de acabar." />
+      {!simples && <Aprende titulo="Por que o cartão vem primeiro" texto="O rotativo do cartão chega a mais de 400% ao ano. Por isso a dívida de juro mais alto pesa mais do que a de maior valor: cada mês parado custa mais do que o anterior. Pagar o mínimo de todas e concentrar o resto numa só é o jeito mais rápido de acabar." />}
       <PagarSheet divida={pagar} sugerido={passo && pagar && passo.divida.id === pagar.id ? passo.valor : pagar?.parcelaMinima ?? 0} onFechar={() => setPagar(null)} />
     </>
   );
