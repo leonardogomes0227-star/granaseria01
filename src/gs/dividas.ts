@@ -140,13 +140,45 @@ export function passoDoMes(ds: DividaSim[], pagamentoMensal: number, estrategia:
   return { divida: alvo, valor: arred(Math.min(alvo.saldo, Math.min(alvo.parcelaMinima, alvo.saldo) + extra)) };
 }
 
+export type Pedido = 'desconto' | 'parcelar' | 'juros';
+export const PEDIDOS: { id: Pedido; nome: string }[] = [
+  { id: 'desconto', nome: 'Desconto à vista' },
+  { id: 'parcelar', nome: 'Parcelar' },
+  { id: 'juros', nome: 'Reduzir juros' },
+];
+
 /** Texto pronto pro banco. Campos opcionais ficam de fora. */
-export function mensagemParaOBanco(p: { nome?: string; credor?: string; protocolo?: string; saldo: number; entrada: number; parcela: number }): string {
+export function mensagemParaOBanco(p: { nome?: string; credor?: string; protocolo?: string; saldo: number; entrada: number; parcela: number; pedido?: Pedido }): string {
   const f = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const quem = p.nome?.trim() ? `Meu nome é ${p.nome.trim()}. ` : '';
   const ref = p.protocolo?.trim() ? ` (referência ${p.protocolo.trim()})` : '';
   const onde = p.credor?.trim() ? `com ${p.credor.trim()}` : 'com vocês';
-  return `Olá, tudo bem? ${quem}Tenho uma dívida de ${f(p.saldo)} ${onde}${ref} e quero quitar. Consigo pagar ${f(p.entrada)} à vista ou ${f(p.parcela)} por mês. Podem me enviar uma proposta com desconto nos juros? Obrigado.`;
+  const base = `Olá, tudo bem? ${quem}Tenho uma dívida de ${f(p.saldo)} ${onde}${ref} e quero quitar.`;
+  if (p.pedido === 'desconto') return `${base} Consigo pagar ${f(p.entrada)} à vista. Qual desconto vocês conseguem me dar pra quitar tudo de uma vez? Podem me enviar a proposta por escrito? Obrigado.`;
+  if (p.pedido === 'parcelar') return `${base} Consigo pagar ${f(p.parcela)} por mês. Podem me mandar uma proposta de parcelamento com o total e o juro de cada parcela, por escrito? Obrigado.`;
+  if (p.pedido === 'juros') return `${base} Os juros estão muito altos pra mim. Podem reduzir a taxa e me mandar o novo valor de ${f(p.parcela)} por mês, com o cálculo? Obrigado.`;
+  return `${base} Consigo pagar ${f(p.entrada)} à vista ou ${f(p.parcela)} por mês. Podem me enviar uma proposta com desconto nos juros? Obrigado.`;
+}
+
+/** Quanto as dívidas custam de juros por dia parado. */
+export const custoPorDia = (ds: DividaSim[]) => arred(ds.reduce((t, d) => t + (d.saldo * d.jurosMensal) / 100 / 30, 0));
+
+/** Trocar a dívida de juro mais alto por uma taxa nova: quanto muda no total. */
+export function valeTrocar(ds: DividaSim[], pagamentoMensal: number, estrategia: Estrategia, taxaNovaPct: number): { nome: string; economia: number; meses: number } | null {
+  if (ds.length === 0) return null;
+  const alvo = ds.reduce((m, d) => (d.jurosMensal > m.jurosMensal ? d : m), ds[0]);
+  const antes = simular(ds, pagamentoMensal, estrategia);
+  const depois = simular(ds.map((d) => (d.id === alvo.id ? { ...d, jurosMensal: taxaNovaPct } : d)), pagamentoMensal, estrategia);
+  if (!antes.quita || !depois.quita) return null;
+  return { nome: alvo.nome, economia: arred(antes.totalJuros - depois.totalJuros), meses: antes.meses - depois.meses };
+}
+
+/** Cortar um valor por mês e jogar na dívida: quanto adianta. */
+export function cortarPagando(ds: DividaSim[], pagamentoMensal: number, estrategia: Estrategia, corte: number): { meses: number; economia: number } | null {
+  const antes = simular(ds, pagamentoMensal, estrategia);
+  const depois = simular(ds, pagamentoMensal + corte, estrategia);
+  if (!antes.quita || !depois.quita) return null;
+  return { meses: antes.meses - depois.meses, economia: arred(antes.totalJuros - depois.totalJuros) };
 }
 
 export const linkWhatsApp = (texto: string, numero?: string) => `https://wa.me/${(numero ?? '').replace(/\D/g, '')}?text=${encodeURIComponent(texto)}`;

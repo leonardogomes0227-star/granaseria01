@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useEstado } from './store';
 import { brl, brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct } from './datas';
-import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, paraSim, passoDoMes, saldoAtual, simular } from './dividas';
+import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, passoDoMes, saldoAtual, simular } from './dividas';
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
 import { Aprende, Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Linha } from './graficos';
 import { livreParaGastar } from './selectores';
+import { CalculaJuro, MaisRapido, Marcos, Quitou, TIPOS_DIVIDA } from './DividasExtras';
 import { mesDe } from './datas';
 import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
@@ -56,7 +57,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
   const ordem = useMemo(() => Object.entries(resultado.quitaEm).sort((a, b) => a[1] - b[1]).map(([id]) => id), [resultado]);
   const mudar = (patch: Partial<typeof plano>) => salvarPlanoDividas({ ...plano, ...patch });
   if (totalAtual <= 0)
-    return <Vazio titulo="Você quitou tudo" texto="Nenhuma dívida em aberto. Agora o dinheiro que ia pra elas pode ir pra sua reserva." acao="Guardar na reserva" rota="/plano/reserva" avatar="dividas" />;
+    return <Quitou />;
   return (
     <>
       <section className="gs-card destaque">
@@ -74,6 +75,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>Você já quitou {Math.round(progresso)}% do que devia.</p>
       </section>
 
+      <Marcos progresso={progresso} quitadas={e.dividas.filter((d) => saldoAtual(d) <= 0).length} />
       <section className="gs-card">
         <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={Math.max(100, Math.floor(minimo / 50) * 50)} max={Math.max(3000, Math.ceil((plano.pagamentoMensal * 1.5) / 100) * 100)} passo={50} formato={brl0} extra={`mínimo ${brl0(minimo)}`} onChange={(n) => mudar({ pagamentoMensal: n })} />
         {e.config.renda > 0 && <p className="gs-sub" style={{ margin: '4px 0 0' }}>Isso é <b>{Math.round((plano.pagamentoMensal / e.config.renda) * 100)}%</b> da sua renda.{plano.pagamentoMensal > livre + minimo && livre > 0 ? ' Pode apertar este mês: confira o que ainda está livre.' : ''}</p>}
@@ -137,6 +139,7 @@ function Acompanhamento({ onEditar }: { onEditar: () => void }) {
         <button type="button" className="gs-btn sec" onClick={onEditar}>Editar plano e dívidas</button>
         <button type="button" className="gs-btn sec" onClick={() => { salvarPlanoDividas({ ...plano, passo: 4 }); onEditar(); }}>Proposta pro banco</button>
       </div>
+      {!resultado.insuficiente && <MaisRapido sim={sim} pagamento={plano.pagamentoMensal} estrategia={plano.estrategia} />}
       <Aprende titulo="Negociar antes de pagar" texto="Antes de quitar, ligue pro credor e peça desconto pra pagar à vista ou uma taxa menor. Anote o protocolo. Pagar dívida antiga pode dar desconto grande, e o botão “Proposta pro banco” gera o texto pronto pra enviar." />
       <Aprende titulo="Por que o cartão vem primeiro" texto="O rotativo do cartão chega a mais de 400% ao ano. Por isso a dívida de juro mais alto pesa mais do que a de maior valor: cada mês parado custa mais do que o anterior. Pagar o mínimo de todas e concentrar o resto numa só é o jeito mais rápido de acabar." />
       <PagarSheet divida={pagar} sugerido={passo && pagar && passo.divida.id === pagar.id ? passo.valor : pagar?.parcelaMinima ?? 0} onFechar={() => setPagar(null)} />
@@ -161,7 +164,8 @@ function PagarSheet({ divida, sugerido, onFechar }: { divida: Divida | null; sug
             const data = hojeSP();
             const valor = v;
             const id = divida.id;
-            if (pagarDivida(id, valor, data)) toast(`Pagamento de ${brl0(valor)} registrado`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerPagamentoDivida(id, data, valor) } });
+            const quita = valor >= saldoAtual(divida) - 0.005;
+            if (pagarDivida(id, valor, data)) toast(quita ? `${divida.nome} quitada! O valor dela agora vai pra próxima dívida.` : `Pagamento de ${brl0(valor)} registrado`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerPagamentoDivida(id, data, valor) } });
             onFechar();
           }}
         >
@@ -303,12 +307,20 @@ function FormDivida({ valor, onFechar }: { valor: Divida | 'nova' | null; onFech
   }, [valor, edit]);
   return (
     <Folha aberta={Boolean(valor)} onFechar={onFechar} titulo={edit ? 'Editar dívida' : 'Nova dívida'}>
+      {!edit && (
+        <div className="gs-chips" role="group" aria-label="Tipo de dívida">
+          {TIPOS_DIVIDA.map((t) => <button key={t.nome} type="button" className="gs-chip" onClick={() => { if (!nome.trim()) setNome(t.nome); setJuros(t.juros); }}>{t.nome}</button>)}
+        </div>
+      )}
+      {!edit && <p className="gs-nota" style={{ marginTop: 4, marginBottom: 12 }}>Não tem o número exato? Pode chutar. Você ajusta depois. Os tipos já sugerem um juro médio.</p>}
       <Campo rotulo="Nome ou credor" valor={nome} onChange={setNome} placeholder="Ex.: Cartão do banco" maxLength={60} erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />
       <CampoDinheiro rotulo="Quanto você deve hoje" valor={saldo} onChange={setSaldo} erro={tentou && !(saldo > 0) ? 'Digite o saldo.' : undefined} />
+      <CalculaJuro onResultado={setJuros} />
       <div className="gs-dois">
         <CampoNumero rotulo="Juros ao mês" sufixo="%" valor={juros} onChange={setJuros} min={0} max={30} placeholder="Ex.: 8" erro={tentou && juros === '' ? 'Digite (0 se não tem).' : undefined} />
         <CampoDinheiro rotulo="Parcela mínima" valor={min} onChange={setMin} placeholder="R$ 0,00" />
       </div>
+      {typeof juros === 'number' && juros >= 15 && <p className="gs-banner" role="note">Juro muito alto. Confira se digitou certo. Se for isso mesmo, vale tentar renegociar.</p>}
       <div className="gs-acoes">
         <button type="button" className="gs-btn sec" onClick={onFechar}>Cancelar</button>
         <button
@@ -341,11 +353,12 @@ function PassoProposta({ mensal, onVoltar, onFim }: { mensal: number; onVoltar: 
   const [parcela, setParcela] = useState(0);
   const [texto, setTexto] = useState('');
   const [editado, setEditado] = useState(false);
+  const [pedido, setPedido] = useState<Pedido>('desconto');
   useEffect(() => {
     if (d && entrada === 0) setEntrada(Math.round(saldoAtual(d) * 0.4));
     if (d && parcela === 0) setParcela(Math.round(Math.max(d.parcelaMinima, mensal / Math.max(1, abertas.length))));
   }, [d, mensal, abertas.length, entrada, parcela]);
-  const gerado = d ? mensagemParaOBanco({ nome, credor: d.nome, protocolo, saldo: saldoAtual(d), entrada, parcela }) : '';
+  const gerado = d ? mensagemParaOBanco({ nome, credor: d.nome, protocolo, saldo: saldoAtual(d), entrada, parcela, pedido }) : '';
   useEffect(() => {
     if (!editado) setTexto(gerado);
   }, [gerado, editado]);
@@ -356,6 +369,10 @@ function PassoProposta({ mensal, onVoltar, onFim }: { mensal: number; onVoltar: 
       {abertas.length > 1 && (
         <div className="gs-chips">{abertas.map((x) => <button key={x.id} type="button" className={`gs-chip ${x.id === d.id ? 'on' : ''}`} onClick={() => { setId(x.id); setEditado(false); setEntrada(0); setParcela(0); }}>{x.nome}</button>)}</div>
       )}
+      <div className="gs-chips" role="group" aria-label="O que pedir">
+        {PEDIDOS.map((x) => <button key={x.id} type="button" className={`gs-chip ${pedido === x.id ? 'on' : ''}`} aria-pressed={pedido === x.id} onClick={() => { setPedido(x.id); setEditado(false); }}>{x.nome}</button>)}
+      </div>
+      <Dica>Peça sempre a proposta por escrito. Anote o protocolo do atendimento.</Dica>
       <div className="gs-card">
         <div className="gs-dois">
           <CampoDinheiro rotulo="Entrada à vista" valor={entrada} onChange={(n) => { setEntrada(n); setEditado(false); }} />
