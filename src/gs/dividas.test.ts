@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, ordenar, passoDoMes, saldoAtual, simular, type DividaSim } from './dividas';
+import { compararEstrategias, cortarPagando, custoPorDia, valeTrocar, linkWhatsApp, mensagemParaOBanco, ordenar, passoDoMes, saldoAtual, simular, type DividaSim } from './dividas';
 
 const d = (id: string, saldo: number, juros: number, min: number): DividaSim => ({ id, nome: id, saldo, jurosMensal: juros, parcelaMinima: min });
 
@@ -60,5 +60,23 @@ describe('quitação de dívidas', () => {
     expect(m).toContain('com Banco X');
     expect(linkWhatsApp('oi tudo', '')).toBe('https://wa.me/?text=oi%20tudo');
     expect(linkWhatsApp('oi', '(11) 98888-7777')).toBe('https://wa.me/11988887777?text=oi');
+  });
+});
+
+describe('extras de dívidas', () => {
+  const ds = [{ id: 'a', nome: 'Cartão', saldo: 3000, jurosMensal: 9, parcelaMinima: 150 }, { id: 'b', nome: 'Loja', saldo: 800, jurosMensal: 3, parcelaMinima: 80 }];
+  it('custo por dia', () => expect(custoPorDia(ds)).toBeCloseTo((3000 * 0.09 + 800 * 0.03) / 30, 1));
+  it('trocar por taxa menor economiza', () => {
+    const r = valeTrocar(ds, 600, 'maior-juro', 3);
+    expect(r?.nome).toBe('Cartão');
+    expect(r!.economia).toBeGreaterThan(0);
+  });
+  it('trocar por taxa maior não economiza', () => expect(valeTrocar(ds, 600, 'maior-juro', 12)!.economia).toBeLessThanOrEqual(0));
+  it('cortar gasto adianta', () => expect(cortarPagando(ds, 600, 'maior-juro', 200)!.meses).toBeGreaterThan(0));
+  it('mensagem muda com o pedido', () => {
+    const b = { saldo: 1000, entrada: 400, parcela: 100 };
+    expect(mensagemParaOBanco({ ...b, pedido: 'desconto' })).toContain('à vista');
+    expect(mensagemParaOBanco({ ...b, pedido: 'parcelar' })).toContain('parcelamento');
+    expect(mensagemParaOBanco({ ...b, pedido: 'juros' })).toContain('reduzir a taxa');
   });
 });
