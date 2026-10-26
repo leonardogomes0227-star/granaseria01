@@ -53,7 +53,7 @@ const Sanfona = ({ titulo, children }: { titulo: string; children: React.ReactNo
   </details>
 );
 
-export function MaisRapido({ sim, pagamento, estrategia }: { sim: DividaSim[]; pagamento: number; estrategia: Estrategia }) {
+export function MaisRapido({ sim, pagamento, estrategia, simples = false }: { sim: DividaSim[]; pagamento: number; estrategia: Estrategia; simples?: boolean }) {
   const e = useEstado();
   const mes = mesDe(useHoje());
   const [taxa, setTaxa] = useState<number | ''>('');
@@ -64,16 +64,16 @@ export function MaisRapido({ sim, pagamento, estrategia }: { sim: DividaSim[]; p
   const cortar = corte >= 20 ? cortarPagando(sim, pagamento, estrategia, corte) : null;
   return (
     <>
-      <p className="gs-banner" style={{ marginTop: 16 }}>As suas dívidas rendem cerca de <b>{brl0(custoPorDia(sim))} de juros por dia</b> pra quem emprestou.</p>
-      <Sanfona titulo="Vale trocar por um juro menor?">
+      {!simples && <p className="gs-banner" style={{ marginTop: 16 }}>As suas dívidas rendem cerca de <b>{brl0(custoPorDia(sim))} de juros por dia</b> pra quem emprestou.</p>}
+      {!simples && <Sanfona titulo="Vale trocar por um juro menor?">
         <p className="gs-sub" style={{ marginTop: 0 }}>Apareceu uma oferta de empréstimo mais barata? Digite o juro dela e eu mostro se compensa trocar a dívida mais cara.</p>
         <CampoNumero rotulo="Juro da nova oferta" sufixo="% ao mês" valor={taxa} onChange={setTaxa} min={0.1} max={30} placeholder="Ex.: 3" />
         {troca && (troca.economia > 0
           ? <Dica>Trocando <b>{troca.nome}</b> você economiza <b>{brl0(troca.economia)}</b>{troca.meses > 0 ? ` e termina ${troca.meses} ${troca.meses === 1 ? 'mês' : 'meses'} antes` : ''}. Confira se não tem taxa pra contratar.</Dica>
           : <Dica>Nesse juro não compensa trocar.</Dica>)}
         <p className="gs-nota">Compare sempre pelo custo total, na ferramenta <Link to="/plano/emprestimos">Empréstimos</Link>.</p>
-      </Sanfona>
-      {cortar && alvo && (
+      </Sanfona>}
+      {!simples && cortar && alvo && (
         <Sanfona titulo="Cortar um gasto pra quitar antes">
           <p className="gs-sub" style={{ marginTop: 0 }}>Este mês você gastou {brl0(alvo[1])} em <b>{alvo[0]}</b>. Se cortar a metade ({brl0(corte)}) e jogar na dívida:</p>
           <Dica>você termina <b>{cortar.meses} {cortar.meses === 1 ? 'mês' : 'meses'} antes</b> e economiza <b>{brl0(cortar.economia)}</b> de juros.</Dica>
