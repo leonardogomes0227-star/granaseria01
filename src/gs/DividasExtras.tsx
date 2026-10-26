@@ -79,8 +79,9 @@ export function MaisRapido({ sim, pagamento, estrategia, simples = false }: { si
           <Dica>você termina <b>{cortar.meses} {cortar.meses === 1 ? 'mês' : 'meses'} antes</b> e economiza <b>{brl0(cortar.economia)}</b> de juros.</Dica>
         </Sanfona>
       )}
-      <Sanfona titulo="Direitos e dívidas antigas">
-        <p style={{ marginTop: 0 }}>Você pode pedir ao credor o contrato e o cálculo da dívida, por escrito. Só pague depois de conferir.</p>
+      <Sanfona titulo="Negociar e seus direitos">
+        <p style={{ marginTop: 0 }}>Antes de quitar, peça desconto pra pagar à vista ou uma taxa menor, e anote o protocolo. O botão “Falar com o banco” já escreve a mensagem.</p>
+        <p>Você pode pedir ao credor o contrato e o cálculo da dívida, por escrito. Só pague depois de conferir.</p>
         <p>Pra saber se seu nome está negativado, consulte o seu CPF nos birôs de crédito (Serasa, Boa Vista, SPC). A negativação precisa ser avisada por escrito.</p>
         <p>Dívida muito antiga pode ter prazo limite de cobrança (em geral cerca de 5 anos), mas depende do caso. Antes de pagar uma dívida antiga, confirme no Procon ou com um advogado.</p>
         <p className="gs-nota" style={{ marginBottom: 0 }}>Informação geral, não é orientação jurídica.</p>
