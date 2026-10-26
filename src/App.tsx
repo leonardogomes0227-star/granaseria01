@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
+import { importarComRetry } from './gs/importar';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
 import {
   IncomeStep,
@@ -18,7 +19,7 @@ import { PlanTracker } from './components/PlanTracker';
 import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { HomePage } from './components/HomePage';
-import { AppShell, PageHead } from './components/AppShell';
+import { AppShell } from './components/AppShell';
 import { Toaster } from './components/ui/Toast';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
@@ -42,7 +43,7 @@ import { Orcamento } from './gs/Orcamento';
 import { Calendario } from './gs/Calendario';
 import { ParceladoTela } from './gs/Parcelado';
 import { CartaoTela } from './gs/Cartao';
-const Investir = lazy(() => import('./gs/investir/Investir').then((m) => ({ default: m.Investir })));
+const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { Assistentes } from './gs/Assistentes';
 import { MeusDados } from './gs/MeusDados';
 import { Sobre } from './gs/Sobre';
