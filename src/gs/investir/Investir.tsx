@@ -1,13 +1,14 @@
 import { Suspense, lazy } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Esqueleto, Titulo } from '../ui';
+import { importarComRetry } from '../importar';
 
 /* ---------- Investir: Mercado | Meu plano | Simulação | Conversar. Cada parte carrega só quando abre. ---------- */
 
-const Mercado = lazy(() => import('./Mercado').then((m) => ({ default: m.Mercado })));
-const MeuPlano = lazy(() => import('./MeuPlano').then((m) => ({ default: m.MeuPlano })));
-const Simulacao = lazy(() => import('./Simulacao').then((m) => ({ default: m.Simulacao })));
-const Conversar = lazy(() => import('./Conversar').then((m) => ({ default: m.Conversar })));
+const Mercado = lazy(() => importarComRetry(() => import('./Mercado')).then((m) => ({ default: m.Mercado })));
+const MeuPlano = lazy(() => importarComRetry(() => import('./MeuPlano')).then((m) => ({ default: m.MeuPlano })));
+const Simulacao = lazy(() => importarComRetry(() => import('./Simulacao')).then((m) => ({ default: m.Simulacao })));
+const Conversar = lazy(() => importarComRetry(() => import('./Conversar')).then((m) => ({ default: m.Conversar })));
 
 const ABAS = [
   ['mercado', 'Mercado'],

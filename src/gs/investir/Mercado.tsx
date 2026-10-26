@@ -42,7 +42,10 @@ export function Mercado() {
         <button type="button" className="gs-btn" onClick={recarregar}><RefreshCw size={16} /> Tentar de novo</button>
       </div>
     );
-  const series: Serie[] = Object.entries(dados.series ?? {}).map(([id, valores]) => ({ id, nome: NOME[id] ?? id, cor: COR[id] ?? 'var(--ink)', valores }));
+  const nMeses = dados.meses?.length ?? 0;
+  const series: Serie[] = Object.entries(dados.series ?? {})
+    .filter(([, v]) => Array.isArray(v) && v.length === nMeses && v.every((n) => typeof n === 'number' && Number.isFinite(n)))
+    .map(([id, valores]) => ({ id, nome: NOME[id] ?? id, cor: COR[id] ?? 'var(--ink)', valores }));
   return (
     <>
       {erro && <p className="gs-banner" role="status">Não consegui atualizar agora. Mostrando o último dado disponível.</p>}
@@ -61,7 +64,7 @@ export function Mercado() {
           <p className="gs-medio" style={{ margin: '6px 0 0' }}>Hoje a renda fixa rende cerca de {pct(Math.abs(dados.jurosReal.valor), 1)} ao ano {dados.jurosReal.valor >= 0 ? 'acima' : 'abaixo'} da inflação.</p>
         </div>
       )}
-      {dados.meses && series.length > 0 && (
+      {dados.meses && nMeses > 1 && series.length > 0 && (
         <>
           <h2 className="gs-h2">Quanto cada um rendeu em 12 meses</h2>
           <div className="gs-card"><Grafico meses={dados.meses} series={series} /></div>
