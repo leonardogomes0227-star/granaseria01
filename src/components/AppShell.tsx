@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ChartLine, House, Sparkles, Target, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { ChartLine, House, Sparkles, Target, Wallet, type LucideIcon } from 'lucide-react';
 import { getName, painelToken } from '../painel';
 import { useVisualDoApp } from '../gs/visual';
-import { BrandMark } from './Layout';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 
@@ -68,54 +67,36 @@ function Casca({ children }: { children: ReactNode }) {
   );
 }
 
-/** Páginas públicas e landing: a barra de sempre. */
-function CascaPublica({ children, wide }: { children: ReactNode; wide: boolean }) {
-  const aceso = useAceso();
-  const logged = Boolean(painelToken());
+/** Quem ainda não entrou: cabeçalho enxuto (marca, guias, entrar), sem abas, e o rodapé com os avisos. */
+function CascaPublica({ children }: { children: ReactNode }) {
   return (
-    <div className="shell">
-      <header className="shell-top">
-        <div className="shell-top-in">
-          <Link to="/" className="shell-brand" aria-label="Grana Séria, início">
-            <BrandMark />
+    <div className="gs-casca">
+      <header className="gs-topo">
+        <div className="gs-topo-in">
+          <Link to="/" className="gs-marca" aria-label="Grana Séria, início">
+            <Moeda tamanho={30} />
             <span>Grana Séria</span>
           </Link>
-          <nav className="shell-links" aria-label="Seções">
-            {NAV.map(([to, label]) => (
-              <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')}>
-                {label}
-              </NavLink>
-            ))}
+          <nav className="gs-abas-topo" aria-label="Seções" style={{ display: 'flex' }}>
+            <NavLink to="/guias">Guias</NavLink>
           </nav>
-          <Link className={logged ? 'shell-me' : 'shell-login'} to={logged ? '/dados' : '/entrar'} aria-label={logged ? 'Meus dados' : 'Entrar'}>
-            {logged ? <span className="shell-avatar">{inicialDo(getName())}</span> : <UserRound size={16} />}
-            <span>{logged ? getName() || 'Minha conta' : 'Entrar'}</span>
-          </Link>
+          <Link className="gs-btn pequeno" to="/entrar">Entrar</Link>
         </div>
       </header>
-      <main className={`shell-main ${wide ? 'wide' : ''}`}>{children}</main>
-      <footer className="shell-foot">
+      <main className="gs-principal">{children}</main>
+      <footer className="gs-rodape">
         <p>
-          <Link to="/guias">Guias</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> ·{' '}
-          <Link to="/admin" className="foot-admin">Painel</Link>
+          <Link to="/guias">Guias</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>
         </p>
         <p>Grana Séria · conteúdo educacional, não é consultoria financeira · CNPJ 69.557.683/0001-89</p>
       </footer>
-      <nav className="shell-bottom" aria-label="Seções">
-        {NAV.map(([to, label, Icon]) => (
-          <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')} aria-label={label}>
-            <Icon size={22} strokeWidth={1.75} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
-      </nav>
     </div>
   );
 }
 
-export function AppShell({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
+export function AppShell({ children }: { children: ReactNode; wide?: boolean }) {
   const app = useVisualDoApp();
-  return app ? <Casca>{children}</Casca> : <CascaPublica wide={wide}>{children}</CascaPublica>;
+  return app && Boolean(painelToken()) ? <Casca>{children}</Casca> : <CascaPublica>{children}</CascaPublica>;
 }
 
 /** Título de cada página: curto, com uma linha embaixo se precisar. */
