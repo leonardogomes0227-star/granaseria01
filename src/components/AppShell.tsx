@@ -7,13 +7,13 @@ import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 
 /* ---------- A casca do app: 5 abas (embaixo no celular, no topo no PC) ---------- */
-// Início (como estou hoje?) · Meu mês (pra onde foi?) · Plano (o que faço?) · Investir · Assistentes.
+// Início (como estou hoje?) · Meu mês (pra onde foi?) · Ferramentas (o que faço?) · Investir · Assistentes.
 // O avatar abre "Meus dados". As páginas públicas (guias, termos, landing) mantêm a barra de sempre.
 
 export const NAV: [string, string, LucideIcon][] = [
   ['/', 'Início', House],
   ['/mes', 'Meu mês', Wallet],
-  ['/plano', 'Plano', Target],
+  ['/plano', 'Ferramentas', Target],
   ['/investir', 'Investir', ChartLine],
   ['/assistentes', 'Assistentes', Sparkles],
 ];

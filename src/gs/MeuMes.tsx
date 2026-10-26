@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
@@ -31,6 +31,10 @@ export function MeuMes() {
   return (
     <>
       <Titulo titulo="Meu mês" />
+      <div className="gs-chips" aria-label="Atalhos" style={{ margin: "4px 0 12px" }}>
+        <Link to="/plano/orcamento" className="gs-chip">Orçamento</Link>
+        <Link to="/plano/calendario" className="gs-chip">Calendário de contas</Link>
+      </div>
       <div className="gs-seg" role="tablist" aria-label="Meu mês">
         <button type="button" role="tab" aria-selected={aba === 'contas'} className={aba === 'contas' ? 'on' : ''} onClick={() => setParams({})}>Contas fixas</button>
         <button type="button" role="tab" aria-selected={aba === 'dia'} className={aba === 'dia' ? 'on' : ''} onClick={() => setParams({ aba: 'dia' })}>Dia a dia</button>
