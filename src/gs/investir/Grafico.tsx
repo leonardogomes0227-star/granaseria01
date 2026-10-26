@@ -58,8 +58,8 @@ export function Grafico({ meses, series }: { meses: string[]; series: Serie[] })
           </g>
         ))}
         <line x1={M.l} x2={W - M.r} y1={y(100)} y2={y(100)} stroke="var(--line-strong)" strokeDasharray="3 3" />
-        {[0, Math.floor((meses.length - 1) / 2), meses.length - 1].map((i) => (
-          <text key={i} x={x(i)} y={H - 6} fontSize="9" textAnchor={i === 0 ? 'start' : i === meses.length - 1 ? 'end' : 'middle'} fill="var(--ink-muted)">{mesCurto(meses[i])}</text>
+        {[0, Math.floor((meses.length - 1) / 2), meses.length - 1].map((i, k) => (
+          <text key={k} x={x(i)} y={H - 6} fontSize="9" textAnchor={i === 0 ? 'start' : i === meses.length - 1 ? 'end' : 'middle'} fill="var(--ink-muted)">{mesCurto(meses[i])}</text>
         ))}
         {visiveis.map((s) => (
           <path key={s.id} d={caminho(s.valores)} fill="none" stroke={s.cor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
