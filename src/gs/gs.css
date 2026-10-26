@@ -212,3 +212,30 @@ html.gs-app .gs-menu-pontos:hover { background: var(--bg-2); color: var(--ink); 
 .gs-switch { min-width: 52px; }
 .gs-switch::after { content: ''; position: absolute; inset: -6px -2px; }
 .gs-avatar { flex: none; }
+
+.gs-rodape { max-width: 720px; margin: 0 auto; padding: 8px 16px calc(32px + env(safe-area-inset-bottom)); text-align: center; color: var(--ink-muted); font-size: 13px; line-height: 20px; }
+.gs-rodape a { color: var(--ink-muted); display: inline-block; min-height: 32px; padding: 4px 2px; }
+.gs-landing .gs-card { scroll-margin-top: 80px; }
+.gs-abas-topo a:hover { background: var(--bg-2); }
+
+/* títulos em serifa em todo o site (o tema antigo forçava sans) */
+html.gs-app h1, html.gs-app h2, html.gs-app .serif, html.gs-app .wizard-h2, html.gs-app .plan-heading, html.gs-app .result-big, html.gs-app .diag-number { font-family: var(--serif) !important; font-weight: 500; letter-spacing: -0.015em; color: var(--ink); }
+html.gs-app h3 { font-family: var(--sans) !important; font-weight: 600; color: var(--ink); }
+html.gs-app .gs-landing h1 { font-weight: 500; }
+
+.gs-dica { display: flex; gap: 10px; background: var(--gold-soft); border-radius: 14px; padding: 12px 14px; margin-top: 12px; font-size: 14px; line-height: 20px; }
+.gs-mini { background: var(--ivory); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.gs-mini.m { border-color: var(--gold-strong); background: var(--gold-soft); }
+.gs-mini small { display: block; color: var(--ink-muted); font-size: 12px; }
+.gs-mini b { font-family: var(--serif); font-size: 19px; font-weight: 500; }
+.gs-tile { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; box-shadow: var(--sombra); display: grid; gap: 4px; align-content: start; min-height: 112px; color: inherit; text-decoration: none; }
+.gs-tile .ic { width: 36px; height: 36px; border-radius: 12px; background: var(--gold-soft); color: var(--gold-strong); display: grid; place-items: center; font-family: var(--serif); font-size: 18px; font-weight: 600; }
+.gs-tile b { font-weight: 600; line-height: 1.2; font-size: 15px; }
+.gs-tile small { color: var(--ink-muted); font-size: 12.5px; line-height: 1.3; }
+.gs-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.gs-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; text-align: center; }
+.gs-cal div { min-height: 44px; border-radius: 10px; background: var(--ivory); border: 1px solid var(--line); font-size: 12px; padding-top: 3px; position: relative; }
+.gs-cal .hoje { background: var(--gold-soft); border-color: var(--gold-strong); }
+.gs-cal .vazio { background: none; border: 0; }
+.gs-cal i { position: absolute; left: 50%; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); transform: translateX(-50%); }
+.gs-cal i.p { background: var(--success); }

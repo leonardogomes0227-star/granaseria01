@@ -4,7 +4,7 @@ import { analisarCompra, contagem, msRestantes } from './ferramentas';
 import { livreParaGastar } from './selectores';
 import { decidirDesejo, esperar72h, salvarConfig } from './acoes';
 import { brl, brl0, mesDe } from './datas';
-import { Campo, CampoDinheiro, CampoNumero, Titulo } from './ui';
+import { Aprende, Campo, CampoDinheiro, CampoNumero, Dica, Titulo } from './ui';
 import { useHoje } from './useHoje';
 import { toast } from '../components/ui/Toast';
 
@@ -46,6 +46,10 @@ export function PossoComprar() {
             <p className="gs-sub" style={{ margin: 0 }}>
               {a.pctLivre === null ? 'Você não tem folga livre este mês.' : `Isso consome ${Math.round(a.pctLivre)}% do que ainda está livre (${brl0(livre)}).`}
             </p>
+            <div className="gs-mini" style={{ marginTop: 10 }}>
+              <span>Se investisse esse valor por 5 anos</span>
+              <b>{brl0(valor * 1.008 ** 60)}</b>
+            </div>
             <div className="gs-acoes">
               <button type="button" className="gs-btn" onClick={() => { if (esperar72h(item, valor)) { toast('Combinado: espere 72 horas e decida de cabeça fria.'); setItem(''); setValor(0); } }}>Esperar 72h</button>
               <button type="button" className="gs-btn sec" onClick={() => { setItem(''); setValor(0); }}>Limpar</button>
@@ -55,6 +59,7 @@ export function PossoComprar() {
         <p className="gs-nota">Horas por mês: {e.config.horasMes}. Dá pra mudar em Meus dados.</p>
       </section>
 
+      <Dica>Antes de comprar, pergunte: eu preciso ou eu quero? Eu usaria isso daqui a 3 meses? Vale as horas de trabalho que custa?</Dica>
       <h2 className="gs-h2">Em espera</h2>
       {espera.length === 0 ? (
         <p className="gs-mudo">Nada esperando. Quando bater a vontade, use “Esperar 72h”.</p>
@@ -95,6 +100,7 @@ export function PossoComprar() {
           </div>
         </>
       )}
+      <Aprende titulo="Por que esperar 72 horas?" texto="A vontade de comprar costuma passar em poucos dias. Esperar tira a pressa e deixa você decidir de cabeça fria. Muita gente desiste e guarda o dinheiro." />
     </>
   );
 }

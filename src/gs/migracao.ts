@@ -116,6 +116,11 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
       mensagensHoje: { data: String(obj(inv.mensagensHoje).data ?? ''), qtd: num(obj(inv.mensagensHoje).qtd) },
     },
     semanaVista: typeof b.semanaVista === 'string' ? b.semanaVista : undefined,
+    limites: Object.fromEntries(Object.entries(obj(b.limites)).filter(([, v]) => typeof v === 'number' && v > 0)) as Record<string, number>,
+    cartao: (() => {
+      const c = obj(b.cartao);
+      return num(c.limite) > 0 ? { limite: num(c.limite), usado: Math.max(0, num(c.usado)), fechaDia: Math.min(31, Math.max(1, num(c.fechaDia, 1))), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))) } : null;
+    })(),
   };
 }
 

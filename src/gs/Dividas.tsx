@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useEstado } from './store';
-import { brl, brl0, mesCurto, hoje as hojeSP, pct } from './datas';
+import { brl, brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct } from './datas';
 import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, paraSim, passoDoMes, saldoAtual, simular } from './dividas';
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
-import { Barra, Campo, CampoDinheiro, CampoNumero, Folha, Titulo, Vazio } from './ui';
+import { Aprende, Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
+import { Linha } from './graficos';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 import type { Divida, Estrategia } from './tipos';
 
@@ -23,53 +24,88 @@ export function Dividas() {
   );
 }
 
-/* ---------- acompanhamento: o plano vivo ---------- */
+/* ---------- acompanhamento: o plano vivo, com gráfico, controle de quanto pagar e a comparação das estratégias ---------- */
 function Acompanhamento({ onEditar }: { onEditar: () => void }) {
   const e = useEstado();
   const plano = e.planoDividas!;
-  const hoje = hojeSP();
   const [pagar, setPagar] = useState<Divida | null>(null);
   const sim = useMemo(() => paraSim(e.dividas), [e.dividas]);
   const resultado = useMemo(() => simular(sim, plano.pagamentoMensal, plano.estrategia), [sim, plano]);
+  const comp = useMemo(() => compararEstrategias(sim, plano.pagamentoMensal), [sim, plano.pagamentoMensal]);
   const passo = passoDoMes(sim, plano.pagamentoMensal, plano.estrategia);
+  const minimo = sim.reduce((t, d) => t + Math.min(d.parcelaMinima, d.saldo), 0);
+  const extra = Math.max(0, plano.pagamentoMensal - minimo);
   const totalOriginal = e.dividas.reduce((t, d) => t + d.saldo, 0);
   const totalAtual = e.dividas.reduce((t, d) => t + saldoAtual(d), 0);
   const progresso = totalOriginal > 0 ? ((totalOriginal - totalAtual) / totalOriginal) * 100 : 0;
+  const serie = useMemo(() => [totalAtual, ...resultado.cronograma.map((m) => m.saldoTotal)], [resultado, totalAtual]);
+  const mudar = (patch: Partial<typeof plano>) => salvarPlanoDividas({ ...plano, ...patch });
   if (totalAtual <= 0)
     return <Vazio titulo="Você quitou tudo" texto="Nenhuma dívida em aberto. Agora o dinheiro que ia pra elas pode ir pra sua reserva." acao="Guardar na reserva" rota="/plano/reserva" avatar="dividas" />;
   return (
     <>
       <section className="gs-card destaque">
         <span className="gs-rotulo">Falta pagar</span>
-        <p className="gs-grande" style={{ margin: '4px 0 10px' }}>{brl0(totalAtual)}</p>
-        <Barra pct={progresso} tom="ok" rotulo="Progresso da quitação" />
-        <p className="gs-sub" style={{ margin: '10px 0 0' }}>
+        <p className="gs-grande" style={{ margin: '4px 0 6px' }}>{brl0(totalAtual)}</p>
+        <p className="gs-sub" style={{ margin: 0 }}>
           {resultado.insuficiente
             ? `Com ${brl0(plano.pagamentoMensal)}/mês a dívida cresce. Você precisa de pelo menos ${brl0(resultado.minimoNecessario)}.`
             : resultado.quita
-              ? `Você quita tudo em ${resultado.meses} ${resultado.meses === 1 ? 'mês' : 'meses'} (${mesCurto(resultado.dataFinal!)}).`
-              : 'Com esse valor não dá pra quitar em 50 anos. Aumente o pagamento mensal.'}
+              ? <>Você zera tudo em <b>{resultado.meses} {resultado.meses === 1 ? 'mês' : 'meses'}</b> ({mesCurto(resultado.dataFinal!)}), pagando {brl0(resultado.totalJuros)} de juros.</>
+              : 'Com esse valor a dívida não zera. Aumente o pagamento mensal.'}
         </p>
-        {passo && <p className="gs-banner" style={{ margin: '12px 0 0' }}>Este mês pague <b>{brl0(passo.valor)}</b> na dívida <b>{passo.divida.nome}</b>.</p>}
+        {!resultado.insuficiente && resultado.quita && <Linha serie={serie} fim={mesCurto(resultado.dataFinal!)} rotulo="Saldo das dívidas caindo mês a mês" />}
+        <div style={{ marginTop: 10 }}><Barra pct={progresso} tom="ok" rotulo="Progresso da quitação" /></div>
+        <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>Você já quitou {Math.round(progresso)}% do que devia.</p>
       </section>
+
+      <section className="gs-card">
+        <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={Math.max(100, Math.floor(minimo / 50) * 50)} max={Math.max(3000, Math.ceil((plano.pagamentoMensal * 1.5) / 100) * 100)} passo={50} formato={brl0} extra={`mínimo ${brl0(minimo)}`} onChange={(n) => mudar({ pagamentoMensal: n })} />
+        <div className="gs-chips" role="group" aria-label="Estratégia" style={{ marginTop: 12 }}>
+          {(['bola-de-neve', 'maior-juro'] as const).map((id) => <button key={id} type="button" className={`gs-chip ${plano.estrategia === id ? 'on' : ''}`} aria-pressed={plano.estrategia === id} onClick={() => mudar({ estrategia: id })}>{id === 'bola-de-neve' ? 'Bola de neve' : 'Maior juro primeiro'}</button>)}
+        </div>
+        <div className="gs-dois" style={{ marginTop: 4 }}>
+          <div className={`gs-mini ${comp.melhor === 'bola-de-neve' ? 'm' : ''}`}><small>Bola de neve</small><b>{comp.bola.meses} meses</b><small>{brl0(comp.bola.totalJuros)} de juros</small></div>
+          <div className={`gs-mini ${comp.melhor === 'maior-juro' ? 'm' : ''}`}><small>Maior juro</small><b>{comp.juro.meses} meses</b><small>{brl0(comp.juro.totalJuros)} de juros</small></div>
+        </div>
+        {comp.economia >= 1 && <Dica>{comp.melhor === 'maior-juro' ? 'Maior juro' : 'Bola de neve'} economiza <b>{brl0(comp.economia)}</b> em juros. {comp.melhor === 'maior-juro' ? 'A bola de neve dá a vitória mais cedo, e isso ajuda a não desistir.' : 'E ainda quita a primeira mais rápido.'}</Dica>}
+      </section>
+
+      {passo && !resultado.insuficiente && (
+        <section className="gs-card">
+          <span className="gs-rotulo">Este mês</span>
+          {[
+            <>Pague as <b>parcelas mínimas</b> de todas ({brl0(minimo)}).</>,
+            <>Jogue os outros <b>{brl0(extra)}</b> na dívida <b>{passo.divida.nome}</b>.</>,
+            <>Ao zerar uma, o valor dela passa pra próxima. É assim que acelera.</>,
+          ].map((t, i) => (
+            <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0' }}><span className="gs-check" style={{ flex: 'none', fontWeight: 700 }}>{i + 1}</span><span>{t}</span></div>
+          ))}
+        </section>
+      )}
+
       <div className="gs-card">
+        <span className="gs-rotulo">Suas dívidas</span>
         {e.dividas.filter((d) => saldoAtual(d) > 0).map((d) => {
-          const pagoMes = d.pagamentos.filter((p) => p.data.slice(0, 7) === hoje.slice(0, 7)).reduce((t, p) => t + p.valor, 0);
+          const pagoMes = d.pagamentos.filter((p) => p.data.slice(0, 7) === hojeSP().slice(0, 7)).reduce((t, p) => t + p.valor, 0);
+          const q = resultado.quitaEm[d.id];
           return (
-            <div key={d.id} className="gs-linha">
+            <div key={d.id} className="gs-linha" style={{ flexWrap: 'wrap' }}>
               <div className="gs-corpo">
                 <b>{d.nome}</b>
-                <small>{brl(saldoAtual(d))} · {pct(d.jurosMensal, 1)} ao mês{pagoMes > 0 ? ` · pago este mês: ${brl0(pagoMes)}` : ''}</small>
-                <Barra pct={d.saldo > 0 ? ((d.saldo - saldoAtual(d)) / d.saldo) * 100 : 0} tom="ok" rotulo={`Quitação de ${d.nome}`} />
+                <small>{brl(saldoAtual(d))} · {pct(d.jurosMensal, 1)} ao mês{q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}{pagoMes > 0 ? ` · pago este mês: ${brl0(pagoMes)}` : ''}</small>
               </div>
               <button type="button" className="gs-btn pequeno" onClick={() => setPagar(d)}>Paguei</button>
+              <div style={{ flexBasis: '100%' }}><Barra pct={d.saldo > 0 ? ((d.saldo - saldoAtual(d)) / d.saldo) * 100 : 0} tom="ok" rotulo={`Quitação de ${d.nome}`} /></div>
             </div>
           );
         })}
       </div>
-      <div className="gs-acoes">
-        <button type="button" className="gs-btn sec" onClick={onEditar}>Editar plano</button>
+      <div className="gs-acoes" style={{ marginTop: 0 }}>
+        <button type="button" className="gs-btn sec" onClick={onEditar}>Editar plano e dívidas</button>
+        <button type="button" className="gs-btn sec" onClick={() => { salvarPlanoDividas({ ...plano, passo: 4 }); onEditar(); }}>Proposta pro banco</button>
       </div>
+      <Aprende titulo="Por que o cartão vem primeiro" texto="O rotativo do cartão chega a mais de 400% ao ano. Por isso a dívida de juro mais alto pesa mais do que a de maior valor: cada mês parado custa mais do que o anterior. Pagar o mínimo de todas e concentrar o resto numa só é o jeito mais rápido de acabar." />
       <PagarSheet divida={pagar} sugerido={passo && pagar && passo.divida.id === pagar.id ? passo.valor : pagar?.parcelaMinima ?? 0} onFechar={() => setPagar(null)} />
     </>
   );

@@ -1,3 +1,4 @@
+import { Moeda } from './ui/Moeda';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, ArrowUp, ChevronDown, LayoutGrid, Menu, UserRound, X } from 'lucide-react';
@@ -9,13 +10,7 @@ import { painelToken } from '../painel';
 const painelLabel = () => (painelToken() ? 'Meu painel' : 'Entrar');
 
 export function BrandMark({ className = 'brand-mark' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 40 40" aria-hidden="true">
-      <circle cx="20" cy="20" r="18" fill="#BD7E1E" />
-      <circle cx="20" cy="20" r="18" fill="none" stroke="#7A5311" strokeWidth="1.5" />
-      <path d="M11 26h18M13.5 21h13M16 16h8" stroke="#5A3A0A" strokeWidth="2.6" strokeLinecap="square" />
-    </svg>
-  );
+  return <Moeda tamanho={28} className={className} />;
 }
 
 export function ToolIcon({ tool, size = 'md' }: { tool: ToolInfo; size?: 'sm' | 'md' | 'lg' }) {

@@ -2,19 +2,17 @@
 
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { painelToken } from '../painel';
 
-const PUBLICAS = ['/guias', '/termos-de-uso', '/politica-de-privacidade', '/diagnostico', '/admin', '/ferramentas'];
+const PUBLICAS = ['/admin'];
 
-export function rotaDoApp(pathname: string, logado: boolean): boolean {
+export function rotaDoApp(pathname: string): boolean {
   if (PUBLICAS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
-  if ((pathname === '/' || pathname === '/inicio') && !logado) return false;
   return true;
 }
 
 export function useVisualDoApp(forcar?: boolean) {
   const { pathname } = useLocation();
-  const on = forcar ?? rotaDoApp(pathname, Boolean(painelToken()));
+  const on = forcar ?? rotaDoApp(pathname);
   useEffect(() => {
     const el = document.documentElement;
     el.classList.toggle('gs-app', on);

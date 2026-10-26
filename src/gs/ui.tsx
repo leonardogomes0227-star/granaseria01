@@ -160,3 +160,35 @@ export function Titulo({ titulo, sub }: { titulo: string; sub?: string }) {
     </>
   );
 }
+
+/** "Pra entender": um parágrafo que explica o porquê, em linguagem simples. */
+export const Aprende = ({ titulo, texto }: { titulo: string; texto: string }) => (
+  <section className="gs-card" style={{ background: 'var(--gold-soft)', borderColor: 'transparent' }}>
+    <div className="gs-rotulo">Pra entender</div>
+    <h3 style={{ margin: '4px 0 6px', fontFamily: 'var(--serif)', fontSize: 18 }}>{titulo}</h3>
+    <p style={{ margin: 0 }}>{texto}</p>
+  </section>
+);
+
+/** Controle deslizante com valor grande em cima e limites embaixo. */
+export function Deslizante({ rotulo, valor, min, max, passo, onChange, formato, extra }: { rotulo: string; valor: number; min: number; max: number; passo: number; onChange: (n: number) => void; formato: (n: number) => string; extra?: string }) {
+  return (
+    <div>
+      <div className="gs-rotulo">{rotulo}</div>
+      <div className="gs-medio" style={{ margin: '2px 0' }}>{formato(valor)}</div>
+      <input type="range" min={min} max={max} step={passo} value={valor} aria-label={rotulo} onChange={(e) => onChange(Number(e.target.value))} style={{ width: '100%', height: 44, accentColor: 'var(--gold-strong)' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-muted)' }}>
+        <span>{formato(min)}</span>
+        {extra && <span>{extra}</span>}
+        <span>{formato(max)}</span>
+      </div>
+    </div>
+  );
+}
+
+export const Dica = ({ children, icone = '💡' }: { children: ReactNode; icone?: string }) => (
+  <div className="gs-dica">
+    <span aria-hidden="true">{icone}</span>
+    <span>{children}</span>
+  </div>
+);

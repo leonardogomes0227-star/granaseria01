@@ -135,6 +135,13 @@ export interface Investir {
   mensagensHoje: { data: string; qtd: number };
 }
 
+export interface Cartao {
+  limite: number;
+  usado: number;
+  fechaDia: number;
+  venceDia: number;
+}
+
 export interface Estado {
   schemaVersion: number;
   config: Config;
@@ -149,6 +156,8 @@ export interface Estado {
   agentesCustom: AgenteCustom[];
   investir: Investir;
   semanaVista?: string; // segunda-feira da última semana mostrada
+  limites: Record<string, number>; // limite mensal por categoria do dia a dia
+  cartao: Cartao | null;
 }
 
 export const ESTADO_INICIAL = (): Estado => ({
@@ -164,4 +173,6 @@ export const ESTADO_INICIAL = (): Estado => ({
   agentes: {},
   agentesCustom: [],
   investir: { simulacao: { saldoVirtual: 10000, posicoes: [], historico: [] }, chat: [], mensagensHoje: { data: '', qtd: 0 } },
+  limites: {},
+  cartao: null,
 });

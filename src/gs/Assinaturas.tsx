@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useEstado } from './store';
-import { ANOS_PROJECAO, projecaoAnos, SUGESTOES_ASSINATURAS, TAXA_PADRAO_ASSINATURAS } from './ferramentas';
+import { projecaoAnos, SUGESTOES_ASSINATURAS, TAXA_PADRAO_ASSINATURAS } from './ferramentas';
 import { cancelarAssinatura, reativarAssinatura, removerAssinatura, salvarAssinatura } from './acoes';
 import { brl, brl0 } from './datas';
-import { Campo, CampoDinheiro, CampoNumero, Folha, Titulo } from './ui';
+import { Aprende, Barra, Campo, CampoDinheiro, CampoNumero, Folha, Titulo } from './ui';
 import { toast } from '../components/ui/Toast';
 import type { Assinatura } from './tipos';
 
@@ -32,15 +32,24 @@ export function Assinaturas() {
       </section>
       {total > 0 && (
         <section className="gs-card">
-          <p className="gs-rotulo">Quanto isso vira</p>
-          {proj.map((p) => (
-            <div className="gs-linha" key={p.anos} style={{ minHeight: 48 }}>
-              <div className="gs-corpo"><b>Em {p.anos} {p.anos === 1 ? 'ano' : 'anos'}</b><small>se fosse investido: {brl0(p.investido)}</small></div>
-              <span className="gs-valor">{brl0(p.simples)}</span>
-            </div>
-          ))}
-          <CampoNumero rotulo="Rendimento do investimento" sufixo="% ao mês" valor={taxa} onChange={setTaxa} min={0} max={5} passo={0.1} />
-          <p className="gs-nota">Soma simples ({ANOS_PROJECAO.join(', ')} anos) e, ao lado, o valor se você investisse a mesma quantia todo mês. Estimativa com os seus números, não é recomendação de investimento.</p>
+          <span className="gs-rotulo">Quanto isso vira</span>
+          {proj.map((p) => {
+            const mx = Math.max(proj[proj.length - 1].simples, proj[proj.length - 1].investido, 1);
+            return (
+              <div key={p.anos} style={{ marginTop: 14 }}>
+                <b>Em {p.anos} {p.anos === 1 ? 'ano' : 'anos'}</b>
+                {([['Gasto', p.simples, ''], ['Investido', p.investido, 'ok']] as const).map(([nome, v, tom]) => (
+                  <div key={nome} style={{ display: 'grid', gridTemplateColumns: '70px 1fr auto', gap: 10, alignItems: 'center', marginTop: 6, fontSize: 13 }}>
+                    <span className="gs-mudo">{nome}</span>
+                    <Barra pct={(v / mx) * 100} tom={tom} rotulo={`${nome} em ${p.anos} anos`} />
+                    <b className="gs-tab">{brl0(v)}</b>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          <div style={{ marginTop: 14 }}><CampoNumero rotulo="Rendimento do investimento" sufixo="% ao mês" valor={taxa} onChange={setTaxa} min={0} max={5} passo={0.1} /></div>
+          <p className="gs-nota" style={{ marginTop: -6 }}>Estimativa com os seus números. Não é recomendação de investimento. Rentabilidade passada não garante resultado futuro.</p>
         </section>
       )}
 
@@ -92,6 +101,7 @@ export function Assinaturas() {
           </div>
         </>
       )}
+      <Aprende titulo="Por que assinatura pesa tanto" texto="R$ 40 por mês parece pouco. Em 10 anos são R$ 4.800 e, investidos a 0,8% ao mês, viram mais de R$ 7.500. Assinatura é o gasto que se repete sozinho: você só percebe quando olha o total, e quase ninguém olha." />
       <FormAssinatura aberta={nova || Boolean(editando)} valor={editando} onFechar={() => { setNova(false); setEditando(null); }} />
     </>
   );
