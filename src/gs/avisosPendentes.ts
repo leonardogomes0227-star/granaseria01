@@ -4,6 +4,8 @@ import { brl0, diaCurto, diasEntre } from './datas';
 import { contasDoMes } from './selectores';
 import { proximaRepeticao } from './ferramentas';
 import { assistenteAtivo } from './insights';
+import { proximaAcao } from './painelDividas';
+import { saldoAtual } from './dividas';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -20,6 +22,11 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
       if (c.dias < 0) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, rota: '/mes' });
       else if (c.dias <= e.config.avisos.antecedenciaDias) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} vence ${c.dias === 0 ? 'hoje' : c.dias === 1 ? 'amanhã' : `em ${c.dias} dias`} (${brl0(c.valor)})`, rota: '/mes' });
     }
+  }
+  if (assistenteAtivo(e, 'dividas')) {
+    const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
+    const a = proximaAcao(abertas, e.planoDividas?.pagamentoMensal ?? 0, hoje);
+    if (a.tipo === 'vence' && a.divida) out.push({ id: `divida-${a.divida.id}-${hoje.slice(0, 7)}`, texto: a.texto, rota: '/plano/dividas' });
   }
   for (const a of e.agentesCustom) {
     if (!a.ativo || a.tipo !== 'lembrar') continue;
