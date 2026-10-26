@@ -44,19 +44,18 @@ export function Assistentes() {
     const ativo = assistenteAtivo(e, a.id);
     const aviso = ativo ? proximoAviso(e, a.id, hoje) : null;
     return (
-      <div className="gs-linha">
-        <button type="button" className="gs-menu-pontos" style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', color: 'inherit' }} onClick={() => setAberto(a)} aria-label={`Configurar ${a.nome}`}>
+      <div className="gs-assist">
+        <button type="button" className="gs-assist-corpo" onClick={() => setAberto(a)} aria-label={`Configurar ${a.nome}`}>
           <AvatarAssistente id={a.id} tamanho={48} />
-          <span className="gs-corpo" style={{ display: 'block' }}>
-            <b style={{ display: 'block' }}>{a.nome}</b>
-            <small style={{ display: 'block' }}>{a.descricao}</small>
-            {ativo && <small style={{ display: 'block', color: 'var(--gold-strong)' }}>Ativo{aviso ? ` · próximo aviso: ${aviso}` : ''}</small>}
+          <span className="gs-corpo">
+            <b>{a.nome}</b>
+            <small>{a.descricao}</small>
+            {ativo && <small style={{ color: 'var(--gold-strong)' }}>Ativo{aviso ? ` · próximo aviso: ${aviso}` : ''}</small>}
           </span>
         </button>
-        <label className="gs-chip" style={{ gap: 8 }}>
-          <input type="checkbox" role="switch" checked={ativo} onChange={(ev) => { ligarAssistente(a.id, ev.target.checked); toast(ev.target.checked ? `${a.nome} ligado` : `${a.nome} desligado`); }} aria-label={`${ativo ? 'Desligar' : 'Ligar'} ${a.nome}`} style={{ width: 20, height: 20, accentColor: 'var(--gold-strong)' }} />
-          {ativo ? 'Ligado' : 'Desligado'}
-        </label>
+        <button type="button" role="switch" aria-checked={ativo} className={`gs-switch ${ativo ? 'on' : ''}`} aria-label={`${ativo ? 'Desligar' : 'Ligar'} ${a.nome}`} onClick={() => { ligarAssistente(a.id, !ativo); toast(!ativo ? `${a.nome} ligado` : `${a.nome} desligado`); }}>
+          <i />
+        </button>
       </div>
     );
   };

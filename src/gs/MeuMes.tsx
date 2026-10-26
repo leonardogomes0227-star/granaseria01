@@ -78,28 +78,31 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
           {contas.map((c) => {
             const [rotulo, tom] = ROTULO_ESTADO[c.estado];
             return (
-              <div className="gs-linha" key={c.gasto.id}>
-                {c.estado === 'paga' ? <span className="gs-check" aria-hidden="true"><Check size={16} /></span> : <span style={{ width: 28 }} />}
-                <div className="gs-corpo">
-                  <b>{c.gasto.nome}</b>
-                  <small>
-                    Vence {diaCurto(c.vencimento)} · {c.gasto.categoria}
-                    {c.estado === 'paga' && ` · paga em ${diaCurto(c.gasto.pagamentos[mes].pagoEm)}`}
-                  </small>
+              <div className="gs-conta" key={c.gasto.id}>
+                <div className="gs-conta-topo">
+                  {c.estado === 'paga' ? <span className="gs-check" aria-hidden="true"><Check size={16} /></span> : <span className="gs-bolinha" aria-hidden="true" />}
+                  <div className="gs-corpo">
+                    <b>{c.gasto.nome}</b>
+                    <small>
+                      Vence {diaCurto(c.vencimento)} · {c.gasto.categoria}
+                      {c.estado === 'paga' && ` · paga em ${diaCurto(c.gasto.pagamentos[mes].pagoEm)}`}
+                    </small>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="gs-valor">{brl(c.valor)}</div>
+                    <span className={`gs-etiqueta ${tom}`}>{rotulo}</span>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="gs-valor">{brl(c.valor)}</div>
-                  <span className={`gs-etiqueta ${tom}`}>{rotulo}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="gs-conta-acoes">
                   {c.estado === 'paga' ? (
-                    <button type="button" className="gs-btn link" onClick={() => { const id = c.gasto.id; desfazerBaixa(id, mes); toast('Pagamento desfeito'); }}>Desfazer</button>
+                    <button type="button" className="gs-btn pequeno sec" onClick={() => { const id = c.gasto.id; desfazerBaixa(id, mes); toast('Pagamento desfeito'); }}>Desfazer pagamento</button>
                   ) : (
                     <button type="button" className="gs-btn pequeno" disabled={futuro} title={futuro ? 'Só dá pra dar baixa no mês atual ou em meses passados' : undefined} onClick={() => setBaixa(c.gasto.id)}>Dar baixa</button>
                   )}
+                  <span style={{ flex: 1 }} />
+                  <button type="button" className="gs-menu-pontos" aria-label={`Editar ${c.gasto.nome}`} onClick={() => setEditando(c.gasto)}><Pencil size={17} /></button>
+                  <button type="button" className="gs-menu-pontos" aria-label={`Excluir ${c.gasto.nome}`} onClick={() => setApagar(c.gasto)}><Trash2 size={17} /></button>
                 </div>
-                <button type="button" className="gs-menu-pontos" aria-label={`Editar ${c.gasto.nome}`} onClick={() => setEditando(c.gasto)}><Pencil size={17} /></button>
-                <button type="button" className="gs-menu-pontos" aria-label={`Excluir ${c.gasto.nome}`} onClick={() => setApagar(c.gasto)}><Trash2 size={17} /></button>
               </div>
             );
           })}
