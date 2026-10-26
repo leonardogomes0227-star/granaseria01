@@ -56,6 +56,7 @@ export interface Divida {
   parcelaMinima: number;
   pagamentos: PagamentoDivida[];
   cadastradaEm?: string;
+  venceDia?: number; // dia do mês em que vence a parcela (opcional)
 }
 export type Estrategia = 'bola-de-neve' | 'maior-juro';
 export interface PlanoDividas {

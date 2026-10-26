@@ -4,6 +4,8 @@ import { useHoje } from './useHoje';
 import { brl, brl0, diaCurto, mesDe, nomeMes, diasNoMes, vencimentoNoMes } from './datas';
 import { contasDoMes, faltaPagar } from './selectores';
 import { Aprende, Titulo, Vazio } from './ui';
+import { saldoAtual } from './dividas';
+import { pagoNaDivida } from './painelDividas';
 import { BaixaSheet } from './BaixaSheet';
 
 /* ---------- Calendário de contas: o que vence e quando (verde = pago, vermelho = falta) ---------- */
@@ -17,7 +19,9 @@ export function Calendario() {
   const primeiro = new Date(`${mes}-01T12:00:00Z`).getUTCDay();
   const dias = diasNoMes(mes);
   const porDia = (d: number) => contas.filter((c) => c.vencimento === vencimentoNoMes(mes, d));
-  if (e.gastosFixos.length === 0)
+  const parcelas = e.dividas.filter((d) => d.venceDia && saldoAtual(d) > 0);
+  const parcelaNoDia = (d: number) => parcelas.some((x) => vencimentoNoMes(mes, x.venceDia!) === vencimentoNoMes(mes, d));
+  if (e.gastosFixos.length === 0 && parcelas.length === 0)
     return (
       <>
         <Titulo titulo="Calendário de contas" sub="O que vence e quando." />
@@ -40,12 +44,27 @@ export function Calendario() {
             return (
               <div key={d} className={mesDe(hoje) === mes && Number(hoje.slice(8, 10)) === d ? 'hoje' : ''}>
                 {d}
+                {cs.length === 0 && parcelaNoDia(d) && <i aria-label="Parcela de dívida" />}
                 {cs.length > 0 && <i className={cs.every((c) => c.estado === 'paga') ? 'p' : ''} aria-label={cs.map((c) => `${c.gasto.nome} ${c.estado === 'paga' ? 'paga' : 'a pagar'}`).join(', ')} />}
               </div>
             );
           })}
         </div>
       </section>
+      {parcelas.length > 0 && (
+        <section className="gs-card">
+          <span className="gs-rotulo">Parcelas de dívidas</span>
+          {parcelas.map((d) => {
+            const paga = pagoNaDivida(d, mes) >= Math.min(d.parcelaMinima || 1, saldoAtual(d));
+            return (
+              <div className="gs-linha" key={d.id}>
+                <div className="gs-corpo"><b>{d.nome}</b><small>dia {d.venceDia} · {paga ? 'paga' : 'a pagar'}</small></div>
+                <span className="gs-valor">{brl(d.parcelaMinima || 0)}</span>
+              </div>
+            );
+          })}
+        </section>
+      )}
       <section className="gs-card">
         <span className="gs-rotulo">Contas do mês</span>
         {contas.map((c) => (

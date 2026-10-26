@@ -75,7 +75,8 @@ export const removerAporte = (id: string) => atualizar((e) => ({ ...e, aportes: 
 export function salvarDivida(d: Omit<Divida, 'id' | 'pagamentos'> & { id?: string }): boolean {
   if (!d.nome.trim() || !ok(d.saldo) || d.jurosMensal < 0 || d.parcelaMinima < 0) return false;
   atualizar((e) => {
-    const dados = { nome: d.nome.trim().slice(0, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima) };
+    const dia = d.venceDia && Number.isInteger(d.venceDia) && d.venceDia >= 1 && d.venceDia <= 31 ? d.venceDia : undefined;
+    const dados = { nome: d.nome.trim().slice(0, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima), venceDia: dia };
     return d.id ? { ...e, dividas: e.dividas.map((x) => (x.id === d.id ? { ...x, ...dados } : x)) } : { ...e, dividas: [...e.dividas, { id: novoId('dv'), pagamentos: [], cadastradaEm: hojeSP(), ...dados }] };
   });
   return true;
