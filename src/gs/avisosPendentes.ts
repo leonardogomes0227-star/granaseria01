@@ -6,6 +6,7 @@ import { proximaRepeticao } from './ferramentas';
 import { assistenteAtivo } from './insights';
 import { proximaAcao } from './painelDividas';
 import { saldoAtual } from './dividas';
+import { linhasDeCategoria } from './orcamento';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -22,6 +23,10 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
       if (c.dias < 0) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, rota: '/mes' });
       else if (c.dias <= e.config.avisos.antecedenciaDias) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} vence ${c.dias === 0 ? 'hoje' : c.dias === 1 ? 'amanhã' : `em ${c.dias} dias`} (${brl0(c.valor)})`, rota: '/mes' });
     }
+  }
+  if (assistenteAtivo(e, 'gastos')) {
+    for (const l of linhasDeCategoria(e, hoje.slice(0, 7)))
+      if (l.tom === 'perigo') out.push({ id: `orc-${l.categoria}-${hoje.slice(0, 7)}`, texto: `${l.categoria} passou do limite: ${brl0(l.gasto)} de ${brl0(l.limite!)}`, rota: '/plano/orcamento' });
   }
   if (assistenteAtivo(e, 'dividas')) {
     const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
