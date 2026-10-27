@@ -1,22 +1,24 @@
 # PROGRESS
 
-**Fase atual:** 0 a 8 feitas no código; falta a Fase 9 completa (auditoria) e a limpeza do código antigo.
-**Próximo passo exato:** apagar o código antigo (agentes com os 7 nomes, missões, chat roteirizado, coach) e rodar `grep -ri "dabasir\|bansir\|arkad\|nomasir\|sharru\|mathon\|rodan" src server api public` até zerar. A varredura em massa com `git rm` foi bloqueada pelo ambiente; precisa de autorização do dono (veja "Avisos").
+**Onde estamos:** app novo no ar (areia e dourado). 5 abas: Início, Meu mês, Ferramentas, Investir, Assistentes. Capa nova pra quem não conhece finanças.
 
-## O que existe (app novo em `src/gs/`)
-- Tema areia/dourado: `src/gs/gs.css` (tokens `--bg`, `--gold`, `--ink`…), ligado só dentro do app (`src/gs/visual.ts`).
-- Store `grana-seria:v1` (`store.ts`, `tipos.ts`, `migracao.ts`): versão, migração das chaves `gs-*` antigas, leitura com try/catch. Entra em `SYNC_KEYS` e `HANDOFF_KEYS`. Espelha contas e guardado nas chaves antigas (só leitura, pro WhatsApp).
-- Seletores puros (`selectores.ts`), dívidas (`dividas.ts`), ferramentas (`ferramentas.ts`), insights e resumo (`insights.ts`), agentes (`agentesCustom.ts`), investir (`investir/calculos.ts`), mercado (`server/mercado/calculos.ts`): todos com testes (343 no total).
-- Telas: Início (rosca, próximas ações, resumo), Meu mês (Contas fixas | Dia a dia), Plano (dívidas em 4 passos, posso comprar, assinaturas, reserva, renda, empréstimos, extras), Investir (Mercado, Meu plano, Simulação, Conversar), Assistentes (+ criar agente), Meus dados, Sobre.
-- Servidor: `api/mercado.ts` (+ `server/mercado/fontes.ts`), `api/investimentos/chat.ts`. `.env.example` com as variáveis.
-- PWA: `public/manifest.webmanifest`, `public/sw.js` (só o casco, nunca `/api`), ícones.
+## Feito
+- **Visual e estrutura:** tema areia/dourado em todo o site, PWA, 5 abas, avatar abre "Meus dados", capa nova (linguagem simples, glossário, exemplo, FAQ).
+- **Ferramentas** (aba Ferramentas, grupos por objetivo, busca e estado em cada uma). Todas no mesmo molde: número principal com anel, "o que fazer agora", conquistas e "Mais ajuda":
+  - Quitar dívidas (painel vivo, contagem até ficar livre, meta do mês, cabe no bolso, vencimento com aviso, falar com o banco).
+  - Orçamento, Calendário (contas + parcelas de dívida + fatura), Gastos escondidos (revisão de uso), Reserva de emergência (3/6/12 meses, saque), Dinheiro extra (efeito + histórico), Viver de renda, Posso comprar isso?, À vista ou parcelado, Cartão de crédito (compras parceladas, faturas futuras), Comparar empréstimos (vira dívida ao contratar).
+- **Investir:** dados ao vivo (Banco Central, CoinGecko), simulação, chat, plano.
+- **Avisos no app:** conta a vencer, parcela de dívida, fatura do cartão, categoria que estourou, salário caiu e não guardou.
 
-## Decisões
-- Lançamentos do WhatsApp entram no store uma vez cada (pelo id do servidor); apagar no app apaga lá (com desfazer).
-- Antecedência dos avisos é global (Meus dados) e também por assistente na configuração.
-- Banco de dados (Supabase): nada novo é exigido por este app; `supabase/coach.sql` e `supabase/fundacao.sql` seguem pendentes (dono pediu pra deixar pro final).
+## Falta
+- **WhatsApp:** lembretes e "paguei 200 do cartão" por mensagem. Precisa do número da API configurado e de modelos de mensagem aprovados pela Meta.
+- **Código antigo** com os nomes dos agentes antigos (Dabasir, Bansir, Arkad…) ainda está no repositório, sem rota. A exclusão em massa foi bloqueada pelo ambiente. Precisa de autorização do dono. Depois: `grep -ri "dabasir\|bansir\|arkad\|nomasir\|sharru\|mathon\|rodan" src server api public` até zerar.
+- **Supabase:** `supabase/coach.sql` e `supabase/fundacao.sql` seguem pendentes (dono pediu pra deixar pro final).
+- **Verificar no ar:** a aba Investir com dados reais (não dá pra testar do ambiente de desenvolvimento). Se der erro, a tela mostra "Detalhe: …".
+- **Auditoria final** (Fase 9): matriz de requisitos e relatório com "como testar".
+- **Funil de vendas** (landing com captura, eventos, mensagens, n8n): só discutido. Decisões abertas: preço/plano, número do WhatsApp, nomes dos personagens (risco jurídico).
+- **Ideias:** ligar as ferramentas no Início (resumo do que fazer hoje), PDF do plano de dívidas, modo casal, compartilhar progresso.
 
-## Avisos
-- Não deu pra validar as séries do Banco Central e a CoinGecko daqui (o ambiente bloqueia a saída). O servidor valida cada série (Selic/CDI entre 5% e 25% a.a., IPCA, taxas mensais) e descarta o que vier estranho; sem dado, a tela diz "Sem conexão com os dados de mercado agora". Séries usadas: 432, 4389, 13522, 4391 (CDI no mês), 433, 1. Confirmar no ar.
-- Ibovespa e B3 só aparecem com `BRAPI_TOKEN`; o formato da brapi não foi testado.
-- Código antigo ainda no repositório (sem rota): `src/chat`, `src/components/{chat,missoes,mes,selos,perfil}`, `src/coachChat`, `src/missoes*.ts`, `src/eu.ts`, `src/agents.ts`, `api/coach.ts`, `api/conselheiro.ts`, etc.
+## Notas técnicas
+- Store `grana-seria:v1` (localStorage, sincronizado). Telas em `src/gs/`. Lógica pura com teste em `*Logica.ts` e afins (397 testes).
+- Nunca mostrar número de mercado inventado. `ANTHROPIC_API_KEY` só no servidor.
