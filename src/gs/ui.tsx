@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { arred } from './datas';
 import { assistentePorId } from './assistentes';
+import { Anel } from './graficos';
 
 /* ---------- campo de dinheiro com máscara (digita centavos, mostra R$ 1.234,56) ---------- */
 export function CampoDinheiro({ rotulo, valor, onChange, placeholder = 'R$ 0,00', grande = false, erro, autoFocus }: { rotulo: string; valor: number; onChange: (n: number) => void; placeholder?: string; grande?: boolean; erro?: string; autoFocus?: boolean }) {
@@ -191,4 +192,42 @@ export const Dica = ({ children, icone = '💡' }: { children: ReactNode; icone?
     <span aria-hidden="true">{icone}</span>
     <span>{children}</span>
   </div>
+);
+
+/* ---------- molde das ferramentas: cabeçalho com anel, o que fazer agora, conquistas e "mais ajuda" ---------- */
+export function Heroi({ pct, anel, anelSub, rotulo, grande, sub, cor = 'var(--gold-strong)' }: { pct: number; anel: string; anelSub: string; rotulo: string; grande: string; sub?: string; cor?: string }) {
+  return (
+    <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+      <div style={{ flex: 'none', width: 104 }}><Anel pct={Math.max(0, Math.min(100, pct))} grande={anel} sub={anelSub} tamanho={104} cor={cor} /></div>
+      <div style={{ minWidth: 0 }}>
+        <span className="gs-rotulo">{rotulo}</span>
+        <p className="gs-grande" style={{ margin: '2px 0' }}>{grande}</p>
+        {sub && <p className="gs-sub" style={{ margin: 0 }}>{sub}</p>}
+      </div>
+    </section>
+  );
+}
+
+export function Agora({ tom = 'ok', texto, children }: { tom?: 'ok' | 'aviso' | 'perigo'; texto: string; children?: ReactNode }) {
+  return (
+    <section className="gs-card">
+      <span className="gs-rotulo">O que fazer agora</span>
+      <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${tom}`} style={{ marginRight: 8 }}>{tom === 'ok' ? 'Tudo certo' : tom === 'perigo' ? 'Atenção' : 'Cuidado'}</span>{texto}</p>
+      {children}
+    </section>
+  );
+}
+
+export const Conquistas = ({ lista }: { lista: string[] }) =>
+  lista.length === 0 ? null : (
+    <div className="gs-chips" aria-label="Conquistas">
+      {lista.map((c) => <span key={c} className="gs-etiqueta ok">★ {c}</span>)}
+    </div>
+  );
+
+export const MaisAjuda = ({ children, titulo = 'Mais ajuda' }: { children: ReactNode; titulo?: string }) => (
+  <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }}>
+    <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>{titulo}</summary>
+    <div style={{ paddingBottom: 12 }}>{children}</div>
+  </details>
 );

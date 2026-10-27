@@ -2,7 +2,8 @@
 
 import { atualizar, getEstado } from './store';
 import { arred, novoId, hoje as hojeSP } from './datas';
-import type { Aporte, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
+import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
+import type { Estado, Aporte, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
@@ -181,4 +182,23 @@ export const definirLimite = (categoria: string, valor: number) =>
     else delete limites[categoria];
     return { ...e, limites };
   });
+export function comprarNoCartao(compra: { descricao: string; valor: number; parcelas: number }): boolean {
+  if (!ok(compra.valor)) return false;
+  const id = novoId('pc');
+  let feito = false;
+  atualizar((e) => {
+    if (!e.cartao) return e;
+    feito = true;
+    return { ...e, cartao: aplicarCompra(e.cartao, compra, id) };
+  });
+  return feito;
+}
+export function pagarFaturaCartao(): Estado['cartao'] {
+  let antes: Estado['cartao'] = null;
+  atualizar((e) => {
+    antes = e.cartao;
+    return e.cartao ? { ...e, cartao: aplicarPagamento(e.cartao, hojeSP()) } : e;
+  });
+  return antes;
+}
 export const salvarCartao = (c: import('./tipos').Cartao | null) => atualizar((e) => ({ ...e, cartao: c && c.limite > 0 ? { ...c, usado: Math.max(0, c.usado) } : null }));
