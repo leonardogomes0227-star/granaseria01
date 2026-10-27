@@ -1,95 +1,165 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useEstado } from './store';
-import { guardar, removerAporte, salvarConfig } from './acoes';
-import { gastoMensalMedio, patrimonioGuardado, reservaMeta } from './selectores';
-import { Aprende, Barra, CampoNumero, Deslizante, Dica, Titulo } from './ui';
+import { guardar, removerAporte, salvarConfig, usarReserva } from './acoes';
+import { gastoMensalMedio, guardadoNoMes, livreParaGastar, patrimonioGuardado, reservaMeta } from './selectores';
+import { Barra, CampoDinheiro, Deslizante, Dica, Folha, Titulo } from './ui';
+import { Anel } from './graficos';
 import { brl, brl0, diaCurto, mesCurto, mesDe, somaMes } from './datas';
 import { toast } from '../components/ui/Toast';
 import { useHoje } from './useHoje';
-import { progressoRenda } from './ferramentas';
+import { acaoReserva, conquistasReserva, mesesGuardando, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
+import { capacidadeDePagamento } from './painelDividas';
 
-/* ---------- Reserva: pague-se primeiro. Separe uma parte do salário antes de gastar. ---------- */
+/* ---------- Reserva de emergência: quantos meses você aguenta, a meta do mês e o que fazer agora ---------- */
+
+const fmt1 = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
 
 export function Reserva() {
   const e = useEstado();
   const hoje = useHoje();
   const mes = mesDe(hoje);
-  const sugerido = Math.round((e.config.renda * e.config.reservaPct) / 100);
-  const [valor, setValor] = useState(0);
-  const [pct, setPct] = useState<number | ''>(e.config.reservaPct);
+  const [saque, setSaque] = useState(false);
+  const [valorSaque, setValorSaque] = useState(0);
   const meta = reservaMeta(e, mes);
   const guardado = patrimonioGuardado(e);
+  const gasto = gastoMensalMedio(e, mes);
+  const protegido = mesesProtegido(e, mes);
+  const metaMeses = e.config.reservaMeses ?? 6;
+  const plano = planoMensalReserva(e);
+  const feito = guardadoNoMes(e, mes);
   const falta = Math.max(0, meta - guardado);
-  const usar = valor > 0 ? valor : sugerido;
+  const completa = meta > 0 && falta <= 0;
+  const prontos = mesesParaMeta(falta, plano);
+  const acao = acaoReserva(e, mes, hoje);
+  const sequencia = mesesGuardando(e, mes);
+  const feitas = conquistasReserva(protegido, sequencia, completa).filter((c) => c.feita);
+  const cap = capacidadeDePagamento(e.config.renda, gasto);
   const recentes = [...e.aportes].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
-  const mesesProntos = meta > 0 ? Math.ceil(falta / Math.max(1, usar)) : 0;
-  const gastoMes = gastoMensalMedio(e, mes);
-  const marcos = [1, 3, 6];
+  const guardarAgora = (v: number) => {
+    const id = guardar(v, 'reserva', 'reserva');
+    if (id) toast(`${brl0(v)} guardados`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+  };
+
   return (
     <>
-      <Titulo titulo="Reserva de emergência" sub="Guarde primeiro, gaste o resto. Assim a reserva cresce sem esforço." />
-      <section className="gs-card destaque">
-        <span className="gs-rotulo">Guardado até hoje</span>
-        <p className="gs-grande" style={{ margin: '4px 0 10px' }}>{brl0(guardado)} {meta > 0 && <small className="gs-mudo" style={{ fontFamily: 'var(--sans)', fontSize: 15 }}>de {brl0(meta)}</small>}</p>
-        {meta > 0 ? (
-          <>
-            <Barra pct={progressoRenda(guardado, meta)} tom="ok" rotulo="Reserva de emergência" />
-            <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-              {marcos.map((m) => (
-                <div key={m} style={{ flex: 1, textAlign: 'center' }}>
-                  <Barra pct={Math.max(0, Math.min(100, ((guardado - gastoMes * (m === 6 ? 3 : m === 3 ? 1 : 0)) / (gastoMes * (m === 6 ? 3 : m === 3 ? 2 : 1))) * 100))} tom={guardado >= gastoMes * m ? 'ok' : ''} rotulo={`${m} meses`} />
-                  <small className="gs-mudo">{m} {m === 1 ? 'mês' : 'meses'}</small>
+      <Titulo titulo="Reserva de emergência" sub="O dinheiro que segura a sua vida se a renda parar." />
+
+      {meta <= 0 ? (
+        <section className="gs-card destaque">
+          <span className="gs-rotulo">Primeiro passo</span>
+          <p style={{ margin: '6px 0 10px' }}>Pra calcular a sua meta eu preciso saber o quanto você gasta por mês.</p>
+          <div className="gs-acoes" style={{ marginTop: 0 }}>
+            <Link to="/mes" className="gs-btn">Cadastrar contas fixas</Link>
+            <Link to="/mes?aba=dia" className="gs-btn sec">Anotar gastos</Link>
+          </div>
+        </section>
+      ) : (
+        <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <div style={{ flex: 'none', width: 104 }}><Anel pct={Math.min(100, (guardado / meta) * 100)} grande={completa ? '✓' : `${Math.round(Math.min(100, (guardado / meta) * 100))}%`} sub="da meta" tamanho={104} cor="var(--success)" /></div>
+          <div>
+            <span className="gs-rotulo">{completa ? 'Reserva completa' : 'Você aguenta'}</span>
+            <p className="gs-grande" style={{ margin: '2px 0' }}>{fmt1(protegido)} {protegido === 1 ? 'mês' : 'meses'}</p>
+            <p className="gs-sub" style={{ margin: 0 }}>{brl0(guardado)} de {brl0(meta)}{!completa && prontos ? ` · pronta em ${mesCurto(somaMes(mes, prontos))}` : ''}</p>
+          </div>
+        </section>
+      )}
+
+      {meta > 0 && (
+        <>
+          <section className="gs-card">
+            <span className="gs-rotulo">O que fazer agora</span>
+            <p style={{ margin: '6px 0 0' }}>{acao.texto}</p>
+            {(acao.tipo === 'comecar' || acao.tipo === 'faltam') && acao.valor > 0 && (
+              <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} onClick={() => guardarAgora(acao.valor)}>Guardei {brl0(acao.valor)}</button>
+            )}
+            {acao.tipo === 'divida' && <Link to="/plano/dividas" className="gs-btn" style={{ marginTop: 12 }}>Ver minhas dívidas</Link>}
+            {!completa && plano > 0 && <div style={{ marginTop: 14 }}><Barra pct={Math.min(100, (feito / plano) * 100)} tom="ok" rotulo="Meta do mês" /><p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(feito)} de {brl0(plano)} neste mês</p></div>}
+          </section>
+
+          {completa ? (
+            <section className="gs-card">
+              <span className="gs-rotulo">E agora?</span>
+              {[
+                <>Mantenha. Se os seus gastos subirem, a meta sobe junto e eu aviso.</>,
+                <>O que passar da meta pode render na aba <Link to="/investir">Investir</Link>.</>,
+                <>Se precisar usar a reserva, registre em “Mais ajuda”. A meta volta a ser a prioridade.</>,
+              ].map((t, i) => <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0' }}><span className="gs-check" style={{ flex: 'none', fontWeight: 700 }}>{i + 1}</span><span>{t}</span></div>)}
+            </section>
+          ) : (
+            <section className="gs-card">
+              <Deslizante rotulo="Quanto guardar por mês" valor={plano} min={50} max={Math.max(2000, Math.ceil((Math.max(plano, cap) * 1.5) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => salvarConfig({ reservaMensal: n })} />
+              {prontos ? <Dica icone="📅">Guardando {brl0(plano)} por mês, você completa a reserva em <b>{prontos} {prontos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, prontos))}).</Dica> : null}
+              {e.config.renda > 0 && (plano > cap && cap > 0
+                ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Hoje sobram cerca de {brl0(cap)} por mês. {brl0(plano)} pode apertar.</p>
+                : cap > 0 ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Cabe: hoje sobram cerca de {brl0(cap)} por mês.</p> : null)}
+              {livreParaGastar(e, mes) < plano - feito && plano - feito > 0 && <p className="gs-banner" style={{ marginBottom: 0 }}>Este mês só restam {brl0(Math.max(0, livreParaGastar(e, mes)))} livres. Guardar tudo agora deixa o resto do mês apertado.</p>}
+            </section>
+          )}
+
+          <section className="gs-card">
+            <span className="gs-rotulo">Sua meta: {metaMeses} meses de gasto</span>
+            <div className="gs-chips" role="group" aria-label="Meses de segurança" style={{ marginTop: 8 }}>
+              {MESES_RESERVA.map((m) => <button key={m} type="button" className={`gs-chip ${metaMeses === m ? 'on' : ''}`} aria-pressed={metaMeses === m} onClick={() => salvarConfig({ reservaMeses: m })}>{m} meses</button>)}
+            </div>
+            <p className="gs-sub" style={{ margin: '4px 0 0' }}>{metaMeses === 3 ? 'Mínimo, pra quem tem renda bem estável.' : metaMeses === 6 ? 'O mais comum, pra quem tem emprego com carteira.' : 'Pra autônomo ou renda que varia.'} Seu gasto médio é {brl0(gasto)} por mês.</p>
+          </section>
+
+          {feitas.length > 0 && (
+            <div className="gs-chips" aria-label="Conquistas">
+              {feitas.map((c) => <span key={c.id} className="gs-etiqueta ok">★ {c.nome}</span>)}
+            </div>
+          )}
+        </>
+      )}
+
+      <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }}>
+        <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Mais ajuda</summary>
+        <div style={{ paddingBottom: 12 }}>
+          <span className="gs-rotulo">Onde deixar</span>
+          {[
+            ['✓', <><b>Liquidez diária:</b> você precisa do dinheiro rápido e sem susto.</>],
+            ['✓', <><b>Baixo risco:</b> poupança, Tesouro Selic ou CDB com liquidez diária. Confira as regras vigentes.</>],
+            ['✕', <><b>Nunca aqui:</b> ações, cripto e qualquer coisa que pode cair.</>],
+          ].map(([i, t], k) => (
+            <div key={k} style={{ display: 'flex', gap: 12, padding: '8px 0' }}><span className="gs-check" style={{ flex: 'none', background: i === '✕' ? 'var(--danger)' : 'var(--success)', color: '#fff' }}>{i}</span><span>{t}</span></div>
+          ))}
+          <p className="gs-sub">Perder o emprego ou ter um imprevisto grande leva meses pra resolver. Com a reserva, você não precisa pedir empréstimo nem entrar no rotativo do cartão na pior hora.</p>
+          <button type="button" className="gs-btn sec" onClick={() => setSaque(true)}>Tive que usar a reserva</button>
+          {recentes.length > 0 && (
+            <>
+              <span className="gs-rotulo" style={{ display: 'block', marginTop: 16 }}>Últimos movimentos</span>
+              {recentes.map((a) => (
+                <div className="gs-linha" key={a.id}>
+                  <div className="gs-corpo"><b>{a.valor < 0 ? `− ${brl(-a.valor)}` : brl(a.valor)}</b><small>{diaCurto(a.data)} · {a.origem === 'saque' ? 'usou a reserva' : a.origem === 'reserva' ? 'reserva' : a.origem === 'meta' ? 'meta' : a.origem === 'extra' ? 'dinheiro extra' : a.origem === 'investimento' ? 'investimento' : 'manual'}</small></div>
+                  <button type="button" className="gs-btn link" onClick={() => { removerAporte(a.id); toast('Removido', { acao: { rotulo: 'Desfazer', onClick: () => guardar(a.valor, a.origem, a.agenteId, a.data) } }); }}>Remover</button>
                 </div>
               ))}
-            </div>
-            <p className="gs-sub" style={{ margin: '12px 0 0' }}>Seu gasto médio é {brl0(gastoMes)} por mês. Seis meses disso cobrem desemprego ou imprevisto sem dívida nova.{falta <= 0 ? ' Meta batida: agora o dinheiro pode render, veja a aba Investir.' : ''}</p>
-          </>
-        ) : (
-          <p className="gs-sub" style={{ margin: 0 }}>Cadastre suas contas fixas pra eu calcular a meta (6 meses de gastos).</p>
-        )}
-      </section>
-      <section className="gs-card">
-        <Deslizante rotulo="Quanto guardar por mês" valor={usar} min={50} max={Math.max(2000, Math.ceil((sugerido * 2) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => setValor(n)} />
-        {meta > 0 && falta > 0 && <Dica icone="📅">Guardando {brl0(usar)} por mês, você completa a reserva em <b>{mesesProntos} {mesesProntos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, mesesProntos))}).</Dica>}
+            </>
+          )}
+        </div>
+      </details>
+
+      <Folha aberta={saque} onFechar={() => setSaque(false)} titulo="Tive que usar a reserva">
+        <p className="gs-sub" style={{ marginTop: 0 }}>Sem culpa: ela existe pra isso. Registre quanto você tirou e eu ajusto o plano pra repor.</p>
+        <CampoDinheiro rotulo="Quanto você usou?" valor={valorSaque} onChange={setValorSaque} grande />
         <div className="gs-acoes">
+          <button type="button" className="gs-btn sec" onClick={() => setSaque(false)}>Cancelar</button>
           <button
             type="button"
             className="gs-btn"
-            disabled={!(usar > 0)}
+            disabled={!(valorSaque > 0)}
             onClick={() => {
-              const id = guardar(usar, 'reserva', 'reserva');
-              if (id) toast(`${brl0(usar)} guardados`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+              const id = usarReserva(valorSaque);
+              if (id) toast(`${brl0(valorSaque)} registrados`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+              setValorSaque(0);
+              setSaque(false);
             }}
           >
-            Guardei {brl0(usar)} este mês
+            Registrar
           </button>
         </div>
-        <div style={{ marginTop: 14 }}>
-          <CampoNumero rotulo="Percentual sugerido quando o salário cai" sufixo="%" valor={pct} onChange={(n) => { setPct(n); if (typeof n === 'number' && n > 0) salvarConfig({ reservaPct: n }); }} min={1} max={100} />
-        </div>
-      </section>
-      <section className="gs-card">
-        <span className="gs-rotulo">Onde deixar</span>
-        {[
-          ['✓', <><b>Liquidez diária:</b> você precisa do dinheiro rápido e sem susto.</>],
-          ['✓', <><b>Baixo risco:</b> poupança, Tesouro Selic ou CDB com liquidez diária. Confira as regras vigentes.</>],
-          ['✕', <><b>Nunca aqui:</b> ações, cripto e qualquer coisa que pode cair.</>],
-        ].map(([i, t], k) => (
-          <div key={k} style={{ display: 'flex', gap: 12, padding: '8px 0' }}><span className="gs-check" style={{ flex: 'none', background: i === '✕' ? 'var(--danger)' : 'var(--success)', color: '#fff' }}>{i}</span><span>{t}</span></div>
-        ))}
-      </section>
-      {recentes.length > 0 && (
-        <section className="gs-card">
-          <span className="gs-rotulo">Últimos guardados</span>
-          {recentes.map((a) => (
-            <div className="gs-linha" key={a.id}>
-              <div className="gs-corpo"><b>{brl(a.valor)}</b><small>{diaCurto(a.data)} · {a.origem === 'reserva' ? 'reserva' : a.origem === 'meta' ? 'meta' : a.origem === 'extra' ? 'dinheiro extra' : a.origem === 'investimento' ? 'investimento' : 'manual'}</small></div>
-              <button type="button" className="gs-btn link" onClick={() => { removerAporte(a.id); toast('Removido', { acao: { rotulo: 'Desfazer', onClick: () => guardar(a.valor, a.origem, a.agenteId, a.data) } }); }}>Remover</button>
-            </div>
-          ))}
-        </section>
-      )}
-      <Aprende titulo="Por que seis meses" texto="Perder o emprego ou ter um imprevisto grande leva meses pra resolver. Com seis meses guardados, você não precisa pedir empréstimo nem entrar no rotativo do cartão na pior hora. A reserva é o que deixa o resto do plano de pé." />
+      </Folha>
     </>
   );
 }

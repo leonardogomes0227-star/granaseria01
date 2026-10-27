@@ -15,7 +15,7 @@ export const faltaPagar = (e: Estado, mes: string) => Math.max(0, arred(totalFix
 
 export const lancamentosDoMes = (e: Estado, mes: string): Lancamento[] => e.lancamentos.filter((l) => mesDe(l.data) === mes);
 export const totalVariaveis = (e: Estado, mes: string) => arred(soma(lancamentosDoMes(e, mes).map((l) => l.valor)));
-export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes).map((a) => a.valor)));
+export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes && a.valor > 0).map((a) => a.valor)));
 export const patrimonioGuardado = (e: Estado) => arred(soma(e.aportes.map((a) => a.valor)));
 
 /** Pode ser negativo: a pessoa gastou além da renda. */
@@ -29,7 +29,7 @@ export function gastoMensalMedio(e: Estado, mes: string): number {
   const variavel = anteriores.length > 0 ? soma(anteriores) / anteriores.length : totalVariaveis(e, mes);
   return arred(totalFixos(e, mes) + variavel);
 }
-export const reservaMeta = (e: Estado, mes: string) => arred(6 * gastoMensalMedio(e, mes));
+export const reservaMeta = (e: Estado, mes: string) => arred((e.config.reservaMeses ?? 6) * gastoMensalMedio(e, mes));
 
 export interface Fatia {
   id: 'fixos' | 'livre' | 'guardado';

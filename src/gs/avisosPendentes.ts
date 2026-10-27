@@ -7,6 +7,7 @@ import { assistenteAtivo } from './insights';
 import { proximaAcao } from './painelDividas';
 import { saldoAtual } from './dividas';
 import { linhasDeCategoria } from './orcamento';
+import { acaoReserva } from './reservaLogica';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -27,6 +28,10 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
   if (assistenteAtivo(e, 'gastos')) {
     for (const l of linhasDeCategoria(e, hoje.slice(0, 7)))
       if (l.tom === 'perigo') out.push({ id: `orc-${l.categoria}-${hoje.slice(0, 7)}`, texto: `${l.categoria} passou do limite: ${brl0(l.gasto)} de ${brl0(l.limite!)}`, rota: '/plano/orcamento' });
+  }
+  if (assistenteAtivo(e, 'reserva') && e.config.diaSalario && Number(hoje.slice(8, 10)) >= e.config.diaSalario) {
+    const r = acaoReserva(e, hoje.slice(0, 7), hoje);
+    if (r.tipo === 'comecar') out.push({ id: `reserva-${hoje.slice(0, 7)}`, texto: r.texto, rota: '/plano/reserva' });
   }
   if (assistenteAtivo(e, 'dividas')) {
     const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);

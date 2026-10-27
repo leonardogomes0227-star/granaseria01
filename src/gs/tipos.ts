@@ -14,6 +14,8 @@ export interface Config {
   avisos: { antecedenciaDias: number; horario: string };
   onboardingFeito: boolean;
   reservaPct: number; // quanto guardar quando o salário cai (padrão 10%)
+  reservaMeses?: number; // meta da reserva em meses de gasto (padrão 6)
+  reservaMensal?: number; // quanto a pessoa decidiu guardar por mês (padrão: o percentual da renda)
 }
 
 export interface Pagamento {
@@ -36,7 +38,7 @@ export interface Lancamento {
   categoria: string;
   serverId?: number; // veio do WhatsApp (api/lancamentos)
 }
-export type OrigemAporte = 'manual' | 'reserva' | 'meta' | 'extra' | 'investimento';
+export type OrigemAporte = 'manual' | 'reserva' | 'meta' | 'extra' | 'investimento' | 'saque';
 export interface Aporte {
   id: string;
   data: string;

@@ -69,6 +69,13 @@ export function guardar(valor: number, origem: OrigemAporte = 'manual', agenteId
   atualizar((e) => ({ ...e, aportes: [...e.aportes, { id, data, valor: arred(valor), origem, agenteId }] }));
   return id;
 }
+/** Usou a reserva: entra como saída (valor negativo) pra não apagar o histórico. */
+export function usarReserva(valor: number, data = hojeSP()): string | null {
+  if (!ok(valor)) return null;
+  const id = novoId('ap');
+  atualizar((e) => ({ ...e, aportes: [...e.aportes, { id, data, valor: -arred(valor), origem: 'saque' as OrigemAporte }] }));
+  return id;
+}
 export const removerAporte = (id: string) => atualizar((e) => ({ ...e, aportes: e.aportes.filter((a) => a.id !== id) }));
 
 /* ---------- dívidas ---------- */
