@@ -8,6 +8,7 @@ import { proximaAcao } from './painelDividas';
 import { saldoAtual } from './dividas';
 import { linhasDeCategoria } from './orcamento';
 import { acaoReserva } from './reservaLogica';
+import { acaoCartao } from './cartaoLogica';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -32,6 +33,10 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
   if (assistenteAtivo(e, 'reserva') && e.config.diaSalario && Number(hoje.slice(8, 10)) >= e.config.diaSalario) {
     const r = acaoReserva(e, hoje.slice(0, 7), hoje);
     if (r.tipo === 'comecar') out.push({ id: `reserva-${hoje.slice(0, 7)}`, texto: r.texto, rota: '/plano/reserva' });
+  }
+  if (e.cartao && assistenteAtivo(e, 'contas')) {
+    const a = acaoCartao(e.cartao, hoje);
+    if (a.pagar && a.tom !== 'ok' && /vence/.test(a.texto)) out.push({ id: `cartao-${hoje.slice(0, 7)}`, texto: a.texto, rota: '/plano/cartao' });
   }
   if (assistenteAtivo(e, 'dividas')) {
     const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);

@@ -121,7 +121,7 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
     limites: Object.fromEntries(Object.entries(obj(b.limites)).filter(([, v]) => typeof v === 'number' && v > 0)) as Record<string, number>,
     cartao: (() => {
       const c = obj(b.cartao);
-      return num(c.limite) > 0 ? { limite: num(c.limite), usado: Math.max(0, num(c.usado)), fechaDia: Math.min(31, Math.max(1, num(c.fechaDia, 1))), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))) } : null;
+      return num(c.limite) > 0 ? { limite: num(c.limite), usado: Math.max(0, num(c.usado)), fechaDia: Math.min(31, Math.max(1, num(c.fechaDia, 1))), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))), parcelados: arr<NonNullable<Estado['cartao']>['parcelados'] extends (infer U)[] | undefined ? U : never>(c.parcelados).filter((p) => p && typeof p.id === 'string' && num(p.parcela) > 0 && num(p.restantes) > 0), pagas: arr<{ data: string; valor: number }>(c.pagas).filter((p) => p && typeof p.data === 'string' && num(p.valor) > 0) } : null;
     })(),
   };
 }

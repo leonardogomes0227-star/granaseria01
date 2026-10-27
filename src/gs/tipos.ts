@@ -138,11 +138,19 @@ export interface Investir {
   mensagensHoje: { data: string; qtd: number };
 }
 
+export interface ParceladoCartao {
+  id: string;
+  descricao: string;
+  parcela: number;
+  restantes: number; // parcelas que ainda vão cair nas próximas faturas
+}
 export interface Cartao {
   limite: number;
-  usado: number;
+  usado: number; // fatura aberta
   fechaDia: number;
   venceDia: number;
+  parcelados?: ParceladoCartao[];
+  pagas?: { data: string; valor: number }[]; // faturas já pagas
 }
 
 export interface Estado {
