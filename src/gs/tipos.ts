@@ -82,6 +82,8 @@ export interface Assinatura {
   ativa: boolean;
   personalizada: boolean;
   canceladaEm?: string;
+  uso?: 'sim' | 'pouco' | 'nao'; // revisão: você usou esse mês?
+  revisadaEm?: string;
 }
 export interface AgenteCfg {
   ativo: boolean;
