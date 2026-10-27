@@ -16,6 +16,7 @@ export interface Config {
   reservaPct: number; // quanto guardar quando o salário cai (padrão 10%)
   reservaMeses?: number; // meta da reserva em meses de gasto (padrão 6)
   reservaMensal?: number; // quanto a pessoa decidiu guardar por mês (padrão: o percentual da renda)
+  rendaAlvo?: number; // quanto quer receber por mês dos rendimentos (padrão: o gasto médio)
 }
 
 export interface Pagamento {

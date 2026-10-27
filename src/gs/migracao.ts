@@ -95,6 +95,7 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
       reservaPct: num(cfg.reservaPct, 10),
       reservaMeses: [3, 6, 12].includes(num(cfg.reservaMeses)) ? num(cfg.reservaMeses) : undefined,
       reservaMensal: num(cfg.reservaMensal) > 0 ? num(cfg.reservaMensal) : undefined,
+      rendaAlvo: num(cfg.rendaAlvo) > 0 ? num(cfg.rendaAlvo) : undefined,
     },
     gastosFixos: arr<GastoFixo>(b.gastosFixos).filter((g) => g && typeof g.id === 'string').map((g) => ({ ...g, pagamentos: obj(g.pagamentos) as GastoFixo['pagamentos'] })),
     lancamentos: arr<Estado['lancamentos'][number]>(b.lancamentos).filter((l) => l && typeof l.id === 'string'),
