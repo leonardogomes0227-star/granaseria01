@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linhasDeCategoria, regra503020 } from './orcamento';
+import { acaoOrcamento, linhasDeCategoria, mesesNoLimite, regra503020, resumoDoMes } from './orcamento';
 import { ESTADO_INICIAL, type Estado } from './tipos';
 
 const base = (): Estado => {
@@ -35,5 +35,33 @@ describe('orçamento', () => {
   });
   it('sem renda não devolve regra', () => {
     expect(regra503020(ESTADO_INICIAL(), '2026-10')).toEqual([]);
+  });
+  it('resumo do mês: orçamento do dia a dia e ritmo', () => {
+    const r = resumoDoMes(base(), '2026-10', '2026-10-10');
+    expect(r.gastoVar).toBe(1350);
+    expect(r.orcamento).toBe(3500); // 5000 - 1500 de fixas
+    expect(r.ritmo).toBeCloseTo((1350 / 10) * 31, 0);
+    expect(r.sobraProjetada).toBeLessThan(0);
+  });
+  it('ação: estouro vence, depois quase, depois ritmo', () => {
+    const e = base();
+    e.limites = { Compras: 80 };
+    expect(acaoOrcamento(e, '2026-10', '2026-10-10').tom).toBe('perigo');
+    e.limites = { Comida: 500 };
+    expect(acaoOrcamento(e, '2026-10', '2026-10-10').tom).toBe('aviso');
+    e.limites = { Mercado: 2000 };
+    expect(acaoOrcamento(e, '2026-10', '2026-10-10').texto).toContain('No ritmo');
+  });
+  it('sem limites pede limites; sem gasto pede o primeiro gasto', () => {
+    const e = base();
+    expect(acaoOrcamento(e, '2026-10', '2026-10-10').texto).toContain('limites');
+    e.lancamentos = [];
+    expect(acaoOrcamento(e, '2026-10', '2026-10-10').texto).toContain('primeiro');
+  });
+  it('meses sem estourar', () => {
+    const e = base();
+    e.limites = { Mercado: 1000 };
+    e.lancamentos.push({ id: '9', descricao: 'mercado', valor: 500, data: '2026-09-10', categoria: 'Mercado' }, { id: '8', descricao: 'mercado', valor: 2000, data: '2026-08-10', categoria: 'Mercado' });
+    expect(mesesNoLimite(e, '2026-10')).toBe(2); // out e set dentro, ago estourou
   });
 });
