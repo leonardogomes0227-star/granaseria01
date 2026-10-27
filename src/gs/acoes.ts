@@ -121,11 +121,12 @@ export const decidirDesejo = (id: string, status: 'comprou' | 'desistiu') => atu
 export function salvarAssinatura(a: Omit<Assinatura, 'id'> & { id?: string }): boolean {
   if (!a.nome.trim() || !ok(a.valor)) return false;
   atualizar((e) => {
-    const dados = { nome: a.nome.trim().slice(0, 60), valor: arred(a.valor), ativa: a.ativa, personalizada: a.personalizada, canceladaEm: a.canceladaEm };
+    const dados = { nome: a.nome.trim().slice(0, 60), valor: arred(a.valor), ativa: a.ativa, personalizada: a.personalizada, canceladaEm: a.canceladaEm, ...(a.uso ? { uso: a.uso, revisadaEm: a.revisadaEm } : {}) };
     return a.id ? { ...e, assinaturas: e.assinaturas.map((x) => (x.id === a.id ? { ...x, ...dados } : x)) } : { ...e, assinaturas: [...e.assinaturas, { id: novoId('as'), ...dados }] };
   });
   return true;
 }
+export const marcarUsoAssinatura = (id: string, uso: 'sim' | 'pouco' | 'nao') => atualizar((e) => ({ ...e, assinaturas: e.assinaturas.map((a) => (a.id === id ? { ...a, uso, revisadaEm: hojeSP() } : a)) }));
 export const cancelarAssinatura = (id: string) => atualizar((e) => ({ ...e, assinaturas: e.assinaturas.map((a) => (a.id === id ? { ...a, ativa: false, canceladaEm: hojeSP() } : a)) }));
 export const reativarAssinatura = (id: string) => atualizar((e) => ({ ...e, assinaturas: e.assinaturas.map((a) => (a.id === id ? { ...a, ativa: true, canceladaEm: undefined } : a)) }));
 export const removerAssinatura = (id: string) => atualizar((e) => ({ ...e, assinaturas: e.assinaturas.filter((a) => a.id !== id) }));
