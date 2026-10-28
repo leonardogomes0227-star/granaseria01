@@ -305,3 +305,27 @@ html.gs-app .lp-fim h2 { color: var(--lp-ouro); font-size: clamp(44px, 13vw, 76p
 html.gs-app h1, html.gs-app h2, html.gs-app h3 { font-weight: 800; letter-spacing: -0.03em; }
 .gs-titulo { font-size: 31px; }
 .gs-dica svg { flex: none; margin-top: 1px; color: var(--gold-strong); }
+
+/* Capa: nota centralizada, cartões que sobem ao tocar e entram ao rolar (só onde o navegador sabe; sem JS) */
+.lp-hero .lp-nota { text-align: center; }
+.lp-f, .lp-passo, .lp-item { transition: transform .25s var(--curva, ease), box-shadow .25s var(--curva, ease); }
+@media (hover: hover) {
+  .lp-f:hover, .lp-passo:hover { transform: translateY(-4px); box-shadow: 0 14px 30px rgba(20, 16, 8, .16); }
+  .lp-btn:hover { transform: translateY(-2px); }
+}
+.lp-btn { transition: transform .2s var(--curva, ease); }
+@media (min-width: 900px) {
+  .lp-ferr { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .lp-lista, .lp-passos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lp-passos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .lp-f, .lp-passo, .lp-item {
+      animation: lp-entra linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+    @keyframes lp-entra { from { opacity: 0; translate: 0 22px; } to { opacity: 1; translate: 0 0; } }
+  }
+}
