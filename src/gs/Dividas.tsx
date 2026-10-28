@@ -9,6 +9,7 @@ import { Anel, Linha } from './graficos';
 import { gastoMensalMedio, livreParaGastar } from './selectores';
 import { CalculaJuro, MaisRapido, Quitadas, Quitou, TIPOS_DIVIDA } from './DividasExtras';
 import { efeitoNaDivida } from './extrasLogica';
+import { Amortizacao } from './Amortizacao';
 import { capacidadeDePagamento, completarParcelada, conquistas, economiaDoPlano, mesesSeguidos, pagamentoSugerido, pagoNoMes, proximaAcao, quitarMaisRapido } from './painelDividas';
 import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
@@ -227,6 +228,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         <button type="button" className="gs-btn sec" onClick={onBanco}>Falar com o banco</button>
       </div>
 
+      <Amortizacao />
       <Quitadas />
       <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }}>
         <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Mais ajuda</summary>
