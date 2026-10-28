@@ -22,7 +22,7 @@ async function load(entry) {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 function page(template, { path, title, description, body }) {
-  const fullTitle = `${title} — Grana Séria`;
+  const fullTitle = `${title} | Grana Séria`;
   const url = `${SITE_URL}${path}`;
   let html = template
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(fullTitle)}</title>`)
@@ -93,7 +93,7 @@ await writeFile(
 );
 await writeFile(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /conta\nDisallow: /painel\nDisallow: /admin\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 // rota de guia/ferramenta que não existe: a Vercel serve o 404.html, e o site mostra a página "não encontrada"
-await writeFile(join(dist, '404.html'), template.replace(/<title>[^<]*<\/title>/, '<title>Página não encontrada — Grana Séria</title>'));
+await writeFile(join(dist, '404.html'), template.replace(/<title>[^<]*<\/title>/, '<title>Página não encontrada | Grana Séria</title>'));
 await rm(join(root, 'node_modules', '.prerender'), { recursive: true, force: true });
 
 console.log(`prerender: ${urls.length} páginas no sitemap`);

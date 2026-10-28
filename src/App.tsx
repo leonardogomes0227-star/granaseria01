@@ -111,7 +111,7 @@ function clearProgress() {
 /** Título da aba do navegador por tela. */
 function useTitle(title: string | null) {
   useEffect(() => {
-    document.title = title ? `${title} — ${SITE_NAME}` : `${SITE_NAME} — Diagnóstico financeiro`;
+    document.title = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | Diagnóstico financeiro`;
   }, [title]);
 }
 
@@ -325,7 +325,7 @@ function WizardRoute({
   // sem renda não dá pra estar além da etapa 1 (ex.: link direto pra ?etapa=5 sem nada preenchido)
   const blocked = step > 1 && data.monthlyIncome <= 0;
 
-  useTitle(step === TOTAL_STEPS ? 'Seu diagnóstico' : `Diagnóstico — etapa ${step} de ${TOTAL_STEPS}`);
+  useTitle(step === TOTAL_STEPS ? 'Seu diagnóstico' : `Diagnóstico, etapa ${step} de ${TOTAL_STEPS}`);
 
   useEffect(() => {
     if (!blocked) return;

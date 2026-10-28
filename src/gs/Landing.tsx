@@ -156,7 +156,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
 
       <section className="lp-sec">
         <h2>Palavras que <span>você vai ver</span></h2>
-        <p className="lp-sub">Sem mistério. Se aparecer no app, vem explicado.</p>
+        <p className="lp-sub">Toda palavra difícil do app vem explicada.</p>
         <Sanfona itens={PALAVRAS} />
       </section>
 
