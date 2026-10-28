@@ -7,7 +7,7 @@ import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, s
 import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Anel, Linha } from './graficos';
 import { gastoMensalMedio, livreParaGastar } from './selectores';
-import { CalculaJuro, MaisRapido, Quitou, TIPOS_DIVIDA } from './DividasExtras';
+import { CalculaJuro, MaisRapido, Quitadas, Quitou, TIPOS_DIVIDA } from './DividasExtras';
 import { capacidadeDePagamento, conquistas, economiaDoPlano, mesesSeguidos, pagamentoSugerido, pagoNoMes, proximaAcao } from './painelDividas';
 import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
@@ -65,7 +65,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
   const passo = passoDoMes(sim, plano.pagamentoMensal, plano.estrategia);
   const serie = useMemo(() => [totalAtual, ...resultado.cronograma.map((m) => m.saldoTotal)], [resultado, totalAtual]);
   const mudar = (patch: Partial<typeof plano>) => salvarPlanoDividas({ ...plano, ...patch });
-  if (totalAtual <= 0) return <Quitou />;
+  if (totalAtual <= 0) return <Quitou onNova={onNova} />;
 
   const progresso = totalOriginal > 0 ? ((totalOriginal - totalAtual) / totalOriginal) * 100 : 0;
   const quitadas = e.dividas.filter((d) => saldoAtual(d) <= 0).length;
@@ -190,6 +190,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         <button type="button" className="gs-btn sec" onClick={onBanco}>Falar com o banco</button>
       </div>
 
+      <Quitadas />
       <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }}>
         <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Mais ajuda</summary>
         <div style={{ paddingBottom: 12 }}>
