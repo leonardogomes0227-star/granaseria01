@@ -15,7 +15,7 @@ const TIPOS: { id: TipoAgente; nome: string; texto: string }[] = [
   { id: 'metodo', nome: 'Seguir um método', texto: '50/30/20, envelopes, 52 semanas…' },
   { id: 'personalizado', nome: 'Personalizado', texto: 'Um objetivo seu, com checklist.' },
 ];
-const AVATARES = ['★', '◆', '●', '▲', '✦', '❖', '☀', '♥'];
+const AVATARES = ['★', '◆', '●', '▲', '✦', '❖', '◐', '■'];
 const CORES = ['var(--gold-strong)', 'var(--success)', 'var(--danger)', 'var(--ink)', 'var(--ink-muted)', 'var(--gold)'];
 
 export function CriarAgente({ aberta, onFechar, editar }: { aberta: boolean; onFechar: () => void; editar?: AgenteCustom }) {

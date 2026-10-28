@@ -8,6 +8,7 @@ import { definirLimite } from './acoes';
 import { Barra, Dica, Titulo, Vazio } from './ui';
 import { Anel, Rosquinha } from './graficos';
 import { Link } from 'react-router-dom';
+import { Info } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
 
 /* ---------- Orçamento: quanto ainda dá em cada coisa, e a regra 50/30/20 com os seus números ---------- */
@@ -73,7 +74,7 @@ export function Orcamento() {
           <section className="gs-card">
             <span className="gs-rotulo">Limite por categoria</span>
             {semLimite.length > 0 && (
-              <Dica icone="ℹ️">
+              <Dica icone={<Info size={18} />}>
                 {semLimite.length} categoria{semLimite.length > 1 ? 's' : ''} sem limite.{' '}
                 <button type="button" className="gs-btn link" style={{ minHeight: 32 }} onClick={() => { semLimite.forEach((l) => definirLimite(l.categoria, limiteSugerido(l.categoria, e.config.renda))); toast('Limites sugeridos aplicados'); }}>Usar os sugeridos</button>
               </Dica>

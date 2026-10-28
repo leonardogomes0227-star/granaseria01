@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Hourglass, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChartPie, CreditCard, Gift, Hourglass, Landmark, PiggyBank, Plus, Receipt, Search, ShieldCheck, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
 import { CampoDinheiro } from './ui';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
@@ -15,18 +15,18 @@ const PRA_VOCE: string[] = [
   'Finanças parecem complicadas demais',
 ];
 
-const FERRAMENTAS: [string, string, string][] = [
-  ['🎯', 'Quitar dívidas', 'O dia em que você fica livre e o que pagar este mês.'],
-  ['⏱️', 'Posso comprar?', 'O preço em horas do seu trabalho, antes de comprar.'],
-  ['📊', 'Orçamento', 'Um limite pra cada coisa. Avisa antes de estourar.'],
-  ['📅', 'Calendário', 'Contas, parcelas e fatura: tudo que vence, num lugar.'],
-  ['🔍', 'Gastos escondidos', 'As assinaturas que você paga e nem usa.'],
-  ['🐷', 'Reserva', 'Quantos meses você aguenta se a renda parar.'],
-  ['💳', 'Cartão', 'A fatura de hoje e as parcelas que ainda vêm.'],
-  ['🧾', 'À vista ou parcelado?', 'O juro escondido na parcela.'],
-  ['🏦', 'Empréstimos', 'Qual oferta é mais barata de verdade.'],
-  ['🎁', 'Dinheiro extra', '13º e bônus com destino certo.'],
-  ['🌱', 'Viver de renda', 'Quando o seu dinheiro paga a sua vida.'],
+const FERRAMENTAS: [LucideIcon, string, string][] = [
+  [Target, 'Quitar dívidas', 'O dia em que você fica livre e o que pagar este mês.'],
+  [Timer, 'Posso comprar?', 'O preço em horas do seu trabalho, antes de comprar.'],
+  [ChartPie, 'Orçamento', 'Um limite pra cada coisa. Avisa antes de estourar.'],
+  [CalendarDays, 'Calendário', 'Contas, parcelas e fatura: tudo que vence, num lugar.'],
+  [Search, 'Gastos escondidos', 'As assinaturas que você paga e nem usa.'],
+  [PiggyBank, 'Reserva', 'Quantos meses você aguenta se a renda parar.'],
+  [CreditCard, 'Cartão', 'A fatura de hoje e as parcelas que ainda vêm.'],
+  [Receipt, 'À vista ou parcelado?', 'O juro escondido na parcela.'],
+  [Landmark, 'Empréstimos', 'Qual oferta é mais barata de verdade.'],
+  [Gift, 'Dinheiro extra', '13º e bônus com destino certo.'],
+  [Sprout, 'Viver de renda', 'Quando o seu dinheiro paga a sua vida.'],
 ];
 
 const PALAVRAS: [string, string][] = [
@@ -128,15 +128,15 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         <h2>11 ferramentas <span>num app só</span></h2>
         <p className="lp-sub">Cada uma resolve uma parte da sua vida financeira e te diz o que fazer agora.</p>
         <div className="lp-ferr">
-          {FERRAMENTAS.map(([ic, nome, desc]) => (
+          {FERRAMENTAS.map(([Icone, nome, desc]) => (
             <div className="lp-f" key={nome}>
-              <div className="ic" aria-hidden="true">{ic}</div>
+              <div className="ic" aria-hidden="true"><Icone size={24} strokeWidth={2.2} /></div>
               <b>{nome}</b>
               <small>{desc}</small>
             </div>
           ))}
           <div className="lp-f" style={{ background: 'var(--lp-ouro)', borderColor: 'var(--lp-ouro)', color: 'var(--lp-preto)' }}>
-            <div className="ic" aria-hidden="true" style={{ background: 'var(--lp-preto)' }}>➕</div>
+            <div className="ic" aria-hidden="true" style={{ background: 'var(--lp-preto)', color: 'var(--lp-ouro)' }}><Plus size={24} strokeWidth={2.6} /></div>
             <b>E ainda</b>
             <small style={{ color: 'var(--lp-preto)' }}>Investimentos com dados do mercado e assistentes que te avisam no dia certo.</small>
           </div>

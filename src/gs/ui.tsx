@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { arred } from './datas';
 import { assistentePorId } from './assistentes';
 import { Anel } from './graficos';
+import { Lightbulb } from 'lucide-react';
 
 /* ---------- campo de dinheiro com máscara (digita centavos, mostra R$ 1.234,56) ---------- */
 export function CampoDinheiro({ rotulo, valor, onChange, placeholder = 'R$ 0,00', grande = false, erro, autoFocus }: { rotulo: string; valor: number; onChange: (n: number) => void; placeholder?: string; grande?: boolean; erro?: string; autoFocus?: boolean }) {
@@ -187,9 +188,9 @@ export function Deslizante({ rotulo, valor, min, max, passo, onChange, formato, 
   );
 }
 
-export const Dica = ({ children, icone = '💡' }: { children: ReactNode; icone?: string }) => (
+export const Dica = ({ children, icone = <Lightbulb size={18} /> }: { children: ReactNode; icone?: ReactNode }) => (
   <div className="gs-dica">
-    <span aria-hidden="true">{icone}</span>
+    <span aria-hidden="true" style={{ display: 'inline-flex' }}>{icone}</span>
     <span>{children}</span>
   </div>
 );
