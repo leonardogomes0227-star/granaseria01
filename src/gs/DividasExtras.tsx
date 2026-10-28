@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { brl0, mesDe } from './datas';
+import { brl0, diaCurto, mesDe } from './datas';
 import { gastoPorCategoria } from './orcamento';
 import { GRUPO } from './categorias';
-import { cortarPagando, custoPorDia, valeTrocar, type DividaSim } from './dividas';
+import { cortarPagando, custoPorDia, saldoAtual, valeTrocar, type DividaSim } from './dividas';
+import { removerDivida, restaurarDivida } from './acoes';
+import { apagarComDesfazer } from '../components/ui/Toast';
 import { taxaEfetiva } from './ferramentas';
 import { Aprende, CampoDinheiro, CampoNumero, Dica } from './ui';
 import type { Estrategia } from './tipos';
@@ -105,7 +107,30 @@ export function Marcos({ progresso, quitadas }: { progresso: number; quitadas: n
   );
 }
 
-export function Quitou() {
+/** Dívidas já zeradas, com a data do último pagamento. Dá pra tirar da lista. */
+export function Quitadas({ aberta = false }: { aberta?: boolean }) {
+  const e = useEstado();
+  const lista = e.dividas.filter((d) => saldoAtual(d) <= 0);
+  if (lista.length === 0) return null;
+  return (
+    <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }} open={aberta}>
+      <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 700 }}>Já quitadas ({lista.length})</summary>
+      <div style={{ paddingBottom: 8 }}>
+        {lista.map((d) => {
+          const ult = [...d.pagamentos].sort((a, b) => b.data.localeCompare(a.data))[0];
+          return (
+            <div className="gs-linha" key={d.id}>
+              <div className="gs-corpo"><b>✓ {d.nome}</b><small>{brl0(d.saldo)}{ult ? ` · quitada em ${diaCurto(ult.data)}` : ''}</small></div>
+              <button type="button" className="gs-btn link" onClick={() => { removerDivida(d.id); apagarComDesfazer(`${d.nome} tirada da lista`, () => restaurarDivida(d)); }}>Tirar</button>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+export function Quitou({ onNova }: { onNova: () => void }) {
   const e = useEstado();
   const pago = e.dividas.reduce((t, d) => t + d.pagamentos.reduce((s, p) => s + p.valor, 0), 0);
   const original = e.dividas.reduce((t, d) => t + d.saldo, 0);
@@ -118,6 +143,12 @@ export function Quitou() {
         <p className="gs-grande" style={{ margin: '4px 0 6px' }}>Livre das dívidas</p>
         <p className="gs-sub" style={{ margin: 0 }}>Você quitou {brl0(original)}{meses ? ` em cerca de ${meses} ${meses === 1 ? 'mês' : 'meses'}` : ''}. Pagou ao todo {brl0(pago)}.</p>
       </section>
+      <section className="gs-card">
+        <span className="gs-rotulo">Apareceu uma dívida nova?</span>
+        <p style={{ margin: '6px 0 12px' }}>Parcelou alguma coisa, entrou no cheque especial ou pegou um empréstimo este mês? Cadastre e eu monto o caminho de novo.</p>
+        <button type="button" className="gs-btn cheio" onClick={onNova}>+ Cadastrar nova dívida</button>
+      </section>
+      <Quitadas />
       <section className="gs-card">
         <span className="gs-rotulo">E agora?</span>
         {[
