@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Check, Hourglass, MessageCircle, PiggyBank, ShieldCheck, Target, Wallet } from 'lucide-react';
+import { ArrowRight, Hourglass, ShieldCheck } from 'lucide-react';
 import { CampoDinheiro } from './ui';
-import { Anel } from './graficos';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
 
-/* ---------- Capa do site: pra quem nunca mexeu com finanças. Palavras simples, um passo de cada vez. ---------- */
+/* ---------- Capa do site: forte, preto e dourado, pra quem nunca mexeu com finanças ---------- */
 
 const PRA_VOCE: string[] = [
   'O dinheiro acaba antes do fim do mês',
@@ -16,25 +15,31 @@ const PRA_VOCE: string[] = [
   'Finanças parecem complicadas demais',
 ];
 
-const FERRAMENTAS: { Icone: typeof Wallet; titulo: string; texto: string; ex: string }[] = [
-  { Icone: Target, titulo: 'Sair do aperto', texto: 'Cadastre o que você deve e veja o dia em que fica livre das dívidas.', ex: 'Você fica livre em 247 dias' },
-  { Icone: Wallet, titulo: 'Controlar o mês', texto: 'Saiba quanto você pode gastar hoje e o que está pra vencer.', ex: 'Você pode gastar R$ 82 hoje' },
-  { Icone: PiggyBank, titulo: 'Guardar dinheiro', texto: 'Monte uma reserva que segura a sua vida se a renda parar.', ex: 'Você aguenta 2,3 meses' },
-  { Icone: CalendarClock, titulo: 'Comprar bem', texto: 'Veja o preço em horas de trabalho e o juro escondido do parcelado.', ex: 'Esse tênis custa 18 horas' },
+const FERRAMENTAS: [string, string, string][] = [
+  ['🎯', 'Quitar dívidas', 'O dia em que você fica livre e o que pagar este mês.'],
+  ['⏱️', 'Posso comprar?', 'O preço em horas do seu trabalho, antes de comprar.'],
+  ['📊', 'Orçamento', 'Um limite pra cada coisa. Avisa antes de estourar.'],
+  ['📅', 'Calendário', 'Contas, parcelas e fatura: tudo que vence, num lugar.'],
+  ['🔍', 'Gastos escondidos', 'As assinaturas que você paga e nem usa.'],
+  ['🐷', 'Reserva', 'Quantos meses você aguenta se a renda parar.'],
+  ['💳', 'Cartão', 'A fatura de hoje e as parcelas que ainda vêm.'],
+  ['🧾', 'À vista ou parcelado?', 'O juro escondido na parcela.'],
+  ['🏦', 'Empréstimos', 'Qual oferta é mais barata de verdade.'],
+  ['🎁', 'Dinheiro extra', '13º e bônus com destino certo.'],
+  ['🌱', 'Viver de renda', 'Quando o seu dinheiro paga a sua vida.'],
 ];
 
 const PALAVRAS: [string, string][] = [
   ['Juros', 'O preço de usar o dinheiro de outra pessoa. Se você deve, paga juros. Se você guarda, recebe.'],
   ['Rotativo do cartão', 'O que acontece quando você paga só uma parte da fatura. O resto vira uma dívida com juros muito altos.'],
-  ['Reserva de emergência', 'Dinheiro guardado só pra imprevistos, como perder o emprego ou um conserto grande. Não é pra gastar à toa.'],
-  ['Parcelado sem juros', 'Quando a parcela somada dá o mesmo preço do à vista. Se der mais, tem juro escondido.'],
+  ['Reserva de emergência', 'Dinheiro guardado só pra imprevistos, como perder o emprego ou um conserto grande.'],
+  ['Parcelado sem juros', 'Quando a soma das parcelas dá o mesmo preço do à vista. Se der mais, tem juro escondido.'],
   ['Orçamento', 'Um combinado com você mesmo sobre quanto gastar em cada coisa por mês.'],
   ['Viver de renda', 'Quando o dinheiro que você guardou rende o bastante pra pagar as suas contas.'],
 ];
 
 const FAQ: [string, string][] = [
-  ['Preciso entender de finanças?', 'Não. O app usa palavras simples e explica cada coisa na hora. Se aparecer um termo novo, tem uma explicação junto.'],
-  ['É de graça?', 'Sim. Todas as ferramentas são gratuitas. Você entra com o seu WhatsApp, sem senha.'],
+  ['Preciso entender de finanças?', 'Não. O app usa palavras simples e explica cada coisa na hora.'],
   ['O app pede a senha do meu banco?', 'Nunca. Você digita os valores à mão. Nada de ligar conta bancária.'],
   ['Meus dados ficam onde?', 'No seu aparelho, ligados ao seu número. Só você vê. Pra apagar tudo, é só um botão em Meus dados.'],
   ['Quanto tempo leva pra começar?', 'Uns 2 minutos: você diz quanto ganha por mês e já vê quanto pode gastar por dia.'],
@@ -42,143 +47,140 @@ const FAQ: [string, string][] = [
   ['É consultoria financeira?', 'Não. É educação financeira, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. As contas são estimativas pra te ajudar a decidir.'],
 ];
 
+function Sanfona({ itens }: { itens: [string, string][] }) {
+  const [aberto, setAberto] = useState<number | null>(null);
+  return (
+    <div className="gs-card" style={{ padding: '4px 20px' }}>
+      {itens.map(([q, a], i) => (
+        <div key={q} style={{ borderBottom: i < itens.length - 1 ? '1px solid var(--line)' : 0 }}>
+          <button type="button" aria-expanded={aberto === i} onClick={() => setAberto(aberto === i ? null : i)} style={{ width: '100%', minHeight: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, background: 'none', border: 0, font: 'inherit', fontWeight: 700, color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
+            {q}
+            <span aria-hidden="true">{aberto === i ? '−' : '+'}</span>
+          </button>
+          {aberto === i && <p className="gs-sub" style={{ margin: '0 0 14px' }}>{a}</p>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Calculadora() {
   const [renda, setRenda] = useState(0);
   const [preco, setPreco] = useState(0);
   const horas = renda > 0 && preco > 0 ? horasDeTrabalho(preco, renda, 220) : 0;
   const h = Math.round(horas);
-  const dias = Math.round((horas / 8) * 10) / 10;
+  const dias = Math.round(horas / 8);
   return (
-    <section className="gs-card destaque" aria-label="Teste: quanto isso custa em horas de trabalho">
+    <section className="gs-card destaque lp-calc" aria-label="Teste: quanto isso custa em horas de trabalho">
       <span className="gs-rotulo">Teste em 10 segundos</span>
-      <h2 className="gs-medio" style={{ margin: '4px 0 12px' }}>Quanto custa, em horas do seu trabalho, aquilo que você quer comprar?</h2>
+      <h3 className="lp-t" style={{ marginTop: 6 }}>Quanto custa, em horas do seu trabalho, o que você quer comprar?</h3>
       <CampoDinheiro rotulo="Quanto você ganha por mês?" valor={renda} onChange={setRenda} />
       <CampoDinheiro rotulo="Quanto custa o que você quer?" valor={preco} onChange={setPreco} />
       {horas > 0 ? (
         <div className="gs-card ivory" style={{ marginBottom: 12 }} aria-live="polite">
-          <p className="gs-grande" style={{ margin: 0 }}>{h} {h === 1 ? 'hora' : 'horas'}</p>
-          <p className="gs-sub" style={{ margin: '4px 0 8px' }}>do seu trabalho{dias >= 1 ? `, quase ${Math.round(dias)} ${Math.round(dias) === 1 ? 'dia' : 'dias'} inteiros` : ''}. Ainda vale a pena?</p>
+          <p className="lp-res">{h} {h === 1 ? 'HORA' : 'HORAS'}</p>
+          <p className="gs-sub" style={{ margin: '6px 0 8px' }}>do seu trabalho{dias >= 1 ? `, quase ${dias} ${dias === 1 ? 'dia' : 'dias'} inteiros` : ''}. Ainda vale a pena?</p>
           <p className="gs-banner" style={{ margin: 0 }}><Hourglass size={16} style={{ verticalAlign: '-3px' }} /> Dica: espere 3 dias. Se ainda quiser, compre sem culpa.</p>
         </div>
       ) : (
         <p className="gs-nota" style={{ margin: '0 0 14px' }}>Digite os dois valores. Eu considero 220 horas de trabalho por mês.</p>
       )}
-      <Link to="/entrar" className="gs-btn cheio">Quero usar de graça <ArrowRight size={16} /></Link>
+      <Link to="/entrar" className="lp-btn ouro" style={{ width: '100%' }}>Quero começar <ArrowRight size={18} /></Link>
     </section>
   );
 }
 
 export function Landing({ resume, onStart, onResume }: { resume: number | null; onStart: () => void; onResume: () => void }) {
-  const [aberto, setAberto] = useState<number | null>(null);
-  const [palavra, setPalavra] = useState<number | null>(null);
-  const irParaComoFunciona = () => document.getElementById('como-funciona')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  const ir = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   return (
-    <div className="gs-landing">
-      <section style={{ textAlign: 'center', padding: '12px 0 20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center' }}><Moeda tamanho={56} /></div>
-        <span className="gs-etiqueta ouro" style={{ margin: '12px auto 0', display: 'flex', width: 'fit-content' }}>Grátis · sem senha de banco</span>
-        <h1 className="gs-titulo" style={{ fontSize: 34, lineHeight: '40px', margin: '14px 0 10px' }}>Pare de se perguntar pra onde foi o seu dinheiro</h1>
-        <p className="gs-sub" style={{ maxWidth: 480, margin: '0 auto 18px' }}>O Grana Séria mostra, com palavras simples, quanto você pode gastar, o que está te custando caro e o caminho pra sair do aperto. Você não precisa entender de finanças.</p>
-        <div className="gs-acoes" style={{ justifyContent: 'center' }}>
-          <Link to="/entrar" className="gs-btn"><MessageCircle size={18} /> Começar agora, é grátis</Link>
-          <button type="button" className="gs-btn sec" onClick={irParaComoFunciona}>Ver como funciona</button>
+    <div className="gs-landing lp">
+      <section className="lp-hero lp-full">
+        <div className="lp-raios" aria-hidden="true" />
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}><Moeda tamanho={60} /></div>
+        <span className="lp-selo"><ShieldCheck size={15} aria-hidden="true" /> Sem senha de banco · no seu celular</span>
+        <h1>O mês acabou <span>e o dinheiro sumiu?</span></h1>
+        <p>O Grana Séria mostra pra onde ele vai, quanto você pode gastar hoje e o caminho pra sair do aperto. Sem precisar entender de finanças.</p>
+        <div className="lp-acoes">
+          <Link to="/entrar" className="lp-btn ouro">Começar agora <ArrowRight size={18} /></Link>
+          <button type="button" className="lp-btn vazio" onClick={() => ir('ferramentas')}>Ver as ferramentas</button>
+        </div>
+        <div className="lp-nums" aria-label="Exemplos do que o app mostra">
+          <div className="lp-num"><b style={{ color: 'var(--lp-verde)' }}>R$ 82</b><small>pode gastar hoje</small></div>
+          <div className="lp-num"><b style={{ color: 'var(--lp-ouro)' }}>247 dias</b><small>pra ficar livre das dívidas</small></div>
+          <div className="lp-num"><b style={{ color: 'var(--lp-verm)' }}>18 h</b><small>de trabalho num tênis</small></div>
+        </div>
+        <p className="lp-nota">Números de exemplo. O app calcula os seus.</p>
+      </section>
+
+      <section className="lp-sec" aria-label="Isso é pra você se">
+        <h2>Isso é pra você <span>se…</span></h2>
+        <p className="lp-sub">Calma, é mais comum do que parece. O app foi feito pra quem está começando.</p>
+        <div className="lp-lista">
+          {PRA_VOCE.map((t) => <div className="lp-item" key={t}><i aria-hidden="true">✓</i>{t}</div>)}
         </div>
       </section>
 
-      <section className="gs-card ivory" aria-label="Isso é pra você se">
-        <span className="gs-rotulo">Isso é pra você se…</span>
-        {PRA_VOCE.map((t) => (
-          <div key={t} style={{ display: 'flex', gap: 12, padding: '8px 0', alignItems: 'flex-start' }}>
-            <span className="gs-check" style={{ flex: 'none' }}><Check size={14} aria-hidden="true" /></span>
-            <span>{t}</span>
-          </div>
-        ))}
-        <p className="gs-sub" style={{ margin: '10px 0 0' }}><b>Calma, isso é mais comum do que parece.</b> O app foi feito justamente pra quem está começando.</p>
+      <section className="lp-sec">
+        <Calculadora />
       </section>
 
-      <Calculadora />
-
-      <h2 id="como-funciona" className="gs-h2" style={{ textAlign: 'center' }}>Como funciona</h2>
-      <ol className="gs-card" style={{ listStyle: 'none', margin: '0 0 16px', display: 'grid', gap: 14 }}>
-        {[
-          ['Diga quanto você ganha', 'É só um número. Leva 1 minuto.'],
-          ['Anote o que entra e o que sai', 'No app ou pelo WhatsApp, do seu jeito: “mercado 80 no pix”. Pode ser por texto, áudio ou foto do cupom.'],
-          ['Siga o que o app mostra', 'Ele diz quanto está livre, o que vence e qual o próximo passo. Uma coisa de cada vez.'],
-        ].map(([t, x], i) => (
-          <li key={t} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span className="gs-check" style={{ flex: 'none', fontWeight: 700 }}>{i + 1}</span>
-            <span><b>{t}</b><br /><span className="gs-mudo">{x}</span></span>
-          </li>
-        ))}
-      </ol>
-
-      <h2 className="gs-h2" style={{ textAlign: 'center' }}>O que tem dentro</h2>
-      <div className="gs-grade">
-        {FERRAMENTAS.map(({ Icone, titulo, texto, ex }) => (
-          <div className="gs-card" key={titulo} style={{ margin: 0, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-            <span className="gs-avatar" style={{ flex: 'none', background: 'var(--bg-2)' }}><Icone size={20} aria-hidden="true" /></span>
-            <div>
-              <b style={{ display: 'block', fontSize: 16 }}>{titulo}</b>
-              <span className="gs-mudo">{texto}</span>
-              <span className="gs-etiqueta ouro" style={{ marginTop: 8, display: 'flex', width: 'fit-content' }}>Ex.: {ex}</span>
+      <section className="lp-sec" id="ferramentas" style={{ scrollMarginTop: 80 }}>
+        <h2>11 ferramentas <span>num app só</span></h2>
+        <p className="lp-sub">Cada uma resolve uma parte da sua vida financeira e te diz o que fazer agora.</p>
+        <div className="lp-ferr">
+          {FERRAMENTAS.map(([ic, nome, desc]) => (
+            <div className="lp-f" key={nome}>
+              <div className="ic" aria-hidden="true">{ic}</div>
+              <b>{nome}</b>
+              <small>{desc}</small>
             </div>
+          ))}
+          <div className="lp-f" style={{ background: 'var(--lp-ouro)', borderColor: 'var(--lp-ouro)', color: 'var(--lp-preto)' }}>
+            <div className="ic" aria-hidden="true" style={{ background: 'var(--lp-preto)' }}>➕</div>
+            <b>E ainda</b>
+            <small style={{ color: 'var(--lp-preto)' }}>Investimentos com dados do mercado e assistentes que te avisam no dia certo.</small>
           </div>
-        ))}
-      </div>
-
-      <section className="gs-card destaque" style={{ marginTop: 16, display: 'flex', gap: 14, alignItems: 'center' }} aria-label="Exemplo de como o app mostra suas dívidas">
-        <div style={{ flex: 'none', width: 104 }}><Anel pct={42} grande="42%" sub="já pago" tamanho={104} cor="var(--success)" /></div>
-        <div>
-          <span className="gs-rotulo">Exemplo · você fica livre em</span>
-          <p className="gs-grande" style={{ margin: '2px 0' }}>247 dias</p>
-          <p className="gs-sub" style={{ margin: 0 }}>É assim que o app mostra o seu caminho. Os números aqui são só de exemplo.</p>
         </div>
       </section>
 
-      <h2 className="gs-h2" style={{ textAlign: 'center' }}>Palavras que você vai ver</h2>
-      <p className="gs-sub" style={{ textAlign: 'center', margin: '-8px 0 12px' }}>Sem mistério. Se aparecer no app, vem explicado.</p>
-      <div className="gs-card" style={{ padding: '4px 20px' }}>
-        {PALAVRAS.map(([p, d], i) => (
-          <div key={p} style={{ borderBottom: i < PALAVRAS.length - 1 ? '1px solid var(--line)' : 0 }}>
-            <button type="button" aria-expanded={palavra === i} onClick={() => setPalavra(palavra === i ? null : i)} style={{ width: '100%', minHeight: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, background: 'none', border: 0, font: 'inherit', fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
-              {p}
-              <span aria-hidden="true">{palavra === i ? '−' : '+'}</span>
-            </button>
-            {palavra === i && <p className="gs-sub" style={{ margin: '0 0 14px' }}>{d}</p>}
-          </div>
-        ))}
-      </div>
-
-      <section className="gs-card ivory" style={{ display: 'flex', gap: 14, alignItems: 'flex-start', marginTop: 16 }}>
-        <ShieldCheck size={26} color="var(--gold-strong)" style={{ flex: 'none' }} aria-hidden="true" />
-        <div>
-          <b style={{ display: 'block' }}>Seu dinheiro e seus dados, seguros</b>
-          <span className="gs-mudo">Sem senha de banco, nunca. Você digita os valores à mão. Seus dados ficam no seu aparelho, ligados ao seu número, e você apaga tudo quando quiser.</span>
+      <section className="lp-sec" id="como-funciona">
+        <h2>Como <span>funciona</span></h2>
+        <div className="lp-passos" style={{ marginTop: 14 }}>
+          {[
+            ['Diga quanto você ganha', 'É só um número. Leva 1 minuto.'],
+            ['Anote o que entra e o que sai', 'No app ou pelo WhatsApp, do seu jeito: “mercado 80 no pix”. Por texto, áudio ou foto do cupom.'],
+            ['Siga o que o app mostra', 'Quanto está livre, o que vence e o próximo passo. Uma coisa de cada vez.'],
+          ].map(([t, x], i) => <div className="lp-passo" key={t}><em>{i + 1}</em><div><b>{t}</b><span>{x}</span></div></div>)}
         </div>
       </section>
 
-      <h2 className="gs-h2">Dúvidas</h2>
-      <div className="gs-card" style={{ padding: '4px 20px' }}>
-        {FAQ.map(([q, a], i) => (
-          <div key={q} style={{ borderBottom: i < FAQ.length - 1 ? '1px solid var(--line)' : 0 }}>
-            <button type="button" aria-expanded={aberto === i} onClick={() => setAberto(aberto === i ? null : i)} style={{ width: '100%', minHeight: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, background: 'none', border: 0, font: 'inherit', fontWeight: 600, color: 'var(--ink)', cursor: 'pointer', textAlign: 'left' }}>
-              {q}
-              <span aria-hidden="true">{aberto === i ? '−' : '+'}</span>
-            </button>
-            {aberto === i && <p className="gs-sub" style={{ margin: '0 0 14px' }}>{a}</p>}
-          </div>
-        ))}
-      </div>
+      <section className="lp-sec">
+        <h2>Palavras que <span>você vai ver</span></h2>
+        <p className="lp-sub">Sem mistério. Se aparecer no app, vem explicado.</p>
+        <Sanfona itens={PALAVRAS} />
+      </section>
 
-      <section style={{ textAlign: 'center', margin: '28px 0 8px' }}>
-        <h2 className="gs-medio" style={{ marginBottom: 6 }}>Comece hoje, no seu ritmo</h2>
-        <p className="gs-sub" style={{ margin: '0 0 14px' }}>Em 2 minutos você já sabe quanto pode gastar por dia.</p>
-        <div className="gs-acoes" style={{ justifyContent: 'center' }}>
-          <Link to="/entrar" className="gs-btn"><MessageCircle size={18} /> Entrar com o WhatsApp</Link>
+      <section className="lp-sec">
+        <div className="lp-item" style={{ alignItems: 'flex-start', padding: 18 }}>
+          <i aria-hidden="true" style={{ background: 'var(--lp-ouro)', color: 'var(--lp-preto)' }}><ShieldCheck size={18} /></i>
+          <div><b style={{ display: 'block', fontWeight: 800 }}>Seu dinheiro e seus dados, seguros</b><span className="gs-mudo" style={{ fontWeight: 400 }}>Sem senha de banco, nunca. Você digita os valores à mão. Seus dados ficam no seu aparelho e você apaga tudo quando quiser.</span></div>
+        </div>
+      </section>
+
+      <section className="lp-sec">
+        <h2>Dúvidas</h2>
+        <Sanfona itens={FAQ} />
+      </section>
+
+      <section className="lp-fim lp-full">
+        <h2>Comece hoje</h2>
+        <p>Em 2 minutos você já sabe quanto pode gastar por dia.</p>
+        <div className="lp-acoes">
+          <Link to="/entrar" className="lp-btn ouro">Entrar com o WhatsApp <ArrowRight size={18} /></Link>
           {resume !== null ? (
-            <button type="button" className="gs-btn sec" onClick={onResume}>Continuar meu diagnóstico (etapa {resume} de 7)</button>
+            <button type="button" className="lp-btn vazio" onClick={onResume}>Continuar meu diagnóstico ({resume} de 7)</button>
           ) : (
-            <button type="button" className="gs-btn sec" onClick={onStart}>Fazer o diagnóstico (10 min)</button>
+            <button type="button" className="lp-btn vazio" onClick={onStart}>Fazer o diagnóstico</button>
           )}
         </div>
       </section>
