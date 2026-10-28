@@ -362,3 +362,8 @@ html.gs-app input[type="range"]::-webkit-slider-runnable-track { height: 6px; bo
 html.gs-app input[type="range"]::-moz-range-track { height: 6px; border-radius: 6px; background: rgba(44, 34, 30, .14); }
 html.gs-app input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; margin-top: -9px; border-radius: 50%; background: #B8860B; border: 3px solid #FFFDF8; box-shadow: 0 2px 8px rgba(44, 34, 30, .3); }
 html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #B8860B; border: 3px solid #FFFDF8; box-shadow: 0 2px 8px rgba(44, 34, 30, .3); }
+
+/* Barra de baixo: aba ativa com um fundo suave e um ponto dourado */
+.gs-abas a { position: relative; transition: color .2s var(--curva), background .2s var(--curva); }
+.gs-abas a.on { background: rgba(197, 160, 89, .14); }
+.gs-abas a.on::after { content: ''; position: absolute; top: 3px; width: 18px; height: 3px; border-radius: 3px; background: #B8860B; }
