@@ -58,7 +58,7 @@ export function Anel({ pct, grande, sub, cor = 'var(--gold-strong)', tamanho = 1
     <svg viewBox="0 0 130 130" width={tamanho} height={tamanho} role="img" aria-label={`${sub}: ${grande}`} style={{ display: 'block', maxWidth: '100%' }}>
       <circle cx="65" cy="65" r={r} fill="none" stroke="var(--bg-2)" strokeWidth="12" />
       <circle cx="65" cy="65" r={r} fill="none" stroke={cor} strokeWidth="12" strokeLinecap="round" strokeDasharray={`${(p / 100) * C} ${C}`} transform="rotate(-90 65 65)" style={{ transition: 'stroke-dasharray .6s cubic-bezier(.22,1,.36,1)' }} />
-      <text x="65" y="70" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontSize={grande.length > 3 ? 26 : 34} fill="var(--ink)">{grande}</text>
+      <text x="65" y="70" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontWeight="800" fontSize={grande.length > 3 ? 26 : 34} fill="var(--ink)">{grande}</text>
       <text x="65" y="88" textAnchor="middle" fontSize="10" fill="var(--ink-muted)">{sub}</text>
     </svg>
   );
@@ -85,7 +85,7 @@ export function Rosquinha({ fatias, centro, sub }: { fatias: FatiaGrafico[]; cen
           return <circle key={f.id} cx="60" cy="60" r={r} fill="none" stroke={f.cor} strokeWidth="14" strokeDasharray={`${Math.max(0, p - 1.5)} ${C}`} strokeDashoffset={o} />;
         })}
       </g>
-      <text x="60" y="58" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontSize="15" fill="var(--ink)">{centro}</text>
+      <text x="60" y="58" textAnchor="middle" fontFamily="Inter, system-ui, sans-serif" fontWeight="800" fontSize="15" fill="var(--ink)">{centro}</text>
       <text x="60" y="72" textAnchor="middle" fontSize="7.5" fill="var(--ink-muted)">{sub}</text>
     </svg>
   );

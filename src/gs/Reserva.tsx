@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays } from 'lucide-react';
 import { useEstado } from './store';
 import { guardar, removerAporte, salvarConfig, usarReserva } from './acoes';
 import { gastoMensalMedio, guardadoNoMes, livreParaGastar, patrimonioGuardado, reservaMeta } from './selectores';
@@ -89,7 +90,7 @@ export function Reserva() {
           ) : (
             <section className="gs-card">
               <Deslizante rotulo="Quanto guardar por mês" valor={plano} min={50} max={Math.max(2000, Math.ceil((Math.max(plano, cap) * 1.5) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => salvarConfig({ reservaMensal: n })} />
-              {prontos ? <Dica icone="📅">Guardando {brl0(plano)} por mês, você completa a reserva em <b>{prontos} {prontos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, prontos))}).</Dica> : null}
+              {prontos ? <Dica icone={<CalendarDays size={18} />}>Guardando {brl0(plano)} por mês, você completa a reserva em <b>{prontos} {prontos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, prontos))}).</Dica> : null}
               {e.config.renda > 0 && (plano > cap && cap > 0
                 ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Hoje sobram cerca de {brl0(cap)} por mês. {brl0(plano)} pode apertar.</p>
                 : cap > 0 ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Cabe: hoje sobram cerca de {brl0(cap)} por mês.</p> : null)}

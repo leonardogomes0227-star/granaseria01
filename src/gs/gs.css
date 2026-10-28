@@ -18,7 +18,7 @@ html.gs-app {
   --line-strong: rgba(44, 34, 30, 0.2);
   --sombra: 0 1px 2px rgba(44, 34, 30, 0.04), 0 10px 28px -14px rgba(44, 34, 30, 0.14);
   --raio: 22px;
-  --serif: 'Fraunces', 'Playfair Display', Georgia, serif;
+  --serif: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; /* títulos e números: Inter grossa (antes era Fraunces) */
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --curva: cubic-bezier(0.22, 1, 0.36, 1);
   /* os nomes antigos do tema apontam pros novos (telas que ainda usam o tema de antes) */
@@ -282,7 +282,7 @@ html.gs-app .lp-sec h2, html.gs-app .lp-fim h2 { font-size: clamp(30px, 8.5vw, 4
 .lp-f { border-radius: 22px; padding: 16px 14px; background: var(--surface); border: 1px solid var(--line); }
 .lp-f:nth-child(4n+1), .lp-f:nth-child(4n+4) { background: var(--lp-preto); border-color: var(--lp-preto); color: var(--lp-creme); }
 .lp-f:nth-child(4n+1) small, .lp-f:nth-child(4n+4) small { color: rgba(251,246,236,.7); }
-.lp-f .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 24px; background: var(--lp-ouro); margin-bottom: 10px; }
+.lp-f .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--lp-ouro); color: var(--lp-preto); margin-bottom: 10px; }
 .lp-f b { display: block; font-weight: 900; letter-spacing: -0.03em; font-size: 17px; line-height: 1.1; text-transform: uppercase; }
 .lp-f small { display: block; margin-top: 6px; font-size: 13.5px; line-height: 1.35; color: var(--ink-muted); }
 .lp-passos { display: grid; gap: 10px; }
@@ -299,3 +299,9 @@ html.gs-app .lp-fim h2 { color: var(--lp-ouro); font-size: clamp(44px, 13vw, 76p
 .gs-principal:has(.lp) { padding-bottom: 0; }
 .lp-hero .lp-nota { font-size: 12px; margin: 10px 0 0; color: rgba(251,246,236,.45); }
 .gs-marca { font-family: var(--sans) !important; font-weight: 900 !important; letter-spacing: -0.03em !important; }
+
+/* títulos e números do app em Inter grossa, no lugar da serifa */
+.gs-titulo, .gs-h2, .gs-grande, .gs-medio, .gs-tres b, .gs-dinheiro, .gs-rosca-centro b, .gs-folha h2, .gs-vazio b, .gs-mini b, .gs-avatar, .gs-tile .ic, .gs-ferr .ic { font-weight: 800 !important; letter-spacing: -0.03em; }
+html.gs-app h1, html.gs-app h2, html.gs-app h3 { font-weight: 800; letter-spacing: -0.03em; }
+.gs-titulo { font-size: 31px; }
+.gs-dica svg { flex: none; margin-top: 1px; color: var(--gold-strong); }
