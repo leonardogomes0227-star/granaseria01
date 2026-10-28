@@ -329,3 +329,24 @@ html.gs-app h1, html.gs-app h2, html.gs-app h3 { font-weight: 800; letter-spacin
     @keyframes lp-entra { from { opacity: 0; translate: 0 22px; } to { opacity: 1; translate: 0 0; } }
   }
 }
+
+/* ---------- Dentro do app: mesmo jeito da capa (preto, dourado, letra grossa) ---------- */
+.gs-cofre { position: relative; overflow: hidden; margin-bottom: 16px; padding: 22px 20px 20px; border-radius: 26px; color: #FBF6EC; background: radial-gradient(420px 260px at 50% -20%, #4A3720 0%, #120E0C 70%); box-shadow: 0 18px 40px -18px rgba(18, 14, 12, .55); }
+.gs-cofre span { display: block; font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #D8B060; }
+.gs-cofre b { display: block; margin: 6px 0 4px; font-weight: 900; letter-spacing: -0.045em; font-size: clamp(44px, 14vw, 64px); line-height: 1; font-variant-numeric: tabular-nums; }
+.gs-cofre p { margin: 0; font-size: 14px; color: rgba(251, 246, 236, .7); }
+.gs-titulo { font-weight: 900 !important; letter-spacing: -0.04em !important; font-size: clamp(32px, 9vw, 40px) !important; line-height: 1.02 !important; }
+.gs-card.destaque { border-top: 3px solid #D8B060; }
+.gs-ferr .ic { background: #120E0C; color: #D8B060; border-radius: 14px; }
+.gs-ferr { transition: background .2s var(--curva); }
+@media (hover: hover) {
+  .gs-ferr:hover { background: var(--gold-soft); }
+  .gs-tile:hover, .gs-card:has(> .gs-btn):hover { transform: translateY(-2px); }
+}
+.gs-tile { transition: transform .2s var(--curva); }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .gs-card, .gs-tile { animation: lp-entra linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+  }
+}
+.gs-titulo + .gs-cofre { margin-top: 14px; }
