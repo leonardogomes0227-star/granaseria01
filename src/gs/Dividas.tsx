@@ -8,7 +8,8 @@ import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titu
 import { Anel, Linha } from './graficos';
 import { gastoMensalMedio, livreParaGastar } from './selectores';
 import { CalculaJuro, MaisRapido, Quitadas, Quitou, TIPOS_DIVIDA } from './DividasExtras';
-import { capacidadeDePagamento, conquistas, economiaDoPlano, mesesSeguidos, pagamentoSugerido, pagoNoMes, proximaAcao } from './painelDividas';
+import { efeitoNaDivida } from './extrasLogica';
+import { capacidadeDePagamento, completarParcelada, conquistas, economiaDoPlano, mesesSeguidos, pagamentoSugerido, pagoNoMes, proximaAcao, quitarMaisRapido } from './painelDividas';
 import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 import type { Divida } from './tipos';
@@ -49,6 +50,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
   const hoje = useHoje();
   const mes = mesDe(hoje);
   const [pagar, setPagar] = useState<Divida | null>(null);
+  const [adiant, setAdiant] = useState(0);
   const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
   const sim = useMemo(() => paraSim(e.dividas), [e.dividas]);
   const minimo = sim.reduce((t, d) => t + Math.min(d.parcelaMinima, d.saldo), 0);
@@ -60,6 +62,10 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
   useEffect(() => {
     if (!e.planoDividas && sim.length > 0) salvarPlanoDividas(padrao);
   }, [e.planoDividas, sim.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // o plano nunca fica abaixo das parcelas: elas vão ser cobradas de qualquer jeito
+  useEffect(() => {
+    if (e.planoDividas && minimo > 0 && e.planoDividas.pagamentoMensal < minimo - 0.5) salvarPlanoDividas({ ...e.planoDividas, pagamentoMensal: Math.ceil(minimo) });
+  }, [minimo, e.planoDividas]);
   const resultado = useMemo(() => simular(sim, plano.pagamentoMensal, plano.estrategia), [sim, plano.pagamentoMensal, plano.estrategia]);
   const comp = useMemo(() => compararEstrategias(sim, plano.pagamentoMensal), [sim, plano.pagamentoMensal]);
   const passo = passoDoMes(sim, plano.pagamentoMensal, plano.estrategia);
@@ -77,7 +83,11 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
   const livre = livreParaGastar(e, mes);
   const semJuros = sim.every((d) => d.jurosMensal === 0);
   const longa = !resultado.insuficiente && resultado.quita && !semJuros && resultado.meses > 2;
-  const acao = proximaAcao(abertas, plano.pagamentoMensal, hoje);
+  const acao = proximaAcao(abertas, plano.pagamentoMensal, hoje, pagoMes);
+  const extra = Math.max(0, Math.round(plano.pagamentoMensal - minimo));
+  const mr = quitarMaisRapido(sim, extra, plano.estrategia);
+  const ad = adiant > 0 ? efeitoNaDivida(sim, plano.pagamentoMensal, plano.estrategia, adiant) : null;
+  const temParcelada = abertas.some((d) => d.tipo === 'parcelada');
   const alvoPagar = acao.divida ?? e.dividas.find((d) => d.id === passo?.divida.id) ?? abertas[0];
   const fim = resultado.quita && !resultado.insuficiente ? resultado.dataFinal : null;
   const dias = fim ? Math.max(0, diasEntre(hoje, vencimentoNoMes(fim, 31))) : null;
@@ -92,8 +102,8 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
           <span className="gs-rotulo">Você fica livre em</span>
           {dias !== null ? (
             <>
-              <p className="gs-grande" style={{ margin: '2px 0' }}>{dias} {dias === 1 ? 'dia' : 'dias'}</p>
-              <p className="gs-sub" style={{ margin: 0 }}>{mesCurto(fim!)} · {meses(resultado.meses)}</p>
+              <p className="gs-grande" style={{ margin: '2px 0' }}>{dias > 365 ? meses(resultado.meses) : `${dias} ${dias === 1 ? 'dia' : 'dias'}`}</p>
+              <p className="gs-sub" style={{ margin: 0 }}>{mesCurto(fim!)} · {dias > 365 ? `${dias} dias` : meses(resultado.meses)}</p>
             </>
           ) : (
             <p style={{ margin: '4px 0 0' }}>{resultado.insuficiente ? `Pague pelo menos ${brl0(resultado.minimoNecessario)} por mês pra a dívida diminuir.` : 'Aumente o pagamento mensal pra ver a data.'}</p>
@@ -142,19 +152,45 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         </div>
       )}
 
-      {longa && (
+      {!semJuros && (
         <section className="gs-card">
-          <span className="gs-rotulo">Seu caminho até zerar</span>
-          <Linha serie={serie} fim={mesCurto(resultado.dataFinal!)} rotulo="Saldo das dívidas caindo mês a mês" />
-          <div style={{ marginTop: 12 }}>
-            <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={Math.max(50, Math.floor(minimo / 50) * 50)} max={Math.max(3000, Math.ceil((Math.max(cap, plano.pagamentoMensal) * 1.5) / 100) * 100)} passo={50} formato={brl0} extra={`mínimo ${brl0(minimo)}`} onChange={(n) => mudar({ pagamentoMensal: n })} />
-          </div>
+          <span className="gs-rotulo">Quitar mais rápido</span>
+          {minimo > 0 ? (
+            <>
+              <p style={{ margin: '6px 0 10px' }}>{abertas.length > 1 ? 'Suas parcelas somam' : 'Sua parcela é'} <b>{brl0(minimo)}</b> por mês. Quanto você consegue pôr <b>a mais</b>?</p>
+              <Deslizante rotulo="A mais por mês, além da parcela" valor={extra} min={0} max={Math.max(1000, Math.ceil((Math.max(cap - minimo, extra) * 1.2) / 100) * 100)} passo={50} formato={(n) => `+ ${brl0(n)}`} onChange={(n) => mudar({ pagamentoMensal: Math.ceil(minimo) + n })} />
+              <div className="gs-chips" role="group" aria-label="Valores rápidos" style={{ marginTop: 8 }}>
+                {[0, 100, 200, 500].map((v) => <button key={v} type="button" className={`gs-chip ${extra === v ? 'on' : ''}`} aria-pressed={extra === v} onClick={() => mudar({ pagamentoMensal: Math.ceil(minimo) + v })}>{v === 0 ? 'Só a parcela' : `+ ${brl0(v)}`}</button>)}
+              </div>
+              {mr && (
+                <div className="gs-dois" style={{ marginTop: 12 }}>
+                  <div className="gs-mini"><small>Só a parcela</small><b>{mr.base.fim ? mesCurto(mr.base.fim) : 'não zera'}</b><small>{mr.base.fim ? `${brl0(mr.base.juros)} de juros` : 'a parcela não cobre os juros'}</small></div>
+                  <div className={`gs-mini ${extra > 0 ? 'm' : ''}`}><small>{extra > 0 ? `Com + ${brl0(extra)}` : 'Seu plano'}</small><b>{mr.com.fim ? mesCurto(mr.com.fim) : '-'}</b><small>{brl0(mr.com.juros)} de juros</small></div>
+                </div>
+              )}
+              {mr && mr.mesesAntes > 0 && <p className="gs-banner" style={{ marginBottom: 0 }}>Você termina <b>{meses(mr.mesesAntes)} antes</b> e economiza <b>{brl0(mr.economia)}</b> de juros.</p>}
+              {mr && extra === 0 && <p className="gs-nota">Arraste pra ver quanto você ganha pondo um pouco a mais todo mês.</p>}
+            </>
+          ) : (
+            <Deslizante rotulo="Quanto você paga por mês" valor={plano.pagamentoMensal} min={50} max={Math.max(3000, Math.ceil((Math.max(cap, plano.pagamentoMensal) * 1.5) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => mudar({ pagamentoMensal: n })} />
+          )}
+          {longa && <Linha serie={serie} fim={mesCurto(resultado.dataFinal!)} rotulo="Saldo das dívidas caindo mês a mês" />}
           {abertas.length > 1 && (
             <div className="gs-chips" role="group" aria-label="Ordem de pagamento" style={{ marginTop: 10 }}>
               {(['bola-de-neve', 'maior-juro'] as const).map((id) => <button key={id} type="button" className={`gs-chip ${plano.estrategia === id ? 'on' : ''}`} aria-pressed={plano.estrategia === id} onClick={() => mudar({ estrategia: id })}>{id === 'bola-de-neve' ? 'Menor dívida primeiro' : 'Maior juro primeiro'}</button>)}
             </div>
           )}
           {abertas.length > 1 && comp.economia >= 1 && <Dica>{comp.melhor === 'maior-juro' ? 'Maior juro primeiro' : 'Menor dívida primeiro'} economiza <b>{brl0(comp.economia)}</b> em juros.</Dica>}
+        </section>
+      )}
+
+      {!semJuros && (
+        <section className="gs-card">
+          <span className="gs-rotulo">Adiantar com um dinheiro extra</span>
+          <p style={{ margin: '6px 0 10px' }}>Entrou 13º, bônus ou uma venda? Veja o que acontece se você usar pra abater a dívida.</p>
+          <CampoDinheiro rotulo="Quanto você pode adiantar" valor={adiant} onChange={setAdiant} />
+          {ad && (ad.meses > 0 || ad.economia > 0) && <p className="gs-banner" style={{ marginTop: 0 }}>Você termina <b>{meses(ad.meses)} antes</b> e economiza <b>{brl0(ad.economia)}</b> de juros.</p>}
+          {temParcelada && <Dica>No financiamento e no empréstimo, peça pra o adiantamento <b>reduzir o prazo</b> (abater as últimas parcelas). A lei garante desconto proporcional dos juros quando você antecipa.</Dica>}
         </section>
       )}
 
@@ -170,6 +206,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
                 <small>
                   {brl(saldoAtual(d))}
                   {q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}
+                  {d.tipo === 'parcelada' && d.parcelaMinima > 0 ? ` · parcela ${brl0(d.parcelaMinima)}` : ''}
                   {d.jurosMensal > 0 ? ` · ${pct(d.jurosMensal, 1)} ao mês` : ' · sem juros'}
                   {d.venceDia ? ` · vence dia ${d.venceDia}` : ''}
                 </small>
@@ -177,7 +214,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
               </div>
               <button type="button" className="gs-btn pequeno" onClick={() => setPagar(d)}>Paguei</button>
               <div style={{ flexBasis: '100%', display: 'flex', gap: 4 }}>
-                <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Editar</button>
+                {d.parcelaMinima <= 0 ? <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Informar a parcela</button> : <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Editar</button>}
                 <button type="button" className="gs-btn link" onClick={() => { removerDivida(d.id); apagarComDesfazer(`${d.nome} excluída`, () => restaurarDivida(d)); }}>Excluir</button>
               </div>
             </div>
@@ -234,53 +271,82 @@ function PagarSheet({ divida, sugerido, onFechar }: { divida: Divida | null; sug
 /* ---------- assistente de 4 passos ---------- */
 function FormDivida({ valor, onFechar }: { valor: Divida | 'nova' | null; onFechar: () => void }) {
   const edit = valor && valor !== 'nova' ? valor : null;
+  const [tipo, setTipo] = useState<'parcelada' | 'rotativa'>('parcelada');
   const [nome, setNome] = useState('');
   const [saldo, setSaldo] = useState(0);
   const [juros, setJuros] = useState<number | ''>('');
   const [min, setMin] = useState(0);
+  const [faltam, setFaltam] = useState<number | ''>('');
   const [dia, setDia] = useState<number | ''>('');
   const [tentou, setTentou] = useState(false);
   useEffect(() => {
     if (!valor) return;
+    setTipo(edit?.tipo ?? (edit ? 'rotativa' : 'parcelada'));
     setNome(edit?.nome ?? '');
     setSaldo(edit ? saldoAtual(edit) : 0);
     setJuros(edit ? edit.jurosMensal : '');
     setMin(edit?.parcelaMinima ?? 0);
+    setFaltam(edit?.parcelasRestantes ?? '');
     setDia(edit?.venceDia ?? '');
     setTentou(false);
   }, [valor, edit]);
+  const parcelada = tipo === 'parcelada';
+  // prévia do que o app vai completar sozinho
+  const previa = parcelada && min > 0 && typeof faltam === 'number' && faltam > 0 ? completarParcelada({ parcela: min, n: faltam, saldo, juros }) : null;
+  const salvar = () => {
+    setTentou(true);
+    let s = saldo;
+    let j = juros;
+    if (parcelada) {
+      if (!(min > 0) || typeof faltam !== 'number' || !(faltam > 0)) return;
+      const c = completarParcelada({ parcela: min, n: faltam, saldo, juros });
+      s = c.saldo;
+      j = c.juros;
+    } else if (juros === '' || !(saldo > 0)) return;
+    // ao editar, o saldo digitado vira o novo saldo e os pagamentos antigos já estão abatidos nele
+    const ok = salvarDivida({ id: edit?.id, nome, saldo: edit ? s + edit.pagamentos.reduce((t, p) => t + p.valor, 0) : s, jurosMensal: j as number, parcelaMinima: min, venceDia: typeof dia === 'number' ? dia : undefined, tipo, parcelasRestantes: parcelada && typeof faltam === 'number' ? faltam : undefined });
+    if (ok) onFechar();
+  };
   return (
     <Folha aberta={Boolean(valor)} onFechar={onFechar} titulo={edit ? 'Editar dívida' : 'Nova dívida'}>
+      <div className="gs-seg" role="tablist" aria-label="Como você paga essa dívida" style={{ marginBottom: 12 }}>
+        <button type="button" role="tab" aria-selected={parcelada} className={parcelada ? 'on' : ''} onClick={() => setTipo('parcelada')}>Parcela fixa</button>
+        <button type="button" role="tab" aria-selected={!parcelada} className={!parcelada ? 'on' : ''} onClick={() => setTipo('rotativa')}>Cartão / cheque especial</button>
+      </div>
       {!edit && (
         <div className="gs-chips" role="group" aria-label="Tipo de dívida">
-          {TIPOS_DIVIDA.map((t) => <button key={t.nome} type="button" className="gs-chip" onClick={() => { if (!nome.trim()) setNome(t.nome); setJuros(t.juros); }}>{t.nome}</button>)}
+          {TIPOS_DIVIDA.filter((t) => t.tipo === tipo).map((t) => <button key={t.nome} type="button" className="gs-chip" onClick={() => { if (!nome.trim()) setNome(t.nome); if (juros === '') setJuros(t.juros); }}>{t.nome}</button>)}
         </div>
       )}
-      {!edit && <p className="gs-nota" style={{ marginTop: 4, marginBottom: 12 }}>Não tem o número exato? Pode chutar. Você ajusta depois. Os tipos já sugerem um juro médio.</p>}
-      <Campo rotulo="Nome ou credor" valor={nome} onChange={setNome} placeholder="Ex.: Cartão do banco" maxLength={60} erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />
-      <CampoDinheiro rotulo="Quanto você deve hoje" valor={saldo} onChange={setSaldo} erro={tentou && !(saldo > 0) ? 'Digite o saldo.' : undefined} />
-      <CalculaJuro onResultado={setJuros} />
-      <div className="gs-dois">
-        <CampoNumero rotulo="Juros ao mês" sufixo="%" valor={juros} onChange={setJuros} min={0} max={30} placeholder="Ex.: 8" erro={tentou && juros === '' ? 'Digite (0 se não tem).' : undefined} />
-        <CampoDinheiro rotulo="Parcela mínima" valor={min} onChange={setMin} placeholder="R$ 0,00" />
-      </div>
+      <Campo rotulo="Nome ou credor" valor={nome} onChange={setNome} placeholder={parcelada ? 'Ex.: Financiamento do carro' : 'Ex.: Cartão do banco'} maxLength={60} erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />
+      {parcelada ? (
+        <>
+          <div className="gs-dois">
+            <CampoDinheiro rotulo="Valor da parcela" valor={min} onChange={setMin} erro={tentou && !(min > 0) ? 'Digite a parcela.' : undefined} />
+            <CampoNumero rotulo="Parcelas que faltam" valor={faltam} onChange={setFaltam} min={1} max={480} placeholder="Ex.: 36" erro={tentou && !(typeof faltam === 'number' && faltam > 0) ? 'Quantas faltam?' : undefined} />
+          </div>
+          <p className="gs-nota" style={{ marginTop: -6, marginBottom: 12 }}>Os dois de baixo são opcionais. Sabendo um deles, eu calculo o outro.</p>
+          <div className="gs-dois">
+            <CampoDinheiro rotulo="Quanto deve hoje (saldo)" valor={saldo} onChange={setSaldo} placeholder="Opcional" />
+            <CampoNumero rotulo="Juros ao mês" sufixo="%" valor={juros} onChange={setJuros} min={0} max={30} placeholder="Opcional" />
+          </div>
+          {previa && <p className="gs-banner" style={{ marginTop: 0 }}>Saldo de <b>{brl0(previa.saldo)}</b> a <b>{pct(previa.juros, 2)} ao mês</b>. Termina em {faltam} {faltam === 1 ? 'mês' : 'meses'} só com a parcela.</p>}
+        </>
+      ) : (
+        <>
+          <CampoDinheiro rotulo="Quanto você deve hoje" valor={saldo} onChange={setSaldo} erro={tentou && !(saldo > 0) ? 'Digite o saldo.' : undefined} />
+          <CalculaJuro onResultado={setJuros} />
+          <div className="gs-dois">
+            <CampoNumero rotulo="Juros ao mês" sufixo="%" valor={juros} onChange={setJuros} min={0} max={30} placeholder="Ex.: 12" erro={tentou && juros === '' ? 'Digite (0 se não tem).' : undefined} />
+            <CampoDinheiro rotulo="Pagamento mínimo" valor={min} onChange={setMin} placeholder="R$ 0,00" />
+          </div>
+        </>
+      )}
       <CampoNumero rotulo="Dia do vencimento (pra eu te avisar)" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10 (opcional)" />
       {typeof juros === 'number' && juros >= 15 && <p className="gs-banner" role="note">Juro muito alto. Confira se digitou certo. Se for isso mesmo, vale tentar renegociar.</p>}
       <div className="gs-acoes">
         <button type="button" className="gs-btn sec" onClick={onFechar}>Cancelar</button>
-        <button
-          type="button"
-          className="gs-btn"
-          onClick={() => {
-            setTentou(true);
-            if (juros === '') return;
-            // ao editar, o saldo digitado vira o novo saldo e os pagamentos antigos já estão abatidos nele
-            const ok = salvarDivida({ id: edit?.id, nome, saldo: edit ? saldo + edit.pagamentos.reduce((t, p) => t + p.valor, 0) : saldo, jurosMensal: juros, parcelaMinima: min, venceDia: typeof dia === 'number' ? dia : undefined });
-            if (ok) onFechar();
-          }}
-        >
-          Salvar
-        </button>
+        <button type="button" className="gs-btn" onClick={salvar}>Salvar</button>
       </div>
     </Folha>
   );

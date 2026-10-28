@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capacidadeDePagamento, economiaDoPlano, mesesSeguidos, pagamentoSugerido, proximaAcao, pagoNoMes } from './painelDividas';
+import { capacidadeDePagamento, completarParcelada, economiaDoPlano, mesesSeguidos, pagamentoSugerido, proximaAcao, pagoNoMes, quitarMaisRapido } from './painelDividas';
 import type { Divida } from './tipos';
 
 const div = (p: Partial<Divida> = {}): Divida => ({ id: 'a', nome: 'Cartão', saldo: 1000, jurosMensal: 8, parcelaMinima: 100, pagamentos: [], ...p });
@@ -33,5 +33,27 @@ describe('painel de dívidas', () => {
     expect(pagamentoSugerido(230, 1200, 3800)).toBe(700);
     expect(pagamentoSugerido(0, 0, 600)).toBe(100);
     expect(pagamentoSugerido(300, 200, 3000)).toBe(300);
+  });
+});
+
+describe('parcelada e quitar mais rápido', () => {
+  it('completa saldo pelo juro, juro pelo saldo, ou parcela x n', () => {
+    const a = completarParcelada({ parcela: 1000, n: 12, juros: 0 });
+    expect(a).toEqual({ saldo: 12000, juros: 0 });
+    const b = completarParcelada({ parcela: 1000, n: 12, juros: 2 });
+    expect(b.saldo).toBeCloseTo(10575.34, 0);
+    const c = completarParcelada({ parcela: 1000, n: 12, saldo: 10575.34 });
+    expect(c.juros).toBeCloseTo(2, 1);
+    expect(completarParcelada({ parcela: 500, n: 10 })).toEqual({ saldo: 5000, juros: 0 });
+  });
+  it('parcela + extra termina antes e economiza', () => {
+    const r = quitarMaisRapido([{ id: 'f', nome: 'Financiamento', saldo: 50000, jurosMensal: 1.5, parcelaMinima: 1270 }], 300, 'maior-juro');
+    expect(r!.mesesAntes).toBeGreaterThan(5);
+    expect(r!.economia).toBeGreaterThan(1000);
+    expect(quitarMaisRapido([{ id: 'f', nome: 'x', saldo: 100, jurosMensal: 0, parcelaMinima: 0 }], 50, 'maior-juro')).toBeNull();
+  });
+  it('o que foi pago numa dívida já quitada conta no mês', () => {
+    const a = proximaAcao([div()], 600, '2026-10-10', 600);
+    expect(a.tipo).toBe('cumprida');
   });
 });

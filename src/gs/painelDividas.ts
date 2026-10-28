@@ -2,6 +2,7 @@
 
 import { arred, diasEntre, vencimentoNoMes } from './datas';
 import { saldoAtual, simular, type DividaSim } from './dividas';
+import { taxaEfetiva } from './ferramentas';
 import { brl0 } from './datas';
 import type { Divida, Estrategia } from './tipos';
 
@@ -44,9 +45,9 @@ export interface Acao {
 }
 
 /** O que fazer agora: parcela perto de vencer, começar o mês, completar a meta ou comemorar. */
-export function proximaAcao(abertas: Divida[], meta: number, hoje: string): Acao {
+export function proximaAcao(abertas: Divida[], meta: number, hoje: string, pagoMes?: number): Acao {
   const mes = hoje.slice(0, 7);
-  const pago = pagoNoMes(abertas, mes);
+  const pago = pagoMes ?? pagoNoMes(abertas, mes); // o que já foi pago no mês conta, mesmo numa dívida que zerou
   const falta = Math.max(0, arred(meta - pago));
   const candidatas = abertas
     .filter((d) => d.venceDia && pagoNaDivida(d, mes) < Math.min(d.parcelaMinima || 1, saldoAtual(d)))
@@ -92,4 +93,39 @@ export function pagamentoSugerido(minimo: number, capacidade: number, total: num
   if (capacidade > minimo) return Math.min(capacidade, Math.max(minimo, Math.round((capacidade * 0.6) / 50) * 50 || minimo));
   if (minimo > 0) return minimo;
   return Math.max(50, Math.ceil(total / 6 / 50) * 50);
+}
+
+/** Dívida parcelada (financiamento, empréstimo, crediário): com a parcela e quantas faltam, completa o que a pessoa não sabe.
+ *  Saldo sem juro: calcula pelo juro. Juro sem saldo: calcula pela parcela. Sem nenhum dos dois: parcela x parcelas, sem juro. */
+export function completarParcelada(p: { parcela: number; n: number; saldo?: number; juros?: number | '' }): { saldo: number; juros: number } {
+  const temSaldo = (p.saldo ?? 0) > 0;
+  const temJuro = typeof p.juros === 'number';
+  if (temSaldo && temJuro) return { saldo: arred(p.saldo!), juros: p.juros as number };
+  if (temSaldo) {
+    const t = taxaEfetiva(p.saldo!, p.n, p.parcela);
+    return { saldo: arred(p.saldo!), juros: t === null ? 0 : Math.round(t * 10000) / 100 };
+  }
+  if (temJuro) {
+    const i = (p.juros as number) / 100;
+    return { saldo: arred(i === 0 ? p.parcela * p.n : (p.parcela * (1 - (1 + i) ** -p.n)) / i), juros: p.juros as number };
+  }
+  return { saldo: arred(p.parcela * p.n), juros: 0 };
+}
+
+export interface MaisRapido {
+  base: { meses: number; juros: number; fim: string | null };
+  com: { meses: number; juros: number; fim: string | null };
+  mesesAntes: number;
+  economia: number;
+}
+/** Pagar as parcelas e mais um valor por mês: quantos meses antes e quanto de juros a menos. */
+export function quitarMaisRapido(ds: DividaSim[], extra: number, estrategia: Estrategia): MaisRapido | null {
+  const minimo = ds.reduce((t, d) => t + Math.min(d.parcelaMinima, d.saldo), 0);
+  if (minimo <= 0) return null;
+  const a = simular(ds, minimo, estrategia);
+  const b = simular(ds, minimo + Math.max(0, extra), estrategia);
+  if (!b.quita) return null;
+  const base = { meses: a.quita ? a.meses : 0, juros: a.quita ? a.totalJuros : 0, fim: a.quita ? a.dataFinal ?? null : null };
+  const com = { meses: b.meses, juros: b.totalJuros, fim: b.dataFinal ?? null };
+  return { base, com, mesesAntes: a.quita ? a.meses - b.meses : 0, economia: a.quita ? arred(a.totalJuros - b.totalJuros) : 0 };
 }

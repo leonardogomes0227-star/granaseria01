@@ -14,12 +14,13 @@ import type { Estrategia } from './tipos';
 
 /* ---------- Peças extras de "Quitar dívidas": cada uma começa fechada pra tela não pesar ---------- */
 
-export const TIPOS_DIVIDA: { nome: string; juros: number }[] = [
-  { nome: 'Cartão (rotativo)', juros: 12 },
-  { nome: 'Cheque especial', juros: 8 },
-  { nome: 'Empréstimo pessoal', juros: 4 },
-  { nome: 'Loja / crediário', juros: 5 },
-  { nome: 'Financiamento', juros: 1.5 },
+export const TIPOS_DIVIDA: { nome: string; juros: number; tipo: 'parcelada' | 'rotativa' }[] = [
+  { nome: 'Financiamento', juros: 1.5, tipo: 'parcelada' },
+  { nome: 'Empréstimo pessoal', juros: 4, tipo: 'parcelada' },
+  { nome: 'Consignado', juros: 1.8, tipo: 'parcelada' },
+  { nome: 'Loja / crediário', juros: 5, tipo: 'parcelada' },
+  { nome: 'Cartão (rotativo)', juros: 12, tipo: 'rotativa' },
+  { nome: 'Cheque especial', juros: 8, tipo: 'rotativa' },
 ];
 
 /** "Não sei o juro": a pessoa diz quanto pegou, em quantas vezes e quanto é a parcela. */
