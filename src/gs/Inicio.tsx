@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getName } from '../painel';
 import { useEstado } from './store';
-import { brl0, mesDe, brl } from './datas';
+import { brl0, mesDe, brl, diasRestantes } from './datas';
 import { fatiasDaRenda, limiteDiario, livreParaGastar, patrimonioGuardado } from './selectores';
 import { Rosca } from './Rosca';
 import { Folha, Titulo } from './ui';
@@ -29,7 +29,14 @@ export function Inicio() {
   const semRenda = e.config.renda <= 0;
   return (
     <>
-      <Titulo titulo={nome ? `Oi, ${nome}` : 'Oi!'} sub={semRenda ? 'Informe sua renda pra ver o seu mês.' : `Você pode gastar ${brl(limiteDiario(e, mes, hoje))} por dia até o fim do mês.`} />
+      <Titulo titulo={nome ? `Oi, ${nome}` : 'Oi!'} sub={semRenda ? 'Informe sua renda pra ver o seu mês.' : undefined} />
+      {!semRenda && (
+        <section className="gs-cofre" aria-label="Quanto você pode gastar hoje">
+          <span>Pode gastar hoje</span>
+          <b>{brl(limiteDiario(e, mes, hoje))}</b>
+          <p>{brl0(Math.max(0, livre))} livres no mês · {diasRestantes(mes, hoje)} {diasRestantes(mes, hoje) === 1 ? 'dia' : 'dias'} até o fim</p>
+        </section>
+      )}
       <section className="gs-card destaque" aria-label="Sua renda do mês">
         {semRenda ? (
           <>

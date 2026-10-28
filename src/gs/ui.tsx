@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { arred } from './datas';
 import { assistentePorId } from './assistentes';
 import { Anel } from './graficos';
-import { Lightbulb } from 'lucide-react';
+import { CalendarDays, Gift, Landmark, Lightbulb, PiggyBank, Search, Sprout, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 
 /* ---------- campo de dinheiro com máscara (digita centavos, mostra R$ 1.234,56) ---------- */
 export function CampoDinheiro({ rotulo, valor, onChange, placeholder = 'R$ 0,00', grande = false, erro, autoFocus }: { rotulo: string; valor: number; onChange: (n: number) => void; placeholder?: string; grande?: boolean; erro?: string; autoFocus?: boolean }) {
@@ -120,12 +120,14 @@ export function Confirmar({ aberta, titulo, texto, rotulo = 'Confirmar', perigo 
   );
 }
 
-/* ---------- avatar do assistente: fundo areia, aro dourado, inicial em serifa ---------- */
+/* ---------- avatar do assistente: círculo escuro com o ícone da ferramenta em dourado ---------- */
+const ICONE_ASSISTENTE: Record<string, LucideIcon> = { contas: CalendarDays, gastos: Wallet, dividas: Target, reserva: PiggyBank, assinaturas: Search, renda: Sprout, emprestimos: Landmark, extras: Gift, investimentos: TrendingUp };
 export function AvatarAssistente({ id, inicial, cor, tamanho = 44 }: { id?: string; inicial?: string; cor?: string; tamanho?: number }) {
   const a = id ? assistentePorId(id) : undefined;
+  const Icone = !inicial && id ? ICONE_ASSISTENTE[id] : undefined;
   return (
-    <span className="gs-avatar" style={{ width: tamanho, height: tamanho, fontSize: tamanho * 0.42, color: cor ?? a?.cor ?? 'var(--ink)', background: 'var(--bg-2)' }} aria-hidden="true">
-      {inicial ?? a?.inicial ?? '•'}
+    <span className="gs-avatar" style={Icone ? { width: tamanho, height: tamanho, color: '#D8B060', background: '#120E0C', borderColor: '#120E0C' } : { width: tamanho, height: tamanho, fontSize: tamanho * 0.42, color: cor ?? a?.cor ?? 'var(--ink)', background: 'var(--bg-2)' }} aria-hidden="true">
+      {Icone ? <Icone size={Math.round(tamanho * 0.46)} strokeWidth={2} /> : inicial ?? a?.inicial ?? '•'}
     </span>
   );
 }

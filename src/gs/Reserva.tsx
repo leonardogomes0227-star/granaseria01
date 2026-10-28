@@ -60,7 +60,7 @@ export function Reserva() {
           <div style={{ flex: 'none', width: 104 }}><Anel pct={Math.min(100, (guardado / meta) * 100)} grande={completa ? '✓' : `${Math.round(Math.min(100, (guardado / meta) * 100))}%`} sub="da meta" tamanho={104} cor="var(--success)" /></div>
           <div>
             <span className="gs-rotulo">{completa ? 'Reserva completa' : 'Você aguenta'}</span>
-            <p className="gs-grande" style={{ margin: '2px 0' }}>{fmt1(protegido)} {protegido === 1 ? 'mês' : 'meses'}</p>
+            <p className="gs-grande" style={{ margin: '2px 0' }}>{protegido > 0 && protegido < 1 ? `${Math.max(1, Math.round(protegido * 30))} ${Math.round(protegido * 30) <= 1 ? 'dia' : 'dias'}` : `${fmt1(protegido)} ${protegido === 1 ? 'mês' : 'meses'}`}</p>
             <p className="gs-sub" style={{ margin: 0 }}>{brl0(guardado)} de {brl0(meta)}{!completa && prontos ? ` · pronta em ${mesCurto(somaMes(mes, prontos))}` : ''}</p>
           </div>
         </section>
