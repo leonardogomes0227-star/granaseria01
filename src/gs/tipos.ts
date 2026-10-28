@@ -60,6 +60,8 @@ export interface Divida {
   pagamentos: PagamentoDivida[];
   cadastradaEm?: string;
   venceDia?: number; // dia do mês em que vence a parcela (opcional)
+  tipo?: 'parcelada' | 'rotativa'; // parcelada: financiamento, empréstimo, crediário (parcela fixa)
+  parcelasRestantes?: number; // só nas parceladas, quando a pessoa informa
 }
 export type Estrategia = 'bola-de-neve' | 'maior-juro';
 export interface PlanoDividas {
