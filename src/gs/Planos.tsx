@@ -8,8 +8,8 @@ import { Titulo } from './ui';
 /* ---------- Planos: grátis, mensal e anual. Os preços e os links de pagamento ficam em src/config.ts ---------- */
 
 const NO_GRATIS = ['Diagnóstico e as 11 ferramentas no celular', 'Quitar dívidas, orçamento, reserva, cartão e calendário', 'Dados no seu aparelho', 'Avisos de conta a vencer'];
-const NO_PAGO = ['Tudo do plano grátis', 'Assistente no WhatsApp: anote gastos por texto, áudio ou foto do cupom', 'Seu painel no site ligado ao seu número', 'Dados guardados na sua conta, em qualquer aparelho'];
-const EM_BREVE = ['Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
+const NO_PAGO = ['Tudo do plano grátis', 'Assistente no WhatsApp: anote gastos e entradas por mensagem e veja seu mês e seu saldo', 'Seu painel no site ligado ao seu número', 'Dados guardados na sua conta, em qualquer aparelho'];
+const EM_BREVE = ['Anotar por áudio e por foto do cupom', 'Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
 
 interface Cartao {
   id: 'gratis' | 'mensal' | 'anual';
