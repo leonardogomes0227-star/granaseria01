@@ -94,6 +94,16 @@ export const siteEvent = (event: string) => post({ event });
 /** 👍 / 👎 de uma ferramenta, com o texto opcional do 👎. */
 export const sendFeedback = (tool: string, kind: 'up' | 'down', note?: string) => post({ feedback: { tool, kind, note } });
 
+/** "Apagar tudo": pede ao servidor pra apagar a cópia ligada ao número. true = não sobrou cópia (ou nunca houve). */
+export async function apagarCopiaDoNumero(): Promise<boolean> {
+  const token = painelToken();
+  if (!token) return true;
+  const res = await fetch('/api/painel', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+  if (!res || (!res.ok && res.status !== 401)) return false; // 401: o link já não vale, não há o que apagar por ele
+  clearPainelToken();
+  return true;
+}
+
 /** O que está guardado pelo número. null: sem link, ou link que não vale mais (aí o token é esquecido). */
 export async function fetchPainel(): Promise<PainelData | null> {
   const token = painelToken();

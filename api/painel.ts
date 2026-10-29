@@ -2,7 +2,7 @@
 // ("Authorization: Bearer <token>") e recebe o que está guardado pelo número: diagnóstico, plano e vazamentos (o mesmo
 // estado que o bot usa) e os gastos e entradas do mês. O que a pessoa muda no site volta por aqui (PUT).
 
-import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, HANDOFF_KEYS } from '../server/whatsapp/hubdb.js';
+import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, eraseWhatsAppData, HANDOFF_KEYS } from '../server/whatsapp/hubdb.js';
 import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
@@ -105,4 +105,19 @@ export async function POST(request: Request): Promise<Response> {
     await trackEvent(phone, `feedback:${fb.kind}:site-${tool}`, note);
   }
   return Response.json({ ok: true });
+}
+
+/** "Apagar tudo" do site (Meus dados): remove a cópia guardada pelo número (LGPD) e esvazia o estado da conta vinculada, se houver. */
+export async function DELETE(request: Request): Promise<Response> {
+  const phone = await auth(request);
+  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  try {
+    const user = accountsConfigured() ? await findUserByPhone(phone) : null;
+    if (user) await saveState(user.user_id, {});
+    await eraseWhatsAppData(phone);
+  } catch (err) {
+    console.error('painel: não consegui apagar', err);
+    return Response.json({ error: 'não consegui apagar agora' }, { status: 502 });
+  }
+  return new Response(null, { status: 204 });
 }

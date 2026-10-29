@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { clearPainelToken, painelToken } from '../painel';
+import { apagarCopiaDoNumero, clearPainelToken, painelToken, startPainelSync, stopPainelSync } from '../painel';
+import { apagarCopiaDaConta, clearLocalData } from '../sync';
 import { apagarTudo, getEstado, STORE_KEY, substituir } from './store';
 import { salvarConfig } from './acoes';
 import { Campo, CampoDinheiro, CampoNumero, Confirmar, Titulo } from './ui';
@@ -59,7 +60,7 @@ export function MeusDados() {
 
   return (
     <>
-      <Titulo titulo="Meus dados" sub="Tudo fica no seu aparelho. Você manda e apaga quando quiser." />
+      <Titulo titulo="Meus dados" sub="Fica no seu aparelho. Se você entrou com o WhatsApp ou o e-mail, uma cópia fica na sua conta. Você apaga tudo quando quiser." />
       <section className="gs-card">
         <Campo rotulo="Nome" valor={nome} onChange={setNome} placeholder="Como quer ser chamado" maxLength={40} />
         <CampoDinheiro rotulo="Renda por mês" valor={renda} onChange={setRenda} />
@@ -104,11 +105,11 @@ export function MeusDados() {
 
       <section className="gs-card perigo">
         <b>Apagar todos os dados</b>
-        <p className="gs-sub" style={{ margin: '4px 0 12px' }}>Remove tudo deste aparelho: renda, contas, gastos, dívidas e assistentes. Não dá pra desfazer.</p>
+        <p className="gs-sub" style={{ margin: '4px 0 12px' }}>Remove renda, contas, gastos, dívidas e assistentes, deste aparelho e da cópia na sua conta (se você entrou). Não dá pra desfazer.</p>
         <button type="button" className="gs-btn perigo" onClick={() => setApagar(1)}>Apagar tudo</button>
       </section>
 
-      <Confirmar aberta={apagar === 1} titulo="Apagar tudo?" texto="Você vai perder todos os dados do app neste aparelho." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
+      <Confirmar aberta={apagar === 1} titulo="Apagar tudo?" texto="Você vai perder todos os dados do app, neste aparelho e na cópia guardada na sua conta (se você entrou com o WhatsApp ou o e-mail)." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
       <Confirmar
         aberta={apagar === 2}
         titulo="Tem certeza?"
@@ -116,8 +117,18 @@ export function MeusDados() {
         digitar="APAGAR"
         rotulo="Apagar tudo agora"
         onCancelar={() => setApagar(0)}
-        onConfirmar={() => {
+        onConfirmar={async () => {
+          // primeiro a cópia no servidor: se não der pra apagar, não finge que apagou e não mexe no aparelho
+          stopPainelSync();
+          const [numero, conta] = await Promise.all([apagarCopiaDoNumero(), apagarCopiaDaConta().catch(() => false)]);
+          if (!numero || !conta) {
+            void startPainelSync().catch(() => undefined);
+            toast('Não consegui apagar a cópia guardada na sua conta. Confira a internet e tente de novo.');
+            setApagar(0);
+            return;
+          }
           apagarTudo();
+          clearLocalData();
           try {
             localStorage.removeItem(STORE_KEY);
           } catch {

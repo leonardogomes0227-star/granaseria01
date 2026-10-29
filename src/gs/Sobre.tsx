@@ -13,7 +13,7 @@ export function Sobre() {
         <h2 className="gs-h2">Investimentos</h2>
         <p>Rentabilidade passada não garante resultado futuro. Renda variável, cripto e derivativos podem causar perdas, inclusive maiores que o valor colocado.</p>
         <h2 className="gs-h2">Seus dados</h2>
-        <p>Seus dados financeiros ficam no seu aparelho. Se você ligou o WhatsApp, uma cópia segue ligada ao seu número pra o assistente do WhatsApp enxergar o mesmo que o app. No chat de investimentos, só um resumo (renda, reserva, dívidas e perfil) vai ao servidor, sem nome, sem credor e sem dados pessoais. Você pode exportar ou apagar tudo em Meus dados.</p>
+        <p>Seus dados financeiros ficam no seu aparelho. Se você entrou com o WhatsApp ou o e-mail, uma cópia fica guardada na sua conta, pra você ver em outro aparelho e pro assistente do WhatsApp enxergar o mesmo que o app. No chat de investimentos, só um resumo (renda, reserva, dívidas e perfil) vai ao servidor, sem nome, sem credor e sem dados pessoais. Você pode exportar ou apagar tudo em Meus dados, inclusive a cópia da conta.</p>
         <p><Link to="/politica-de-privacidade" className="gs-btn link">Política de privacidade</Link> · <Link to="/termos-de-uso" className="gs-btn link">Termos de uso</Link></p>
       </section>
     </div>
