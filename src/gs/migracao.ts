@@ -1,6 +1,6 @@
 // Leva qualquer versão (ou os dados do app antigo) pro formato atual, sem perder nada que a pessoa salvou.
 
-import { ESTADO_INICIAL, SCHEMA_VERSION, type Estado, type GastoFixo, type Aporte, type Divida } from './tipos';
+import { ESTADO_INICIAL, SCHEMA_VERSION, type Estado, type GastoFixo, type Aporte, type Divida } from './tipos.js';
 
 const obj = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const arr = <T = unknown>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
