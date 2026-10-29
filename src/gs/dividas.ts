@@ -163,6 +163,9 @@ export function mensagemParaOBanco(p: { nome?: string; credor?: string; protocol
 /** Quanto as dívidas custam de juros por dia parado. */
 export const custoPorDia = (ds: DividaSim[]) => arred(ds.reduce((t, d) => t + (d.saldo * d.jurosMensal) / 100 / 30, 0));
 
+/** Quanto as dívidas cobram de juros só neste mês, se ninguém pagar nada. */
+export const jurosDoMes = (ds: DividaSim[]) => arred(ds.reduce((t, d) => t + (d.saldo * d.jurosMensal) / 100, 0));
+
 /** Trocar a dívida de juro mais alto por uma taxa nova: quanto muda no total. */
 export function valeTrocar(ds: DividaSim[], pagamentoMensal: number, estrategia: Estrategia, taxaNovaPct: number): { nome: string; economia: number; meses: number } | null {
   if (ds.length === 0) return null;
