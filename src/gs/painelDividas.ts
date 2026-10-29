@@ -1,7 +1,7 @@
 // Lógica do painel de dívidas: progresso, sequência, economia, a ação da semana e quanto o orçamento aguenta. Pura, com teste.
 
 import { arred, diasEntre, vencimentoNoMes } from './datas';
-import { saldoAtual, simular, type DividaSim } from './dividas';
+import { ordenar, saldoAtual, simular, type DividaSim } from './dividas';
 import { taxaEfetiva } from './ferramentas';
 import { brl0 } from './datas';
 import type { Divida, Estrategia } from './tipos';
@@ -128,4 +128,26 @@ export function quitarMaisRapido(ds: DividaSim[], extra: number, estrategia: Est
   const base = { meses: a.quita ? a.meses : 0, juros: a.quita ? a.totalJuros : 0, fim: a.quita ? a.dataFinal ?? null : null };
   const com = { meses: b.meses, juros: b.totalJuros, fim: b.dataFinal ?? null };
   return { base, com, mesesAntes: a.quita ? a.meses - b.meses : 0, economia: a.quita ? arred(a.totalJuros - b.totalJuros) : 0 };
+}
+
+export interface ParteDoMes {
+  id: string;
+  nome: string;
+  valor: number;
+}
+/** Quanto pagar em cada dívida neste mês: a parcela de todas e o que sobra do pagamento vai pra primeira da ordem, depois pra próxima. */
+export function planoDoMes(ds: DividaSim[], pagamento: number, estrategia: Estrategia): ParteDoMes[] {
+  const ord = ordenar(ds, estrategia);
+  let sobra = Math.max(0, pagamento);
+  const partes = ord.map((d) => {
+    const min = Math.min(sobra, Math.min(d.parcelaMinima, d.saldo));
+    sobra = arred(sobra - min);
+    return { id: d.id, nome: d.nome, valor: arred(min), saldo: d.saldo };
+  });
+  for (const p of partes) {
+    const extra = Math.min(sobra, arred(p.saldo - p.valor));
+    p.valor = arred(p.valor + extra);
+    sobra = arred(sobra - extra);
+  }
+  return partes.map(({ id, nome, valor }) => ({ id, nome, valor }));
 }

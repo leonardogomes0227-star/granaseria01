@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capacidadeDePagamento, completarParcelada, economiaDoPlano, mesesSeguidos, pagamentoSugerido, proximaAcao, pagoNoMes, quitarMaisRapido } from './painelDividas';
+import { capacidadeDePagamento, completarParcelada, economiaDoPlano, mesesSeguidos, pagamentoSugerido, planoDoMes, proximaAcao, pagoNoMes, quitarMaisRapido } from './painelDividas';
 import type { Divida } from './tipos';
 
 const div = (p: Partial<Divida> = {}): Divida => ({ id: 'a', nome: 'Cartão', saldo: 1000, jurosMensal: 8, parcelaMinima: 100, pagamentos: [], ...p });
@@ -55,5 +55,29 @@ describe('parcelada e quitar mais rápido', () => {
   it('o que foi pago numa dívida já quitada conta no mês', () => {
     const a = proximaAcao([div()], 600, '2026-10-10', 600);
     expect(a.tipo).toBe('cumprida');
+  });
+});
+
+describe('plano do mês', () => {
+  const a = { id: 'a', nome: 'Rotativo', saldo: 3000, jurosMensal: 14, parcelaMinima: 300 };
+  const b = { id: 'b', nome: 'Empréstimo', saldo: 5000, jurosMensal: 3, parcelaMinima: 450 };
+  it('parcela de todas e o extra na primeira da ordem', () => {
+    const p = planoDoMes([a, b], 1200, 'maior-juro');
+    expect(p.map((x) => [x.id, x.valor])).toEqual([['a', 750], ['b', 450]]);
+    expect(p.reduce((t, x) => t + x.valor, 0)).toBe(1200);
+  });
+  it('só o mínimo quando o pagamento é igual a ele', () => {
+    expect(planoDoMes([a, b], 750, 'maior-juro').map((x) => x.valor)).toEqual([300, 450]);
+  });
+  it('o que passa do saldo da primeira cai na próxima', () => {
+    const p = planoDoMes([{ ...a, saldo: 400 }, b], 1500, 'maior-juro');
+    expect(p.map((x) => x.valor)).toEqual([400, 1100]);
+  });
+  it('pagamento menor que as parcelas: paga na ordem até acabar', () => {
+    expect(planoDoMes([a, b], 500, 'maior-juro').map((x) => x.valor)).toEqual([300, 200]);
+  });
+  it('uma dívida só e lista vazia', () => {
+    expect(planoDoMes([b], 600, 'bola-de-neve').map((x) => x.valor)).toEqual([600]);
+    expect(planoDoMes([], 600, 'bola-de-neve')).toEqual([]);
   });
 });
