@@ -9,7 +9,7 @@ import { Anel } from './graficos';
 import { brl, brl0, diaCurto, mesCurto, mesDe, somaMes } from './datas';
 import { toast } from '../components/ui/Toast';
 import { useHoje } from './useHoje';
-import { acaoReserva, conquistasReserva, mesesGuardando, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
+import { acaoReserva, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
 import { capacidadeDePagamento } from './painelDividas';
 
 /* ---------- Reserva de emergência: quantos meses você aguenta, a meta do mês e o que fazer agora ---------- */
@@ -33,8 +33,6 @@ export function Reserva() {
   const completa = meta > 0 && falta <= 0;
   const prontos = mesesParaMeta(falta, plano);
   const acao = acaoReserva(e, mes, hoje);
-  const sequencia = mesesGuardando(e, mes);
-  const feitas = conquistasReserva(protegido, sequencia, completa).filter((c) => c.feita);
   const cap = capacidadeDePagamento(e.config.renda, gasto);
   const recentes = [...e.aportes].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
   const guardarAgora = (v: number) => {
@@ -98,19 +96,14 @@ export function Reserva() {
             </section>
           )}
 
-          <section className="gs-card">
-            <span className="gs-rotulo">Sua meta: {metaMeses} meses de gasto</span>
+          <details className="gs-card" style={{ padding: '4px 20px' }}>
+            <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Sua meta: {metaMeses} meses de gasto (mudar)</summary>
             <div className="gs-chips" role="group" aria-label="Meses de segurança" style={{ marginTop: 8 }}>
               {MESES_RESERVA.map((m) => <button key={m} type="button" className={`gs-chip ${metaMeses === m ? 'on' : ''}`} aria-pressed={metaMeses === m} onClick={() => salvarConfig({ reservaMeses: m })}>{m} meses</button>)}
             </div>
             <p className="gs-sub" style={{ margin: '4px 0 0' }}>{metaMeses === 3 ? 'Mínimo, pra quem tem renda bem estável.' : metaMeses === 6 ? 'O mais comum, pra quem tem emprego com carteira.' : 'Pra autônomo ou renda que varia.'} Seu gasto médio é {brl0(gasto)} por mês.</p>
-          </section>
+          </details>
 
-          {feitas.length > 0 && (
-            <div className="gs-chips" aria-label="Conquistas">
-              {feitas.map((c) => <span key={c.id} className="gs-etiqueta ok">★ {c.nome}</span>)}
-            </div>
-          )}
         </>
       )}
 
