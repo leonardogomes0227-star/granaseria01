@@ -367,3 +367,10 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-abas a { position: relative; transition: color .2s var(--curva), background .2s var(--curva); }
 .gs-abas a.on { background: rgba(197, 160, 89, .14); }
 .gs-abas a.on::after { content: ''; position: absolute; top: 3px; width: 18px; height: 3px; border-radius: 3px; background: #B8860B; }
+
+/* Festa de dívida quitada: confete só em CSS, desligado pra quem reduz movimento */
+.gs-festa { position: relative; overflow: hidden; }
+.gs-confete { position: absolute; inset: 0; pointer-events: none; }
+.gs-confete i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: gs-cai 2.4s var(--curva) forwards; }
+@keyframes gs-cai { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 24px 260px; } }
+@media (prefers-reduced-motion: reduce) { .gs-confete { display: none; } }
