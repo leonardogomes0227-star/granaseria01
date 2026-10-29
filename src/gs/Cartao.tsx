@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { comprarNoCartao, pagarFaturaCartao, salvarCartao, salvarDivida } from './acoes';
-import { Agora, Barra, Campo, CampoDinheiro, CampoNumero, Conquistas, Dica, Folha, Heroi, MaisAjuda, Titulo } from './ui';
+import { Agora, Barra, Campo, CampoDinheiro, CampoNumero, Dica, Folha, Heroi, MaisAjuda, Titulo } from './ui';
 import { brl0, mesCurto, somaMes } from './datas';
-import { acaoCartao, comprometidoTotal, conquistasCartao, proximaData, proximasFaturas, usoDoLimite } from './cartaoLogica';
+import { acaoCartao, comprometidoTotal, proximaData, proximasFaturas, usoDoLimite } from './cartaoLogica';
 import { toast } from '../components/ui/Toast';
 
 /* ---------- Cartão de crédito: a fatura, o que já está combinado pra frente e o melhor dia de comprar ---------- */
@@ -60,7 +60,7 @@ export function CartaoTela() {
   const uso = usoDoLimite(c);
   const venc = proximaData(c.venceDia, hoje);
   const acao = acaoCartao(c, hoje);
-  const futuras = proximasFaturas(c, 6);
+  const futuras = proximasFaturas(c, 3);
   const maxFut = Math.max(...futuras, 1);
   const comprom = comprometidoTotal(c);
   const dia = Number(hoje.slice(8, 10));
@@ -105,7 +105,6 @@ export function CartaoTela() {
           {(c.parcelados ?? []).map((p) => <div className="gs-linha" key={p.id}><div className="gs-corpo"><b>{p.descricao}</b><small>{p.restantes} {p.restantes === 1 ? 'parcela' : 'parcelas'} de {brl0(p.parcela)}</small></div></div>)}
         </section>
       )}
-      <Conquistas lista={conquistasCartao(c)} />
 
       <MaisAjuda>
         <span className="gs-rotulo">Melhor dia de compra</span>

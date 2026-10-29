@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, mesDe, nomeMes } from './datas';
-import { acaoOrcamento, linhasDeCategoria, mesesNoLimite, regra503020, resumoDoMes } from './orcamento';
+import { acaoOrcamento, linhasDeCategoria, regra503020, resumoDoMes } from './orcamento';
 import { corDe, limiteSugerido } from './categorias';
 import { definirLimite } from './acoes';
 import { Barra, Dica, Titulo, Vazio } from './ui';
@@ -22,8 +22,6 @@ export function Orcamento() {
   const total = linhas.reduce((t, l) => t + l.gasto, 0);
   const r = useMemo(() => resumoDoMes(e, mes, hoje), [e, mes, hoje]);
   const acao = useMemo(() => acaoOrcamento(e, mes, hoje), [e, mes, hoje]);
-  const sequencia = mesesNoLimite(e, mes);
-  const tudoAzul = linhas.some((l) => l.limite) && linhas.every((l) => l.tom !== 'perigo' && l.tom !== 'aviso');
   const semLimite = linhas.filter((l) => l.limite === null && l.gasto > 0);
   return (
     <>
@@ -41,34 +39,20 @@ export function Orcamento() {
             </div>
           </section>
           <section className="gs-card">
-            <Barra pct={r.pctMes} rotulo="Quanto do mês já passou" />
-            <p className="gs-mudo" style={{ margin: '4px 0 12px', fontSize: 13 }}>O mês passou {Math.round(r.pctMes)}%</p>
             <Barra pct={r.pctUsado} tom={r.pctUsado > r.pctMes + 10 ? 'perigo' : 'ok'} rotulo="Quanto do dinheiro já foi" />
-            <p className="gs-mudo" style={{ margin: '4px 0 0', fontSize: 13 }}>Você usou {Math.round(r.pctUsado)}% do que sobra pro dia a dia</p>
-            <div className="gs-tres" style={{ marginTop: 14 }}>
-              <div><span className="gs-mudo">Gastou</span><b className="gs-tab">{brl0(r.gastoVar)}</b></div>
-              <div><span className="gs-mudo">Ainda dá</span><b className="gs-tab">{brl0(Math.max(0, r.livre))}</b></div>
-              <div><span className="gs-mudo">{r.sobraProjetada >= 0 ? 'Sobra no fim' : 'Falta no fim'}</span><b className="gs-tab" style={{ color: r.sobraProjetada >= 0 ? 'var(--success)' : 'var(--danger)' }}>{brl0(Math.abs(r.sobraProjetada))}</b></div>
-            </div>
-            <p className="gs-nota">“No fim” é uma estimativa: se você continuar gastando no ritmo de agora.</p>
+            <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 14 }}>Você gastou {brl0(r.gastoVar)} e ainda dá {brl0(Math.max(0, r.livre))}. O mês passou {Math.round(r.pctMes)}% e o seu dinheiro, {Math.round(r.pctUsado)}%.</p>
           </section>
           <section className="gs-card">
             <span className="gs-rotulo">O que fazer agora</span>
-            <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${acao.tom === 'ok' ? 'ok' : acao.tom === 'perigo' ? 'perigo' : 'aviso'}`} style={{ marginRight: 8 }}>{acao.tom === 'ok' ? 'No trilho' : acao.tom === 'perigo' ? 'Atenção' : 'Cuidado'}</span>{acao.texto}</p>
+            <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${acao.tom === 'ok' ? 'ok' : acao.tom === 'perigo' ? 'perigo' : 'aviso'}`} style={{ marginRight: 8 }}>{acao.tom === 'ok' ? 'No trilho' : acao.tom === 'perigo' ? 'Atenção' : 'Cuidado'}</span>{acao.texto.replace(/^No trilho\.?\s*/, '')}</p>
             {acao.rota && <Link to={acao.rota} className="gs-btn" style={{ marginTop: 10 }}>Anotar um gasto</Link>}
           </section>
-          {(sequencia >= 1 || tudoAzul) && (
-            <div className="gs-chips" aria-label="Conquistas">
-              {sequencia >= 1 && <span className="gs-etiqueta ok">★ {sequencia} {sequencia === 1 ? 'mês' : 'meses'} sem estourar</span>}
-              {tudoAzul && <span className="gs-etiqueta ok">★ Tudo no azul</span>}
-            </div>
-          )}
 
           {total > 0 && (
-            <section className="gs-card">
-              <span className="gs-rotulo">Para onde foi o dinheiro</span>
+            <details className="gs-card" style={{ padding: '4px 20px' }}>
+              <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Ver para onde foi o dinheiro</summary>
               <Rosquinha fatias={linhas.map((l) => ({ id: l.categoria, cor: corDe(l.categoria), valor: l.gasto }))} centro={brl0(total)} sub="no mês" />
-            </section>
+            </details>
           )}
 
           <section className="gs-card">
@@ -79,7 +63,7 @@ export function Orcamento() {
                 <button type="button" className="gs-btn link" style={{ minHeight: 32 }} onClick={() => { semLimite.forEach((l) => definirLimite(l.categoria, limiteSugerido(l.categoria, e.config.renda))); toast('Limites sugeridos aplicados'); }}>Usar os sugeridos</button>
               </Dica>
             )}
-            {linhas.map((l) => (
+            {linhas.filter((l) => l.gasto > 0 || l.limite).map((l) => (
               <div key={l.categoria} style={{ marginTop: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
                   <b><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: corDe(l.categoria), marginRight: 8 }} />{l.categoria}</b>
@@ -88,7 +72,7 @@ export function Orcamento() {
                 {l.limite ? <Barra pct={Math.min(100, l.pct ?? 0)} tom={l.tom === 'perigo' ? 'perigo' : l.tom === 'ok' ? 'ok' : ''} rotulo={`Limite de ${l.categoria}`} /> : <p className="gs-mudo" style={{ margin: '4px 0 0', fontSize: 13 }}>Sem limite · <button type="button" className="gs-btn link" style={{ minHeight: 32 }} onClick={() => definirLimite(l.categoria, limiteSugerido(l.categoria, e.config.renda))}>Definir {brl0(limiteSugerido(l.categoria, e.config.renda))}</button></p>}
                 {l.limite && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <small className="gs-mudo">{(l.pct ?? 0) > 100 ? `Passou ${brl0(l.gasto - l.limite)}` : `Sobra ${brl0(l.limite - l.gasto)} · ${brl0((l.limite - l.gasto) / r.restam)} /dia`}</small>
+                    <small className="gs-mudo">{(l.pct ?? 0) > 100 ? `Passou ${brl0(l.gasto - l.limite)}` : `Sobra ${brl0(l.limite - l.gasto)}`}</small>
                     <span style={{ whiteSpace: 'nowrap', flex: 'none' }}>
                       <button type="button" className="gs-btn link pequeno" aria-label={`Diminuir limite de ${l.categoria}`} onClick={() => definirLimite(l.categoria, Math.max(50, l.limite! - 50))}>− R$ 50</button>
                       <button type="button" className="gs-btn link pequeno" aria-label={`Aumentar limite de ${l.categoria}`} onClick={() => definirLimite(l.categoria, l.limite! + 50)}>+ R$ 50</button>
