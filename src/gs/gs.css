@@ -379,3 +379,30 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 /* botões dentro do cartão escuro: texto escuro sobre o dourado (a variável --ink ali é clara) */
 .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn:not(.link):not(.sec) { color: #120E0C; }
 .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec { background: transparent; color: #FBF6EC; border: 1.5px solid rgba(251, 246, 236, .45); box-shadow: none; }
+
+/* ---------- Planos: três cartões, o anual em destaque ---------- */
+.gs-planos { display: grid; gap: 14px; margin: 14px 0; }
+@media (min-width: 900px) { .gs-planos { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; } }
+.gs-plano { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 22px 20px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sombra); }
+.gs-plano h3 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: -0.03em; }
+.gs-plano-preco { margin: 0; }
+.gs-plano-preco b { font-size: 40px; font-weight: 900; letter-spacing: -0.05em; line-height: 1; }
+.gs-plano-preco small { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 14px; }
+.gs-plano ul { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 8px; flex: 1; }
+.gs-plano li { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; line-height: 1.35; }
+.gs-plano li svg { flex: none; margin-top: 2px; color: #3A6335; }
+.gs-plano li.breve { color: var(--ink-muted); }
+.gs-plano li.breve svg { color: var(--ink-muted); }
+.gs-plano li em { font-style: normal; font-size: 12.5px; }
+.gs-plano .lp-btn { min-height: 52px; }
+.gs-plano .lp-btn.vazio { color: var(--ink); border-color: var(--line-strong); }
+.gs-plano .lp-btn.ouro { background: #D8B060; color: #120E0C; }
+.gs-plano.dest { background: radial-gradient(420px 260px at 50% -20%, #4A3720 0%, #120E0C 70%); color: #FBF6EC; border: 0; box-shadow: 0 18px 40px -18px rgba(18, 14, 12, .55); }
+.gs-plano.dest .gs-plano-preco small, .gs-plano.dest li.breve { color: rgba(251, 246, 236, .72); }
+.gs-plano.dest li svg { color: #D8B060; }
+.gs-plano-selo { align-self: flex-start; padding: 4px 12px; border-radius: 999px; background: #D8B060; color: #120E0C; font-size: 12px; font-weight: 800; }
+.gs-plano.dest h3 { color: #FBF6EC; }
+.gs-marca span { white-space: nowrap; }
+@media (max-width: 480px) { .gs-topo .gs-abas-topo a { padding: 0 8px; } .gs-topo-in { gap: 4px; } }
+.gs-plano ul { align-content: start; }
+.gs-plano .lp-btn { padding: 0 12px; text-align: center; white-space: nowrap; font-size: 16px; }

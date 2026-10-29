@@ -47,7 +47,7 @@ const template = await readFile(join(dist, 'index.html'), 'utf8');
 const { GUIDES } = await load('src/guides.ts');
 const { TOOLS } = await load('src/tools.ts');
 
-const urls = ['/', '/guias'];
+const urls = ['/', '/guias', '/planos'];
 
 await writePage(
   '/guias',
