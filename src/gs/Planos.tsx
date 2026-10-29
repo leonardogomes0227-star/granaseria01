@@ -7,8 +7,14 @@ import { Titulo } from './ui';
 
 /* ---------- Planos: grátis, mensal e anual. Os preços e os links de pagamento ficam em src/config.ts ---------- */
 
-const NO_GRATIS = ['Diagnóstico e as 11 ferramentas no celular', 'Quitar dívidas, orçamento, reserva, cartão e calendário', 'Dados no seu aparelho', 'Avisos de conta a vencer'];
-const NO_PAGO = ['Tudo do plano grátis', 'Assistente no WhatsApp: anote gastos e entradas por mensagem e veja seu mês e seu saldo', 'Seu painel no site ligado ao seu número', 'Dados guardados na sua conta, em qualquer aparelho'];
+const NO_GRATIS = ['Teste de 7 dias com tudo liberado', 'Depois, sem prazo: diagnóstico, Início e Meu mês (contas fixas e gastos do dia a dia)', 'Dados no seu aparelho'];
+const NO_PAGO = [
+  'Tudo do plano grátis, sem prazo',
+  'As 11 ferramentas: quitar dívidas, reserva, cartão, orçamento, calendário e mais',
+  'Investir: mercado ao vivo, simulação e conversa',
+  'Assistente no WhatsApp: anote gastos e entradas por mensagem e veja seu mês e seu saldo',
+  'Dados guardados na sua conta, em qualquer aparelho',
+];
 const EM_BREVE = ['Anotar por áudio e por foto do cupom', 'Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
 
 interface Cartao {
@@ -23,7 +29,7 @@ interface Cartao {
 
 const mensalNoAnual = Math.round((PRECO_ANUAL / 12) * 100) / 100;
 const CARTOES: Cartao[] = [
-  { id: 'gratis', nome: 'Grátis', preco: 'R$ 0', detalhe: 'pra começar agora', itens: NO_GRATIS },
+  { id: 'gratis', nome: 'Grátis', preco: 'R$ 0', detalhe: 'pra testar e organizar o básico', itens: NO_GRATIS },
   { id: 'mensal', nome: 'Mensal', preco: brl0(PRECO_MENSAL), detalhe: 'por mês', itens: NO_PAGO, breve: EM_BREVE },
   { id: 'anual', nome: 'Anual', preco: brl0(PRECO_ANUAL), detalhe: `por ano (${mensalNoAnual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} por mês)`, destaque: `Melhor valor: ${Math.round((PRECO_MENSAL * 12 - PRECO_ANUAL) / PRECO_MENSAL)} meses de graça`, itens: NO_PAGO, breve: EM_BREVE },
 ];
@@ -54,7 +60,7 @@ export function CartoesPlanos() {
           </article>
         ))}
       </div>
-      {!aberto && <p className="gs-nota" style={{ textAlign: 'center' }}>A cobrança ainda não abriu. Toque em “Quero ser avisado” e a gente te chama no WhatsApp quando abrir.</p>}
+      {!aberto && <p className="gs-nota" style={{ textAlign: 'center' }}>A cobrança ainda não abriu, então por enquanto o app está todo liberado. Toque em “Quero ser avisado” e a gente te chama no WhatsApp quando abrir.</p>}
     </>
   );
 }
@@ -62,7 +68,7 @@ export function CartoesPlanos() {
 export function Planos() {
   return (
     <>
-      <Titulo titulo="Planos" sub={`Comece grátis. Se quiser o assistente no WhatsApp, é ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.`} />
+      <Titulo titulo="Planos" sub={`Teste tudo por 7 dias. Depois, o básico segue grátis e o completo é ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.`} />
       <CartoesPlanos />
       <p className="gs-nota">Conteúdo educativo, não é consultoria financeira. Veja os <Link to="/termos-de-uso">termos de uso</Link> e a <Link to="/politica-de-privacidade">política de privacidade</Link>.</p>
     </>

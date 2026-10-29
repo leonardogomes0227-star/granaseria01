@@ -45,7 +45,7 @@ const FAQ: [string, string][] = [
   ['Preciso entender de finanças?', 'Não. O app usa palavras simples e explica cada coisa na hora.'],
   ['O app pede a senha do meu banco?', 'Nunca. Você digita os valores à mão. Nada de ligar conta bancária.'],
   ['Meus dados ficam onde?', 'No seu aparelho. Se você entrar com o WhatsApp ou o e-mail, uma cópia fica guardada na sua conta, pra você ver em outro aparelho e pro assistente do WhatsApp mostrar o mesmo que o app. Só você vê. Pra apagar tudo, inclusive a cópia, é só um botão em Meus dados.'],
-  ['Quanto custa?', `Começar é grátis. O plano com o assistente no WhatsApp custa ${brl0(PRECO_MENSAL)} por mês, ou ${brl0(PRECO_ANUAL)} por ano.`],
+  ['Quanto custa?', `Você testa tudo por 7 dias. Depois, o básico (diagnóstico, Início e Meu mês) segue grátis, e o completo custa ${brl0(PRECO_MENSAL)} por mês ou ${brl0(PRECO_ANUAL)} por ano. A cobrança ainda não abriu: por enquanto está tudo liberado.`],
   ['Quanto tempo leva pra começar?', 'Uns 2 minutos: você diz quanto ganha por mês e já vê quanto pode gastar por dia.'],
   ['Funciona no celular?', 'Sim, foi feito pro celular. Dá pra instalar na tela inicial, como um aplicativo.'],
   ['É consultoria financeira?', 'Não. É educação financeira, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. As contas são estimativas pra te ajudar a decidir.'],
@@ -173,7 +173,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
 
       <section className="lp-sec" id="planos" style={{ scrollMarginTop: 80 }}>
         <h2>Quanto <span>custa</span></h2>
-        <p className="lp-sub">Comece grátis. O assistente no WhatsApp é a parte paga.</p>
+        <p className="lp-sub">Teste tudo por 7 dias. Depois, o básico segue grátis.</p>
         <CartoesPlanos />
       </section>
 
