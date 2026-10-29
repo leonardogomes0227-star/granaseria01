@@ -22,13 +22,11 @@ export function ResumoSemana() {
         <p className="gs-sub" style={{ margin: '10px 0 0' }}>Nada anotado {anterior ? 'na semana passada' : 'ainda nesta semana'}. {r.recomendacao}</p>
       ) : (
         <>
-          <div className="gs-tres" style={{ marginTop: 12 }}>
-            <div><span className="gs-mudo">Gastou</span><b className="gs-tab">{brl0(r.gasto)}</b></div>
-            <div><span className="gs-mudo">Contas pagas</span><b className="gs-tab">{r.contasPagas}</b></div>
-            <div><span className="gs-mudo">Guardou</span><b className="gs-tab">{brl0(r.guardado)}</b></div>
-          </div>
-          {r.categoriaTop && <p className="gs-sub" style={{ margin: '12px 0 0' }}>Mais pesou: {r.categoriaTop.nome} ({brl0(r.categoriaTop.valor)}).</p>}
-          <p className="gs-banner" style={{ margin: '12px 0 0' }}>{r.recomendacao}</p>
+          <p style={{ margin: '10px 0 0' }}>
+            Gastou <b>{brl0(r.gasto)}</b>, pagou <b>{r.contasPagas}</b> {r.contasPagas === 1 ? 'conta' : 'contas'} e guardou <b>{brl0(r.guardado)}</b>.
+            {r.categoriaTop ? ` Mais pesou: ${r.categoriaTop.nome}.` : ''}
+          </p>
+          <p className="gs-sub" style={{ margin: '8px 0 0' }}>{r.recomendacao}</p>
         </>
       )}
       <button type="button" className="gs-btn link" onClick={() => setAnterior(!anterior)}>

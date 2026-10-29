@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Pencil, Trash2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, diaCurto, diaRelativo, mesCurto, mesDe, nomeMes, somaMes } from './datas';
@@ -69,11 +69,9 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
   return (
     <>
       <div className="gs-card destaque">
-        <div className="gs-tres">
-          <div><span className="gs-mudo">Total</span><b className="gs-tab">{brl0(total)}</b></div>
-          <div><span className="gs-mudo">Já pago</span><b className="gs-tab">{brl0(fixosPagos(e, mes))}</b></div>
-          <div><span className="gs-mudo">Falta pagar</span><b className="gs-tab">{brl0(faltaPagar(e, mes))}</b></div>
-        </div>
+        <span className="gs-rotulo">Falta pagar</span>
+        <p className="gs-grande" style={{ margin: '4px 0' }}>{brl0(faltaPagar(e, mes))}</p>
+        <span className="gs-mudo">de {brl0(total)} neste mês{fixosPagos(e, mes) > 0 ? ` · já pagou ${brl0(fixosPagos(e, mes))}` : ''}</span>
       </div>
       {contas.length === 0 ? (
         <Vazio titulo="Nenhuma conta fixa ainda" texto="Cadastre aluguel, luz, internet… Eu te aviso antes de cada uma vencer." acao="Cadastrar conta" onAcao={() => setEditando('novo')} avatar="contas" />
@@ -104,8 +102,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
                     <button type="button" className="gs-btn pequeno" disabled={futuro} title={futuro ? 'Só dá pra dar baixa no mês atual ou em meses passados' : undefined} onClick={() => setBaixa(c.gasto.id)}>Dar baixa</button>
                   )}
                   <span style={{ flex: 1 }} />
-                  <button type="button" className="gs-menu-pontos" aria-label={`Editar ${c.gasto.nome}`} onClick={() => setEditando(c.gasto)}><Pencil size={17} /></button>
-                  <button type="button" className="gs-menu-pontos" aria-label={`Excluir ${c.gasto.nome}`} onClick={() => setApagar(c.gasto)}><Trash2 size={17} /></button>
+                  <button type="button" className="gs-btn link" onClick={() => setEditando(c.gasto)}>Editar</button>
                 </div>
               </div>
             );
@@ -114,7 +111,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
       )}
       {contas.length > 0 && <button type="button" className="gs-btn sec cheio" onClick={() => setEditando('novo')}>+ Nova conta fixa</button>}
       <BaixaSheet gasto={gasto} mes={mes} onFechar={() => setBaixa(null)} />
-      <FormConta valor={editando} onFechar={() => setEditando(null)} />
+      <FormConta valor={editando} onFechar={() => setEditando(null)} onExcluir={(g) => { setEditando(null); setApagar(g); }} />
       <Confirmar
         aberta={Boolean(apagar)}
         titulo={`Excluir ${apagar?.nome ?? ''}?`}
@@ -132,7 +129,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
   );
 }
 
-function FormConta({ valor, onFechar }: { valor: GastoFixo | 'novo' | null; onFechar: () => void }) {
+function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' | null; onFechar: () => void; onExcluir: (g: GastoFixo) => void }) {
   const edit = valor && valor !== 'novo' ? valor : null;
   const [nome, setNome] = useState('');
   const [v, setV] = useState(0);
@@ -174,6 +171,7 @@ function FormConta({ valor, onFechar }: { valor: GastoFixo | 'novo' | null; onFe
           Salvar
         </button>
       </div>
+      {edit && <button type="button" className="gs-btn link" onClick={() => onExcluir(edit)}>Excluir esta conta</button>}
     </Folha>
   );
 }
@@ -230,7 +228,10 @@ function DiaADia({ mes, hoje }: { mes: string; hoje: string }) {
             <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{c}</button>
           ))}
         </div>
-        <Campo rotulo="Data" valor={data} onChange={setData} tipo="date" />
+        <details style={{ marginBottom: 8 }}>
+          <summary style={{ minHeight: 44, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>{data === hoje ? 'Foi em outro dia?' : `Data: ${data.split('-').reverse().join('/')}`}</summary>
+          <Campo rotulo="Data" valor={data} onChange={setData} tipo="date" />
+        </details>
         {erro && v > 0 && <p className="gs-erro" role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
         <button type="button" className="gs-btn cheio" onClick={salvar}>Salvar gasto</button>
       </section>
@@ -242,19 +243,19 @@ function DiaADia({ mes, hoje }: { mes: string; hoje: string }) {
       {grupos.length === 0 ? (
         <Vazio titulo="Nada anotado neste mês" texto="Anote o primeiro gasto acima. Leva dois toques." avatar="gastos" />
       ) : (
-        grupos.map(([dia, itens]) => (
-          <div className="gs-card" key={dia}>
-            <p className="gs-rotulo" style={{ marginBottom: 4 }}>{diaRelativo(dia, hoje)} · {brl(itens.reduce((t, l) => t + l.valor, 0))}</p>
-            {itens.map((l) => (
-              <div className="gs-linha" key={l.id}>
-                <div className="gs-corpo"><b>{l.descricao}</b><small>{l.categoria}</small></div>
-                <span className="gs-valor">{brl(l.valor)}</span>
-                <button type="button" className="gs-menu-pontos" aria-label={`Editar ${l.descricao}`} onClick={() => setEditando(l)}><Pencil size={17} /></button>
-                <button type="button" className="gs-menu-pontos" aria-label={`Excluir ${l.descricao}`} onClick={() => { removerLancamento(l.id); apagarComDesfazer(`${l.descricao} apagado`, () => restaurarLancamento(l)); }}><Trash2 size={17} /></button>
-              </div>
-            ))}
-          </div>
-        ))
+        <div className="gs-card">
+          {grupos.map(([dia, itens]) => (
+            <div key={dia}>
+              <p className="gs-rotulo" style={{ margin: '10px 0 2px' }}>{diaRelativo(dia, hoje)} · {brl(itens.reduce((t, l) => t + l.valor, 0))}</p>
+              {itens.map((l) => (
+                <button type="button" className="gs-linha" key={l.id} onClick={() => setEditando(l)} style={{ width: '100%', background: 'none', border: 0, textAlign: 'left', font: 'inherit', color: 'inherit', cursor: 'pointer' }} aria-label={`Editar ${l.descricao}`}>
+                  <div className="gs-corpo"><b>{l.descricao}</b><small>{l.categoria}</small></div>
+                  <span className="gs-valor">{brl(l.valor)}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
       )}
       <FormLancamento valor={editando} hoje={hoje} onFechar={() => setEditando(null)} />
     </>
@@ -287,6 +288,7 @@ function FormLancamento({ valor, hoje, onFechar }: { valor: Lancamento | null; h
         <button type="button" className="gs-btn sec" onClick={onFechar}>Cancelar</button>
         <button type="button" className="gs-btn" disabled={!(v > 0)} onClick={() => { if (valor && salvarLancamento({ id: valor.id, descricao: desc, valor: v, data, categoria: cat, serverId: valor.serverId })) onFechar(); }}>Salvar</button>
       </div>
+      {valor && <button type="button" className="gs-btn link" onClick={() => { removerLancamento(valor.id); apagarComDesfazer(`${valor.descricao} apagado`, () => restaurarLancamento(valor)); onFechar(); }}>Excluir este gasto</button>}
     </Folha>
   );
 }

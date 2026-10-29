@@ -64,8 +64,8 @@ export function Assinaturas() {
         </section>
       )}
 
-      <section className="gs-card">
-        <span className="gs-rotulo">Marque as que você paga</span>
+      <details className="gs-card" open={r.total === 0} style={{ padding: '4px 20px' }}>
+        <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>{r.total > 0 ? 'Marcar outras que você paga' : 'Marque as que você paga'}</summary>
         {SUGESTOES_ASSINATURAS.map((sug) => {
           const a = marcada(sug.nome);
           return (
@@ -76,7 +76,7 @@ export function Assinaturas() {
           );
         })}
         <button type="button" className="gs-btn sec cheio" style={{ marginTop: 10 }} onClick={() => setNova(true)}>+ Adicionar outra</button>
-      </section>
+      </details>
 
       <MaisAjuda>
         {r.total > 0 && (
