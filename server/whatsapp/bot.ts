@@ -180,6 +180,9 @@ export const HELP_TEXT = [
   '• *apagar* — desfaz o último gasto (*apagar entrada* desfaz a última entrada)',
   '• *resumo semanal* — um resumo da semana todo domingo',
   '• *painel* — seu painel no site (seu mês, seu plano e as ferramentas)',
+  '• *contas* — o que vence e o que falta pagar (as contas que você cadastrou no site)',
+  '• *dívidas* — suas dívidas do site e quando você fica livre',
+  '• *paguei o aluguel* ou *paguei 450 no rotativo* — marca a conta ou abate a dívida',
 ].join('\n');
 
 /** "ontem" vira meio-dia de ontem no horário de Brasília (assim cai no dia certo em qualquer resumo). */

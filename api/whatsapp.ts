@@ -21,6 +21,7 @@ import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type FaturaResult, type MediaTy
 import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
 import { parseMessage } from '../server/whatsapp/parse.js';
+import { comandoApp, rodarApp } from '../server/whatsapp/appbot.js';
 import { resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { transcribe, transcribeConfigured } from '../server/transcribe.js';
@@ -221,6 +222,18 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     // conversa de uma ferramenta que saiu do WhatsApp (diagnóstico, dívidas…): descarta e a mensagem segue como gasto
     await clearSession(phone).catch(() => undefined);
     hub.session = null;
+  }
+  // contas fixas e dívidas do app novo: "contas", "dívidas", "paguei o aluguel", "paguei 450 no rotativo".
+  // Só quando não há conversa em andamento; se o nome não bate com nada cadastrado, a mensagem segue como gasto.
+  const doApp = hub && !hub.session ? comandoApp(incoming) : null;
+  if (doApp && hub) {
+    const r = rodarApp(doApp, hub.profile, new Date());
+    if (r) {
+      if (!(await markProcessed(msg.id))) return null; // reenvio da Meta: não paga duas vezes
+      if (r.perfil) await (user ? saveState(user.user_id, r.perfil) : saveProfile(phone, r.perfil));
+      await trackEvent(phone, doApp.kind === 'pagou' ? 'tool:app-pagamento' : `tool:app-${doApp.kind}`);
+      return text(r.reply);
+    }
   }
   if (hub) {
     const now = new Date();
