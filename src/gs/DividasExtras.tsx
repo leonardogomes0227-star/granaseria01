@@ -5,7 +5,7 @@ import { useHoje } from './useHoje';
 import { brl0, diaCurto, mesDe } from './datas';
 import { gastoPorCategoria } from './orcamento';
 import { GRUPO } from './categorias';
-import { cortarPagando, custoPorDia, saldoAtual, valeTrocar, type DividaSim } from './dividas';
+import { cortarPagando, saldoAtual, valeTrocar, type DividaSim } from './dividas';
 import { removerDivida, restaurarDivida } from './acoes';
 import { apagarComDesfazer } from '../components/ui/Toast';
 import { taxaEfetiva } from './ferramentas';
@@ -67,7 +67,6 @@ export function MaisRapido({ sim, pagamento, estrategia, simples = false }: { si
   const cortar = corte >= 20 ? cortarPagando(sim, pagamento, estrategia, corte) : null;
   return (
     <>
-      {!simples && <p className="gs-banner" style={{ marginTop: 16 }}>As suas dívidas rendem cerca de <b>{brl0(custoPorDia(sim))} de juros por dia</b> pra quem emprestou.</p>}
       {!simples && <Sanfona titulo="Vale trocar por um juro menor?">
         <p className="gs-sub" style={{ marginTop: 0 }}>Apareceu uma oferta de empréstimo mais barata? Digite o juro dela e eu mostro se compensa trocar a dívida mais cara.</p>
         <CampoNumero rotulo="Juro da nova oferta" sufixo="% ao mês" valor={taxa} onChange={setTaxa} min={0.1} max={30} placeholder="Ex.: 3" />

@@ -69,7 +69,7 @@ export function Calendario() {
             return (
               <div key={d} className={Number(hoje.slice(8, 10)) === d ? 'hoje' : ''}>
                 {d}
-                {cs.length > 0 && <i className={cs.every((c) => c.paga) ? 'p' : ''} aria-label={cs.map((c) => `${c.nome} ${c.paga ? 'paga' : 'a pagar'}`).join(', ')} />}
+                {cs.length > 0 && <i role="img" className={cs.every((c) => c.paga) ? 'p' : ''} aria-label={cs.map((c) => `${c.nome} ${c.paga ? 'paga' : 'a pagar'}`).join(', ')} />}
               </div>
             );
           })}

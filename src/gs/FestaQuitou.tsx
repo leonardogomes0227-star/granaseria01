@@ -3,6 +3,7 @@ import { brl0, mesCurto } from './datas';
 import { ordenar, paraSim, saldoAtual, simular } from './dividas';
 import { Folha } from './ui';
 import { toast } from '../components/ui/Toast';
+import { imagemQuitou } from './imagemQuitou';
 
 /* ---------- Quando uma dívida zera: confete, o que mudou e um botão pra contar pra alguém ---------- */
 
@@ -22,7 +23,7 @@ export function FestaQuitou({ quitada, onFechar }: { quitada: Quitada | null; on
   const estrategia = e.planoDividas?.estrategia ?? 'maior-juro';
   const proxima = ordenar(sim, estrategia)[0];
   const fim = abertas.length > 0 && e.planoDividas ? simular(sim, e.planoDividas.pagamentoMensal, estrategia).dataFinal : null;
-  const frase = quitada ? `Quitei ${quitada.nome} (${brl0(quitada.valor)}) com o Grana Séria${abertas.length ? `. Faltam ${abertas.length} ${abertas.length === 1 ? 'dívida' : 'dívidas'}.` : '. Estou livre das dívidas!'}` : '';
+  const frase = quitada ? `Quitei ${quitada.nome} (${brl0(quitada.valor)}) com o Grana Séria${abertas.length ? `. ${abertas.length === 1 ? 'Falta' : 'Faltam'} ${abertas.length} ${abertas.length === 1 ? 'dívida' : 'dívidas'}.` : '. Estou livre das dívidas!'}` : '';
   const contar = () => {
     if (navigator.share) void navigator.share({ text: frase }).catch(() => undefined);
     else void navigator.clipboard?.writeText(frase).then(() => toast('Texto copiado'), () => toast('Não consegui copiar.'));
@@ -45,7 +46,8 @@ export function FestaQuitou({ quitada, onFechar }: { quitada: Quitada | null; on
           )}
           {!proxima && <p style={{ margin: '0 0 8px' }}>Foi a última. Agora guarde o mesmo valor todo mês, começando pela reserva de emergência.</p>}
           <div className="gs-acoes">
-            <button type="button" className="gs-btn sec" onClick={contar}>Contar pra alguém</button>
+            <button type="button" className="gs-btn sec" onClick={() => void imagemQuitou({ nome: quitada.nome, valor: brl0(quitada.valor), faltam: abertas.length, siteUrl: 'granaseria.com.br' }).catch(contar)}>Postar no story</button>
+            <button type="button" className="gs-btn sec" onClick={contar}>Mandar por texto</button>
             <button type="button" className="gs-btn" onClick={onFechar}>Continuar</button>
           </div>
           <button type="button" className="gs-btn link" onClick={() => { quitada.desfazer(); onFechar(); toast('Pagamento desfeito'); }}>Foi sem querer? Desfazer</button>
