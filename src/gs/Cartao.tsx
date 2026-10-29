@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { comprarNoCartao, pagarFaturaCartao, salvarCartao } from './acoes';
+import { comprarNoCartao, pagarFaturaCartao, salvarCartao, salvarDivida } from './acoes';
 import { Agora, Barra, Campo, CampoDinheiro, CampoNumero, Conquistas, Dica, Folha, Heroi, MaisAjuda, Titulo } from './ui';
 import { brl0, mesCurto, somaMes } from './datas';
 import { acaoCartao, comprometidoTotal, conquistasCartao, proximaData, proximasFaturas, usoDoLimite } from './cartaoLogica';
@@ -22,6 +23,10 @@ export function CartaoTela() {
   const [desc, setDesc] = useState('');
   const [valor, setValor] = useState(0);
   const [parcelas, setParcelas] = useState<number | ''>(1);
+  const [rotativo, setRotativo] = useState(false);
+  const [ficou, setFicou] = useState(0);
+  const [jurosRot, setJurosRot] = useState<number | ''>(12);
+  const ir = useNavigate();
   useEffect(() => {
     if (c) {
       setLimite(c.limite);
@@ -80,6 +85,7 @@ export function CartaoTela() {
               Paguei a fatura
             </button>
           )}
+          <button type="button" className="gs-btn link" onClick={() => setRotativo(true)}>Não consegui pagar tudo</button>
         </div>
       </Agora>
 
@@ -113,6 +119,29 @@ export function CartaoTela() {
         ].map((t, i) => <div key={i} style={{ display: 'flex', gap: 12, padding: '6px 0' }}><span className="gs-check" style={{ flex: 'none', fontWeight: 700 }}>{i + 1}</span><span>{t}</span></div>)}
         <button type="button" className="gs-btn sec" style={{ marginTop: 8 }} onClick={() => setEditar(true)}>Editar dados do cartão</button>
       </MaisAjuda>
+
+      <Folha aberta={rotativo} onFechar={() => setRotativo(false)} titulo="O que ficou sem pagar">
+        <p className="gs-sub" style={{ marginTop: 0 }}>Quando a fatura não é paga inteira, o que sobra vira rotativo e cresce rápido. Eu cadastro em Quitar dívidas e monto o caminho pra zerar.</p>
+        <CampoDinheiro rotulo="Quanto ficou sem pagar?" valor={ficou} onChange={setFicou} grande />
+        <CampoNumero rotulo="Juros do rotativo" sufixo="% ao mês" valor={jurosRot} onChange={setJurosRot} min={0} max={30} placeholder="Ex.: 12" />
+        <div className="gs-acoes">
+          <button type="button" className="gs-btn sec" onClick={() => setRotativo(false)}>Cancelar</button>
+          <button
+            type="button"
+            className="gs-btn"
+            disabled={!(ficou > 0) || typeof jurosRot !== 'number'}
+            onClick={() => {
+              if (salvarDivida({ nome: 'Cartão (rotativo)', saldo: ficou, jurosMensal: typeof jurosRot === 'number' ? jurosRot : 12, parcelaMinima: Math.max(50, Math.round((ficou * 0.15) / 10) * 10), venceDia: c.venceDia, tipo: 'rotativa' })) {
+                toast('Cadastrado em Quitar dívidas', { acao: { rotulo: 'Ver', onClick: () => ir('/plano/dividas') } });
+                setRotativo(false);
+                setFicou(0);
+              }
+            }}
+          >
+            Cadastrar como dívida
+          </button>
+        </div>
+      </Folha>
 
       <Folha aberta={compra} onFechar={() => setCompra(false)} titulo="Compra no cartão">
         <Campo rotulo="O que foi?" valor={desc} onChange={setDesc} placeholder="Ex.: tênis" maxLength={40} />

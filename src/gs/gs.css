@@ -9,6 +9,7 @@ html.gs-app {
   --ivory: #FFFDF8;
   --gold: #C5A059;
   --gold-strong: #B8860B;
+  --gold-texto: #8A6508; /* dourado pra texto sobre fundo claro: 4,6:1 ou mais (o --gold-strong dá só 3:1) */
   --ink: #2C221E;
   --ink-muted: #6B5D54;
   --success: #4F7A4A;
@@ -52,7 +53,7 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-principal { flex: 1; width: 100%; max-width: 720px; margin: 0 auto; padding: 20px 16px 120px; }
 .gs-abas { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: rgba(255, 253, 248, 0.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); }
 .gs-abas a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; border-radius: 14px; color: var(--ink-muted); font-size: 11px; font-weight: 600; text-decoration: none; }
-.gs-abas a.on { color: var(--gold-strong); }
+.gs-abas a.on { color: var(--gold-texto); }
 .gs-abas a.on svg { fill: rgba(197, 160, 89, 0.22); }
 @media (min-width: 761px) {
   .gs-abas { display: none; }
@@ -87,7 +88,7 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 @media (min-width: 560px) { .gs-grade.duas { grid-template-columns: 1fr 1fr; } }
 .gs-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
 .gs-tres > div { background: var(--ivory); border: 1px solid var(--line); border-radius: 16px; padding: 12px 6px; }
-.gs-tres b { display: block; font-family: var(--serif); font-weight: 500; font-size: 18px; margin-top: 2px; }
+.gs-tres b { display: block; font-family: var(--serif); font-weight: 500; font-size: clamp(15px, 4.6vw, 18px); margin-top: 2px; white-space: nowrap; }
 
 /* ---------- botões, campos, chips ---------- */
 .gs-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 16px; border: 1px solid transparent; background: var(--gold); color: var(--ink); font: inherit; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; transition: transform 0.12s var(--curva), background 0.18s; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -10px rgba(184, 134, 11, 0.7); }
@@ -97,7 +98,7 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-btn.sec { background: var(--ivory); border-color: var(--line-strong); box-shadow: none; font-weight: 600; }
 .gs-btn.sec:hover { background: var(--bg-2); }
 .gs-btn.perigo { background: var(--danger); color: #fff; box-shadow: none; }
-.gs-btn.link { background: none; border: 0; box-shadow: none; padding: 0 6px; min-height: 44px; color: var(--gold-strong); font-weight: 700; }
+.gs-btn.link { background: none; border: 0; box-shadow: none; padding: 0 6px; min-height: 44px; color: var(--gold-texto); font-weight: 700; }
 .gs-btn.cheio { width: 100%; }
 .gs-btn.pequeno { min-height: 44px; padding: 0 16px; font-size: 14px; }
 .gs-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
@@ -116,8 +117,8 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-seg button { min-height: 44px; border: 0; border-radius: 12px; background: transparent; color: var(--ink-muted); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; }
 .gs-seg button.on { background: var(--surface); color: var(--ink); box-shadow: var(--sombra); }
 .gs-etiqueta { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: var(--bg-2); color: var(--ink-muted); }
-.gs-etiqueta.ok { background: #E8F0E4; color: var(--success); }
-.gs-etiqueta.aviso { background: #FBF0D9; color: var(--warning); }
+.gs-etiqueta.ok { background: #E8F0E4; color: #3A6335; }
+.gs-etiqueta.aviso { background: #FBF0D9; color: var(--gold-texto); }
 .gs-etiqueta.perigo { background: #F6E2DD; color: var(--danger); }
 .gs-etiqueta.ouro { background: rgba(197, 160, 89, 0.22); color: #7A5A0A; }
 
@@ -374,3 +375,7 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-confete i { position: absolute; top: -12px; width: 8px; height: 14px; border-radius: 2px; opacity: 0; animation: gs-cai 2.4s var(--curva) forwards; }
 @keyframes gs-cai { 0% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 24px 260px; } }
 @media (prefers-reduced-motion: reduce) { .gs-confete { display: none; } }
+
+/* botões dentro do cartão escuro: texto escuro sobre o dourado (a variável --ink ali é clara) */
+.gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn:not(.link):not(.sec) { color: #120E0C; }
+.gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec { background: transparent; color: #FBF6EC; border: 1.5px solid rgba(251, 246, 236, .45); box-shadow: none; }

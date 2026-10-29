@@ -50,7 +50,7 @@ export function Assistentes() {
           <span className="gs-corpo">
             <b>{a.nome}</b>
             <small>{a.descricao}</small>
-            {ativo && <small style={{ color: 'var(--gold-strong)' }}>Ativo{aviso ? ` · próximo aviso: ${aviso}` : ''}</small>}
+            {ativo && <small style={{ color: 'var(--gold-texto)' }}>Ativo{aviso ? ` · próximo aviso: ${aviso}` : ''}</small>}
           </span>
         </button>
         <button type="button" role="switch" aria-checked={ativo} className={`gs-switch ${ativo ? 'on' : ''}`} aria-label={`${ativo ? 'Desligar' : 'Ligar'} ${a.nome}`} onClick={() => { ligarAssistente(a.id, !ativo); toast(!ativo ? `${a.nome} ligado` : `${a.nome} desligado`); }}>
