@@ -37,7 +37,10 @@ export function Inicio() {
           <p>{brl0(Math.max(0, livre))} livres no mês · {diasRestantes(mes, hoje)} {diasRestantes(mes, hoje) === 1 ? 'dia' : 'dias'} até o fim</p>
         </section>
       )}
-      <section className="gs-card destaque" aria-label="Sua renda do mês">
+      <h2 className="gs-h2">Próximas ações</h2>
+      <ProximasAcoes />
+      <details className="gs-card" open={semRenda} style={{ padding: '4px 20px', marginTop: 16 }}>
+        <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Pra onde vai a sua renda</summary>
         {semRenda ? (
           <>
             <Rosca fatias={fatias.map((f) => ({ ...f, valor: 0, pct: 0 }))} guardadoTotal={patrimonioGuardado(e)} semRenda />
@@ -55,9 +58,7 @@ export function Inicio() {
             )}
           </>
         )}
-      </section>
-      <h2 className="gs-h2">Próximas ações</h2>
-      <ProximasAcoes />
+      </details>
       <h2 className="gs-h2">Resumo da semana</h2>
       <ResumoSemana />
       <Folha aberta={renda} onFechar={() => setRenda(false)} titulo="Sua renda por mês">
