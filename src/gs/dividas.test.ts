@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compararEstrategias, cortarPagando, custoPorDia, valeTrocar, linkWhatsApp, mensagemParaOBanco, ordenar, passoDoMes, saldoAtual, simular, type DividaSim } from './dividas';
+import { compararEstrategias, cortarPagando, custoPorDia, jurosDoMes, valeTrocar, linkWhatsApp, mensagemParaOBanco, ordenar, passoDoMes, saldoAtual, simular, type DividaSim } from './dividas';
 
 const d = (id: string, saldo: number, juros: number, min: number): DividaSim => ({ id, nome: id, saldo, jurosMensal: juros, parcelaMinima: min });
 
@@ -78,5 +78,16 @@ describe('extras de dívidas', () => {
     expect(mensagemParaOBanco({ ...b, pedido: 'desconto' })).toContain('à vista');
     expect(mensagemParaOBanco({ ...b, pedido: 'parcelar' })).toContain('parcelamento');
     expect(mensagemParaOBanco({ ...b, pedido: 'juros' })).toContain('reduzir a taxa');
+  });
+});
+
+describe('juros do mês', () => {
+  it('soma o juro de cada dívida', () => {
+    const lista: DividaSim[] = [
+      { id: 'a', nome: 'Cartão', saldo: 3000, jurosMensal: 9, parcelaMinima: 300 },
+      { id: 'b', nome: 'Empréstimo', saldo: 800, jurosMensal: 3, parcelaMinima: 100 },
+    ];
+    expect(jurosDoMes(lista)).toBeCloseTo(3000 * 0.09 + 800 * 0.03, 1);
+    expect(jurosDoMes([])).toBe(0);
   });
 });

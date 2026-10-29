@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEstado } from './store';
 import { brl, brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntre, vencimentoNoMes } from './datas';
-import { compararEstrategias, linkWhatsApp, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, passoDoMes, saldoAtual, simular } from './dividas';
+import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, passoDoMes, saldoAtual, simular } from './dividas';
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
 import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Anel, Linha } from './graficos';
@@ -92,7 +92,8 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
   const alvoPagar = acao.divida ?? e.dividas.find((d) => d.id === passo?.divida.id) ?? abertas[0];
   const fim = resultado.quita && !resultado.insuficiente ? resultado.dataFinal : null;
   const dias = fim ? Math.max(0, diasEntre(hoje, vencimentoNoMes(fim, 31))) : null;
-  const ordem = Object.entries(resultado.quitaEm).sort((a, b) => a[1] - b[1]).map(([id]) => id);
+  // a ordem em que se paga (a estratégia escolhida), não a ordem em que cada dívida termina
+  const ordem = ordenar(sim, plano.estrategia).map((d) => d.id);
   const feitas = conquistas({ pct: progresso, quitadas, pagamentos: nPagamentos, sequencia }).filter((c) => c.feita);
 
   return (
@@ -115,7 +116,7 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         <div className="gs-tres">
           <div><span className="gs-mudo">Você deve</span><b className="gs-tab">{brl0(totalAtual)}</b></div>
           <div><span className="gs-mudo">Já pagou</span><b className="gs-tab">{brl0(totalOriginal - totalAtual)}</b></div>
-          <div><span className="gs-mudo">Meses em dia</span><b className="gs-tab">{sequencia}</b></div>
+          {sequencia > 0 ? <div><span className="gs-mudo">Meses em dia</span><b className="gs-tab">{sequencia}</b></div> : <div><span className="gs-mudo">Juros por mês</span><b className="gs-tab">{brl0(jurosDoMes(sim))}</b></div>}
         </div>
         {eco && eco.economia > 0 && <p className="gs-banner" style={{ marginBottom: 0 }}>Esse plano economiza <b>{brl0(eco.economia)}</b> em juros, comparado a pagar só o mínimo.</p>}
         {eco?.semPlano && <p className="gs-banner" style={{ marginBottom: 0 }}>Pagando só o mínimo essa dívida <b>nunca zera</b>. Seu plano resolve.</p>}
@@ -127,6 +128,36 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         <Barra pct={plano.pagamentoMensal > 0 ? (pagoMes / plano.pagamentoMensal) * 100 : 0} tom={acao.tipo === 'vence' ? 'perigo' : 'ok'} rotulo="Meta do mês" />
         <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(pagoMes)} de {brl0(plano.pagamentoMensal)} neste mês</p>
         {acao.tipo !== 'cumprida' && alvoPagar && <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} onClick={() => setPagar(alvoPagar)}>Paguei {alvoPagar.nome}</button>}
+      </section>
+
+      <section className="gs-card">
+        <span className="gs-rotulo">{abertas.length > 1 ? 'Pague nesta ordem' : 'Sua dívida'}</span>
+        {[...abertas].sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id)).map((d) => {
+          const q = resultado.quitaEm[d.id];
+          const pos = ordem.indexOf(d.id);
+          return (
+            <div key={d.id} className="gs-linha" style={{ flexWrap: 'wrap' }}>
+              <div className="gs-corpo">
+                <b>{abertas.length > 1 && pos >= 0 ? `${pos + 1}ª · ` : ''}{d.nome}</b>
+                <small>
+                  {brl(saldoAtual(d))}
+                  {q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}
+                  {d.tipo === 'parcelada' && d.parcelaMinima > 0 ? ` · parcela ${brl0(d.parcelaMinima)}` : ''}
+                  {d.jurosMensal > 0 ? ` · ${pct(d.jurosMensal, 1)} ao mês` : ' · sem juros'}
+                  {d.venceDia ? ` · vence dia ${d.venceDia}` : ''}
+                </small>
+                {d.jurosMensal > 0 && <small>Cobra {brl0((saldoAtual(d) * d.jurosMensal) / 100)} de juros por mês</small>}
+                {anual(d.jurosMensal) >= 100 && <span className="gs-etiqueta perigo" style={{ marginTop: 4 }}>juro muito alto</span>}
+              </div>
+              <button type="button" className="gs-btn pequeno" onClick={() => setPagar(d)}>Paguei</button>
+              {d.saldo > 0 && <div style={{ flexBasis: '100%' }}><Barra pct={((d.saldo - saldoAtual(d)) / d.saldo) * 100} tom={anual(d.jurosMensal) >= 100 ? 'perigo' : 'ok'} rotulo={`Quanto já pagou de ${d.nome}`} /></div>}
+              <div style={{ flexBasis: '100%', display: 'flex', gap: 4 }}>
+                {d.parcelaMinima <= 0 ? <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Informar a parcela</button> : <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Editar</button>}
+                <button type="button" className="gs-btn link" onClick={() => { removerDivida(d.id); apagarComDesfazer(`${d.nome} excluída`, () => restaurarDivida(d)); }}>Excluir</button>
+              </div>
+            </div>
+          );
+        })}
       </section>
 
       <section className="gs-card">
@@ -195,33 +226,6 @@ function Painel({ onNova, onEditar, onBanco }: { onNova: () => void; onEditar: (
         </section>
       )}
 
-      <section className="gs-card">
-        <span className="gs-rotulo">{abertas.length > 1 ? 'Pague nesta ordem' : 'Sua dívida'}</span>
-        {abertas.map((d) => {
-          const q = resultado.quitaEm[d.id];
-          const pos = ordem.indexOf(d.id);
-          return (
-            <div key={d.id} className="gs-linha" style={{ flexWrap: 'wrap' }}>
-              <div className="gs-corpo">
-                <b>{abertas.length > 1 && pos >= 0 ? `${pos + 1}ª · ` : ''}{d.nome}</b>
-                <small>
-                  {brl(saldoAtual(d))}
-                  {q ? ` · quita em ${mesCurto(somaMes(mesAtual(), q))}` : ''}
-                  {d.tipo === 'parcelada' && d.parcelaMinima > 0 ? ` · parcela ${brl0(d.parcelaMinima)}` : ''}
-                  {d.jurosMensal > 0 ? ` · ${pct(d.jurosMensal, 1)} ao mês` : ' · sem juros'}
-                  {d.venceDia ? ` · vence dia ${d.venceDia}` : ''}
-                </small>
-                {anual(d.jurosMensal) >= 100 && <span className="gs-etiqueta perigo" style={{ marginTop: 4 }}>juro muito alto</span>}
-              </div>
-              <button type="button" className="gs-btn pequeno" onClick={() => setPagar(d)}>Paguei</button>
-              <div style={{ flexBasis: '100%', display: 'flex', gap: 4 }}>
-                {d.parcelaMinima <= 0 ? <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Informar a parcela</button> : <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>Editar</button>}
-                <button type="button" className="gs-btn link" onClick={() => { removerDivida(d.id); apagarComDesfazer(`${d.nome} excluída`, () => restaurarDivida(d)); }}>Excluir</button>
-              </div>
-            </div>
-          );
-        })}
-      </section>
 
       <div className="gs-acoes" style={{ marginTop: 0 }}>
         <button type="button" className="gs-btn sec" onClick={onNova}>+ Nova dívida</button>
