@@ -20,6 +20,40 @@ export function Linha({ serie, fim, rotulo }: { serie: number[]; fim: string; ro
   );
 }
 
+export interface BarraDoTempo {
+  id: string;
+  nome: string;
+  meses: number; // mês em que a dívida zera
+  fim: string; // ex.: "jul/28"
+  perigo: boolean;
+}
+/** Uma barra por dívida, de hoje até o mês em que ela zera. Na ordem de pagamento: quando uma termina, o valor dela rola pra próxima. */
+export function LinhaDoTempo({ barras, rotulo }: { barras: BarraDoTempo[]; rotulo: string }) {
+  const W = 320;
+  const LINHA = 46;
+  const H = barras.length * LINHA + 22;
+  const total = Math.max(...barras.map((b) => b.meses), 1);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', marginTop: 8 }} role="img" aria-label={rotulo}>
+      {barras.map((b, i) => {
+        const y = i * LINHA;
+        const w = Math.max(10, (b.meses / total) * (W - 8));
+        const dentro = w > 120;
+        return (
+          <g key={b.id}>
+            <text x="4" y={y + 12} fontSize="12" fontWeight="700" fill="var(--ink)">{i + 1}ª · {b.nome.length > 28 ? `${b.nome.slice(0, 27)}…` : b.nome}</text>
+            <rect x="4" y={y + 18} width={W - 8} height="16" rx="8" fill="var(--bg-2)" />
+            <rect x="4" y={y + 18} width={w} height="16" rx="8" fill={b.perigo ? 'var(--danger)' : 'var(--gold-strong)'} />
+            <text x={dentro ? w - 4 : w + 10} y={y + 30} fontSize="11" fontWeight="700" textAnchor={dentro ? 'end' : 'start'} fill={dentro ? '#fff' : 'var(--ink)'}>{b.fim}</text>
+          </g>
+        );
+      })}
+      <text x="4" y={H - 4} fontSize="10" fill="var(--ink-muted)">hoje</text>
+      <text x={W - 4} y={H - 4} fontSize="10" textAnchor="end" fill="var(--ink-muted)">quando uma termina, o valor dela rola pra próxima</text>
+    </svg>
+  );
+}
+
 export function Barras({ dados, rotulos, nomes, rotulo }: { dados: [number, number][]; rotulos: string[]; nomes: [string, string]; rotulo: string }) {
   const W = 330;
   const H = 150;
