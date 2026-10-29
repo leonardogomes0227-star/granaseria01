@@ -41,7 +41,7 @@ const PALAVRAS: [string, string][] = [
 const FAQ: [string, string][] = [
   ['Preciso entender de finanças?', 'Não. O app usa palavras simples e explica cada coisa na hora.'],
   ['O app pede a senha do meu banco?', 'Nunca. Você digita os valores à mão. Nada de ligar conta bancária.'],
-  ['Meus dados ficam onde?', 'No seu aparelho, ligados ao seu número. Só você vê. Pra apagar tudo, é só um botão em Meus dados.'],
+  ['Meus dados ficam onde?', 'No seu aparelho. Se você entrar com o WhatsApp ou o e-mail, uma cópia fica guardada na sua conta, pra você ver em outro aparelho e pro assistente do WhatsApp mostrar o mesmo que o app. Só você vê. Pra apagar tudo, inclusive a cópia, é só um botão em Meus dados.'],
   ['Quanto tempo leva pra começar?', 'Uns 2 minutos: você diz quanto ganha por mês e já vê quanto pode gastar por dia.'],
   ['Funciona no celular?', 'Sim, foi feito pro celular. Dá pra instalar na tela inicial, como um aplicativo.'],
   ['É consultoria financeira?', 'Não. É educação financeira, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. As contas são estimativas pra te ajudar a decidir.'],
@@ -163,7 +163,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
       <section className="lp-sec">
         <div className="lp-item" style={{ alignItems: 'flex-start', padding: 18 }}>
           <i aria-hidden="true" style={{ background: 'var(--lp-ouro)', color: 'var(--lp-preto)' }}><ShieldCheck size={18} /></i>
-          <div><b style={{ display: 'block', fontWeight: 800 }}>Seu dinheiro e seus dados, seguros</b><span className="gs-mudo" style={{ fontWeight: 400 }}>Sem senha de banco, nunca. Você digita os valores à mão. Seus dados ficam no seu aparelho e você apaga tudo quando quiser.</span></div>
+          <div><b style={{ display: 'block', fontWeight: 800 }}>Seu dinheiro e seus dados, seguros</b><span className="gs-mudo" style={{ fontWeight: 400 }}>Sem senha de banco, nunca. Você digita os valores à mão. Seus dados ficam no seu aparelho (e numa cópia na sua conta, se você entrar) e você apaga tudo quando quiser.</span></div>
         </div>
       </section>
 

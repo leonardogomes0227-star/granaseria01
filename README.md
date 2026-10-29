@@ -17,4 +17,4 @@ npm run build
 - `BRAPI_TOKEN` (opcional): Ibovespa e B3 na aba Investir.
 - Supabase/WhatsApp: veja `docs/configuracao.md`.
 
-Os dados financeiros ficam no aparelho (`grana-seria:v1`). Conteúdo educativo, não é recomendação de investimento.
+Os dados financeiros ficam no aparelho (`grana-seria:v1`). Quem entra com o WhatsApp ou o e-mail ganha uma cópia no Supabase (`user_state`, `wa_profiles`), que o botão "Apagar tudo" de Meus dados também remove (`DELETE /api/painel`). Conteúdo educativo, não é recomendação de investimento.

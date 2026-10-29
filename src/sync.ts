@@ -142,6 +142,19 @@ export function stopSync() {
   lastPushed = '';
 }
 
+/** "Apagar tudo": remove a cópia da conta de e-mail e sai. true = não sobrou cópia (ou não há conta). */
+export async function apagarCopiaDaConta(): Promise<boolean> {
+  if (!supabase) return true;
+  const { data } = await supabase.auth.getSession();
+  const id = data.session?.user.id;
+  if (!id) return true;
+  stopSync();
+  const { error } = await supabase.from('user_state').delete().eq('user_id', id);
+  if (error) return false;
+  await supabase.auth.signOut();
+  return true;
+}
+
 /** Ao sair da conta, os dados continuam neste aparelho — quem quiser limpar usa "apagar meus dados". */
 export function clearLocalData() {
   for (const k of [...SYNC_KEYS, SYNCED_AT_KEY]) write(k, null);

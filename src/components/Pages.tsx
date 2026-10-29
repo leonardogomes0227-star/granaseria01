@@ -37,6 +37,10 @@ export function PrivacyPage() {
         ser guardados também no nosso banco de dados (Supabase), para você acessar de qualquer aparelho. Só você,
         logado, consegue ler esses dados.
       </p>
+      <p>
+        Para apagar essa cópia, use o botão "Apagar tudo" em Meus dados, dentro do app: ele remove os dados do aparelho
+        e da sua conta. Se não conseguir apagar a cópia, o app avisa e não finge que apagou.
+      </p>
       <h3>WhatsApp</h3>
       <p>
         Se você vincular seu WhatsApp, guardamos o número para responder suas mensagens e mandar o lembrete mensal
