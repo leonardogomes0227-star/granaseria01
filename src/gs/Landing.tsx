@@ -4,6 +4,9 @@ import { ArrowRight, CalendarDays, ChartPie, CreditCard, Gift, Hourglass, Landma
 import { CampoDinheiro } from './ui';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
+import { CartoesPlanos } from './Planos';
+import { PRECO_ANUAL, PRECO_MENSAL } from '../config';
+import { brl0 } from './datas';
 
 /* ---------- Capa do site: forte, preto e dourado, pra quem nunca mexeu com finanças ---------- */
 
@@ -42,6 +45,7 @@ const FAQ: [string, string][] = [
   ['Preciso entender de finanças?', 'Não. O app usa palavras simples e explica cada coisa na hora.'],
   ['O app pede a senha do meu banco?', 'Nunca. Você digita os valores à mão. Nada de ligar conta bancária.'],
   ['Meus dados ficam onde?', 'No seu aparelho. Se você entrar com o WhatsApp ou o e-mail, uma cópia fica guardada na sua conta, pra você ver em outro aparelho e pro assistente do WhatsApp mostrar o mesmo que o app. Só você vê. Pra apagar tudo, inclusive a cópia, é só um botão em Meus dados.'],
+  ['Quanto custa?', `Começar é grátis. O plano com o assistente no WhatsApp custa ${brl0(PRECO_MENSAL)} por mês, ou ${brl0(PRECO_ANUAL)} por ano.`],
   ['Quanto tempo leva pra começar?', 'Uns 2 minutos: você diz quanto ganha por mês e já vê quanto pode gastar por dia.'],
   ['Funciona no celular?', 'Sim, foi feito pro celular. Dá pra instalar na tela inicial, como um aplicativo.'],
   ['É consultoria financeira?', 'Não. É educação financeira, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. As contas são estimativas pra te ajudar a decidir.'],
@@ -165,6 +169,12 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
           <i aria-hidden="true" style={{ background: 'var(--lp-ouro)', color: 'var(--lp-preto)' }}><ShieldCheck size={18} /></i>
           <div><b style={{ display: 'block', fontWeight: 800 }}>Seu dinheiro e seus dados, seguros</b><span className="gs-mudo" style={{ fontWeight: 400 }}>Sem senha de banco, nunca. Você digita os valores à mão. Seus dados ficam no seu aparelho (e numa cópia na sua conta, se você entrar) e você apaga tudo quando quiser.</span></div>
         </div>
+      </section>
+
+      <section className="lp-sec" id="planos" style={{ scrollMarginTop: 80 }}>
+        <h2>Quanto <span>custa</span></h2>
+        <p className="lp-sub">Comece grátis. O assistente no WhatsApp é a parte paga.</p>
+        <CartoesPlanos />
       </section>
 
       <section className="lp-sec">

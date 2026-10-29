@@ -47,6 +47,7 @@ const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investi
 import { Assistentes } from './gs/Assistentes';
 import { MeusDados } from './gs/MeusDados';
 import { Sobre } from './gs/Sobre';
+import { Planos } from './gs/Planos';
 import { Porteiro } from './gs/Porteiro';
 import { ErroGlobal } from './gs/ErroGlobal';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
@@ -269,6 +270,7 @@ function App() {
         <Route path="/assistentes" element={<Pagina titulo="Assistentes" o="os seus assistentes"><Assistentes /></Pagina>} />
         <Route path="/dados" element={<Pagina titulo="Meus dados" o="os seus dados"><MeusDados /></Pagina>} />
         <Route path="/sobre" element={<Pagina titulo="Sobre e avisos" o="" aberto><Sobre /></Pagina>} />
+        <Route path="/planos" element={<Pagina titulo="Planos" o="" aberto><Planos /></Pagina>} />
         <Route path="/painel" element={<PainelRedirect />} />
         {['/missoes', '/conselheiros', '/agentes', '/perfil', '/selos', '/coach', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
           <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/plano' : de === '/perfil' ? '/dados' : de === '/selos' ? '/' : '/assistentes'} replace />} />

@@ -79,6 +79,7 @@ function CascaPublica({ children }: { children: ReactNode }) {
           </Link>
           <nav className="gs-abas-topo" aria-label="Seções" style={{ display: 'flex' }}>
             <NavLink to="/guias">Guias</NavLink>
+            <NavLink to="/planos">Planos</NavLink>
           </nav>
           <Link className="gs-btn pequeno" to="/entrar">Entrar</Link>
         </div>
@@ -86,7 +87,7 @@ function CascaPublica({ children }: { children: ReactNode }) {
       <main className="gs-principal">{children}</main>
       <footer className="gs-rodape">
         <p>
-          <Link to="/guias">Guias</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>
+          <Link to="/guias">Guias</Link> · <Link to="/planos">Planos</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>
         </p>
         <p>Grana Séria · conteúdo educacional, não é consultoria financeira · CNPJ 69.557.683/0001-89</p>
       </footer>
