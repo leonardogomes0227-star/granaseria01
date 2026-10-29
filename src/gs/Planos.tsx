@@ -12,10 +12,10 @@ const NO_PAGO = [
   'Tudo do plano grátis, sem prazo',
   'As 11 ferramentas: quitar dívidas, reserva, cartão, orçamento, calendário e mais',
   'Investir: mercado ao vivo, simulação e conversa',
-  'Assistente no WhatsApp: anote gastos e entradas por mensagem e veja seu mês e seu saldo',
+  'Assistente no WhatsApp: anote gastos e entradas por texto ou por áudio e veja seu mês e seu saldo',
   'Dados guardados na sua conta, em qualquer aparelho',
 ];
-const EM_BREVE = ['Anotar por áudio e por foto do cupom', 'Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
+const EM_BREVE = ['Anotar por foto do cupom', 'Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
 
 interface Cartao {
   id: 'gratis' | 'mensal' | 'anual';

@@ -1,7 +1,7 @@
 // Quitação de dívidas: simulação mês a mês em função pura (sem tela), com a estratégia escolhida.
 
-import { arred, mesAtual, somaMes } from './datas';
-import type { Divida, Estrategia } from './tipos';
+import { arred, mesAtual, somaMes } from './datas.js';
+import type { Divida, Estrategia } from './tipos.js';
 
 export const LIMITE_MESES = 600;
 

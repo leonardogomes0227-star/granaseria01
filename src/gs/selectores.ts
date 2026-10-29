@@ -1,7 +1,7 @@
 // Tudo o que é derivado sai daqui: funções puras sobre o Estado. Nada é guardado duas vezes.
 
-import { arred, diasEntre, diasRestantes, mesDe, somaMes, vencimentoNoMes } from './datas';
-import type { Estado, GastoFixo, Lancamento } from './tipos';
+import { arred, diasEntre, diasRestantes, mesDe, somaMes, vencimentoNoMes } from './datas.js';
+import type { Estado, GastoFixo, Lancamento } from './tipos.js';
 
 const soma = (xs: number[]) => xs.reduce((t, x) => t + x, 0);
 
