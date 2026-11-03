@@ -120,6 +120,20 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
     },
     semanaVista: typeof b.semanaVista === 'string' ? b.semanaVista : undefined,
     limites: Object.fromEntries(Object.entries(obj(b.limites)).filter(([, v]) => typeof v === 'number' && v > 0)) as Record<string, number>,
+    atrasos: (() => {
+      const a = obj(b.atrasos);
+      if (!b.atrasos) return undefined;
+      return {
+        porMes: num(a.porMes, -1) >= 0 ? num(a.porMes) : undefined,
+        separado: Math.max(0, num(a.separado)),
+        saidas: Object.fromEntries(Object.entries(obj(a.saidas)).filter(([k, v]) => /^\d{4}-\d{2}$/.test(k) && typeof v === 'number' && Number.isFinite(v) && v !== 0)) as Record<string, number>,
+        ignorados: arr<string>(a.ignorados).filter((x) => typeof x === 'string').slice(-200),
+        manuais: arr<Record<string, unknown>>(a.manuais)
+          .filter((m) => m && typeof m.id === 'string' && typeof m.nome === 'string' && num(m.valor) > 0 && /^\d{4}-\d{2}$/.test(String(m.mes)) && /^\d{4}-\d{2}-\d{2}$/.test(String(m.vencimento)))
+          .map((m) => ({ id: String(m.id), nome: String(m.nome), valor: num(m.valor), mes: String(m.mes), vencimento: String(m.vencimento), categoria: typeof m.categoria === 'string' ? m.categoria : undefined, gastoId: typeof m.gastoId === 'string' ? m.gastoId : undefined }))
+          .slice(-100),
+      };
+    })(),
     cartao: (() => {
       const c = obj(b.cartao);
       return num(c.limite) > 0 ? { limite: num(c.limite), usado: Math.max(0, num(c.usado)), fechaDia: Math.min(31, Math.max(1, num(c.fechaDia, 1))), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))), parcelados: arr<NonNullable<Estado['cartao']>['parcelados'] extends (infer U)[] | undefined ? U : never>(c.parcelados).filter((p) => p && typeof p.id === 'string' && num(p.parcela) > 0 && num(p.restantes) > 0), pagas: arr<{ data: string; valor: number }>(c.pagas).filter((p) => p && typeof p.data === 'string' && num(p.valor) > 0) } : null;

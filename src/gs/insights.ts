@@ -1,6 +1,7 @@
 // "Próximas ações" (Início) e "Resumo da semana": funções puras sobre o Estado. Textos com números reais.
 
-import { brl0, diaCurto, diasEntre, mesDe, somaDias } from './datas';
+import { brl0, diaCurto, diasEntre, mesCurto, mesDe, somaDias } from './datas';
+import { situacaoAtrasos } from './atrasosLogica';
 import { contasDoMes, faltaPagar, gastoMensalMedio, guardadoNoMes, lancamentosDoMes, limiteDiario, livreParaGastar, patrimonioGuardado, quantoCortar, reservaMeta } from './selectores';
 import { maiorJuroMensal, paraSim, passoDoMes, saldoAtual } from './dividas';
 import type { Estado } from './tipos';
@@ -20,6 +21,25 @@ export function getInsights(e: Estado, hoje: string, opts: { cdiMensalPct?: numb
   const mes = mesDe(hoje);
   const lista: Insight[] = [];
   const renda = e.config.renda;
+  const salarioCaiu = e.config.diaSalario !== undefined && Number(hoje.slice(8, 10)) >= e.config.diaSalario;
+  const atraso = assistenteAtivo(e, 'contas') ? situacaoAtrasos(e, hoje) : null;
+  const atrasado = Boolean(atraso && atraso.anteriores.length > 0);
+
+  // contas de meses anteriores: a bola de neve. Com o salário, diz o que pagar ou quanto separar.
+  if (atraso && atrasado) {
+    const passo = atraso.plano.passos[0];
+    const p = passo?.pagar[0];
+    const separar = Math.max(0, Math.min(atraso.porMes - atraso.saiuNoMes, (passo?.guardado ?? 0) - atraso.separado));
+    const quem = salarioCaiu ? 'Seu salário caiu. ' : '';
+    const texto = atraso.confirmar
+      ? `${atraso.anteriores.length === 1 ? `${atraso.anteriores[0].nome} de ${mesCurto(atraso.anteriores[0].mes)} ficou pra trás` : `${atraso.anteriores.length} contas ficaram pra trás`}. Me diga quanto sobra por mês e eu monto o plano`
+      : p
+      ? `${quem}Pague primeiro a atrasada ${p.nome} de ${mesCurto(p.mesRef)}: cerca de ${brl0(p.valor)}`
+      : separar > 0 && salarioCaiu
+        ? `${quem}Separe ${brl0(separar)} pra sair do atraso${atraso.plano.emDiaEm ? `. Em dia em ${mesCurto(atraso.plano.emDiaEm)}` : ''}`
+        : `${atraso.anteriores.length === 1 ? `${atraso.anteriores[0].nome} de ${mesCurto(atraso.anteriores[0].mes)} ficou pra trás` : `${atraso.anteriores.length} contas ficaram pra trás`} (${brl0(atraso.anteriores.reduce((t, a) => t + a.total, 0))}). Veja como pôr em dia`;
+    lista.push({ id: 'atraso', prioridade: salarioCaiu ? 99 : 88, texto, acao: { rotulo: 'Ver plano', tipo: 'ir', rota: '/plano/atrasos' } });
+  }
 
   if (assistenteAtivo(e, 'contas')) {
     for (const c of contasDoMes(e, mes, hoje)) {
@@ -48,11 +68,9 @@ export function getInsights(e: Estado, hoje: string, opts: { cdiMensalPct?: numb
   }
 
   if (assistenteAtivo(e, 'reserva') && renda > 0) {
-    const dia = e.config.diaSalario;
-    const diaHoje = Number(hoje.slice(8, 10));
-    const salarioCaiu = dia !== undefined && diaHoje >= dia;
     const sugerido = Math.round((renda * e.config.reservaPct) / 100);
-    if (salarioCaiu && guardadoNoMes(e, mes) <= 0 && sugerido > 0)
+    // com conta atrasada, o dinheiro do salário vai primeiro pro atraso (a multa custa mais do que a reserva rende)
+    if (salarioCaiu && !atrasado && guardadoNoMes(e, mes) <= 0 && sugerido > 0)
       lista.push({ id: 'reserva-salario', prioridade: 85, texto: `Seu salário caiu. Guarde ${brl0(sugerido)} (${e.config.reservaPct}%) antes de gastar`, acao: { rotulo: 'Guardar agora', tipo: 'guardar', valor: sugerido } });
     const meta = reservaMeta(e, mes);
     const falta = meta - patrimonioGuardado(e);
@@ -103,6 +121,7 @@ export function resumoDaSemana(e: Estado, hoje: string, semanasAtras = 0): Resum
   let recomendacao = 'Anote os gastos do dia a dia: é assim que o plano fica certo.';
   if (e.config.renda > 0 && livreParaGastar(e, mes) < 0) recomendacao = `Corte ${brl0(quantoCortar(e, mes))} pra fechar o mês no zero.`;
   else if (faltaPagar(e, mes) > 0 && diasEntre(hoje, `${mes}-28`) <= 7) recomendacao = `Ainda faltam ${brl0(faltaPagar(e, mes))} em contas fixas este mês.`;
+  else if (situacaoAtrasos(e, hoje).anteriores.length > 0) recomendacao = 'Tem conta de mês anterior atrasada. O que sobrar vai primeiro pra ela, antes de guardar.';
   else if (guardado <= 0 && e.config.renda > 0) recomendacao = `Guarde ${brl0((e.config.renda * e.config.reservaPct) / 100)} antes de gastar o resto.`;
   else if (top) recomendacao = `${top[0]} foi o que mais pesou. Dá pra segurar um pouco na próxima?`;
   return { de, ate, gasto: Math.round(gasto * 100) / 100, contasPagas: pagos.length, valorContasPagas: pagos.reduce((t, p) => t + p.valorPago, 0), guardado, categoriaTop: top ? { nome: top[0], valor: top[1] } : null, recomendacao };

@@ -33,6 +33,7 @@ import { AdminPage } from './components/AdminPage';
 import { MeuMes } from './gs/MeuMes';
 import { Plano } from './gs/Plano';
 import { Dividas } from './gs/Dividas';
+import { Atrasos } from './gs/Atrasos';
 import { PossoComprar } from './gs/PossoComprar';
 import { Assinaturas } from './gs/Assinaturas';
 import { Reserva } from './gs/Reserva';
@@ -256,6 +257,7 @@ function App() {
         <Route path="/meu-mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
         <Route path="/plano" element={<Pagina titulo="Plano" o="o seu plano"><Plano /></Pagina>} />
         <Route path="/plano/dividas" element={<Pagina titulo="Quitar dívidas" o="as suas dívidas"><Dividas /></Pagina>} />
+        <Route path="/plano/atrasos" element={<Pagina titulo="Sair do atraso" o="as contas atrasadas"><Atrasos /></Pagina>} />
         <Route path="/plano/comprar" element={<Pagina titulo="Posso comprar isso?" o="a ferramenta"><PossoComprar /></Pagina>} />
         <Route path="/plano/assinaturas" element={<Pagina titulo="Gastos escondidos" o="as suas assinaturas"><Assinaturas /></Pagina>} />
         <Route path="/plano/reserva" element={<Pagina titulo="Reserva" o="a sua reserva"><Reserva /></Pagina>} />

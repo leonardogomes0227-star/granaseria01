@@ -9,6 +9,8 @@ import { saldoAtual } from './dividas';
 import { linhasDeCategoria } from './orcamento';
 import { acaoReserva } from './reservaLogica';
 import { acaoCartao } from './cartaoLogica';
+import { situacaoAtrasos } from './atrasosLogica';
+import { mesCurto } from './datas';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -30,7 +32,14 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
     for (const l of linhasDeCategoria(e, hoje.slice(0, 7)))
       if (l.tom === 'perigo') out.push({ id: `orc-${l.categoria}-${hoje.slice(0, 7)}`, texto: `${l.categoria} passou do limite: ${brl0(l.gasto)} de ${brl0(l.limite!)}`, rota: '/plano/orcamento' });
   }
-  if (assistenteAtivo(e, 'reserva') && e.config.diaSalario && Number(hoje.slice(8, 10)) >= e.config.diaSalario) {
+  // conta de mês anterior atrasada: o salário vai primeiro pro atraso, então o aviso de guardar espera
+  const atraso = assistenteAtivo(e, 'contas') ? situacaoAtrasos(e, hoje) : null;
+  if (atraso && atraso.anteriores.length > 0) {
+    const a = atraso.anteriores[0];
+    const texto = atraso.anteriores.length === 1 ? `${a.nome} de ${mesCurto(a.mes)} ficou pra trás. Veja como pôr em dia` : `${atraso.anteriores.length} contas de meses anteriores ficaram pra trás. Veja como pôr em dia`;
+    out.push({ id: `atraso-${hoje.slice(0, 7)}`, texto, rota: '/plano/atrasos' });
+  }
+  if (!atraso?.anteriores.length && assistenteAtivo(e, 'reserva') && e.config.diaSalario && Number(hoje.slice(8, 10)) >= e.config.diaSalario) {
     const r = acaoReserva(e, hoje.slice(0, 7), hoje);
     if (r.tipo === 'comecar') out.push({ id: `reserva-${hoje.slice(0, 7)}`, texto: r.texto, rota: '/plano/reserva' });
   }
