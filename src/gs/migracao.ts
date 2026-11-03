@@ -128,6 +128,10 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
         separado: Math.max(0, num(a.separado)),
         saidas: Object.fromEntries(Object.entries(obj(a.saidas)).filter(([k, v]) => /^\d{4}-\d{2}$/.test(k) && typeof v === 'number' && Number.isFinite(v) && v !== 0)) as Record<string, number>,
         ignorados: arr<string>(a.ignorados).filter((x) => typeof x === 'string').slice(-200),
+        manuais: arr<Record<string, unknown>>(a.manuais)
+          .filter((m) => m && typeof m.id === 'string' && typeof m.nome === 'string' && num(m.valor) > 0 && /^\d{4}-\d{2}$/.test(String(m.mes)) && /^\d{4}-\d{2}-\d{2}$/.test(String(m.vencimento)))
+          .map((m) => ({ id: String(m.id), nome: String(m.nome), valor: num(m.valor), mes: String(m.mes), vencimento: String(m.vencimento), categoria: typeof m.categoria === 'string' ? m.categoria : undefined, gastoId: typeof m.gastoId === 'string' ? m.gastoId : undefined }))
+          .slice(-100),
       };
     })(),
     cartao: (() => {

@@ -110,6 +110,11 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
         </div>
       )}
       {contas.length > 0 && <button type="button" className="gs-btn sec cheio" onClick={() => setEditando('novo')}>+ Nova conta fixa</button>}
+      {contas.length > 0 && !futuro && (
+        <p className="gs-mudo" style={{ textAlign: 'center', margin: '10px 0 0', fontSize: 14 }}>
+          Ficou parcela de mês passado sem pagar? <Link to="/plano/atrasos?anotar=1" className="gs-btn link">Anotar atraso</Link>
+        </p>
+      )}
       <BaixaSheet gasto={gasto} mes={mes} onFechar={() => setBaixa(null)} />
       <FormConta valor={editando} onFechar={() => setEditando(null)} onExcluir={(g) => { setEditando(null); setApagar(g); }} />
       <Confirmar

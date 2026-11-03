@@ -15,9 +15,9 @@ export const LIMITE_PLANO = 24; // meses
 
 export const cfgAtrasos = (e: Estado): AtrasosCfg => e.atrasos ?? { separado: 0, saidas: {}, ignorados: [] };
 
-export type Fonte = 'conta' | 'divida';
+export type Fonte = 'conta' | 'divida' | 'manual';
 export interface Atraso {
-  chave: string; // 'gf:<id>:<mês>' ou 'dv:<id>:<mês>'
+  chave: string; // 'gf:<id>:<mês>', 'dv:<id>:<mês>' ou 'mn:<id>'
   fonte: Fonte;
   refId: string;
   nome: string;
@@ -63,8 +63,17 @@ export function atrasosAbertos(e: Estado, hoje: string): Atraso[] {
     if (valor <= 0.005) return;
     const dias = diasEntre(vencimento, hoje);
     const enc = encargos(valor, dias);
-    out.push({ chave: `${fonte === 'conta' ? 'gf' : 'dv'}:${refId}:${mes}`, fonte, refId, nome, mes, vencimento, valor: arred(valor), dias, encargos: enc, total: arred(valor + enc), nivel: nivelDe(nome, categoria) });
+    out.push({ chave: fonte === 'manual' ? `mn:${refId}` : `${fonte === 'conta' ? 'gf' : 'dv'}:${refId}:${mes}`, fonte, refId, nome, mes, vencimento, valor: arred(valor), dias, encargos: enc, total: arred(valor + enc), nivel: nivelDe(nome, categoria) });
   };
+
+  // o que a pessoa anotou à mão (ex.: começou a usar o app já com a parcela do mês passado atrasada)
+  const manuais = cfg.manuais ?? [];
+  const anotado = new Set(manuais.filter((m) => m.gastoId).map((m) => `${m.gastoId}:${m.mes}`));
+  for (const m of manuais) {
+    const g = m.gastoId ? e.gastosFixos.find((x) => x.id === m.gastoId) : undefined;
+    if (g?.pagamentos[m.mes]) continue; // deu baixa no Meu mês
+    add('manual', m.id, m.nome, m.mes, m.vencimento, m.valor, m.categoria ?? g?.categoria);
+  }
 
   for (const g of e.gastosFixos) {
     // sem data de cadastro (contas antigas): a partir do primeiro mês pago; sem nenhum pagamento, só o mês atual
@@ -73,7 +82,7 @@ export function atrasosAbertos(e: Estado, hoje: string): Atraso[] {
     let m = mesDe(inicio) < somaMes(atual, -(MESES_OLHAR - 1)) ? somaMes(atual, -(MESES_OLHAR - 1)) : mesDe(inicio);
     for (; m <= atual; m = somaMes(m, 1)) {
       const venc = vencimentoNoMes(m, g.diaVencimento);
-      if (venc < inicio || venc >= hoje || g.pagamentos[m] || ign.has(`gf:${g.id}:${m}`)) continue;
+      if (venc < inicio || venc >= hoje || g.pagamentos[m] || ign.has(`gf:${g.id}:${m}`) || anotado.has(`${g.id}:${m}`)) continue;
       add('conta', g.id, g.nome, m, venc, g.valor, g.categoria);
     }
   }
@@ -110,12 +119,15 @@ export interface Folga {
   gastos: number; // contas fixas + média do dia a dia
   parcelas: number; // parcelas das dívidas que não estão nas contas fixas
   folga: number; // pode ser negativa
+  semHistorico: boolean; // nenhum gasto do dia a dia anotado: a folga ignora mercado, transporte… e fica otimista
 }
 export function folgaMensal(e: Estado, mes: string): Folga {
   const fixos = new Set(e.gastosFixos.map((g) => sem(g.nome.trim())));
   const parcelas = arred(e.dividas.filter((d) => !fixos.has(sem(d.nome.trim()))).reduce((t, d) => t + Math.min(d.parcelaMinima, saldoAtual(d)), 0));
   const gastos = gastoMensalMedio(e, mes);
-  return { renda: e.config.renda, gastos, parcelas, folga: arred(e.config.renda - gastos - parcelas) };
+  const desde = somaMes(mes, -3);
+  const semHistorico = !e.lancamentos.some((l) => mesDe(l.data) >= desde && mesDe(l.data) <= mes);
+  return { renda: e.config.renda, gastos, parcelas, folga: arred(e.config.renda - gastos - parcelas), semHistorico };
 }
 
 /* ---------- o plano mês a mês ---------- */
@@ -179,6 +191,7 @@ export interface SituacaoAtrasos {
   folga: Folga;
   porMes: number;
   porMesSugerido: number;
+  confirmar: boolean; // sem gastos do dia a dia anotados: pergunta quanto sobra de verdade antes de montar o plano
   separado: number;
   saiuNoMes: number;
   plano: PlanoAtraso;
@@ -198,6 +211,7 @@ export function situacaoAtrasos(e: Estado, hoje: string): SituacaoAtrasos {
     folga,
     porMes,
     porMesSugerido,
+    confirmar: folga.semHistorico && cfg.porMes === undefined,
     separado: cfg.separado,
     saiuNoMes,
     plano: planoDeRecuperacao(atrasos, { porMes, separado: cfg.separado, jaSaiuNoMes: saiuNoMes, hoje }),
@@ -227,3 +241,6 @@ export function mensagemAtraso(p: { nome?: string; credor: string; valor: number
   if (p.pedido === 'dividir') return `${base} Não consigo pagar tudo de uma vez, mas consigo pagar mais ${f(p.porMes ?? 0)} por mês, junto com a parcela normal. Podem dividir o valor atrasado assim? Podem me mandar a proposta por escrito? Obrigado.`;
   return `${base} Consigo pagar o valor atrasado agora. Vocês podem tirar a multa e os juros de atraso? Podem me mandar o boleto atualizado por escrito? Obrigado.`;
 }
+
+/** Os meses que dá pra anotar como atrasados: os N meses antes deste, do mais antigo pro mais novo. */
+export const mesesAtras = (hoje: string, n: number) => Array.from({ length: Math.max(0, n) }, (_, i) => somaMes(mesDe(hoje), -(n - i)));

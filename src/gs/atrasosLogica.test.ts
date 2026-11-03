@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ESTADO_INICIAL, type Estado } from './tipos';
-import { atrasosAbertos, deOndeSai, encargos, folgaMensal, mensagemAtraso, nivelDe, planoDeRecuperacao, situacaoAtrasos } from './atrasosLogica';
+import { atrasosAbertos, deOndeSai, encargos, folgaMensal, mensagemAtraso, mesesAtras, nivelDe, planoDeRecuperacao, situacaoAtrasos } from './atrasosLogica';
 import { livreParaGastar } from './selectores';
 
 // Exemplo da vida real: em outubro não deu pra pagar a parcela da casa nem a da moto.
@@ -166,5 +166,68 @@ describe('ações', () => {
     d.desfazer();
     expect(getEstado().gastosFixos[0].pagamentos['2026-10']).toBeUndefined();
     expect(getEstado().atrasos).toMatchObject({ separado: 1000, saidas: { '2026-11': 1000 } });
+  });
+});
+
+describe('quem começa a usar o app já atrasado', () => {
+  // cadastrou a casa e a moto no dia 5 de dezembro; as de novembro já estavam atrasadas
+  const novo = (): Estado => {
+    const e = ESTADO_INICIAL();
+    e.config.renda = 3500;
+    e.gastosFixos = [
+      { id: 'casa', nome: 'Parcela da casa', valor: 1200, diaVencimento: 10, categoria: 'Financiamento', pagamentos: {}, criadaEm: '2026-12-05' },
+      { id: 'moto', nome: 'Moto', valor: 600, diaVencimento: 15, categoria: 'Carro', pagamentos: {}, criadaEm: '2026-12-05' },
+    ];
+    return e;
+  };
+  it('sem anotar, o app não tem como saber', () => {
+    expect(atrasosAbertos(novo(), '2026-12-05')).toEqual([]);
+  });
+  it('anotado à mão entra na lista, na ordem, e não duplica com a conta fixa', () => {
+    const e = novo();
+    e.atrasos = { separado: 0, saidas: {}, ignorados: [], manuais: [
+      { id: 'a1', nome: 'Moto', valor: 600, mes: '2026-11', vencimento: '2026-11-15', gastoId: 'moto' },
+      { id: 'a2', nome: 'Parcela da casa', valor: 1200, mes: '2026-11', vencimento: '2026-11-10', gastoId: 'casa' },
+    ] };
+    const r = atrasosAbertos(e, '2026-12-11'); // a casa de dezembro também venceu
+    expect(r.map((a) => a.chave)).toEqual(['mn:a2', 'gf:casa:2026-12', 'mn:a1']);
+    expect(situacaoAtrasos(e, '2026-12-11').anteriores).toHaveLength(2);
+  });
+  it('deu baixa daquele mês no Meu mês: some da lista', () => {
+    const e = novo();
+    e.gastosFixos[0].pagamentos['2026-11'] = { valorPago: 1230, pagoEm: '2026-12-06' };
+    e.atrasos = { separado: 0, saidas: {}, ignorados: [], manuais: [{ id: 'a2', nome: 'Parcela da casa', valor: 1200, mes: '2026-11', vencimento: '2026-11-10', gastoId: 'casa' }] };
+    expect(atrasosAbertos(e, '2026-12-06')).toEqual([]);
+  });
+  it('meses pra anotar: os anteriores a este', () => {
+    expect(mesesAtras('2026-12-05', 2)).toEqual(['2026-10', '2026-11']);
+    expect(mesesAtras('2027-01-05', 1)).toEqual(['2026-12']);
+  });
+});
+
+describe('ações de quem anotou', () => {
+  beforeEach(() => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) });
+    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
+  });
+  it('anotar, pagar (dá baixa no mês da conta) e desfazer', async () => {
+    const { _resetarMemoria, substituir, getEstado } = await import('./store');
+    const { anotarAtraso, pagarAtraso } = await import('./acoes');
+    _resetarMemoria();
+    const e = ESTADO_INICIAL();
+    e.gastosFixos = [{ id: 'moto', nome: 'Moto', valor: 600, diaVencimento: 15, categoria: 'Carro', pagamentos: {}, criadaEm: '2026-12-05' }];
+    substituir(e);
+    expect(anotarAtraso({ nome: 'Moto', valor: 600, diaVencimento: 15, meses: ['2026-10', '2026-11'], gastoId: 'moto' })).toHaveLength(2);
+    const [out] = atrasosAbertos(getEstado(), '2026-12-05');
+    expect(out.mes).toBe('2026-10');
+    const d = pagarAtraso(out, 630, '2026-12-05')!;
+    expect(getEstado().gastosFixos[0].pagamentos['2026-10'].valorPago).toBe(630);
+    expect(atrasosAbertos(getEstado(), '2026-12-05').map((a) => a.mes)).toEqual(['2026-11']);
+    expect(getEstado().atrasos?.saidas['2026-12']).toBe(630);
+    d.desfazer();
+    expect(getEstado().gastosFixos[0].pagamentos['2026-10']).toBeUndefined();
+    expect(atrasosAbertos(getEstado(), '2026-12-05').map((a) => a.mes)).toEqual(['2026-10', '2026-11']);
+    expect(getEstado().atrasos?.saidas['2026-12']).toBeUndefined();
   });
 });

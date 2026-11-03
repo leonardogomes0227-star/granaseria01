@@ -165,6 +165,16 @@ export interface AtrasosCfg {
   separado: number; // dinheiro já separado pro atraso e ainda não usado
   saidas: Record<string, number>; // por mês: quanto saiu do orçamento do mês pro atraso (separado + pago)
   ignorados: string[]; // chaves de atrasos que a pessoa disse que não deve
+  manuais?: AtrasoManual[]; // o que a pessoa anotou: parcela de antes de usar o app, ou conta que não está cadastrada
+}
+export interface AtrasoManual {
+  id: string;
+  nome: string;
+  valor: number;
+  mes: string; // 'AAAA-MM'
+  vencimento: string; // 'AAAA-MM-DD'
+  categoria?: string;
+  gastoId?: string; // quando é de uma conta fixa cadastrada
 }
 
 export interface Estado {

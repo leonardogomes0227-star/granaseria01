@@ -1,10 +1,10 @@
 // Mudanças no estado: cada uma valida a entrada e salva na hora. Nada negativo, nada vazio.
 
 import { atualizar, getEstado } from './store';
-import { arred, novoId, hoje as hojeSP } from './datas';
+import { arred, novoId, hoje as hojeSP, vencimentoNoMes } from './datas';
 import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
 import { cfgAtrasos, deOndeSai, type Atraso } from './atrasosLogica';
-import type { Estado, Aporte, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
+import type { Estado, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
@@ -241,10 +241,16 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
   if (!ok(valor)) return null;
   const mes = data.slice(0, 7);
   let uso = { doSeparado: 0, doMes: 0 };
+  const guardado = a.fonte === 'manual' ? (cfgAtrasos(getEstado()).manuais ?? []).find((m) => m.id === a.refId) : undefined;
   atualizar((e) => {
     uso = deOndeSai(arred(valor), cfgAtrasos(e).separado, a.mes, mes);
-    const pago: Estado =
-      a.fonte === 'conta'
+    const manual = a.fonte === 'manual' ? (cfgAtrasos(e).manuais ?? []).find((m) => m.id === a.refId) : undefined;
+    const pago: Estado = manual
+      ? {
+          ...comAtrasos(e, (c) => ({ ...c, manuais: (c.manuais ?? []).filter((m) => m.id !== a.refId) })),
+          gastosFixos: e.gastosFixos.map((g) => (manual.gastoId && g.id === manual.gastoId ? { ...g, pagamentos: { ...g.pagamentos, [a.mes]: { valorPago: arred(valor), pagoEm: data } } } : g)),
+        }
+      : a.fonte === 'conta'
         ? { ...e, gastosFixos: e.gastosFixos.map((g) => (g.id === a.refId ? { ...g, pagamentos: { ...g.pagamentos, [a.mes]: { valorPago: arred(valor), pagoEm: data } } } : g)) }
         : { ...e, dividas: e.dividas.map((d) => (d.id === a.refId ? { ...d, pagamentos: [...d.pagamentos, { data, valor: arred(valor) }] } : d)) };
     return uso.doSeparado || uso.doMes ? comAtrasos(pago, (c) => somaSaida({ ...c, separado: arred(c.separado - uso.doSeparado) }, mes, uso.doMes)) : pago;
@@ -252,6 +258,16 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
   return {
     desfazer: () =>
       atualizar((e) => {
+        if (a.fonte === 'manual' && guardado) {
+          const m = guardado;
+          const c0 = cfgAtrasos(e);
+          const volta: Estado = {
+            ...e,
+            atrasos: { ...c0, manuais: [...(c0.manuais ?? []).filter((x) => x.id !== m.id), m] },
+            gastosFixos: e.gastosFixos.map((g) => (m.gastoId && g.id === m.gastoId ? { ...g, pagamentos: Object.fromEntries(Object.entries(g.pagamentos).filter(([k]) => k !== m.mes)) } : g)),
+          };
+          return uso.doSeparado || uso.doMes ? comAtrasos(volta, (c) => somaSaida({ ...c, separado: arred(c.separado + uso.doSeparado) }, mes, -uso.doMes)) : volta;
+        }
         const sem: Estado = a.fonte === 'conta' ? { ...e, gastosFixos: e.gastosFixos.map((g) => (g.id === a.refId ? { ...g, pagamentos: Object.fromEntries(Object.entries(g.pagamentos).filter(([m]) => m !== a.mes)) } : g)) } : e;
         if (a.fonte === 'divida') {
           const d = e.dividas.find((x) => x.id === a.refId);
@@ -263,8 +279,23 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
   };
 }
 
+/** Anota parcelas que ficaram pra trás (uma por mês). Devolve as anotadas, pra desfazer. */
+export function anotarAtraso(p: { nome: string; valor: number; diaVencimento: number; meses: string[]; categoria?: string; gastoId?: string }): AtrasoManual[] {
+  if (!p.nome.trim() || !ok(p.valor) || !(p.diaVencimento >= 1 && p.diaVencimento <= 31) || p.meses.length === 0) return [];
+  const novos: AtrasoManual[] = p.meses.map((mes) => ({ id: novoId('at'), nome: p.nome.trim().slice(0, 60), valor: arred(p.valor), mes, vencimento: vencimentoNoMes(mes, Math.round(p.diaVencimento)), categoria: p.categoria, gastoId: p.gastoId }));
+  atualizar((e) => comAtrasos(e, (c) => ({ ...c, manuais: [...(c.manuais ?? []), ...novos].slice(-100) })));
+  return novos;
+}
+export const removerAnotados = (ids: string[]) => atualizar((e) => comAtrasos(e, (c) => ({ ...c, manuais: (c.manuais ?? []).filter((m) => !ids.includes(m.id)) })));
+const restaurarAnotado = (m: AtrasoManual) => atualizar((e) => comAtrasos(e, (c) => ((c.manuais ?? []).some((x) => x.id === m.id) ? c : { ...c, manuais: [...(c.manuais ?? []), m] })));
+
 /** Já tinha pago e só não marcou: registra no dia do vencimento, sem mexer no dinheiro do mês. */
 export function marcarJaPago(a: Atraso): Desfazer {
+  if (a.fonte === 'manual') {
+    const m = (cfgAtrasos(getEstado()).manuais ?? []).find((x) => x.id === a.refId);
+    removerAnotados([a.refId]);
+    return { desfazer: () => m && restaurarAnotado(m) };
+  }
   if (a.fonte === 'conta') {
     darBaixa(a.refId, a.mes, a.valor, a.vencimento);
     return { desfazer: () => desfazerBaixa(a.refId, a.mes) };
@@ -274,5 +305,11 @@ export function marcarJaPago(a: Atraso): Desfazer {
 }
 
 /** "Não devo essa": a conta não existia nesse mês, ou foi cancelada. */
+/** "Não devo essa". Anotação à mão some; o que o app achou sozinho fica na lista de ignorados. */
+export function naoDevo(a: Atraso): Desfazer {
+  if (a.fonte === 'manual') return marcarJaPago(a);
+  ignorarAtraso(a.chave);
+  return { desfazer: () => voltarAtraso(a.chave) };
+}
 export const ignorarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c) => ({ ...c, ignorados: [...new Set([...c.ignorados, chave])].slice(-200) })));
 export const voltarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c) => ({ ...c, ignorados: c.ignorados.filter((k) => k !== chave) })));

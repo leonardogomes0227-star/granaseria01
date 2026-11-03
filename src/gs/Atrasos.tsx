@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, diaCurto, mesCurto, mesDe, nomeMes } from './datas';
 import { linkWhatsApp } from './dividas';
-import { atrasosAbertos, NIVEIS, PEDIDOS_ATRASO, mensagemAtraso, situacaoAtrasos, deOndeSai, type Atraso, type PedidoAtraso } from './atrasosLogica';
-import { definirPorMesAtraso, ignorarAtraso, liberarSeparado, marcarJaPago, pagarAtraso, separarParaAtraso, desfazerSeparar, voltarAtraso } from './acoes';
+import { atrasosAbertos, mesesAtras, NIVEIS, PEDIDOS_ATRASO, mensagemAtraso, situacaoAtrasos, deOndeSai, type Atraso, type PedidoAtraso } from './atrasosLogica';
+import { anotarAtraso, definirPorMesAtraso, liberarSeparado, marcarJaPago, naoDevo, pagarAtraso, removerAnotados, separarParaAtraso, desfazerSeparar } from './acoes';
 import { faltaPagar, patrimonioGuardado } from './selectores';
-import { Agora, Aprende, Campo, CampoDinheiro, Deslizante, Dica, Folha, MaisAjuda, Titulo } from './ui';
+import { Agora, Aprende, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, MaisAjuda, Titulo } from './ui';
+import { CATEGORIAS_FIXAS } from './tipos';
 import { toast } from '../components/ui/Toast';
 
 /* ---------- Sair do atraso: o que ficou pra trás, o que pagar primeiro e quando tudo fica em dia ---------- */
@@ -22,8 +23,23 @@ export function Atrasos() {
   const mes = mesDe(hoje);
   const s = useMemo(() => situacaoAtrasos(e, hoje), [e, hoje]);
   const [pagar, setPagar] = useState<{ a: Atraso; valor: number } | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [anotar, setAnotar] = useState(false);
+  useEffect(() => {
+    if (params.get('anotar')) {
+      setAnotar(true);
+      setParams({}, { replace: true });
+    }
+  }, [params, setParams]);
+  const folha = <AnotarSheet aberta={anotar} hoje={hoje} onFechar={() => setAnotar(false)} />;
 
-  if (s.atrasos.length === 0) return <EmDia separado={s.separado} />;
+  if (s.atrasos.length === 0)
+    return (
+      <>
+        <EmDia separado={s.separado} onAnotar={() => setAnotar(true)} />
+        {folha}
+      </>
+    );
 
   const passo = s.plano.passos[0];
   const aPagarAgora = new Set(passo?.pagar.map((p) => p.chave));
@@ -43,7 +59,9 @@ export function Atrasos() {
         <p className="gs-grande" style={{ margin: '4px 0' }}>{brl0(s.total)}</p>
         <p className="gs-sub" style={{ margin: 0 }}>
           {s.atrasos.length} {s.atrasos.length === 1 ? 'conta' : 'contas'}, com multa e juros estimados.{' '}
-          {s.plano.emDiaEm ? (
+          {s.confirmar ? (
+            <b>Me diga quanto sobra por mês e eu mostro quando fica tudo em dia.</b>
+          ) : s.plano.emDiaEm ? (
             s.plano.meses <= 1 ? <b>Dá pra pôr tudo em dia este mês.</b> : <>Tirando {brl0(s.porMes)} por mês, fica tudo em dia em <b>{nomeMes(s.plano.emDiaEm)}</b>.</>
           ) : (
             <b>Com o que sobra hoje, não dá pra pôr em dia sozinho. Dá pra negociar.</b>
@@ -51,6 +69,10 @@ export function Atrasos() {
         </p>
       </section>
 
+      {s.confirmar ? (
+        <QuantoSobra folga={s.folga} />
+      ) : (
+        <>
       <Agora
         tom={passo?.pagar.length ? 'aviso' : s.porMes <= 0 ? 'perigo' : 'dica'}
         texto={
@@ -95,6 +117,12 @@ export function Atrasos() {
         {s.separado > 0 && <p className="gs-mudo" style={{ margin: '8px 0 0', fontSize: 13 }}>Já separado: {brl0(s.separado)}. Quando você pagar um atraso aqui, ele sai primeiro daí.</p>}
       </Agora>
 
+      {(!s.plano.emDiaEm || s.plano.meses > 3) && (
+        <Dica>
+          {s.plano.emDiaEm ? `Sozinho, leva ${meses(s.plano.meses)}.` : 'Sozinho, não fecha.'} Vale negociar: em financiamento, peça pra jogar a parcela atrasada pro fim do contrato. Aí você só paga a do mês e sai da bola de neve na hora. A mensagem pronta está em “Falar com quem você deve”, mais abaixo.
+        </Dica>
+      )}
+
       <section className="gs-card">
         <Deslizante
           rotulo="Quanto tirar por mês pro atraso"
@@ -117,6 +145,9 @@ export function Atrasos() {
           <p className="gs-mudo" style={{ margin: '8px 0 0', fontSize: 13 }}>Informe sua renda no <Link to="/">Início</Link> e eu calculo quanto sobra.</p>
         )}
       </section>
+
+        </>
+      )}
 
       <h2 className="gs-h2">O que ficou pra trás</h2>
       <p className="gs-mudo" style={{ margin: '-4px 4px 10px', fontSize: 13 }}>Na ordem de pagar. Se você já pagou e só não marcou, toque em “Já tinha pago”.</p>
@@ -152,8 +183,8 @@ export function Atrasos() {
                 type="button"
                 className="gs-btn link"
                 onClick={() => {
-                  ignorarAtraso(a.chave);
-                  toast(`${a.nome} de ${mesCurto(a.mes)} saiu da lista`, { acao: { rotulo: 'Desfazer', onClick: () => voltarAtraso(a.chave) } });
+                  const d = naoDevo(a);
+                  toast(`${a.nome} de ${mesCurto(a.mes)} saiu da lista`, { acao: { rotulo: 'Desfazer', onClick: d.desfazer } });
                 }}
               >
                 Não devo essa
@@ -162,8 +193,9 @@ export function Atrasos() {
           </div>
         ))}
       </div>
+      <button type="button" className="gs-btn sec cheio" onClick={() => setAnotar(true)}>+ Anotar outra conta atrasada</button>
 
-      <Caminho s={s} />
+      {!s.confirmar && <Caminho s={s} />}
 
       {reserva > 0 && (
         <Dica>
@@ -181,15 +213,17 @@ export function Atrasos() {
         <p className="gs-nota" style={{ marginTop: 10 }}>
           A ordem: primeiro onde você mora, depois luz, água e gás (podem ser cortadas), depois financiamento de carro ou moto (o banco pode tomar o bem), e por último cartão e empréstimos, que dá pra negociar. Da mesma conta, sempre a parcela mais antiga primeiro.
         </p>
+        <p className="gs-nota">Se o banco só aceita pagar a parcela mais antiga primeiro, pague a mais antiga com o dinheiro do mês. A conta é a mesma: só muda qual parcela fica esperando.</p>
         <p className="gs-nota">Multa de 2% e juros de 1% ao mês são uma estimativa. O valor certo vem no boleto atualizado. No aluguel, a multa do contrato pode ser maior.</p>
       </MaisAjuda>
 
       <PagarSheet item={pagar} separado={s.separado} mes={mes} hoje={hoje} onFechar={() => setPagar(null)} />
+      {folha}
     </>
   );
 }
 
-function EmDia({ separado }: { separado: number }) {
+function EmDia({ separado, onAnotar }: { separado: number; onAnotar: () => void }) {
   return (
     <>
       <Titulo titulo="Sair do atraso" sub="Conta que ficou pra trás não some. A gente põe tudo em dia, um passo de cada vez." />
@@ -197,6 +231,13 @@ function EmDia({ separado }: { separado: number }) {
         <span className="gs-rotulo">Tudo em dia</span>
         <p className="gs-grande" style={{ margin: '4px 0' }}>Nenhuma conta atrasada</p>
         <p className="gs-sub" style={{ margin: 0 }}>Se uma conta fixa ou parcela passar do vencimento sem baixa, ela aparece aqui, com o que pagar primeiro e quando fica em dia.</p>
+      </section>
+      <section className="gs-card">
+        <b>Ficou conta de mês passado sem pagar?</b>
+        <p className="gs-sub" style={{ margin: '4px 0 0' }}>Começou a usar o app agora e a parcela da casa, da moto ou outra conta já estava atrasada? Anote aqui e eu monto o caminho pra pôr em dia.</p>
+        <div className="gs-acoes">
+          <button type="button" className="gs-btn" onClick={onAnotar}>Anotar conta atrasada</button>
+        </div>
       </section>
       {separado > 0 && (
         <section className="gs-card">
@@ -324,5 +365,108 @@ function Negociar({ atrasos, porMes }: { atrasos: Atraso[]; porMes: number }) {
         <button type="button" className="gs-btn sec" onClick={() => void navigator.clipboard?.writeText(texto).then(() => toast('Mensagem copiada'), () => toast('Não consegui copiar. Selecione o texto e copie.'))}>Copiar mensagem</button>
       </div>
     </MaisAjuda>
+  );
+}
+
+/* ---------- anotar à mão: parcela que já estava atrasada antes de usar o app, ou conta que não está cadastrada ---------- */
+function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string; onFechar: () => void }) {
+  const e = useEstado();
+  const [gastoId, setGastoId] = useState('');
+  const [nome, setNome] = useState('');
+  const [cat, setCat] = useState('Outros');
+  const [valor, setValor] = useState(0);
+  const [dia, setDia] = useState<number | ''>('');
+  const [n, setN] = useState(1);
+  const [tentou, setTentou] = useState(false);
+  const escolher = (id: string) => {
+    const g = e.gastosFixos.find((x) => x.id === id);
+    setGastoId(id);
+    setNome(g?.nome ?? '');
+    setCat(g?.categoria ?? 'Outros');
+    setValor(g?.valor ?? 0);
+    setDia(g?.diaVencimento ?? '');
+  };
+  useEffect(() => {
+    if (!aberta) return;
+    escolher(getEstado().gastosFixos[0]?.id ?? '');
+    setN(1);
+    setTentou(false);
+  }, [aberta]); // eslint-disable-line react-hooks/exhaustive-deps
+  // não anota duas vezes o mesmo mês da mesma conta
+  const jaNaLista = useMemo(() => {
+    const atr = atrasosAbertos(e, hoje);
+    const manuais = e.atrasos?.manuais ?? [];
+    return new Set([...atr.filter((a) => a.fonte === 'conta').map((a) => `${a.refId}:${a.mes}`), ...manuais.filter((m) => m.gastoId).map((m) => `${m.gastoId}:${m.mes}`)]);
+  }, [e, hoje]);
+  const todos = mesesAtras(hoje, n);
+  const meses = gastoId ? todos.filter((m) => !jaNaLista.has(`${gastoId}:${m}`)) : todos;
+  const salvar = () => {
+    setTentou(true);
+    if (!nome.trim() || !(valor > 0) || !(typeof dia === 'number' && dia >= 1) || meses.length === 0) return;
+    const novos = anotarAtraso({ nome, valor, diaVencimento: dia, meses, categoria: cat, gastoId: gastoId || undefined });
+    if (novos.length === 0) return;
+    const ids = novos.map((x) => x.id);
+    toast(`${novos.length === 1 ? '1 parcela' : `${novos.length} parcelas`} de ${nome.trim()} anotada${novos.length === 1 ? '' : 's'}`, { acao: { rotulo: 'Desfazer', onClick: () => removerAnotados(ids) } });
+    onFechar();
+  };
+  return (
+    <Folha aberta={aberta} onFechar={onFechar} titulo="Anotar conta atrasada">
+      <p className="gs-sub">Qual conta ficou pra trás?</p>
+      <div className="gs-chips" role="group" aria-label="Qual conta">
+        {e.gastosFixos.map((g) => (
+          <button key={g.id} type="button" className={`gs-chip ${gastoId === g.id ? 'on' : ''}`} aria-pressed={gastoId === g.id} onClick={() => escolher(g.id)}>{g.nome}</button>
+        ))}
+        <button type="button" className={`gs-chip ${gastoId === '' ? 'on' : ''}`} aria-pressed={gastoId === ''} onClick={() => escolher('')}>Outra</button>
+      </div>
+      {gastoId === '' && (
+        <>
+          <div className="gs-chips" role="group" aria-label="Tipo">
+            {CATEGORIAS_FIXAS.map((c) => (
+              <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); if (!nome.trim() && c !== 'Outros') setNome(c); }}>{c}</button>
+            ))}
+          </div>
+          <Campo rotulo="Nome" valor={nome} onChange={setNome} placeholder="Ex.: Parcela da moto" maxLength={60} erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />
+        </>
+      )}
+      <div className="gs-dois">
+        <CampoDinheiro rotulo="Valor da parcela" valor={valor} onChange={setValor} erro={tentou && !(valor > 0) ? 'Digite o valor.' : undefined} />
+        <CampoNumero rotulo="Dia do vencimento" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" erro={tentou && !(typeof dia === 'number' && dia >= 1) ? 'De 1 a 31.' : undefined} />
+      </div>
+      <p className="gs-sub" style={{ marginBottom: 6 }}>Quantas parcelas ficaram sem pagar?</p>
+      <div className="gs-chips" role="group" aria-label="Quantas parcelas">
+        {[1, 2, 3, 4].map((x) => (
+          <button key={x} type="button" className={`gs-chip ${n === x ? 'on' : ''}`} aria-pressed={n === x} onClick={() => setN(x)}>{x}</button>
+        ))}
+      </div>
+      <p className="gs-nota">
+        {meses.length > 0 ? `Vou anotar: ${meses.map(mesCurto).join(', ')}.` : 'Essas já estão na lista.'} A deste mês não precisa: ela aparece sozinha quando passar do vencimento.
+      </p>
+      <div className="gs-acoes">
+        <button type="button" className="gs-btn sec" onClick={onFechar}>Cancelar</button>
+        <button type="button" className="gs-btn" disabled={meses.length === 0} onClick={salvar}>Anotar</button>
+      </div>
+    </Folha>
+  );
+}
+
+/* ---------- sem gastos do dia a dia anotados, a sobra fica otimista: pergunta antes de montar o plano ---------- */
+function QuantoSobra({ folga }: { folga: ReturnType<typeof situacaoAtrasos>['folga'] }) {
+  const [v, setV] = useState(0);
+  return (
+    <section className="gs-card">
+      <span className="gs-rotulo">Antes do plano</span>
+      <p className="gs-medio" style={{ margin: '4px 0 6px', fontSize: 20 }}>Quanto sobra de verdade por mês?</p>
+      <p className="gs-sub" style={{ marginTop: 0 }}>
+        {folga.renda > 0
+          ? `Sua renda é ${brl0(folga.renda)} e as contas fixas somam ${brl0(folga.gastos + folga.parcelas)}. Mas ainda sai mercado, transporte, farmácia… Quanto dá pra tirar por mês pro atraso, sem faltar pro básico?`
+          : 'Quanto dá pra tirar por mês pro atraso, sem faltar pro básico (mercado, transporte, farmácia)?'}
+      </p>
+      <CampoDinheiro rotulo="Dá pra tirar por mês" valor={v} onChange={setV} grande />
+      <p className="gs-nota" style={{ marginTop: 0 }}>Na dúvida, chute baixo. Dá pra mudar depois. Quando você anotar os gastos do dia a dia, eu calculo sozinho.</p>
+      <div className="gs-acoes">
+        <button type="button" className="gs-btn sec" onClick={() => definirPorMesAtraso(0)}>Não sobra nada</button>
+        <button type="button" className="gs-btn" disabled={!(v > 0)} onClick={() => definirPorMesAtraso(v)}>Montar o plano</button>
+      </div>
+    </section>
   );
 }

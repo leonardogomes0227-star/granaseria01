@@ -31,7 +31,9 @@ export function getInsights(e: Estado, hoje: string, opts: { cdiMensalPct?: numb
     const p = passo?.pagar[0];
     const separar = Math.max(0, Math.min(atraso.porMes - atraso.saiuNoMes, (passo?.guardado ?? 0) - atraso.separado));
     const quem = salarioCaiu ? 'Seu salário caiu. ' : '';
-    const texto = p
+    const texto = atraso.confirmar
+      ? `${atraso.anteriores.length === 1 ? `${atraso.anteriores[0].nome} de ${mesCurto(atraso.anteriores[0].mes)} ficou pra trás` : `${atraso.anteriores.length} contas ficaram pra trás`}. Me diga quanto sobra por mês e eu monto o plano`
+      : p
       ? `${quem}Pague primeiro a atrasada ${p.nome} de ${mesCurto(p.mesRef)}: cerca de ${brl0(p.valor)}`
       : separar > 0 && salarioCaiu
         ? `${quem}Separe ${brl0(separar)} pra sair do atraso${atraso.plano.emDiaEm ? `. Em dia em ${mesCurto(atraso.plano.emDiaEm)}` : ''}`
