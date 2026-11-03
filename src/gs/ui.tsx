@@ -215,7 +215,7 @@ export function Agora({ tom = 'ok', texto, children }: { tom?: 'ok' | 'aviso' | 
   return (
     <section className="gs-card">
       <span className="gs-rotulo">O que fazer agora</span>
-      <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${tom === 'dica' ? '' : tom}`} style={{ marginRight: 8 }}>{tom === 'ok' ? 'Tudo certo' : tom === 'perigo' ? 'Atenção' : tom === 'dica' ? 'Dica' : 'Cuidado'}</span>{texto}</p>
+      <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${tom === 'dica' ? 'ouro' : tom}`} style={{ marginRight: 8 }}>{tom === 'ok' ? 'Tudo certo' : tom === 'perigo' ? 'Atenção' : tom === 'dica' ? 'Dica' : 'Cuidado'}</span>{texto}</p>
       {children}
     </section>
   );

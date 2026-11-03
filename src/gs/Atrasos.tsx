@@ -88,19 +88,19 @@ export function Atrasos() {
         }
       >
         <ol className="gs-passos-lista">
-          {contasDoMes > 0.5 && <li>Pague as contas deste mês em dia ({brl0(contasDoMes)}). É isso que impede a bola de crescer.</li>}
+          {contasDoMes > 0.5 && <li><span>Pague as contas deste mês em dia (<b>{brl0(contasDoMes)}</b>). É isso que impede a bola de crescer.</span></li>}
           {passo?.pagar.map((p) => {
             const a = s.atrasos.find((x) => x.chave === p.chave)!;
             return (
               <li key={p.chave}>
-                <span>Pague {p.nome} de {mesCurto(p.mesRef)}: cerca de <b>{brl0(p.valor)}</b>.</span>{' '}
+                <span>Pague {p.nome} de {mesCurto(p.mesRef)}: cerca de <b>{brl0(p.valor)}</b>.</span>
                 <button type="button" className="gs-btn pequeno" onClick={() => setPagar({ a, valor: p.valor })}><Check size={16} /> Paguei</button>
               </li>
             );
           })}
           {separarAgora > 0 && (
             <li>
-              <span>Separe <b>{brl0(separarAgora)}</b> e não mexa. Ele é do atraso.</span>{' '}
+              <span>Separe <b>{brl0(separarAgora)}</b> e não mexa. Ele é do atraso.</span>
               <button
                 type="button"
                 className="gs-btn pequeno sec"
@@ -119,7 +119,7 @@ export function Atrasos() {
 
       {(!s.plano.emDiaEm || s.plano.meses > 3) && (
         <Dica>
-          {s.plano.emDiaEm ? `Sozinho, leva ${meses(s.plano.meses)}.` : 'Sozinho, não fecha.'} Vale negociar: em financiamento, peça pra jogar a parcela atrasada pro fim do contrato. Aí você só paga a do mês e sai da bola de neve na hora. A mensagem pronta está em “Falar com quem você deve”, mais abaixo.
+          <b>{s.plano.emDiaEm ? `Sozinho, leva ${meses(s.plano.meses)}.` : 'Sozinho, não fecha.'}</b> Dá pra encurtar negociando: em financiamento, peça pra jogar a parcela atrasada pro fim do contrato. A mensagem pronta está em “Falar com quem você deve”.
         </Dica>
       )}
 
@@ -159,7 +159,7 @@ export function Atrasos() {
               <div className="gs-corpo">
                 <b>{s.atrasos.length > 1 ? `${i + 1}ª · ` : ''}{a.nome} · {mesCurto(a.mes)}</b>
                 <small>Venceu {diaCurto(a.vencimento)} · {dias(a.dias)} de atraso</small>
-                <small>{NIVEIS[a.nivel].motivo}</small>
+                {i === 0 && <small className="gs-porque">Por que primeiro: {NIVEIS[a.nivel].motivo}</small>}
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div className="gs-valor">{brl0(a.total)}</div>
