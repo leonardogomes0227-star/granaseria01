@@ -12,7 +12,7 @@ html.gs-app {
   --gold-soft: #FBF3E2; /* fundo das dicas e do "Pra entender" (antes não existia e elas ficavam sem fundo) */
   --gold-texto: #8A6508; /* dourado pra texto sobre fundo claro: 4,6:1 ou mais (o --gold-strong dá só 3:1) */
   --ink: #2C221E;
-  --ink-muted: #6B5D54;
+  --ink-muted: #5C4F47; /* mais escuro: o cinza antigo (#6B5D54) deixava os textos apagados no fundo areia */
   --success: #4F7A4A;
   --warning: #B8860B;
   --danger: #A34A3A;
@@ -70,7 +70,7 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-grande { font-family: var(--serif); font-weight: 500; font-size: 44px; line-height: 48px; letter-spacing: -0.02em; font-variant-numeric: lining-nums; }
 .gs-medio { font-family: var(--serif); font-weight: 500; font-size: 26px; line-height: 30px; letter-spacing: -0.01em; }
 .gs-mudo { color: var(--ink-muted); font-size: 14px; line-height: 20px; }
-.gs-nota { color: var(--ink-muted); font-size: 12.5px; line-height: 18px; margin: 10px 0 0; }
+.gs-nota { color: var(--ink-muted); font-size: 13px; line-height: 19px; margin: 10px 0 0; }
 .gs-tab { font-variant-numeric: tabular-nums; }
 
 /* ---------- cards e listas ---------- */
@@ -168,8 +168,10 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-passos i { flex: 1; height: 5px; border-radius: 5px; background: var(--bg-2); }
 .gs-passos i.on { background: var(--gold); }
 .gs-lista-acoes { display: grid; gap: 10px; }
-.gs-acao { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--ivory); border: 1px solid var(--line); }
-.gs-acao p { flex: 1; margin: 0; font-size: 15px; line-height: 21px; }
+.gs-acao { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 16px; border-radius: 18px; background: var(--ivory); border: 1px solid var(--line); }
+/* o texto ocupa a linha toda; o botão desce pra baixo dele (à direita) quando não cabe ao lado, em vez de espremer o texto */
+.gs-acao p { flex: 1 1 220px; margin: 0; font-size: 15px; line-height: 22px; color: var(--ink); }
+.gs-acao > .gs-btn { margin-left: auto; flex: none; }
 .gs-acao.urgente { border-color: rgba(184, 134, 11, 0.5); background: #FCF6E8; }
 .gs-banner { padding: 14px 16px; border-radius: 16px; background: #FBF3E6; border: 1px solid rgba(184, 134, 11, 0.3); color: var(--ink); font-size: 14px; line-height: 20px; margin-bottom: 14px; }
 .gs-menu-pontos { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--ink-muted); border-radius: 12px; cursor: pointer; font-size: 20px; }
@@ -198,7 +200,8 @@ html.gs-app .gs-menu-pontos:hover { background: var(--bg-2); color: var(--ink); 
 .gs-conta-topo b { display: block; font-size: 15px; }
 .gs-conta-topo small { display: block; color: var(--ink-muted); font-size: 13px; }
 .gs-bolinha { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line-strong); flex: none; }
-.gs-conta-acoes { display: flex; align-items: center; gap: 4px; margin: 8px 0 0 40px; }
+.gs-conta-acoes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0 40px; }
+.gs-conta-acoes > .gs-btn.link:last-child { margin-left: auto; }
 
 /* ---------- assistentes: texto à vontade, chave de ligar do lado ---------- */
 .gs-assist { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--line); }
@@ -414,3 +417,5 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-passos-lista li::before { counter-increment: passo; content: counter(passo); grid-row: span 2; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: var(--ink); font-weight: 700; font-size: 14px; }
 .gs-passos-lista li > .gs-btn { grid-column: 2; justify-self: start; margin-top: 8px; }
 .gs-conta-topo small.gs-porque { margin-top: 4px; color: var(--gold-texto); font-weight: 600; }
+/* link dentro de texto (dicas, avisos, notas): sem a altura de botão, que abria um vão na linha */
+.gs-dica .gs-btn.link, .gs-banner .gs-btn.link, .gs-nota .gs-btn.link, .gs-mudo .gs-btn.link { display: inline; min-height: 0; padding: 0; vertical-align: baseline; }

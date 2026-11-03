@@ -97,11 +97,10 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
                 </div>
                 <div className="gs-conta-acoes">
                   {c.estado === 'paga' ? (
-                    <button type="button" className="gs-btn pequeno sec" onClick={() => { const id = c.gasto.id; desfazerBaixa(id, mes); toast('Pagamento desfeito'); }}>Desfazer pagamento</button>
+                    <button type="button" className="gs-btn link" onClick={() => { const id = c.gasto.id; desfazerBaixa(id, mes); toast('Pagamento desfeito'); }}>Desfazer pagamento</button>
                   ) : (
-                    <button type="button" className="gs-btn pequeno" disabled={futuro} title={futuro ? 'Só dá pra dar baixa no mês atual ou em meses passados' : undefined} onClick={() => setBaixa(c.gasto.id)}>Dar baixa</button>
+                    <button type="button" className={`gs-btn pequeno ${c.estado === 'atrasada' || c.estado === 'vence-logo' ? '' : 'sec'}`} disabled={futuro} title={futuro ? 'Só dá pra dar baixa no mês atual ou em meses passados' : undefined} onClick={() => setBaixa(c.gasto.id)}><Check size={16} /> Dar baixa</button>
                   )}
-                  <span style={{ flex: 1 }} />
                   <button type="button" className="gs-btn link" onClick={() => setEditando(c.gasto)}>Editar</button>
                 </div>
               </div>

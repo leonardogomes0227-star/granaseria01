@@ -45,11 +45,6 @@ export function Reserva() {
   return (
     <>
       <Titulo titulo="Reserva de emergência" sub="O dinheiro que segura a sua vida se a renda parar." />
-      {atrasadas > 0 && (
-        <Dica>
-          <b>Você tem {atrasadas === 1 ? 'uma conta atrasada' : `${atrasadas} contas atrasadas`}.</b> Ponha elas em dia antes de guardar: a multa e os juros custam mais do que a reserva rende. <Link to="/plano/atrasos" className="gs-btn link">Ver o plano</Link>
-        </Dica>
-      )}
 
       {meta <= 0 ? (
         <section className="gs-card destaque">
@@ -75,12 +70,19 @@ export function Reserva() {
         <>
           <section className="gs-card">
             <span className="gs-rotulo">O que fazer agora</span>
-            <p style={{ margin: '6px 0 0' }}>{acao.texto}</p>
-            {(acao.tipo === 'comecar' || acao.tipo === 'faltam') && acao.valor > 0 && (
+            {atrasadas > 0 ? (
+              <>
+                <p style={{ margin: '6px 0 0' }}>Primeiro ponha {atrasadas === 1 ? 'a conta atrasada' : `as ${atrasadas} contas atrasadas`} em dia. A multa e os juros custam mais do que a reserva rende. Depois, a reserva volta a ser a prioridade.</p>
+                <Link to="/plano/atrasos" className="gs-btn cheio" style={{ marginTop: 12 }}>Ver o plano do atraso</Link>
+              </>
+            ) : (
+              <p style={{ margin: '6px 0 0' }}>{acao.texto}</p>
+            )}
+            {atrasadas === 0 && (acao.tipo === 'comecar' || acao.tipo === 'faltam') && acao.valor > 0 && (
               <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} onClick={() => guardarAgora(acao.valor)}>Guardei {brl0(acao.valor)}</button>
             )}
-            {acao.tipo === 'divida' && <Link to="/plano/dividas" className="gs-btn" style={{ marginTop: 12 }}>Ver minhas dívidas</Link>}
-            {!completa && plano > 0 && <div style={{ marginTop: 14 }}><Barra pct={Math.min(100, (feito / plano) * 100)} tom="ok" rotulo="Meta do mês" /><p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(feito)} de {brl0(plano)} neste mês</p></div>}
+            {atrasadas === 0 && acao.tipo === 'divida' && <Link to="/plano/dividas" className="gs-btn" style={{ marginTop: 12 }}>Ver minhas dívidas</Link>}
+            {atrasadas === 0 && !completa && plano > 0 && <div style={{ marginTop: 14 }}><Barra pct={Math.min(100, (feito / plano) * 100)} tom="ok" rotulo="Meta do mês" /><p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(feito)} de {brl0(plano)} neste mês</p></div>}
           </section>
 
           {completa ? (

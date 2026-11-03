@@ -36,7 +36,7 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
   const atraso = assistenteAtivo(e, 'contas') ? situacaoAtrasos(e, hoje) : null;
   if (atraso && atraso.anteriores.length > 0) {
     const a = atraso.anteriores[0];
-    const texto = atraso.anteriores.length === 1 ? `${a.nome} de ${mesCurto(a.mes)} ficou pra trás. Veja como pôr em dia` : `${atraso.anteriores.length} contas de meses anteriores ficaram pra trás. Veja como pôr em dia`;
+    const texto = atraso.anteriores.length === 1 ? `${a.nome} de ${mesCurto(a.mes)} ficou pra trás` : `${atraso.anteriores.length} contas de meses anteriores ficaram pra trás`;
     out.push({ id: `atraso-${hoje.slice(0, 7)}`, texto, rota: '/plano/atrasos' });
   }
   if (!atraso?.anteriores.length && assistenteAtivo(e, 'reserva') && e.config.diaSalario && Number(hoje.slice(8, 10)) >= e.config.diaSalario) {
