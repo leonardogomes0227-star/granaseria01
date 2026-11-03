@@ -80,9 +80,9 @@ export function Conversar() {
         <button type="submit" className="gs-btn" disabled={digitando || !texto.trim()} aria-label="Enviar"><Send size={18} /></button>
       </form>
       <div className="gs-acoes" style={{ marginTop: 0 }}>
-        <Link to="/investir?aba=plano" className="gs-btn pequeno sec">Simular aporte</Link>
+        <Link to="/investir" className="gs-btn pequeno sec">Meu caminho</Link>
         <Link to="/investir?aba=mercado" className="gs-btn pequeno sec">Ver mercado</Link>
-        <Link to="/investir?aba=simulacao" className="gs-btn pequeno sec">Mesa de simulação</Link>
+        <Link to="/investir?aba=simulacao" className="gs-btn pequeno sec">Treinar sem risco</Link>
         {chat.length > 0 && <button type="button" className="gs-btn link" onClick={() => atualizar((s) => ({ ...s, investir: { ...s.investir, chat: [] } }))}>Limpar conversa</button>}
       </div>
       <p className="gs-nota">{usadas}/{LIMITE_DIA} mensagens hoje. Conteúdo educativo. Não é recomendação de investimento. Rentabilidade passada não garante resultado futuro.</p>
