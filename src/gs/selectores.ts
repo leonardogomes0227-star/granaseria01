@@ -18,8 +18,11 @@ export const totalVariaveis = (e: Estado, mes: string) => arred(soma(lancamentos
 export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes && a.valor > 0).map((a) => a.valor)));
 export const patrimonioGuardado = (e: Estado) => arred(soma(e.aportes.map((a) => a.valor)));
 
+/** O que saiu do mês pra pôr contas atrasadas em dia (separado + pago, fora o que já estava separado). */
+export const atrasoNoMes = (e: Estado, mes: string) => arred(e.atrasos?.saidas?.[mes] ?? 0);
+
 /** Pode ser negativo: a pessoa gastou além da renda. */
-export const livreParaGastar = (e: Estado, mes: string) => arred(e.config.renda - totalFixos(e, mes) - totalVariaveis(e, mes) - guardadoNoMes(e, mes));
+export const livreParaGastar = (e: Estado, mes: string) => arred(e.config.renda - totalFixos(e, mes) - totalVariaveis(e, mes) - guardadoNoMes(e, mes) - atrasoNoMes(e, mes));
 
 export const limiteDiario = (e: Estado, mes: string, hojeISO: string) => arred(Math.max(0, livreParaGastar(e, mes)) / diasRestantes(mes, hojeISO));
 

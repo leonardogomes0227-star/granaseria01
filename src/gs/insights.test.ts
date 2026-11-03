@@ -28,6 +28,13 @@ describe('próximas ações', () => {
     const r = getInsights(base(), '2026-10-21');
     expect(r.find((x) => x.id === 'reserva-salario')?.texto).toBe('Seu salário caiu. Guarde R$ 500 (10%) antes de gastar');
   });
+  it('conta de mês anterior atrasada: com o salário, manda pagar a atrasada antes de guardar', () => {
+    const e = base();
+    e.gastosFixos = [{ id: 'casa', nome: 'Parcela da casa', valor: 1200, diaVencimento: 10, categoria: 'Financiamento', pagamentos: { '2026-09': { valorPago: 1200, pagoEm: '2026-09-10' } }, criadaEm: '2026-09-01' }];
+    const r = getInsights(e, '2026-11-05');
+    expect(r[0]).toMatchObject({ id: 'atraso', texto: 'Seu salário caiu. Pague primeiro a atrasada Parcela da casa de out/26: cerca de R$ 1.234' });
+    expect(r.some((x) => x.id === 'reserva-salario')).toBe(false);
+  });
   it('conta que vence em 2 dias', () => {
     const e = base();
     e.gastosFixos = [{ id: 'a', nome: 'Aluguel', valor: 800, diaVencimento: 23, categoria: 'Aluguel', pagamentos: {} }];

@@ -30,6 +30,7 @@ export interface GastoFixo {
   diaVencimento: number;
   categoria: string;
   pagamentos: Record<string, Pagamento>;
+  criadaEm?: string; // 'AAAA-MM-DD': meses antes disso nunca contam como atrasados
 }
 export interface Lancamento {
   id: string;
@@ -158,6 +159,14 @@ export interface Cartao {
   pagas?: { data: string; valor: number }[]; // faturas já pagas
 }
 
+/** Sair do atraso: quanto a pessoa tira por mês pra pôr as contas em dia e o que já separou. */
+export interface AtrasosCfg {
+  porMes?: number; // quanto decidiu tirar por mês (padrão: a folga do orçamento)
+  separado: number; // dinheiro já separado pro atraso e ainda não usado
+  saidas: Record<string, number>; // por mês: quanto saiu do orçamento do mês pro atraso (separado + pago)
+  ignorados: string[]; // chaves de atrasos que a pessoa disse que não deve
+}
+
 export interface Estado {
   schemaVersion: number;
   config: Config;
@@ -174,6 +183,7 @@ export interface Estado {
   semanaVista?: string; // segunda-feira da última semana mostrada
   limites: Record<string, number>; // limite mensal por categoria do dia a dia
   cartao: Cartao | null;
+  atrasos?: AtrasosCfg;
 }
 
 export const ESTADO_INICIAL = (): Estado => ({

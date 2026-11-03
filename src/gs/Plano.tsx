@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
+import { CalendarDays, CalendarClock, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
@@ -12,6 +12,7 @@ import { patrimonioParaRenda } from './ferramentas';
 import { Anel } from './graficos';
 import { Titulo } from './ui';
 import { linhasDeCategoria } from './orcamento';
+import { situacaoAtrasos } from './atrasosLogica';
 
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -29,12 +30,14 @@ export function Plano() {
   const alvoRenda = patrimonioParaRenda(gastoMensalMedio(e, mes), 0.7);
   const meta = reservaMeta(e, mes);
   const esperando = e.desejos.filter((d) => d.status === 'esperando').length;
+  const atraso = situacaoAtrasos(e, hoje);
   type Item = { rota: string; ic: LucideIcon; titulo: string; texto: string; busca: string };
   const I = (rota: string, ic: LucideIcon, titulo: string, texto: string, busca: string): Item => ({ rota, ic, titulo, texto, busca });
   const grupos: { nome: string; itens: Item[] }[] = [
     {
       nome: 'Sair do aperto',
       itens: [
+        I('/plano/atrasos', CalendarClock, 'Sair do atraso', atraso.atrasos.length ? `${atraso.atrasos.length} ${atraso.atrasos.length === 1 ? 'conta atrasada' : 'contas atrasadas'} · ${brl0(atraso.total)}${atraso.plano.emDiaEm && atraso.plano.meses > 1 ? ` · em dia em ${mesCurto(atraso.plano.emDiaEm)}` : ''}` : 'Nenhuma conta atrasada', 'atraso atrasada atrasei parcela atrasada nao consegui pagar bola de neve multa em dia'),
         I('/plano/dividas', Target, 'Quitar dívidas', total > 0 ? `${brl0(total)} em aberto${sim?.dataFinal ? ` · quita em ${mesCurto(sim.dataFinal)}` : ''}` : e.dividas.length ? 'Tudo quitado' : 'Monte o caminho até zerar', 'divida devo juros banco negociar'),
         I('/plano/emprestimos', Landmark, 'Comparar empréstimos', 'Custo real de cada oferta', 'emprestimo financiamento juros oferta'),
         I('/plano/cartao', CreditCard, 'Cartão de crédito', e.cartao && e.cartao.limite > 0 ? `${Math.round((e.cartao.usado / e.cartao.limite) * 100)}% do limite` : 'Fatura, limite e melhor dia', 'cartao fatura limite credito'),
