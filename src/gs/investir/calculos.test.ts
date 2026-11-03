@@ -90,3 +90,40 @@ describe('simulação', () => {
     expect(s.acumulado).toBe(-800);
   });
 });
+
+import { caminhoInvestir } from './calculos';
+import { ESTADO_INICIAL as INICIAL } from '../tipos';
+
+describe('caminho até investir', () => {
+  const base = () => {
+    const e = INICIAL();
+    e.config.renda = 4000;
+    e.gastosFixos = [{ id: 'a', nome: 'Aluguel', valor: 1000, diaVencimento: 10, categoria: 'Aluguel', pagamentos: {}, criadaEm: '2026-11-01' }];
+    return e;
+  };
+  it('sem nada: a dívida não existe (feito), o próximo é a reserva', () => {
+    const c = caminhoInvestir(base(), '2026-11', 0.9);
+    expect(c.map((p) => [p.id, p.estado])).toEqual([['dividas', 'feito'], ['reserva', 'agora'], ['perfil', 'depois'], ['investir', 'depois']]);
+  });
+  it('dívida cara vem antes da reserva; atraso vem antes de tudo', () => {
+    const e = base();
+    e.dividas = [{ id: 'c', nome: 'Cartão', saldo: 2000, jurosMensal: 12, parcelaMinima: 200, pagamentos: [] }];
+    expect(caminhoInvestir(e, '2026-11', 0.9).find((p) => p.estado === 'agora')?.id).toBe('dividas');
+    e.atrasos = { separado: 0, saidas: {}, ignorados: [], manuais: [{ id: 'm', nome: 'Moto', valor: 600, mes: '2026-10', vencimento: '2026-10-15' }] };
+    const c = caminhoInvestir(e, '2026-11', 0.9);
+    expect(c[0]).toMatchObject({ id: 'atraso', estado: 'agora' });
+  });
+  it('dívida barata (abaixo do CDI) não trava o caminho', () => {
+    const e = base();
+    e.dividas = [{ id: 'f', nome: 'Financiamento', saldo: 50000, jurosMensal: 0.7, parcelaMinima: 900, pagamentos: [] }];
+    expect(caminhoInvestir(e, '2026-11', 0.9)[0].estado).toBe('feito');
+  });
+  it('reserva pronta e perfil feito: agora é investir', () => {
+    const e = base();
+    e.aportes = [{ id: 'x', data: '2026-10-01', valor: 50000, origem: 'reserva' }];
+    e.investir.perfilRisco = 'moderado';
+    const c = caminhoInvestir(e, '2026-11', 0.9);
+    expect(c.filter((p) => p.estado === 'feito').map((p) => p.id)).toEqual(['dividas', 'reserva', 'perfil']);
+    expect(c.find((p) => p.estado === 'agora')?.id).toBe('investir');
+  });
+});

@@ -16,7 +16,7 @@ const EDUCATIVOS: { titulo: string; serve: string; risco: string; evitar: string
   { titulo: 'LCI e LCA', serve: 'Quem já tem reserva e pode deixar o dinheiro parado por um prazo.', risco: 'Baixo a médio. Confira a regra vigente de tributação e de garantia.', evitar: 'Pra dinheiro que você pode precisar antes do vencimento.' },
   { titulo: 'Ações e fundos imobiliários', serve: 'Quem investe por vários anos e aguenta ver o valor oscilar.', risco: 'Alto. O preço sobe e desce, e pode ficar abaixo do que você pagou por muito tempo.', evitar: 'Com dívida cara, sem reserva ou com dinheiro que tem data pra ser usado.' },
   { titulo: 'Bitcoin e cripto', serve: 'Quem já tem o básico em dia e aceita perder o valor investido.', risco: 'Muito alto. Variações grandes em poucos dias.', evitar: 'Com dinheiro das contas, da reserva ou emprestado. Limite a uma parcela pequena.' },
-  { titulo: 'Mercado futuro e day trade', serve: 'Quase ninguém. É operação de curtíssimo prazo com alavancagem.', risco: 'Extremo. Dá pra perder mais do que você colocou, e a grande maioria perde dinheiro.', evitar: 'Sempre que não for dinheiro de treino. Use a aba Simulação pra aprender sem risco.' },
+  { titulo: 'Mercado futuro e day trade', serve: 'Quase ninguém. É operação de curtíssimo prazo com alavancagem.', risco: 'Extremo. Dá pra perder mais do que você colocou, e a grande maioria perde dinheiro.', evitar: 'Sempre que não for dinheiro de treino. Use a aba Treinar pra aprender sem risco.' },
 ];
 
 function Cartao({ rotulo, item, formato, extra }: { rotulo: string; item?: Item; formato: (n: number) => string; extra?: string }) {

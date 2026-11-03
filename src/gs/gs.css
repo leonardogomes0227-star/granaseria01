@@ -419,3 +419,19 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-conta-topo small.gs-porque { margin-top: 4px; color: var(--gold-texto); font-weight: 600; }
 /* link dentro de texto (dicas, avisos, notas): sem a altura de botão, que abria um vão na linha */
 .gs-dica .gs-btn.link, .gs-banner .gs-btn.link, .gs-nota .gs-btn.link, .gs-mudo .gs-btn.link { display: inline; min-height: 0; padding: 0; vertical-align: baseline; }
+/* Investir: o caminho em passos (feito / agora / depois) */
+.gs-caminho { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.gs-caminho-passo { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.gs-caminho-passo.agora { border-color: var(--gold-strong); box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.22); }
+.gs-caminho-topo { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; padding: 12px 16px; background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.gs-caminho-topo .gs-corpo { flex: 1; min-width: 0; }
+.gs-caminho-topo b { display: block; font-size: 16px; }
+.gs-caminho-topo small { display: block; color: var(--ink-muted); font-size: 13px; line-height: 18px; margin-top: 2px; }
+.gs-caminho-n { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-weight: 800; font-size: 15px; background: var(--bg-2); color: var(--ink-muted); border: 1px solid var(--line-strong); }
+.gs-caminho-passo.agora .gs-caminho-n { background: var(--gold); color: var(--ink); border-color: transparent; }
+.gs-caminho-passo.feito .gs-caminho-n { background: var(--success); color: #fff; border-color: transparent; }
+.gs-caminho-passo.feito .gs-caminho-topo b { color: var(--ink-muted); }
+.gs-caminho-corpo { padding: 0 16px 16px 60px; font-size: 15px; line-height: 22px; }
+.gs-caminho-corpo > p:first-child { margin-top: 0; }
+.gs-caminho-sub { font-size: 15px; font-weight: 800; margin: 18px 0 6px; }
+@media (max-width: 420px) { .gs-caminho-corpo { padding-left: 16px; } }

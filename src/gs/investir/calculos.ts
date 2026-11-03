@@ -1,6 +1,7 @@
 // Contas da aba Investir (puras, com teste): juros compostos, perfil de risco, prioridade e a mesa de simulação.
 
-import { arred } from '../datas';
+import { arred, brl0 } from '../datas';
+import { atrasosAbertos } from '../atrasosBase';
 import { patrimonioGuardado, reservaMeta } from '../selectores';
 import { saldoAtual, totalDividas } from '../dividas';
 import type { Estado, OperacaoFechada, PerfilRisco, Posicao } from '../tipos';
@@ -53,12 +54,19 @@ export const distribuir = (perfil: PerfilRisco, aporte: number) => DISTRIBUICAO[
 
 /* ---------- antes de investir ---------- */
 export interface Prioridade {
-  passo: 'dividas' | 'reserva' | 'investir';
+  passo: 'atraso' | 'dividas' | 'reserva' | 'investir';
   frase: string;
   detalhe: string;
   rota?: string;
 }
+/** Contas de meses anteriores que ficaram pra trás (o "Sair do atraso"). */
+const atrasadas = (e: Estado, mes: string) => atrasosAbertos(e, `${mes}-01`).filter((a) => a.mes < mes);
+
 export function prioridadeAntesDeInvestir(e: Estado, mes: string, cdiMensalPct: number | null): Prioridade {
+  const atr = atrasadas(e, mes);
+  if (atr.length > 0) {
+    return { passo: 'atraso', frase: 'Primeiro, pôr as contas em dia.', detalhe: `${atr.length === 1 ? 'Uma conta ficou' : `${atr.length} contas ficaram`} pra trás (${brl0(atr.reduce((t, a) => t + a.total, 0))} com multa). A multa e os juros custam mais do que qualquer investimento rende.`, rota: '/plano/atrasos' };
+  }
   const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
   const maior = abertas.reduce((m, d) => Math.max(m, d.jurosMensal), 0);
   if (abertas.length > 0 && (cdiMensalPct === null || maior > cdiMensalPct)) {
@@ -103,3 +111,59 @@ export function estatisticas(h: OperacaoFechada[]) {
   const acertos = h.filter((o) => o.resultado > 0).length;
   return { total, taxaAcerto: total ? Math.round((acertos / total) * 100) : 0, acumulado: arred(h.reduce((t, o) => t + o.resultado, 0)), maiorPerda: h.reduce((m, o) => Math.min(m, o.resultado), 0) };
 }
+
+/* ---------- o caminho até investir: um passo de cada vez ---------- */
+export type IdPasso = 'atraso' | 'dividas' | 'reserva' | 'perfil' | 'investir';
+export interface PassoCaminho {
+  id: IdPasso;
+  titulo: string;
+  estado: 'feito' | 'agora' | 'depois';
+  resumo: string;
+}
+export const NOME_PERFIL: Record<PerfilRisco, string> = { conservador: 'Conservador', moderado: 'Moderado', arrojado: 'Arrojado' };
+
+/** Atraso (se houver) → dívida cara → reserva → perfil → investir. O primeiro que falta é o "agora". */
+export function caminhoInvestir(e: Estado, mes: string, cdiMensalPct: number | null): PassoCaminho[] {
+  const passos: (Omit<PassoCaminho, 'estado'> & { feito: boolean })[] = [];
+  const atr = atrasadas(e, mes);
+  if (atr.length > 0)
+    passos.push({ id: 'atraso', titulo: 'Pôr as contas em dia', feito: false, resumo: `${atr.length === 1 ? '1 conta atrasada' : `${atr.length} contas atrasadas`}: ${brl0(atr.reduce((t, a) => t + a.total, 0))} com multa. Isso vem antes de tudo.` });
+  const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
+  const caras = abertas.filter((d) => d.jurosMensal > 0 && (cdiMensalPct === null || d.jurosMensal > cdiMensalPct));
+  const maior = caras.reduce((m, d) => Math.max(m, d.jurosMensal), 0);
+  passos.push({
+    id: 'dividas',
+    titulo: 'Quitar a dívida cara',
+    feito: caras.length === 0,
+    resumo: caras.length ? `Sua dívida cobra até ${maior.toLocaleString('pt-BR')}% ao mês. Nenhum investimento rende isso: quitar é o melhor "investimento" agora.` : abertas.length ? 'Suas dívidas cobram menos do que a renda fixa rende. Pode seguir.' : 'Nenhuma dívida cara.',
+  });
+  const meta = reservaMeta(e, mes);
+  const guardado = patrimonioGuardado(e);
+  const nMeses = e.config.reservaMeses ?? 6;
+  passos.push({
+    id: 'reserva',
+    titulo: 'Montar a reserva de emergência',
+    feito: meta > 0 && guardado >= meta,
+    resumo: meta > 0 ? (guardado >= meta ? `Pronta: ${brl0(guardado)} (${nMeses} meses de gastos).` : `${brl0(guardado)} de ${brl0(meta)} (${nMeses} meses de gastos). Faltam ${brl0(meta - guardado)}.`) : 'Cadastre suas contas fixas pra eu calcular quanto é.',
+  });
+  passos.push({ id: 'perfil', titulo: 'Descobrir o seu perfil', feito: Boolean(e.investir.perfilRisco), resumo: e.investir.perfilRisco ? `Você é ${NOME_PERFIL[e.investir.perfilRisco].toLowerCase()}.` : '5 perguntas, 1 minuto. Diz quanto sobe e desce você aguenta.' });
+  const aporte = e.investir.aporteMensalPlanejado;
+  passos.push({ id: 'investir', titulo: 'Investir todo mês', feito: false, resumo: aporte ? `Seu plano: ${brl0(aporte)} por mês.` : 'Quanto por mês, onde colocar e quanto isso vira.' });
+  let achou = false;
+  return passos.map(({ feito, ...p }) => {
+    if (feito) return { ...p, estado: 'feito' as const };
+    if (!achou) {
+      achou = true;
+      return { ...p, estado: 'agora' as const };
+    }
+    return { ...p, estado: 'depois' as const };
+  });
+}
+
+/** Onde colocar cada parte, em palavras do dia a dia (exemplos educativos, não recomendação). */
+export const ONDE: Record<string, string> = {
+  'Reserva e liquidez diária': 'Tesouro Selic ou CDB com liquidez diária',
+  'Renda fixa': 'CDB, LCI/LCA ou Tesouro IPCA+',
+  'Renda variável': 'Fundos de índice (ETF) ou fundos imobiliários',
+  Cripto: 'Bitcoin, só uma parte pequena',
+};
