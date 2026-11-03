@@ -9,6 +9,7 @@ html.gs-app {
   --ivory: #FFFDF8;
   --gold: #C5A059;
   --gold-strong: #B8860B;
+  --gold-soft: #FBF3E2; /* fundo das dicas e do "Pra entender" (antes não existia e elas ficavam sem fundo) */
   --gold-texto: #8A6508; /* dourado pra texto sobre fundo claro: 4,6:1 ou mais (o --gold-strong dá só 3:1) */
   --ink: #2C221E;
   --ink-muted: #6B5D54;
@@ -224,7 +225,8 @@ html.gs-app h1, html.gs-app h2, html.gs-app .serif, html.gs-app .wizard-h2, html
 html.gs-app h3 { font-family: var(--sans) !important; font-weight: 600; color: var(--ink); }
 html.gs-app .gs-landing h1 { font-weight: 500; }
 
-.gs-dica { display: flex; gap: 10px; background: var(--gold-soft); border-radius: 14px; padding: 12px 14px; margin-top: 12px; font-size: 14px; line-height: 20px; }
+.gs-dica { display: flex; gap: 12px; align-items: flex-start; background: var(--gold-soft); border: 1px solid rgba(184, 134, 11, 0.28); border-left: 4px solid var(--gold-strong); border-radius: 14px; padding: 14px 16px; margin: 12px 0; font-size: 15px; line-height: 22px; color: var(--ink); }
+.gs-dica > span:last-child { flex: 1; min-width: 0; }
 .gs-mini { background: var(--ivory); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
 .gs-mini.m { border-color: var(--gold-strong); background: var(--gold-soft); }
 .gs-mini small { display: block; color: var(--ink-muted); font-size: 12px; }
@@ -305,7 +307,7 @@ html.gs-app .lp-fim h2 { color: var(--lp-ouro); font-size: clamp(44px, 13vw, 76p
 .gs-titulo, .gs-h2, .gs-grande, .gs-medio, .gs-tres b, .gs-dinheiro, .gs-rosca-centro b, .gs-folha h2, .gs-vazio b, .gs-mini b, .gs-avatar, .gs-tile .ic, .gs-ferr .ic { font-weight: 800 !important; letter-spacing: -0.03em; }
 html.gs-app h1, html.gs-app h2, html.gs-app h3 { font-weight: 800; letter-spacing: -0.03em; }
 .gs-titulo { font-size: 31px; }
-.gs-dica svg { flex: none; margin-top: 1px; color: var(--gold-strong); }
+.gs-dica svg { flex: none; margin-top: 2px; color: var(--gold-texto); }
 
 /* Capa: nota centralizada, cartões que sobem ao tocar e entram ao rolar (só onde o navegador sabe; sem JS) */
 .lp-hero .lp-nota { text-align: center; }
@@ -407,6 +409,8 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-plano ul { align-content: start; }
 .gs-plano .lp-btn { padding: 0 12px; text-align: center; white-space: nowrap; font-size: 16px; }
 /* Sair do atraso: passos do mês, numerados, com o botão ao lado */
-.gs-passos-lista { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 10px; }
-.gs-passos-lista li { line-height: 21px; }
-.gs-passos-lista li .gs-btn { margin-top: 6px; }
+.gs-passos-lista { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 10px; counter-reset: passo; }
+.gs-passos-lista li { display: grid; grid-template-columns: 28px 1fr; column-gap: 12px; align-items: start; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line); font-size: 15px; line-height: 22px; color: var(--ink); }
+.gs-passos-lista li::before { counter-increment: passo; content: counter(passo); grid-row: span 2; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: var(--ink); font-weight: 700; font-size: 14px; }
+.gs-passos-lista li > .gs-btn { grid-column: 2; justify-self: start; margin-top: 8px; }
+.gs-conta-topo small.gs-porque { margin-top: 4px; color: var(--gold-texto); font-weight: 600; }

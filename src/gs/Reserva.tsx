@@ -11,6 +11,7 @@ import { toast } from '../components/ui/Toast';
 import { useHoje } from './useHoje';
 import { acaoReserva, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
 import { capacidadeDePagamento } from './painelDividas';
+import { situacaoAtrasos } from './atrasosLogica';
 
 /* ---------- Reserva de emergência: quantos meses você aguenta, a meta do mês e o que fazer agora ---------- */
 
@@ -40,9 +41,15 @@ export function Reserva() {
     if (id) toast(`${brl0(v)} guardados`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
   };
 
+  const atrasadas = situacaoAtrasos(e, hoje).anteriores.length;
   return (
     <>
       <Titulo titulo="Reserva de emergência" sub="O dinheiro que segura a sua vida se a renda parar." />
+      {atrasadas > 0 && (
+        <Dica>
+          <b>Você tem {atrasadas === 1 ? 'uma conta atrasada' : `${atrasadas} contas atrasadas`}.</b> Ponha elas em dia antes de guardar: a multa e os juros custam mais do que a reserva rende. <Link to="/plano/atrasos" className="gs-btn link">Ver o plano</Link>
+        </Dica>
+      )}
 
       {meta <= 0 ? (
         <section className="gs-card destaque">
