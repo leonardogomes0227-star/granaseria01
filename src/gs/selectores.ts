@@ -1,6 +1,8 @@
 // Tudo o que é derivado sai daqui: funções puras sobre o Estado. Nada é guardado duas vezes.
 
 import { arred, diasEntre, diasRestantes, mesDe, somaMes, vencimentoNoMes } from './datas.js';
+import { saldoAtual } from './dividas.js';
+import { atrasosAbertos, sem } from './atrasosBase.js';
 import type { Estado, GastoFixo, Lancamento } from './tipos.js';
 
 const soma = (xs: number[]) => xs.reduce((t, x) => t + x, 0);
@@ -18,8 +20,20 @@ export const totalVariaveis = (e: Estado, mes: string) => arred(soma(lancamentos
 export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes && a.valor > 0).map((a) => a.valor)));
 export const patrimonioGuardado = (e: Estado) => arred(soma(e.aportes.map((a) => a.valor)));
 
-/** O que saiu do mês pra pôr contas atrasadas em dia (separado + pago, fora o que já estava separado). */
-export const atrasoNoMes = (e: Estado, mes: string) => arred(e.atrasos?.saidas?.[mes] ?? 0);
+/** Quanto tirar por mês pro atraso: o que a pessoa escolheu, ou a sobra do orçamento. Sem gasto do dia a dia anotado, 0 (a sobra seria otimista). */
+export function porMesAtraso(e: Estado, mes: string): number {
+  if (e.atrasos?.porMes !== undefined) return e.atrasos.porMes;
+  const f = folgaMensal(e, mes);
+  return f.semHistorico ? 0 : Math.max(0, Math.floor(f.folga / 10) * 10);
+}
+
+/** Quanto do mês já tem destino no atraso: o que a pessoa vai tirar por mês, ou o que já tirou (se foi mais).
+ *  Assim o "pode gastar" não conta com um dinheiro que é da conta atrasada. Sem atraso de mês anterior, só o que já saiu. */
+export function atrasoNoMes(e: Estado, mes: string): number {
+  const saiu = e.atrasos?.saidas?.[mes] ?? 0;
+  const temAtraso = atrasosAbertos(e, `${mes}-01`).some((a) => a.mes < mes);
+  return arred(temAtraso ? Math.max(saiu, porMesAtraso(e, mes)) : saiu);
+}
 
 /** Pode ser negativo: a pessoa gastou além da renda. */
 export const livreParaGastar = (e: Estado, mes: string) => arred(e.config.renda - totalFixos(e, mes) - totalVariaveis(e, mes) - guardadoNoMes(e, mes) - atrasoNoMes(e, mes));
@@ -86,3 +100,21 @@ export function sequenciaDeDias(e: Estado, hojeISO: string): number {
 
 /** Quanto falta cortar pra fechar o mês no zero (quando o livre é negativo). */
 export const quantoCortar = (e: Estado, mes: string) => Math.max(0, arred(-livreParaGastar(e, mes)));
+
+/* ---------- quanto sobra por mês (renda − contas fixas − média do dia a dia − parcelas das dívidas) ---------- */
+export interface Folga {
+  renda: number;
+  gastos: number; // contas fixas + média do dia a dia
+  parcelas: number; // parcelas das dívidas que não estão nas contas fixas
+  folga: number; // pode ser negativa
+  semHistorico: boolean; // nenhum gasto do dia a dia anotado: a folga ignora mercado, transporte… e fica otimista
+}
+export function folgaMensal(e: Estado, mes: string): Folga {
+  const fixos = new Set(e.gastosFixos.map((g) => sem(g.nome.trim())));
+  const parcelas = arred(e.dividas.filter((d) => !fixos.has(sem(d.nome.trim()))).reduce((t, d) => t + Math.min(d.parcelaMinima, saldoAtual(d)), 0));
+  const gastos = gastoMensalMedio(e, mes);
+  const desde = somaMes(mes, -3);
+  const semHistorico = !e.lancamentos.some((l) => mesDe(l.data) >= desde && mesDe(l.data) <= mes);
+  return { renda: e.config.renda, gastos, parcelas, folga: arred(e.config.renda - gastos - parcelas), semHistorico };
+}
+

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
-import { brl, brl0, diaCurto, mesCurto, mesDe, nomeMes } from './datas';
+import { brl, brl0, diaCurto, mesCurto, mesDe, nomeMes, somaMes } from './datas';
 import { linkWhatsApp } from './dividas';
 import { atrasosAbertos, mesesAtras, NIVEIS, PEDIDOS_ATRASO, mensagemAtraso, situacaoAtrasos, deOndeSai, type Atraso, type PedidoAtraso } from './atrasosLogica';
 import { anotarAtraso, definirPorMesAtraso, liberarSeparado, marcarJaPago, naoDevo, pagarAtraso, removerAnotados, separarParaAtraso, desfazerSeparar } from './acoes';
@@ -277,7 +277,7 @@ function Caminho({ s }: { s: ReturnType<typeof situacaoAtrasos> }) {
         {s.plano.emDiaEm ? (
           <div className="gs-linha">
             <span className="gs-check" aria-hidden="true"><Check size={16} /></span>
-            <div className="gs-corpo"><b>{mesCurto(s.plano.emDiaEm)} · tudo em dia</b><small>Daqui pra frente, uma parcela por mês.</small></div>
+            <div className="gs-corpo"><b>Pronto: tudo em dia</b><small>A partir de {mesCurto(somaMes(s.plano.emDiaEm, 1))}, só a parcela de cada mês.</small></div>
           </div>
         ) : (
           <p className="gs-banner" style={{ margin: '10px 0 0' }}>Em {meses(passos.length)} ainda não fica em dia. Separe um pouco mais por mês ou negocie com quem você deve (logo abaixo).</p>

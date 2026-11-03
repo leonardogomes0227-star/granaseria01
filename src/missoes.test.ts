@@ -37,7 +37,7 @@ describe('missões', () => {
     expect(m.passos[0].concluidoEm).toBeTruthy();
     expect(previsao(m, '2026-10-25')).toBe('2029-01');
     expect(andamento(m, '2026-10-25')).toMatchObject({ emDia: true, atras: 0 });
-    expect(proximoPasso(m)?.id).toBe('p2');
+    expect(proximoPasso(m, '2026-10-25')?.id).toBe('p2');
   });
 
   it('nunca registra mês futuro', () => {
