@@ -241,6 +241,8 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
   if (!ok(valor)) return null;
   const mes = data.slice(0, 7);
   let uso = { doSeparado: 0, doMes: 0 };
+  // parcela de dívida de mês anterior fica no mês dela: assim o Quitar dívidas não acha que a deste mês já foi paga
+  const dataDivida = a.mes < mes ? a.vencimento : data;
   const guardado = a.fonte === 'manual' ? (cfgAtrasos(getEstado()).manuais ?? []).find((m) => m.id === a.refId) : undefined;
   atualizar((e) => {
     uso = deOndeSai(arred(valor), cfgAtrasos(e).separado, a.mes, mes);
@@ -252,7 +254,7 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
         }
       : a.fonte === 'conta'
         ? { ...e, gastosFixos: e.gastosFixos.map((g) => (g.id === a.refId ? { ...g, pagamentos: { ...g.pagamentos, [a.mes]: { valorPago: arred(valor), pagoEm: data } } } : g)) }
-        : { ...e, dividas: e.dividas.map((d) => (d.id === a.refId ? { ...d, pagamentos: [...d.pagamentos, { data, valor: arred(valor) }] } : d)) };
+        : { ...e, dividas: e.dividas.map((d) => (d.id === a.refId ? { ...d, pagamentos: [...d.pagamentos, { data: dataDivida, valor: arred(valor) }] } : d)) };
     return uso.doSeparado || uso.doMes ? comAtrasos(pago, (c) => somaSaida({ ...c, separado: arred(c.separado - uso.doSeparado) }, mes, uso.doMes)) : pago;
   });
   return {
@@ -271,7 +273,7 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
         const sem: Estado = a.fonte === 'conta' ? { ...e, gastosFixos: e.gastosFixos.map((g) => (g.id === a.refId ? { ...g, pagamentos: Object.fromEntries(Object.entries(g.pagamentos).filter(([m]) => m !== a.mes)) } : g)) } : e;
         if (a.fonte === 'divida') {
           const d = e.dividas.find((x) => x.id === a.refId);
-          const i = d ? d.pagamentos.findIndex((p) => p.data === data && p.valor === arred(valor)) : -1;
+          const i = d ? d.pagamentos.findIndex((p) => p.data === dataDivida && p.valor === arred(valor)) : -1;
           if (d && i >= 0) sem.dividas = e.dividas.map((x) => (x.id === a.refId ? { ...x, pagamentos: x.pagamentos.filter((_, k) => k !== i) } : x));
         }
         return uso.doSeparado || uso.doMes ? comAtrasos(sem, (c) => somaSaida({ ...c, separado: arred(c.separado + uso.doSeparado) }, mes, -uso.doMes)) : sem;

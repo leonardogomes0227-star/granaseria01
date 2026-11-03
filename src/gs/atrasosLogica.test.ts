@@ -231,3 +231,54 @@ describe('ações de quem anotou', () => {
     expect(getEstado().atrasos?.saidas['2026-12']).toBeUndefined();
   });
 });
+
+describe('"pode gastar" com atraso', () => {
+  const comPlano = (): Estado => {
+    const e = base();
+    e.lancamentos = [{ id: 'l', descricao: 'Mercado', valor: 900, data: '2026-10-12', categoria: 'Mercado' }];
+    return e;
+  };
+  it('o que vai pro atraso já sai do "pode gastar", sem precisar tocar em Separei', () => {
+    const e = comPlano();
+    const sem = livreParaGastar({ ...e, gastosFixos: e.gastosFixos.map((g) => ({ ...g, pagamentos: { ...g.pagamentos, '2026-10': { valorPago: g.valor, pagoEm: '2026-10-10' } } })) }, '2026-11');
+    e.atrasos = { porMes: 600, separado: 0, saidas: {}, ignorados: [] };
+    expect(livreParaGastar(e, '2026-11')).toBe(sem - 600);
+  });
+  it('separar o combinado não desconta duas vezes; pagar mais que o combinado desconta o que saiu', () => {
+    const e = comPlano();
+    e.atrasos = { porMes: 600, separado: 600, saidas: { '2026-11': 600 }, ignorados: [] };
+    const separou = livreParaGastar(e, '2026-11');
+    e.atrasos = { porMes: 600, separado: 0, saidas: {}, ignorados: [] };
+    expect(livreParaGastar(e, '2026-11')).toBe(separou);
+    e.atrasos = { porMes: 600, separado: 0, saidas: { '2026-11': 900 }, ignorados: [] };
+    expect(livreParaGastar(e, '2026-11')).toBe(separou - 300);
+  });
+  it('sem gasto do dia a dia anotado e sem escolher o valor, não reserva nada (a sobra seria otimista)', () => {
+    const e = base();
+    expect(livreParaGastar(e, '2026-11')).toBe(4000 - 1950);
+  });
+});
+
+describe('parcela atrasada de dívida', () => {
+  beforeEach(() => {
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) });
+    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
+  });
+  it('pagar a de outubro em novembro conta em outubro: a de novembro continua a pagar no Quitar dívidas', async () => {
+    const { _resetarMemoria, substituir, getEstado } = await import('./store');
+    const { pagarAtraso } = await import('./acoes');
+    const { pagoNaDivida } = await import('./painelDividas');
+    _resetarMemoria();
+    const e = ESTADO_INICIAL();
+    e.dividas = [{ id: 'fin', nome: 'Financiamento da moto', saldo: 10000, jurosMensal: 2, parcelaMinima: 500, venceDia: 10, cadastradaEm: '2026-09-01', tipo: 'parcelada', pagamentos: [{ data: '2026-09-10', valor: 500 }] }];
+    substituir(e);
+    const [out] = atrasosAbertos(getEstado(), '2026-11-05');
+    const d = pagarAtraso(out, 515, '2026-11-05')!;
+    expect(pagoNaDivida(getEstado().dividas[0], '2026-11')).toBe(0);
+    expect(pagoNaDivida(getEstado().dividas[0], '2026-10')).toBe(515);
+    expect(atrasosAbertos(getEstado(), '2026-11-05')).toEqual([]);
+    d.desfazer();
+    expect(getEstado().dividas[0].pagamentos).toHaveLength(1);
+  });
+});
