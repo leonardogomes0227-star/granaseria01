@@ -51,7 +51,7 @@ describe('seletores', () => {
   it('estourou: rosca sem fatia negativa', () => {
     const e = base();
     e.lancamentos = [{ id: '1', descricao: 'viagem', valor: 4000, data: '2026-10-02', categoria: 'Lazer' }];
-    expect(livreParaGastar(e, '2026-10')).toBe(-700);
+    expect(livreParaGastar(e, '2026-10')).toBe(-1200); // 5000 − 1700 de contas − 500 pra reserva − 4000
     expect(fatiasDaRenda(e, '2026-10').find((x) => x.id === 'livre')?.valor).toBe(0);
   });
   it('gasto médio e reserva: média dos 3 meses anteriores, ou o mês atual sem histórico', () => {

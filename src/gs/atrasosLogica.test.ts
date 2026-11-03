@@ -240,9 +240,9 @@ describe('"pode gastar" com atraso', () => {
   };
   it('o que vai pro atraso já sai do "pode gastar", sem precisar tocar em Separei', () => {
     const e = comPlano();
-    const sem = livreParaGastar({ ...e, gastosFixos: e.gastosFixos.map((g) => ({ ...g, pagamentos: { ...g.pagamentos, '2026-10': { valorPago: g.valor, pagoEm: '2026-10-10' } } })) }, '2026-11');
     e.atrasos = { porMes: 600, separado: 0, saidas: {}, ignorados: [] };
-    expect(livreParaGastar(e, '2026-11')).toBe(sem - 600);
+    // renda 4000 − contas 1950 − 600 pro atraso (a reserva espera enquanto tem conta atrasada)
+    expect(livreParaGastar(e, '2026-11')).toBe(4000 - 1950 - 600);
   });
   it('separar o combinado não desconta duas vezes; pagar mais que o combinado desconta o que saiu', () => {
     const e = comPlano();
@@ -280,5 +280,33 @@ describe('parcela atrasada de dívida', () => {
     expect(atrasosAbertos(getEstado(), '2026-11-05')).toEqual([]);
     d.desfazer();
     expect(getEstado().dividas[0].pagamentos).toHaveLength(1);
+  });
+});
+
+describe('"pode gastar" já separa a reserva (pague-se primeiro)', () => {
+  it('sem atraso: desconta os 10% combinados; guardar mais desconta o que guardou', async () => {
+    const { guardarNoMes } = await import('./selectores');
+    const e = ESTADO_INICIAL();
+    e.config.renda = 3000;
+    e.gastosFixos = [{ id: 'a', nome: 'Aluguel', valor: 1000, diaVencimento: 5, categoria: 'Aluguel', pagamentos: {}, criadaEm: '2026-11-01' }];
+    expect(guardarNoMes(e, '2026-11')).toBe(300);
+    expect(livreParaGastar(e, '2026-11')).toBe(1700);
+    e.aportes = [{ id: 'x', data: '2026-11-05', valor: 500, origem: 'reserva' }];
+    expect(livreParaGastar(e, '2026-11')).toBe(1500);
+  });
+  it('com a reserva completa, não separa mais', async () => {
+    const { guardarNoMes } = await import('./selectores');
+    const e = ESTADO_INICIAL();
+    e.config.renda = 3000;
+    e.gastosFixos = [{ id: 'a', nome: 'Aluguel', valor: 1000, diaVencimento: 5, categoria: 'Aluguel', pagamentos: {}, criadaEm: '2026-11-01' }];
+    e.aportes = [{ id: 'x', data: '2026-01-05', valor: 10000, origem: 'reserva' }];
+    expect(guardarNoMes(e, '2026-11')).toBe(0);
+  });
+  it('parcela de dívida sai do "pode gastar"', () => {
+    const e = ESTADO_INICIAL();
+    e.config.renda = 3000;
+    e.config.reservaPct = 0;
+    e.dividas = [{ id: 'd', nome: 'Empréstimo', saldo: 2000, jurosMensal: 3, parcelaMinima: 250, pagamentos: [] }];
+    expect(livreParaGastar(e, '2026-11')).toBe(2750);
   });
 });
