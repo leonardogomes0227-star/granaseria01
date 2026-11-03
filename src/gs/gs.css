@@ -445,3 +445,19 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-emp-legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 .gs-emp-legenda i.a { background: var(--gold); } .gs-emp-legenda i.b { background: #C76450; }
 .gs-emp-atual { background: var(--gold-soft); margin: 0 -12px; padding-left: 12px; padding-right: 12px; border-radius: 12px; }
+/* Orçamento: envelopes (toque pra anotar um gasto naquele envelope) */
+.gs-envelopes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+@media (max-width: 340px) { .gs-envelopes { grid-template-columns: 1fr; } }
+.gs-env { display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); text-align: left; font: inherit; color: inherit; cursor: pointer; box-shadow: var(--sombra); transition: transform .12s var(--curva); }
+.gs-env:active { transform: scale(0.98); }
+.gs-env.aviso { border-color: rgba(184, 134, 11, 0.55); }
+.gs-env.perigo { border-color: rgba(163, 74, 58, 0.55); background: #FDF5F2; }
+.gs-env-topo { display: flex; align-items: center; gap: 8px; }
+.gs-env-topo b { flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gs-env-cor { display: inline-block; flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.gs-env-mais { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--gold-soft); color: var(--gold-texto); flex: none; }
+.gs-env-valor { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.gs-env.perigo .gs-env-valor { color: var(--danger); }
+.gs-env small { color: var(--ink-muted); font-size: 12.5px; line-height: 17px; }
+.gs-env .gs-barra { margin: 6px 0 2px; }
+.gs-env.aviso .gs-env-pe { color: var(--gold-texto); font-weight: 700; }

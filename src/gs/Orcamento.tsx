@@ -1,110 +1,229 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { brl, brl0, mesDe, nomeMes } from './datas';
-import { acaoOrcamento, linhasDeCategoria, regra503020, resumoDoMes } from './orcamento';
-import { corDe, limiteSugerido } from './categorias';
-import { definirLimite } from './acoes';
-import { Barra, Dica, Titulo, Vazio } from './ui';
+import { brl0, mesDe, nomeMes } from './datas';
+import { envelopes, gastoPorCategoria, planoDeOrcamento, regra503020, resumoDoMes, type Envelope } from './orcamento';
+import { corDe } from './categorias';
+import { definirLimite, removerLancamento, salvarLancamento } from './acoes';
+import { Agora, Barra, Campo, CampoDinheiro, Dica, Folha, MaisAjuda, Titulo, Vazio } from './ui';
 import { Anel, Rosquinha } from './graficos';
-import { Link } from 'react-router-dom';
-import { Info } from 'lucide-react';
 import { toast } from '../components/ui/Toast';
+import { getEstado } from './store';
 
-/* ---------- Orçamento: quanto ainda dá em cada coisa, e a regra 50/30/20 com os seus números ---------- */
+/* ---------- Orçamento em envelopes: quanto dá pro dia a dia, dividido por categoria, e quanto ainda dá em cada uma ---------- */
 
 export function Orcamento() {
   const e = useEstado();
   const hoje = useHoje();
   const mes = mesDe(hoje);
-  const linhas = useMemo(() => linhasDeCategoria(e, mes), [e, mes]);
-  const regra = useMemo(() => regra503020(e, mes), [e, mes]);
-  const total = linhas.reduce((t, l) => t + l.gasto, 0);
+  const plano = useMemo(() => planoDeOrcamento(e, mes), [e, mes]);
+  const envs = useMemo(() => envelopes(e, mes, hoje), [e, mes, hoje]);
   const r = useMemo(() => resumoDoMes(e, mes, hoje), [e, mes, hoje]);
-  const acao = useMemo(() => acaoOrcamento(e, mes, hoje), [e, mes, hoje]);
-  const semLimite = linhas.filter((l) => l.limite === null && l.gasto > 0);
+  const dica = useMemo(() => {
+    const estourou = envs.find((x) => x.tom === 'perigo');
+    if (estourou) return { tom: 'perigo' as const, texto: `${estourou.categoria} passou ${brl0(-estourou.resta)} do envelope. Segure ou tire de outro envelope.` };
+    const acaba = envs.filter((x) => x.acabaDia).sort((a, b) => a.acabaDia! - b.acabaDia!)[0];
+    if (acaba) return { tom: 'aviso' as const, texto: `Nesse ritmo, ${acaba.categoria} acaba dia ${acaba.acabaDia}. Daqui pra frente, até ${brl0(acaba.porDia)} por dia nele.` };
+    if (!e.lancamentos.some((l) => l.data.slice(0, 7) === mes)) return { tom: 'dica' as const, texto: 'Toque num envelope pra anotar um gasto. Leva dois toques.' };
+    return { tom: 'ok' as const, texto: `Tudo dentro dos envelopes. Dá ${brl0(Math.max(0, r.porDia))} por dia até o fim do mês.` };
+  }, [envs, e.lancamentos, mes, r.porDia]);
+  const [anotar, setAnotar] = useState<string | null>(null);
+  const [montar, setMontar] = useState(false);
+  const gastos = gastoPorCategoria(e, mes);
+  const semEnvelope = Object.entries(gastos).filter(([c, v]) => v > 0 && !e.limites[c]);
+  const somaEnv = envs.reduce((t, x) => t + x.limite, 0);
+  const temEnvelopes = envs.length > 0;
+
+  if (e.config.renda <= 0)
+    return (
+      <>
+        <Titulo titulo="Orçamento" sub="Quanto ainda dá em cada coisa este mês." />
+        <Vazio titulo="Informe sua renda" texto="Com ela eu calculo quanto sobra pro dia a dia e divido em envelopes: mercado, transporte, lazer…" acao="Informar renda" rota="/dados" avatar="gastos" />
+      </>
+    );
+
   return (
     <>
-      <Titulo titulo="Orçamento" sub={`Pra onde vai o dinheiro e quanto ainda dá em ${nomeMes(mes)}.`} />
-      {e.config.renda <= 0 ? (
-        <Vazio titulo="Informe sua renda" texto="Sem ela eu não consigo montar a regra 50/30/20 nem sugerir limites." acao="Informar renda" rota="/dados" avatar="gastos" />
+      <Titulo titulo="Orçamento" sub={`Quanto ainda dá em cada coisa em ${nomeMes(mes)}.`} />
+
+      <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+        <div style={{ flex: 'none', width: 96 }}><Anel pct={r.pctUsado} grande={`${Math.round(r.pctUsado)}%`} sub="já foi" tamanho={96} cor={r.pctUsado > r.pctMes + 10 ? 'var(--danger)' : 'var(--gold-strong)'} /></div>
+        <div style={{ minWidth: 0 }}>
+          <span className="gs-rotulo">Ainda dá pro dia a dia</span>
+          <p className="gs-grande" style={{ margin: '2px 0' }}>{brl0(Math.max(0, r.livre))}</p>
+          <p className="gs-sub" style={{ margin: 0 }}>{brl0(Math.max(0, r.porDia))} por dia · {r.restam} {r.restam === 1 ? 'dia' : 'dias'} até o fim do mês</p>
+        </div>
+      </section>
+
+      {!temEnvelopes || montar ? (
+        <MontarOrcamento plano={plano} refazer={temEnvelopes} onFeito={() => setMontar(false)} />
       ) : (
         <>
-          <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div style={{ flex: 'none', width: 104 }}><Anel pct={r.pctUsado} grande={`${Math.round(r.pctUsado)}%`} sub="usado" tamanho={104} cor={r.pctUsado > r.pctMes + 10 ? 'var(--danger)' : 'var(--gold-strong)'} /></div>
-            <div>
-              <span className="gs-rotulo">Você pode gastar hoje</span>
-              <p className="gs-grande" style={{ margin: '2px 0' }}>{brl0(Math.max(0, r.porDia))}</p>
-              <p className="gs-sub" style={{ margin: 0 }}>Restam {r.restam} {r.restam === 1 ? 'dia' : 'dias'} no mês</p>
-            </div>
-          </section>
-          <section className="gs-card">
-            <Barra pct={r.pctUsado} tom={r.pctUsado > r.pctMes + 10 ? 'perigo' : 'ok'} rotulo="Quanto do dinheiro já foi" />
-            <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 14 }}>Você gastou {brl0(r.gastoVar)} e ainda dá {brl0(Math.max(0, r.livre))}. O mês passou {Math.round(r.pctMes)}% e o seu dinheiro, {Math.round(r.pctUsado)}%.</p>
-          </section>
-          <section className="gs-card">
-            <span className="gs-rotulo">O que fazer agora</span>
-            <p style={{ margin: '6px 0 0' }}><span className={`gs-etiqueta ${acao.tom === 'ok' ? 'ok' : acao.tom === 'perigo' ? 'perigo' : 'aviso'}`} style={{ marginRight: 8 }}>{acao.tom === 'ok' ? 'No trilho' : acao.tom === 'perigo' ? 'Atenção' : 'Cuidado'}</span>{acao.texto.replace(/^No trilho\.?\s*/, '')}</p>
-            {acao.rota && <Link to={acao.rota} className="gs-btn" style={{ marginTop: 10 }}>Anotar um gasto</Link>}
-          </section>
-
-          {total > 0 && (
-            <details className="gs-card" style={{ padding: '4px 20px' }}>
-              <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Ver para onde foi o dinheiro</summary>
-              <Rosquinha fatias={linhas.map((l) => ({ id: l.categoria, cor: corDe(l.categoria), valor: l.gasto }))} centro={brl0(total)} sub="no mês" />
-            </details>
+          <Agora tom={dica.tom} texto={dica.texto} />
+          {somaEnv > plano.base.diaADia + 10 && (
+            <Dica>Seus envelopes somam {brl0(somaEnv)}, mas este mês só dá {brl0(plano.base.diaADia)} pro dia a dia. <button type="button" className="gs-btn link" onClick={() => setMontar(true)}>Reajustar</button></Dica>
           )}
-
-          <section className="gs-card">
-            <span className="gs-rotulo">Limite por categoria</span>
-            {semLimite.length > 0 && (
-              <Dica icone={<Info size={18} />}>
-                {semLimite.length} categoria{semLimite.length > 1 ? 's' : ''} sem limite.{' '}
-                <button type="button" className="gs-btn link" style={{ minHeight: 32 }} onClick={() => { semLimite.forEach((l) => definirLimite(l.categoria, limiteSugerido(l.categoria, e.config.renda))); toast('Limites sugeridos aplicados'); }}>Usar os sugeridos</button>
-              </Dica>
-            )}
-            {linhas.filter((l) => l.gasto > 0 || l.limite).map((l) => (
-              <div key={l.categoria} style={{ marginTop: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                  <b><i style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: corDe(l.categoria), marginRight: 8 }} />{l.categoria}</b>
-                  <span className="gs-valor">{brl(l.gasto)}{l.limite ? <span className="gs-mudo"> de {brl0(l.limite)}</span> : null}</span>
-                </div>
-                {l.limite ? <Barra pct={Math.min(100, l.pct ?? 0)} tom={l.tom === 'perigo' ? 'perigo' : l.tom === 'ok' ? 'ok' : ''} rotulo={`Limite de ${l.categoria}`} /> : <p className="gs-mudo" style={{ margin: '4px 0 0', fontSize: 13 }}>Sem limite · <button type="button" className="gs-btn link" style={{ minHeight: 32 }} onClick={() => definirLimite(l.categoria, limiteSugerido(l.categoria, e.config.renda))}>Definir {brl0(limiteSugerido(l.categoria, e.config.renda))}</button></p>}
-                {l.limite && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                    <small className="gs-mudo">{(l.pct ?? 0) > 100 ? `Passou ${brl0(l.gasto - l.limite)}` : `Sobra ${brl0(l.limite - l.gasto)}`}</small>
-                    <span style={{ whiteSpace: 'nowrap', flex: 'none' }}>
-                      <button type="button" className="gs-btn link pequeno" aria-label={`Diminuir limite de ${l.categoria}`} onClick={() => definirLimite(l.categoria, Math.max(50, l.limite! - 50))}>− R$ 50</button>
-                      <button type="button" className="gs-btn link pequeno" aria-label={`Aumentar limite de ${l.categoria}`} onClick={() => definirLimite(l.categoria, l.limite! + 50)}>+ R$ 50</button>
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </section>
-          <details className="gs-card" style={{ padding: '4px 20px', marginTop: 12 }}>
-            <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Regra 50/30/20 com os seus números</summary>
-            <div style={{ paddingBottom: 12 }}>
-              {regra.map((x) => (
-                <div key={x.nome} style={{ marginTop: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <b>{x.nome}</b>
-                    <span className="gs-valor">{Math.round(x.pct)}% <span className="gs-mudo">(ideal {x.menorMelhor ? '≤' : '≥'} {x.ideal}%)</span></span>
-                  </div>
-                  <Barra pct={Math.min(100, (x.pct / (x.ideal * 1.4)) * 100)} tom={x.ok ? 'ok' : 'perigo'} rotulo={x.nome} />
+          <div className="gs-envelopes">
+            {envs.map((x) => <CartaoEnvelope key={x.categoria} env={x} onAnotar={() => setAnotar(x.categoria)} />)}
+          </div>
+          {semEnvelope.length > 0 && (
+            <section className="gs-card">
+              <span className="gs-rotulo">Gastos fora dos envelopes</span>
+              {semEnvelope.map(([c, v]) => (
+                <div key={c} className="gs-linha" style={{ minHeight: 48 }}>
+                  <div className="gs-corpo"><b>{c}</b><small>{brl0(v)} este mês</small></div>
+                  <button type="button" className="gs-btn pequeno sec" onClick={() => { definirLimite(c, Math.max(50, Math.ceil((v * 1.2) / 50) * 50)); toast(`Envelope de ${c} criado`); }}>Criar envelope</button>
                 </div>
               ))}
-              <Dica>
-                {regra[0]?.pct > 50
-                  ? 'Suas necessidades passam de 50% da renda. O maior peso costuma ser a casa: renegociar o aluguel ou dividir custos muda o jogo.'
-                  : regra[2]?.pct < 20
-                    ? `Falta ${brl0((e.config.renda * 20) / 100 - (regra[2].pct / 100) * e.config.renda)} pra chegar aos 20% guardados. Comece pelas assinaturas e pelo delivery.`
-                    : 'Você está dentro da regra. Mantenha.'}
-              </Dica>
-            </div>
-          </details>
+            </section>
+          )}
+          <div className="gs-acoes">
+            <button type="button" className="gs-btn sec" onClick={() => setMontar(true)}>Refazer a divisão</button>
+            <Link to="/mes?aba=dia" className="gs-btn link">Ver todos os gastos</Link>
+          </div>
         </>
       )}
+
+      <MaisAjuda titulo="De onde vem esse valor">
+        <ContaDoMes plano={plano} />
+      </MaisAjuda>
+      <MaisAjuda titulo="Regra 50/30/20 e para onde foi o dinheiro">
+        <Regra />
+      </MaisAjuda>
+
+      <AnotarSheet categoria={anotar} hoje={hoje} onFechar={() => setAnotar(null)} />
+    </>
+  );
+}
+
+/* ---------- montar: a divisão sugerida, ajustável, com 1 toque pra usar ---------- */
+function MontarOrcamento({ plano, refazer, onFeito }: { plano: ReturnType<typeof planoDeOrcamento>; refazer: boolean; onFeito: () => void }) {
+  const [valores, setValores] = useState<Record<string, number>>(() => Object.fromEntries(plano.itens.map((i) => [i.categoria, i.valor])));
+  const soma = Object.values(valores).reduce((t, v) => t + v, 0);
+  const passa = soma - plano.base.diaADia;
+  const muda = (c: string, d: number) => setValores((v) => ({ ...v, [c]: Math.max(0, (v[c] ?? 0) + d) }));
+  return (
+    <section className="gs-card">
+      <span className="gs-rotulo">{refazer ? 'Refazer a divisão' : 'Monte seu orçamento em 1 toque'}</span>
+      <p style={{ margin: '6px 0 4px' }}>
+        Este mês sobram <b>{brl0(plano.base.diaADia)}</b> pro dia a dia.{' '}
+        {plano.fonte === 'historico'
+          ? plano.costuma > plano.base.diaADia
+            ? `Você costuma gastar ${brl0(plano.costuma)}: eu cortei um pouco de cada pra caber.`
+            : `Eu dividi pelo que você costuma gastar (${brl0(plano.costuma)} por mês).`
+          : 'Eu dividi por partes da sua renda. Quando você anotar os gastos, a divisão fica do seu jeito.'}
+      </p>
+      {Object.entries(valores).map(([c, v]) => (
+        <div key={c} className="gs-linha" style={{ minHeight: 52 }}>
+          <i className="gs-env-cor" style={{ background: corDe(c) }} aria-hidden="true" />
+          <div className="gs-corpo"><b>{c}</b></div>
+          <button type="button" className="gs-btn link pequeno" aria-label={`Menos em ${c}`} onClick={() => muda(c, -50)}>−50</button>
+          <span className="gs-valor" style={{ minWidth: 70, textAlign: 'center' }}>{brl0(v)}</span>
+          <button type="button" className="gs-btn link pequeno" aria-label={`Mais em ${c}`} onClick={() => muda(c, 50)}>+50</button>
+        </div>
+      ))}
+      <p className="gs-nota" style={{ color: passa > 0 ? 'var(--danger)' : undefined }}>
+        {passa > 0 ? `Passou ${brl0(passa)} do que dá. Tire de algum envelope.` : passa < 0 ? `Ficam ${brl0(-passa)} sem envelope: bom pra imprevisto ou pra guardar.` : 'Fechou certinho.'}
+      </p>
+      <div className="gs-acoes">
+        {refazer && <button type="button" className="gs-btn sec" onClick={onFeito}>Cancelar</button>}
+        <button
+          type="button"
+          className="gs-btn"
+          disabled={soma <= 0}
+          onClick={() => {
+            Object.entries(valores).forEach(([c, v]) => definirLimite(c, v));
+            toast('Orçamento montado. Agora é acompanhar os envelopes.');
+            onFeito();
+          }}
+        >
+          {refazer ? 'Salvar a divisão' : 'Usar esse orçamento'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function CartaoEnvelope({ env, onAnotar }: { env: Envelope; onAnotar: () => void }) {
+  const pctUsado = env.limite > 0 ? (env.gasto / env.limite) * 100 : 0;
+  return (
+    <button type="button" className={`gs-env ${env.tom}`} onClick={onAnotar} aria-label={`${env.categoria}: anotar gasto`}>
+      <span className="gs-env-topo">
+        <i className="gs-env-cor" style={{ background: corDe(env.categoria) }} aria-hidden="true" />
+        <b>{env.categoria}</b>
+        <span className="gs-env-mais" aria-hidden="true"><Plus size={16} /></span>
+      </span>
+      <span className="gs-env-valor">{env.resta >= 0 ? brl0(env.resta) : `−${brl0(-env.resta)}`}</span>
+      <small>{env.resta >= 0 ? `ainda dá · ${brl0(env.porDia)} por dia` : 'passou do envelope'}</small>
+      <Barra pct={Math.min(100, pctUsado)} tom={env.tom === 'perigo' ? 'perigo' : env.tom === 'ok' ? 'ok' : ''} rotulo={`${env.categoria}: ${Math.round(pctUsado)}% usado`} />
+      <small className="gs-env-pe">{env.acabaDia ? `Nesse ritmo, acaba dia ${env.acabaDia}` : `${brl0(env.gasto)} de ${brl0(env.limite)}`}</small>
+    </button>
+  );
+}
+
+/* ---------- anotar direto no envelope ---------- */
+function AnotarSheet({ categoria, hoje, onFechar }: { categoria: string | null; hoje: string; onFechar: () => void }) {
+  const [v, setV] = useState(0);
+  const [desc, setDesc] = useState('');
+  return (
+    <Folha aberta={Boolean(categoria)} onFechar={() => { setV(0); setDesc(''); onFechar(); }} titulo={categoria ? `Gasto em ${categoria}` : ''}>
+      <CampoDinheiro rotulo="Quanto?" valor={v} onChange={setV} grande autoFocus />
+      <Campo rotulo="O que foi? (opcional)" valor={desc} onChange={setDesc} maxLength={80} placeholder="Ex.: padaria" />
+      <div className="gs-acoes">
+        <button type="button" className="gs-btn sec" onClick={() => { setV(0); setDesc(''); onFechar(); }}>Cancelar</button>
+        <button
+          type="button"
+          className="gs-btn"
+          disabled={!(v > 0) || !categoria}
+          onClick={() => {
+            if (!categoria || !salvarLancamento({ descricao: desc, valor: v, data: hoje, categoria })) return;
+            const novo = [...getEstado().lancamentos].reverse().find((l) => l.categoria === categoria && l.valor === Math.round(v * 100) / 100 && l.data === hoje);
+            toast(`Anotado: ${brl0(v)} em ${categoria}`, novo ? { acao: { rotulo: 'Desfazer', onClick: () => removerLancamento(novo.id) } } : undefined);
+            setV(0);
+            setDesc('');
+            onFechar();
+          }}
+        >
+          Anotar
+        </button>
+      </div>
+    </Folha>
+  );
+}
+
+function ContaDoMes({ plano }: { plano: ReturnType<typeof planoDeOrcamento> }) {
+  const b = plano.base;
+  const linhas: [string, number][] = [['Sua renda', b.renda], ['− Contas fixas', -b.fixos], ...(b.parcelas > 0 ? ([['− Parcelas de dívidas', -b.parcelas]] as [string, number][]) : []), ['− Guardar (reserva)', -b.guardar], ...(b.atraso > 0 ? ([['− Conta atrasada', -b.atraso]] as [string, number][]) : [])];
+  return (
+    <>
+      {linhas.map(([n, v]) => <div key={n} className="gs-linha" style={{ minHeight: 40 }}><div className="gs-corpo">{n}</div><span className="gs-valor">{brl0(Math.abs(v))}</span></div>)}
+      <div className="gs-linha" style={{ minHeight: 44 }}><div className="gs-corpo"><b>= Pro dia a dia</b></div><b className="gs-valor">{brl0(b.diaADia)}</b></div>
+      <p className="gs-nota">Primeiro as contas e o que você guarda. O dia a dia vive com o que sobra: assim o mês fecha no positivo.{b.atraso > 0 ? ' Enquanto tiver conta atrasada, a reserva espera.' : ''}</p>
+    </>
+  );
+}
+
+function Regra() {
+  const e = useEstado();
+  const mes = mesDe(useHoje());
+  const regra = regra503020(e, mes);
+  const g = gastoPorCategoria(e, mes);
+  const total = Object.values(g).reduce((t, v) => t + v, 0);
+  return (
+    <>
+      {regra.map((x) => (
+        <div key={x.nome} style={{ marginTop: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <b>{x.nome}</b>
+            <span className="gs-valor">{Math.round(x.pct)}% <span className="gs-mudo">(ideal {x.menorMelhor ? 'até' : 'pelo menos'} {x.ideal}%)</span></span>
+          </div>
+          <Barra pct={Math.min(100, (x.pct / (x.ideal * 1.4)) * 100)} tom={x.ok ? 'ok' : 'perigo'} rotulo={x.nome} />
+        </div>
+      ))}
+      <p className="gs-nota">50% pro que é necessário (casa, contas, mercado), 30% pro que é desejo (lazer, delivery, compras) e 20% pra guardar.</p>
+      {total > 0 && <Rosquinha fatias={Object.entries(g).map(([c, v]) => ({ id: c, cor: corDe(c), valor: v }))} centro={brl0(total)} sub="no mês" />}
     </>
   );
 }

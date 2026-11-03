@@ -1,8 +1,8 @@
 // Orçamento: o quanto de cada categoria já foi e a regra 50/30/20 com os números da pessoa. Pura, com teste.
 
-import { COR_CATEGORIA, GRUPO } from './categorias';
-import { arred, brl0, diasNoMes, diasRestantes } from './datas';
-import { lancamentosDoMes, limiteDiario, livreParaGastar, totalFixos, totalVariaveis } from './selectores';
+import { COR_CATEGORIA, GRUPO, PARTE_SUGERIDA } from './categorias';
+import { arred, brl0, diasNoMes, diasRestantes, somaMes } from './datas';
+import { atrasoNoMes, folgaMensal, guardarNoMes, lancamentosDoMes, limiteDiario, livreParaGastar, totalFixos, totalVariaveis } from './selectores';
 import type { Estado } from './tipos';
 
 export interface LinhaCategoria {
@@ -135,4 +135,91 @@ export function mesesNoLimite(e: Estado, mes: string): number {
     m = voltar(m);
   }
   return n;
+}
+
+/* ---------- envelopes: quanto dá pro dia a dia, como dividir e quando cada um acaba ---------- */
+export interface BaseDoMes {
+  renda: number;
+  fixos: number; // contas fixas do mês
+  parcelas: number; // parcelas de dívida que não estão nas contas fixas
+  guardar: number; // o que vai pra reserva (pausado quando há conta atrasada)
+  atraso: number; // o que vai pra conta atrasada
+  diaADia: number; // o que sobra pros gastos do dia a dia
+}
+export function baseDoMes(e: Estado, mes: string): BaseDoMes {
+  const renda = e.config.renda;
+  const fixos = totalFixos(e, mes);
+  const parcelas = folgaMensal(e, mes).parcelas;
+  const atraso = atrasoNoMes(e, mes);
+  const guardar = guardarNoMes(e, mes);
+  return { renda, fixos, parcelas, guardar, atraso, diaADia: Math.max(0, arred(renda - fixos - parcelas - guardar - atraso)) };
+}
+
+export const CATEGORIAS_ENVELOPE = ['Mercado', 'Transporte', 'Comida', 'Saúde', 'Lazer', 'Compras', 'Casa', 'Outros'];
+
+/** Média por categoria nos 3 meses antes deste (só os meses com gasto anotado). */
+export function mediaPorCategoria(e: Estado, mes: string): Record<string, number> {
+  const meses = [1, 2, 3].map((n) => somaMes(mes, -n)).filter((m) => lancamentosDoMes(e, m).length > 0);
+  const out: Record<string, number> = {};
+  for (const m of meses) for (const [c, v] of Object.entries(gastoPorCategoria(e, m))) out[c] = (out[c] ?? 0) + v / meses.length;
+  return Object.fromEntries(Object.entries(out).map(([c, v]) => [c, arred(v)]));
+}
+
+export interface PlanoOrcamento {
+  base: BaseDoMes;
+  itens: { categoria: string; valor: number }[];
+  fonte: 'historico' | 'renda';
+  costuma: number; // quanto costuma gastar no dia a dia (média), 0 sem histórico
+  sobra: number; // o que fica sem envelope (quando dá mais do que costuma gastar)
+}
+const desce10 = (n: number) => Math.max(0, Math.floor(n / 10) * 10);
+
+/** Divide o que dá pro dia a dia entre as categorias: pelo que a pessoa costuma gastar ou, sem histórico, por partes da renda.
+ *  Se costuma gastar mais do que dá, corta na mesma proporção. Se dá mais, o resto fica de sobra (pra guardar ou imprevisto). */
+export function planoDeOrcamento(e: Estado, mes: string): PlanoOrcamento {
+  const base = baseDoMes(e, mes);
+  const media = mediaPorCategoria(e, mes);
+  const costuma = arred(Object.values(media).reduce((t, v) => t + v, 0));
+  const fonte: PlanoOrcamento['fonte'] = costuma > 0 ? 'historico' : 'renda';
+  const pesos: Record<string, number> = fonte === 'historico' ? { ...media, Outros: Math.max(media.Outros ?? 0, costuma * 0.05) } : { ...PARTE_SUGERIDA };
+  const alvo = fonte === 'historico' ? Math.min(base.diaADia, Object.values(pesos).reduce((t, v) => t + v, 0)) : base.diaADia;
+  const somaPesos = Object.values(pesos).reduce((t, v) => t + v, 0) || 1;
+  const ordem = [...new Set([...CATEGORIAS_ENVELOPE, ...Object.keys(pesos)])].filter((c) => (pesos[c] ?? 0) > 0);
+  const itens = ordem.map((categoria) => ({ categoria, valor: desce10((alvo * pesos[categoria]) / somaPesos) })).filter((i) => i.valor > 0);
+  const usado = itens.reduce((t, i) => t + i.valor, 0);
+  // o que sobrou do arredondamento vai pro maior envelope (sem passar do que dá)
+  if (itens.length && alvo - usado >= 10) {
+    const maior = itens.reduce((m, i) => (i.valor > m.valor ? i : m), itens[0]);
+    maior.valor += desce10(alvo - usado);
+  }
+  itens.sort((a, b) => b.valor - a.valor);
+  return { base, itens, fonte, costuma, sobra: Math.max(0, arred(base.diaADia - itens.reduce((t, i) => t + i.valor, 0))) };
+}
+
+export interface Envelope {
+  categoria: string;
+  limite: number;
+  gasto: number;
+  resta: number; // negativo = passou
+  porDia: number;
+  acabaDia: number | null; // no ritmo de agora, o dia do mês em que acaba (só se acabar antes do fim)
+  tom: 'ok' | 'aviso' | 'perigo';
+}
+export function envelopes(e: Estado, mes: string, hoje: string): Envelope[] {
+  const dn = diasNoMes(mes);
+  const atual = mes === hoje.slice(0, 7);
+  const passados = atual ? Math.max(1, Number(hoje.slice(8, 10))) : dn;
+  const restam = diasRestantes(mes, hoje);
+  return linhasDeCategoria(e, mes)
+    .filter((l) => l.limite)
+    .map((l) => {
+      const limite = l.limite!;
+      const resta = arred(limite - l.gasto);
+      const ritmoDia = l.gasto / passados;
+      const acaba = atual && ritmoDia > 0 && resta > 0 ? Math.floor(limite / ritmoDia) : null;
+      const acabaDia = acaba !== null && acaba < dn ? Math.max(Number(hoje.slice(8, 10)), acaba) : null;
+      const tom: Envelope['tom'] = resta < 0 ? 'perigo' : acabaDia !== null || (l.pct ?? 0) >= 80 ? 'aviso' : 'ok';
+      return { categoria: l.categoria, limite, gasto: l.gasto, resta, porDia: arred(Math.max(0, resta) / restam), acabaDia, tom };
+    })
+    .sort((a, b) => ({ perigo: 0, aviso: 1, ok: 2 })[a.tom] - ({ perigo: 0, aviso: 1, ok: 2 })[b.tom] || b.limite - a.limite);
 }

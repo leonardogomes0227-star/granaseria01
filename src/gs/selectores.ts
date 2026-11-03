@@ -29,14 +29,30 @@ export function porMesAtraso(e: Estado, mes: string): number {
 
 /** Quanto do mês já tem destino no atraso: o que a pessoa vai tirar por mês, ou o que já tirou (se foi mais).
  *  Assim o "pode gastar" não conta com um dinheiro que é da conta atrasada. Sem atraso de mês anterior, só o que já saiu. */
+/** Tem conta de mês anterior que ficou pra trás? */
+export const temAtrasoAnterior = (e: Estado, mes: string) => atrasosAbertos(e, `${mes}-01`).some((a) => a.mes < mes);
+
 export function atrasoNoMes(e: Estado, mes: string): number {
   const saiu = e.atrasos?.saidas?.[mes] ?? 0;
-  const temAtraso = atrasosAbertos(e, `${mes}-01`).some((a) => a.mes < mes);
-  return arred(temAtraso ? Math.max(saiu, porMesAtraso(e, mes)) : saiu);
+  return arred(temAtrasoAnterior(e, mes) ? Math.max(saiu, porMesAtraso(e, mes)) : saiu);
 }
 
-/** Pode ser negativo: a pessoa gastou além da renda. */
-export const livreParaGastar = (e: Estado, mes: string) => arred(e.config.renda - totalFixos(e, mes) - totalVariaveis(e, mes) - guardadoNoMes(e, mes) - atrasoNoMes(e, mes));
+/** Quanto o mês separa pra reserva: o combinado (10% da renda ou o valor escolhido), ou o que já guardou, se foi mais.
+ *  Pausa com conta atrasada (o dinheiro vai pra ela) e quando a reserva já está completa. É o "pague-se primeiro". */
+export function guardarNoMes(e: Estado, mes: string): number {
+  const ja = guardadoNoMes(e, mes);
+  if (e.config.renda <= 0 || temAtrasoAnterior(e, mes)) return ja;
+  const meta = reservaMeta(e, mes);
+  if (meta > 0 && patrimonioGuardado(e) >= meta) return ja;
+  const plano = e.config.reservaMensal && e.config.reservaMensal > 0 ? e.config.reservaMensal : Math.round((e.config.renda * e.config.reservaPct) / 100);
+  return arred(Math.max(ja, plano));
+}
+
+/** O que sai do mês antes do dia a dia: contas fixas, parcelas de dívida, o que vai pra reserva e pra conta atrasada. */
+export const compromissosDoMes = (e: Estado, mes: string) => arred(totalFixos(e, mes) + folgaMensal(e, mes).parcelas + guardarNoMes(e, mes) + atrasoNoMes(e, mes));
+
+/** Pode ser negativo: a pessoa gastou além da renda. Já desconta as contas, as parcelas, a reserva combinada e o atraso. */
+export const livreParaGastar = (e: Estado, mes: string) => arred(e.config.renda - compromissosDoMes(e, mes) - totalVariaveis(e, mes));
 
 export const limiteDiario = (e: Estado, mes: string, hojeISO: string) => arred(Math.max(0, livreParaGastar(e, mes)) / diasRestantes(mes, hojeISO));
 
