@@ -39,7 +39,7 @@ export function Plano() {
       itens: [
         I('/plano/atrasos', CalendarClock, 'Sair do atraso', atraso.atrasos.length ? `${atraso.atrasos.length} ${atraso.atrasos.length === 1 ? 'conta atrasada' : 'contas atrasadas'} · ${brl0(atraso.total)}${atraso.plano.emDiaEm && atraso.plano.meses > 1 ? ` · em dia em ${mesCurto(atraso.plano.emDiaEm)}` : ''}` : 'Nenhuma conta atrasada', 'atraso atrasada atrasei parcela atrasada nao consegui pagar bola de neve multa em dia'),
         I('/plano/dividas', Target, 'Quitar dívidas', total > 0 ? `${brl0(total)} em aberto${sim?.dataFinal ? ` · quita em ${mesCurto(sim.dataFinal)}` : ''}` : e.dividas.length ? 'Tudo quitado' : 'Monte o caminho até zerar', 'divida devo juros banco negociar'),
-        I('/plano/emprestimos', Landmark, 'Comparar empréstimos', 'Custo real de cada oferta', 'emprestimo financiamento juros oferta'),
+        I('/plano/emprestimos', Landmark, 'Empréstimo', 'Quanto de juros você vai pagar', 'emprestimo financiamento juros oferta taxa parcela quanto custa'),
         I('/plano/cartao', CreditCard, 'Cartão de crédito', e.cartao && e.cartao.limite > 0 ? `${Math.round((e.cartao.usado / e.cartao.limite) * 100)}% do limite` : 'Fatura, limite e melhor dia', 'cartao fatura limite credito'),
       ],
     },
