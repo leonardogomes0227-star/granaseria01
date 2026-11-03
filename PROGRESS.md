@@ -11,6 +11,8 @@
 - **Investir:** dados ao vivo (Banco Central, CoinGecko), simulação, chat, plano.
 - **Avisos no app:** conta a vencer, parcela de dívida, fatura do cartão, categoria que estourou, salário caiu e não guardou.
 
+- **Visual (nov/26):** dicas e "Pra entender" com fundo e borda (a cor `--gold-soft` não existia), texto secundário mais escuro, próximas ações sem espremer o texto, "Dar baixa" só em dourado quando a conta vence logo ou atrasou, aviso do topo mais curto.
+
 ## Falta
 - **WhatsApp:** lembretes e "paguei 200 do cartão" por mensagem. Precisa do número da API configurado e de modelos de mensagem aprovados pela Meta.
 - **Código antigo** com os nomes dos agentes antigos (Dabasir, Bansir, Arkad…) ainda está no repositório, sem rota. A exclusão em massa foi bloqueada pelo ambiente. Precisa de autorização do dono. Depois: `grep -ri "dabasir\|bansir\|arkad\|nomasir\|sharru\|mathon\|rodan" src server api public` até zerar.

@@ -166,7 +166,7 @@ export function Atrasos() {
                 <span className={`gs-etiqueta ${aPagarAgora.has(a.chave) ? 'aviso' : ''}`}>{aPagarAgora.has(a.chave) ? 'Pagar agora' : NIVEIS[a.nivel].nome}</span>
               </div>
             </div>
-            <div className="gs-conta-acoes" style={{ flexWrap: 'wrap' }}>
+            <div className="gs-conta-acoes">
               <button type="button" className="gs-btn pequeno" onClick={() => setPagar({ a, valor: valorAgora(a) })}>Paguei</button>
               <button
                 type="button"
@@ -178,7 +178,6 @@ export function Atrasos() {
               >
                 Já tinha pago
               </button>
-              <span style={{ flex: 1 }} />
               <button
                 type="button"
                 className="gs-btn link"
