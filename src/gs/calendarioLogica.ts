@@ -1,6 +1,6 @@
 // Calendário: contas fixas, parcelas de dívidas e fatura do cartão num lugar só. Pura, com teste.
 
-import { diasEntre, vencimentoNoMes } from './datas';
+import { diasEntre, somaMes, vencimentoNoMes } from './datas';
 import { contasDoMes, estaPaga } from './selectores';
 import { pagoNaDivida } from './painelDividas';
 import { saldoAtual } from './dividas';
@@ -67,3 +67,62 @@ export function mesesEmDia(e: Estado, mes: string): number {
   }
   return n;
 }
+
+/* ---------- de salário a salário: o que vence nesse intervalo e quanto sobra depois de cada conta ---------- */
+export interface Ciclo {
+  inicio: string; // dia em que o salário caiu (o último, até hoje)
+  proximo: string; // o próximo salário
+}
+/** O ciclo atual: do último salário (incluindo hoje) até o próximo. Dia 29 a 31 em mês curto vira o último dia. */
+export function cicloDoSalario(diaSalario: number, hoje: string): Ciclo {
+  const mes = hoje.slice(0, 7);
+  const desteMes = vencimentoNoMes(mes, diaSalario);
+  const inicio = desteMes <= hoje ? desteMes : vencimentoNoMes(somaMes(mes, -1), diaSalario);
+  return { inicio, proximo: vencimentoNoMes(somaMes(inicio.slice(0, 7), 1), diaSalario) };
+}
+
+export interface PassoDoCiclo extends Evento {
+  sobra: number; // quanto do salário sobra depois desta conta (pagas e a pagar, na ordem)
+}
+export interface LinhaDoCiclo {
+  ciclo: Ciclo;
+  renda: number;
+  passos: PassoDoCiclo[];
+  total: number;
+  pago: number;
+  falta: number;
+  sobra: number; // renda − contas do ciclo
+}
+export function linhaDoCiclo(e: Estado, hoje: string): LinhaDoCiclo | null {
+  const dia = e.config.diaSalario;
+  if (!dia) return null;
+  const ciclo = cicloDoSalario(dia, hoje);
+  const meses = [...new Set([ciclo.inicio.slice(0, 7), ciclo.proximo.slice(0, 7)])];
+  const vistos = new Set<string>();
+  const eventos = meses
+    .flatMap((m) => eventosDoMes(e, m, hoje))
+    .filter((x) => x.data >= ciclo.inicio && x.data < ciclo.proximo && !vistos.has(x.id + x.data) && vistos.add(x.id + x.data))
+    .sort((a, b) => a.data.localeCompare(b.data) || a.nome.localeCompare(b.nome));
+  let saldo = e.config.renda;
+  const passos = eventos.map((x) => {
+    saldo -= x.valor;
+    return { ...x, sobra: Math.round(saldo * 100) / 100 };
+  });
+  const total = eventos.reduce((t, x) => t + x.valor, 0);
+  const pago = eventos.filter((x) => x.paga).reduce((t, x) => t + x.valor, 0);
+  return { ciclo, renda: e.config.renda, passos, total, pago, falta: Math.round((total - pago) * 100) / 100, sobra: Math.round((e.config.renda - total) * 100) / 100 };
+}
+
+/** Contas fixas que vencem antes do salário cair: apertam todo mês. Sugere um dia logo depois do salário. */
+export function vencemAntesDoSalario(e: Estado): { id: string; nome: string; dia: number; sugerido: number; valor: number }[] {
+  const s = e.config.diaSalario;
+  if (!s) return [];
+  const sugerido = Math.min(28, s + 2);
+  return e.gastosFixos
+    .filter((g) => g.diaVencimento < s)
+    .map((g) => ({ id: g.id, nome: g.nome, dia: g.diaVencimento, sugerido, valor: g.valor }))
+    .sort((a, b) => a.dia - b.dia);
+}
+
+export const pedidoDeVencimento = (nome: string, dia: number) =>
+  `Olá, tudo bem? Quero mudar a data de vencimento da minha conta (${nome}) para o dia ${dia}, que fica logo depois de eu receber o salário. É possível? Obrigado.`;

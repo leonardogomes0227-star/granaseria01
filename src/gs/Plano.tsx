@@ -47,7 +47,7 @@ export function Plano() {
       nome: 'Controlar o mês',
       itens: [
         I('/plano/orcamento', ChartPie, 'Orçamento', e.config.renda > 0 && noLimite ? `${noLimite} categoria${noLimite > 1 ? 's' : ''} no limite` : 'Limite por categoria e 50/30/20', 'orcamento limite categoria gastos 50 30 20'),
-        I('/plano/calendario', CalendarDays, 'Calendário de contas', e.gastosFixos.length ? `${aPagar} a pagar neste mês` : 'O que vence e quando', 'calendario contas vencimento boleto'),
+        I('/plano/calendario', CalendarDays, 'Calendário de contas', e.gastosFixos.length ? `${aPagar} a pagar · o que sobra até o salário` : 'Do salário até o próximo salário', 'calendario contas vencimento boleto salario'),
         I('/plano/assinaturas', Search, 'Gastos escondidos', assinaturasTotal(e) > 0 ? `${brl0(assinaturasTotal(e))} por mês` : 'Ache o que você paga sem ver', 'assinaturas streaming gastos escondidos'),
       ],
     },
