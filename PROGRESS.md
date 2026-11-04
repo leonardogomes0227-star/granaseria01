@@ -13,6 +13,9 @@
 
 - **Visual (nov/26):** dicas e "Pra entender" com fundo e borda (a cor `--gold-soft` não existia), texto secundário mais escuro, próximas ações sem espremer o texto, "Dar baixa" só em dourado quando a conta vence logo ou atrasou, aviso do topo mais curto.
 
+- **Ferramentas refeitas (nov/26):** Investir abre num caminho em passos (atraso → dívida cara → reserva → perfil → investir); Empréstimo mostra quanto de juros você paga (taxa ao mês e ao ano, por prazo); Orçamento em envelopes (monta sozinho, "acaba dia N", anota no envelope); Calendário de salário a salário (o que sobra depois de cada conta, contas que vencem antes do salário); Reserva como jogo (fases, missão do mês, medalhas, meta explicada); Dinheiro extra com rumo em cascata (atraso → dívida cara → reserva → investir, com 1 toque); Viver de renda em degraus com as contas da pessoa; Posso comprar com carimbo, horas em blocos, comparações e 3 perguntas; À vista ou parcelado como duelo (juro escondido, desconto, meses pagando).
+- **"Pode gastar" igual em todo o app:** desconta contas fixas, parcelas de dívida, a reserva combinada (pausa com atraso ou reserva completa) e o atraso. Dinheiro extra guardado não conta como saída do mês.
+
 ## Falta
 - **WhatsApp:** lembretes e "paguei 200 do cartão" por mensagem. Precisa do número da API configurado e de modelos de mensagem aprovados pela Meta.
 - **Código antigo** com os nomes dos agentes antigos (Dabasir, Bansir, Arkad…) ainda está no repositório, sem rota. A exclusão em massa foi bloqueada pelo ambiente. Precisa de autorização do dono. Depois: `grep -ri "dabasir\|bansir\|arkad\|nomasir\|sharru\|mathon\|rodan" src server api public` até zerar.

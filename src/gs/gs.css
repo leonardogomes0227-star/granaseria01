@@ -560,3 +560,21 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-conselho.aviso { background: #FBF0D9; color: var(--gold-texto); }
 .gs-conselho.perigo { background: #F6E2DD; color: var(--danger); }
 @media (prefers-reduced-motion: reduce) { .gs-carimbo, .gs-medidor i, .gs-dias-trab span, .gs-conselho { animation: none; } }
+/* À vista ou parcelado: o duelo */
+.gs-duelo { display: grid; grid-template-columns: 1fr auto 1fr; align-items: stretch; gap: 8px; margin: 12px 0; }
+.gs-lado { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 22px 10px 12px; border-radius: 20px; background: var(--surface); border: 2px solid var(--line); text-align: center; box-shadow: var(--sombra); animation: gs-rumo-entra .45s var(--curva) both; }
+.gs-lado:last-child { animation-delay: .1s; }
+.gs-lado.vence { border-color: var(--success); background: #F4F9F2; }
+.gs-lado-total { font-size: clamp(20px, 6vw, 26px); font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.gs-lado small { color: var(--ink-muted); font-size: 12.5px; }
+.gs-lado-barra { width: 46px; height: 90px; margin-top: 10px; border-radius: 10px; background: var(--bg-2); display: flex; align-items: flex-end; overflow: hidden; }
+.gs-lado-barra i { display: block; width: 100%; background: var(--gold); border-radius: 10px 10px 0 0; animation: gs-sobe .9s var(--curva) both; }
+.gs-lado-barra.parc i { background: #C76450; }
+.gs-lado.vence .gs-lado-barra i { background: var(--success); }
+@keyframes gs-sobe { from { height: 0; } }
+.gs-vs { align-self: center; font-weight: 900; font-size: 14px; color: var(--ink-muted); text-transform: uppercase; }
+.gs-selo { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; background: var(--success); color: #fff; font-size: 11px; font-weight: 800; white-space: nowrap; animation: gs-carimbo .5s .35s cubic-bezier(.2, 1.6, .4, 1) both; }
+.gs-parcelas-tempo { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.gs-parcelas-tempo span { padding: 6px 8px; border-radius: 8px; background: #F6E2DD; color: #8A3B2D; font-size: 11.5px; font-weight: 800; text-transform: uppercase; animation: gs-rumo-entra .3s var(--curva) both; }
+.gs-parcelas-tempo span.mais { background: var(--bg-2); color: var(--ink-muted); }
+@media (prefers-reduced-motion: reduce) { .gs-lado, .gs-lado-barra i, .gs-selo, .gs-parcelas-tempo span { animation: none; } }
