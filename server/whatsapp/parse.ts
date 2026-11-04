@@ -258,7 +258,8 @@ export function parseMessage(input: string): Command {
 
   // vários gastos numa frase: "40 na feira e 20 na padaria", "uber 20, almoço 35"
   const prepared = extractDaysAgo(expandThousands(stripOrdinals(text)));
-  const parts = prepared.text.split(/\s*(?:,|;|\+|\be\b|\bmais\b)\s*/i).filter((p) => p.trim());
+  // a vírgula separa gastos ("uber 20, almoço 35"), mas não quando é a do decimal ("uber 18,50")
+  const parts = prepared.text.split(/\s*(?:,(?!\d)|;|\+|\be\b|\bmais\b)\s*/i).filter((p) => p.trim());
   if (parts.length >= 2 && parts.every((p) => (p.match(/\d/g) ? [...p.matchAll(AMOUNT_RE)].length === 1 : false))) {
     const items = parts.map((p) => parseOneExpense(p)).filter((x): x is NonNullable<typeof x> => x !== null);
     if (items.length === parts.length) {
