@@ -533,3 +533,30 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-renda-conta b { color: var(--ink); font-size: 17px; font-weight: 800; white-space: nowrap; }
 .gs-renda-conta > div:nth-child(2) { background: var(--gold-soft); border: 1px solid rgba(184, 134, 11, .3); }
 .gs-renda-conta > div:nth-child(2) b { color: var(--gold-texto); font-size: 21px; }
+/* Posso comprar isso?: carimbo do veredito, medidor, dias de trabalho e perguntas */
+.gs-veredito { position: relative; overflow: hidden; border-width: 2px; }
+.gs-veredito.cabe { border-color: var(--success); background: #F4F9F2; }
+.gs-veredito.aperta { border-color: var(--gold-strong); background: #FDF8EC; }
+.gs-veredito.nao-cabe { border-color: var(--danger); background: #FDF5F2; }
+.gs-carimbo { display: inline-block; padding: 6px 16px; border: 3px solid currentColor; border-radius: 10px; font-weight: 900; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; transform: rotate(-4deg); animation: gs-carimbo .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.gs-veredito.cabe .gs-carimbo { color: var(--success); }
+.gs-veredito.aperta .gs-carimbo { color: var(--gold-texto); }
+.gs-veredito.nao-cabe .gs-carimbo { color: var(--danger); }
+@keyframes gs-carimbo { from { opacity: 0; transform: rotate(-4deg) scale(2.2); } }
+.gs-medidor { height: 12px; border-radius: 999px; background: rgba(44, 34, 30, .08); overflow: hidden; margin-top: 8px; }
+.gs-medidor i { display: block; height: 100%; border-radius: 999px; animation: gs-xp-entra 1s var(--curva) both; }
+.gs-veredito.cabe .gs-medidor i { background: var(--success); }
+.gs-veredito.aperta .gs-medidor i { background: var(--gold-strong); }
+.gs-veredito.nao-cabe .gs-medidor i { background: var(--danger); }
+.gs-dias-trab { display: flex; flex-wrap: wrap; gap: 6px; }
+.gs-dias-trab span { position: relative; width: 34px; height: 34px; border-radius: 9px; background: var(--bg-2); border: 1px solid var(--line); overflow: hidden; animation: gs-rumo-entra .35s var(--curva) both; }
+.gs-dias-trab span i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(135deg, #E9B04C, #B8860B); }
+.gs-equiv-ic { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: var(--gold-soft); color: var(--gold-texto); }
+.gs-pergunta { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.gs-pergunta p { margin: 0 0 6px; font-weight: 700; }
+.gs-pergunta .gs-chips { margin: 0; }
+.gs-conselho { margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; font-weight: 700; line-height: 22px; animation: gs-rumo-entra .35s var(--curva) both; }
+.gs-conselho.ok { background: #E8F0E4; color: #2F5A2B; }
+.gs-conselho.aviso { background: #FBF0D9; color: var(--gold-texto); }
+.gs-conselho.perigo { background: #F6E2DD; color: var(--danger); }
+@media (prefers-reduced-motion: reduce) { .gs-carimbo, .gs-medidor i, .gs-dias-trab span, .gs-conselho { animation: none; } }
