@@ -221,6 +221,12 @@ export function separarParaAtraso(valor: number, mes = hojeSP().slice(0, 7)): bo
   atualizar((e) => comAtrasos(e, (c) => somaSaida({ ...c, separado: arred(c.separado + valor) }, mes, valor)));
   return true;
 }
+/** Dinheiro extra guardado pra uma conta atrasada: vai pro separado, sem mexer no dinheiro do mês. */
+export function separarExtraParaAtraso(valor: number): Desfazer | null {
+  if (!ok(valor)) return null;
+  atualizar((e) => comAtrasos(e, (c) => ({ ...c, separado: arred(c.separado + valor) })));
+  return { desfazer: () => atualizar((e) => comAtrasos(e, (c) => ({ ...c, separado: Math.max(0, arred(c.separado - valor)) }))) };
+}
 export const desfazerSeparar = (valor: number, mes: string) => atualizar((e) => comAtrasos(e, (c) => somaSaida({ ...c, separado: Math.max(0, arred(c.separado - valor)) }, mes, -valor)));
 
 /** Tudo em dia e sobrou dinheiro separado: ele volta pro mês. */
@@ -237,7 +243,8 @@ export interface Desfazer {
   desfazer: () => void;
 }
 /** Pagou uma conta ou parcela atrasada: dá baixa (ou registra na dívida) e usa primeiro o dinheiro separado. */
-export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer | null {
+/** `extra`: pago com dinheiro extra (13º, bônus): não mexe no separado nem no dinheiro do mês. */
+export function pagarAtraso(a: Atraso, valor: number, data = hojeSP(), opts: { extra?: boolean } = {}): Desfazer | null {
   if (!ok(valor)) return null;
   const mes = data.slice(0, 7);
   let uso = { doSeparado: 0, doMes: 0 };
@@ -245,7 +252,7 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP()): Desfazer
   const dataDivida = a.mes < mes ? a.vencimento : data;
   const guardado = a.fonte === 'manual' ? (cfgAtrasos(getEstado()).manuais ?? []).find((m) => m.id === a.refId) : undefined;
   atualizar((e) => {
-    uso = deOndeSai(arred(valor), cfgAtrasos(e).separado, a.mes, mes);
+    uso = opts.extra ? { doSeparado: 0, doMes: 0 } : deOndeSai(arred(valor), cfgAtrasos(e).separado, a.mes, mes);
     const manual = a.fonte === 'manual' ? (cfgAtrasos(e).manuais ?? []).find((m) => m.id === a.refId) : undefined;
     const pago: Estado = manual
       ? {

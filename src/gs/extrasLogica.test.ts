@@ -22,3 +22,43 @@ describe('dinheiro extra', () => {
   });
   it('meses de proteção', () => expect(mesesDeProtecao(2000, 2000)).toBe(1));
 });
+
+import { rumoDoExtra } from './extrasLogica';
+import { ESTADO_INICIAL as INICIAL } from './tipos';
+
+describe('rumo do dinheiro extra', () => {
+  const base = () => {
+    const e = INICIAL();
+    e.config.renda = 3000;
+    e.gastosFixos = [{ id: 'casa', nome: 'Parcela da casa', valor: 1000, diaVencimento: 10, categoria: 'Financiamento', pagamentos: { '2026-10': { valorPago: 1000, pagoEm: '2026-10-10' } }, criadaEm: '2026-10-01' }];
+    e.dividas = [
+      { id: 'c', nome: 'Cartão', saldo: 1500, jurosMensal: 12, parcelaMinima: 150, pagamentos: [] },
+      { id: 'f', nome: 'Financiamento', saldo: 20000, jurosMensal: 1, parcelaMinima: 600, pagamentos: [] },
+    ];
+    return e;
+  };
+  it('13º de R$ 3.000: 10% pra você, quita o cartão, o resto pra reserva', () => {
+    const r = rumoDoExtra(base(), '2026-11-05', 3000); // antes do vencimento da casa (dia 10)
+    expect(r.destinos.map((d) => [d.tipo, d.titulo, d.valor])).toEqual([
+      ['divida', 'Quitar: Cartão', 1500],
+      ['reserva', 'Reserva de emergência', 1200],
+      ['voce', 'Pra você', 300],
+    ]);
+    expect(r.manchete).toBe('Com esse dinheiro você quita Cartão e reforça a reserva.');
+  });
+  it('conta atrasada vem antes de tudo; se não fecha inteira, guarda pra ela', () => {
+    const e = base();
+    e.gastosFixos[0].pagamentos = {};
+    const r = rumoDoExtra(e, '2026-11-20', 800, 0);
+    expect(r.destinos.map((d) => d.tipo)).toEqual(['separar-atraso']);
+    const r2 = rumoDoExtra(e, '2026-11-20', 1200, 0);
+    expect(r2.destinos[0]).toMatchObject({ tipo: 'atraso', titulo: 'Pôr em dia: Parcela da casa (out/26)' });
+  });
+  it('dívida barata não entra; sem nada a fazer, sobra pra investir', () => {
+    const e = base();
+    e.dividas = [e.dividas[1]];
+    e.aportes = [{ id: 'x', data: '2026-01-01', valor: 50000, origem: 'reserva' }];
+    const r = rumoDoExtra(e, '2026-11-05', 1000, 20);
+    expect(r.destinos.map((d) => [d.tipo, d.valor])).toEqual([['investir', 800], ['voce', 200]]);
+  });
+});

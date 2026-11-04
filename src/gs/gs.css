@@ -512,3 +512,17 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-medalha.on span { background: linear-gradient(135deg, #E9B04C, #B8860B); color: #fff; border: 0; box-shadow: 0 4px 10px -4px rgba(184, 134, 11, .7); }
 .gs-medalha.on small { color: var(--ink); font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .gs-fase.atual .gs-fase-no, .gs-xp i { animation: none; } }
+/* Dinheiro extra: o rumo, um destino por linha */
+.gs-rumo { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 8px; counter-reset: rumo; }
+.gs-rumo-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sombra); animation: gs-rumo-entra .45s var(--curva) both; }
+.gs-rumo-item:nth-child(2) { animation-delay: .08s; } .gs-rumo-item:nth-child(3) { animation-delay: .16s; } .gs-rumo-item:nth-child(4) { animation-delay: .24s; } .gs-rumo-item:nth-child(5) { animation-delay: .32s; }
+@keyframes gs-rumo-entra { from { opacity: 0; transform: translateY(8px); } }
+.gs-rumo-item .gs-corpo { flex: 1; min-width: 0; }
+.gs-rumo-item b { display: block; font-size: 15px; }
+.gs-rumo-item small { display: block; color: var(--ink-muted); font-size: 13px; line-height: 18px; margin-top: 2px; }
+.gs-rumo-ic { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 14px; background: #120E0C; color: #D8B060; }
+.gs-rumo-item.atraso .gs-rumo-ic, .gs-rumo-item.separar-atraso .gs-rumo-ic { background: #F6E2DD; color: var(--danger); }
+.gs-rumo-item.divida .gs-rumo-ic { background: #FBF0D9; color: var(--gold-texto); }
+.gs-rumo-item.reserva .gs-rumo-ic { background: #E8F0E4; color: var(--success); }
+.gs-rumo-item.voce { background: var(--gold-soft); border-color: rgba(184, 134, 11, .3); }
+@media (prefers-reduced-motion: reduce) { .gs-rumo-item { animation: none; } }
