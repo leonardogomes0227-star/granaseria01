@@ -6,9 +6,8 @@ import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
 import { paraSim, saldoAtual, simular } from './dividas';
 import { assinaturasTotal } from './resumos';
-import { contasDoMes, patrimonioGuardado, reservaMeta, gastoMensalMedio } from './selectores';
+import { contasDoMes, patrimonioGuardado, reservaMeta } from './selectores';
 import { saudeFinanceira } from './saude';
-import { patrimonioParaRenda } from './ferramentas';
 import { Anel } from './graficos';
 import { Titulo } from './ui';
 import { linhasDeCategoria } from './orcamento';
@@ -27,7 +26,6 @@ export function Plano() {
   const s = saudeFinanceira(e, mes, hoje);
   const aPagar = contasDoMes(e, mes, hoje).filter((c) => c.estado !== 'paga').length;
   const noLimite = linhasDeCategoria(e, mes).filter((l) => l.tom === 'aviso' || l.tom === 'perigo').length;
-  const alvoRenda = patrimonioParaRenda(gastoMensalMedio(e, mes), 0.7);
   const meta = reservaMeta(e, mes);
   const esperando = e.desejos.filter((d) => d.status === 'esperando').length;
   const atraso = situacaoAtrasos(e, hoje);
@@ -56,7 +54,7 @@ export function Plano() {
       itens: [
         I('/plano/reserva', PiggyBank, 'Reserva de emergência', meta > 0 ? `${brl0(patrimonioGuardado(e))} de ${brl0(meta)}` : 'Guarde antes de gastar', 'reserva emergencia guardar poupar'),
         I('/plano/extras', Gift, 'Dinheiro extra', '13º, bônus: o melhor rumo pra ele', 'extra 13 bonus freela decimo terceiro quitar'),
-        I('/plano/renda', Sprout, 'Viver de renda', alvoRenda > 0 ? `${((patrimonioGuardado(e) / alvoRenda) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do caminho` : 'Quanto falta pra chegar lá', 'renda liberdade aposentadoria patrimonio'),
+        I('/plano/renda', Sprout, 'Viver de renda', 'Quando o rendimento paga as suas contas', 'renda liberdade aposentadoria patrimonio viver de renda'),
       ],
     },
     {
