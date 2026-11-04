@@ -526,3 +526,10 @@ html.gs-app input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; b
 .gs-rumo-item.reserva .gs-rumo-ic { background: #E8F0E4; color: var(--success); }
 .gs-rumo-item.voce { background: var(--gold-soft); border-color: rgba(184, 134, 11, .3); }
 @media (prefers-reduced-motion: reduce) { .gs-rumo-item { animation: none; } }
+/* Viver de renda: a conta em 3 números */
+.gs-renda-conta { display: grid; gap: 8px; }
+.gs-renda-conta > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--bg-2); }
+.gs-renda-conta small { color: var(--ink-muted); font-size: 13.5px; line-height: 18px; }
+.gs-renda-conta b { color: var(--ink); font-size: 17px; font-weight: 800; white-space: nowrap; }
+.gs-renda-conta > div:nth-child(2) { background: var(--gold-soft); border: 1px solid rgba(184, 134, 11, .3); }
+.gs-renda-conta > div:nth-child(2) b { color: var(--gold-texto); font-size: 21px; }

@@ -37,3 +37,30 @@ export function mesesAteMeta(patrimonio: number, meta: number, aporte: number, t
   }
   return null;
 }
+
+/* ---------- os degraus: cada conta que o rendimento passa a pagar, até pagar tudo ---------- */
+export interface Degrau {
+  n: number;
+  titulo: string; // "Paga a Internet", "Paga também a Luz", "Paga tudo"
+  rendaMes: number; // quanto o rendimento precisa dar por mês
+  patrimonio: number; // quanto precisa ter juntado
+  feito: boolean;
+  meses: number | null; // até chegar, guardando `aporte` por mês (null = mais de 50 anos)
+}
+/** Até 4 contas fixas (das menores pras maiores), depois o degrau final: o gasto do mês inteiro. */
+export function degrausDeRenda(fixas: Pick<GastoFixo, 'nome' | 'valor'>[], gastoTotal: number, guardado: number, taxaPct: number, aporte: number): Degrau[] {
+  if (!(taxaPct > 0) || !(gastoTotal > 0)) return [];
+  const ordem = [...fixas].filter((g) => g.valor > 0).sort((a, b) => a.valor - b.valor).slice(0, 4);
+  const degraus: { titulo: string; rendaMes: number }[] = [];
+  let soma = 0;
+  ordem.forEach((g, i) => {
+    soma += g.valor;
+    if (soma < gastoTotal) degraus.push({ titulo: i === 0 ? `Paga ${g.nome}` : `Paga também ${g.nome}`, rendaMes: arred(soma) });
+  });
+  degraus.push({ titulo: 'Paga tudo: você vive de renda', rendaMes: arred(gastoTotal) });
+  return degraus.map((d, i) => {
+    const patrimonio = arred(d.rendaMes / (taxaPct / 100));
+    const feito = guardado >= patrimonio;
+    return { n: i + 1, ...d, patrimonio, feito, meses: feito ? 0 : mesesAteMeta(guardado, patrimonio, aporte, taxaPct) };
+  });
+}
