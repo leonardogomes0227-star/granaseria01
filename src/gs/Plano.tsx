@@ -55,7 +55,7 @@ export function Plano() {
       nome: 'Guardar dinheiro',
       itens: [
         I('/plano/reserva', PiggyBank, 'Reserva de emergência', meta > 0 ? `${brl0(patrimonioGuardado(e))} de ${brl0(meta)}` : 'Guarde antes de gastar', 'reserva emergencia guardar poupar'),
-        I('/plano/extras', Gift, 'Dinheiro extra', '13º, bônus: dê destino a ele', 'extra 13 bonus freela'),
+        I('/plano/extras', Gift, 'Dinheiro extra', '13º, bônus: o melhor rumo pra ele', 'extra 13 bonus freela decimo terceiro quitar'),
         I('/plano/renda', Sprout, 'Viver de renda', alvoRenda > 0 ? `${((patrimonioGuardado(e) / alvoRenda) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% do caminho` : 'Quanto falta pra chegar lá', 'renda liberdade aposentadoria patrimonio'),
       ],
     },

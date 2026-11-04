@@ -17,7 +17,8 @@ export const faltaPagar = (e: Estado, mes: string) => Math.max(0, arred(totalFix
 
 export const lancamentosDoMes = (e: Estado, mes: string): Lancamento[] => e.lancamentos.filter((l) => mesDe(l.data) === mes);
 export const totalVariaveis = (e: Estado, mes: string) => arred(soma(lancamentosDoMes(e, mes).map((l) => l.valor)));
-export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes && a.valor > 0).map((a) => a.valor)));
+/** O que saiu do salário do mês pra guardar. Dinheiro extra (13º, bônus) não conta: ele não veio da renda do mês. */
+export const guardadoNoMes = (e: Estado, mes: string) => arred(soma(e.aportes.filter((a) => mesDe(a.data) === mes && a.valor > 0 && a.origem !== 'extra').map((a) => a.valor)));
 export const patrimonioGuardado = (e: Estado) => arred(soma(e.aportes.map((a) => a.valor)));
 
 /** Quanto tirar por mês pro atraso: o que a pessoa escolheu, ou a sobra do orçamento. Sem gasto do dia a dia anotado, 0 (a sobra seria otimista). */

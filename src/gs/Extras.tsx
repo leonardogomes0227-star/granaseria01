@@ -1,103 +1,118 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { CalendarClock, Gift, PiggyBank, Sprout, Target } from 'lucide-react';
 import { useEstado } from './store';
-import { dividirExtra } from './ferramentas';
-import { guardar, pagarDivida, removerAporte, desfazerPagamentoDivida, configurarAssistente } from './acoes';
-import { paraSim, passoDoMes, saldoAtual } from './dividas';
-import { Agora, CampoDinheiro, CampoNumero, Conquistas, Heroi, MaisAjuda, Titulo } from './ui';
-import { conquistasExtras, efeitoNaDivida, guardarHistorico, lerHistorico, mesesDeProtecao, totalComDestino } from './extrasLogica';
-import { gastoMensalMedio } from './selectores';
-import { Rosquinha } from './graficos';
-import { brl0, hoje as hojeSP, mesDe } from './datas';
+import { configurarAssistente, desfazerPagamentoDivida, guardar, pagarAtraso, pagarDivida, removerAporte, separarExtraParaAtraso } from './acoes';
+import { Conquistas, Heroi, MaisAjuda, Titulo, CampoDinheiro } from './ui';
+import { conquistasExtras, guardarHistorico, lerHistorico, rumoDoExtra, totalComDestino, type TipoDestino } from './extrasLogica';
+import { brl0, hoje as hojeSP } from './datas';
+import { useHoje } from './useHoje';
+import { confete } from '../lib/celebrar';
 import { toast } from '../components/ui/Toast';
 
-/* ---------- Dinheiro extra: 13º, bônus, freela. Dê destino antes que ele suma. ---------- */
+/* ---------- Dinheiro extra: 13º, bônus, freela. O app diz o rumo, do que mais pesa pro que pode render, e faz com 1 toque. ---------- */
+
+const ICONE: Record<TipoDestino, typeof Gift> = { atraso: CalendarClock, 'separar-atraso': CalendarClock, divida: Target, reserva: PiggyBank, investir: Sprout, voce: Gift };
+const PCTS = [0, 10, 20];
 
 export function Extras() {
   const e = useEstado();
+  const hoje = useHoje();
   const [valor, setValor] = useState(0);
   const [origem, setOrigem] = useState<'13º' | 'Bônus' | 'Dinheiro extra'>('13º');
-  const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
-  const temDivida = abertas.length > 0;
-  const [pd, setPd] = useState<number | ''>(50);
-  const [pr, setPr] = useState<number | ''>(30);
-  const [pl, setPl] = useState<number | ''>(20);
-  const pcts = { divida: typeof pd === 'number' ? pd : 0, reserva: typeof pr === 'number' ? pr : 0, lazer: typeof pl === 'number' ? pl : 0 };
-  const soma = pcts.divida + pcts.reserva + pcts.lazer;
-  const div = useMemo(() => dividirExtra(valor, temDivida, pcts), [valor, temDivida, pcts.divida, pcts.reserva, pcts.lazer]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [pctVoce, setPctVoce] = useState(10);
+  const rumo = useMemo(() => rumoDoExtra(e, hoje, valor, pctVoce), [e, hoje, valor, pctVoce]);
   const hist = lerHistorico(e.agentes.extras?.config.historico);
-  const gastoMedio = gastoMensalMedio(e, mesDe(hojeSP()));
-  const efDiv = temDivida && div.divida > 0 ? efeitoNaDivida(paraSim(e.dividas), e.planoDividas?.pagamentoMensal ?? 0, e.planoDividas?.estrategia ?? 'maior-juro', div.divida) : null;
-  const protege = mesesDeProtecao(div.reserva, gastoMedio);
-  const aplicar = () => {
+
+  const fazer = () => {
     const desfazer: (() => void)[] = [];
     const data = hojeSP();
-    if (div.reserva > 0) {
-      const id = guardar(div.reserva, 'extra', 'extras');
-      if (id) desfazer.push(() => removerAporte(id));
+    let divida = 0;
+    let reserva = 0;
+    let voce = 0;
+    for (const d of rumo.destinos) {
+      if (d.tipo === 'atraso' && d.atraso) {
+        const u = pagarAtraso(d.atraso, d.valor, data, { extra: true });
+        if (u) desfazer.push(u.desfazer);
+        divida += d.valor;
+      } else if (d.tipo === 'separar-atraso') {
+        const u = separarExtraParaAtraso(d.valor);
+        if (u) desfazer.push(u.desfazer);
+        divida += d.valor;
+      } else if (d.tipo === 'divida' && d.refId) {
+        const id = d.refId;
+        if (pagarDivida(id, d.valor, data)) desfazer.push(() => desfazerPagamentoDivida(id, data, d.valor));
+        divida += d.valor;
+      } else if (d.tipo === 'reserva' || d.tipo === 'investir') {
+        const id = guardar(d.valor, 'extra', d.tipo === 'investir' ? 'investimentos' : 'extras');
+        if (id) desfazer.push(() => removerAporte(id));
+        reserva += d.valor;
+      } else if (d.tipo === 'voce') voce += d.valor;
     }
-    if (div.divida > 0 && temDivida) {
-      const sim = paraSim(e.dividas);
-      const passo = passoDoMes(sim, e.planoDividas?.pagamentoMensal ?? 0, e.planoDividas?.estrategia ?? 'maior-juro');
-      let resta = div.divida;
-      const ordem = passo ? [passo.divida.id, ...sim.map((d) => d.id).filter((i) => i !== passo.divida.id)] : sim.map((d) => d.id);
-      for (const id of ordem) {
-        if (resta <= 0.005) break;
-        const d = e.dividas.find((x) => x.id === id);
-        if (!d) continue;
-        const p = Math.min(resta, saldoAtual(d));
-        if (p > 0 && pagarDivida(id, p, data)) {
-          desfazer.push(() => desfazerPagamentoDivida(id, data, p));
-          resta -= p;
-        }
-      }
-    }
-    configurarAssistente('extras', { ultimo: `${data}|${origem}|${valor}`, historico: guardarHistorico(hist, { data, origem, valor, divida: div.divida, reserva: div.reserva, lazer: div.lazer }) });
-    toast(`${origem} dividido: ${brl0(div.divida)} dívida, ${brl0(div.reserva)} reserva, ${brl0(div.lazer)} pra você`, { acao: { rotulo: 'Desfazer', onClick: () => desfazer.forEach((f) => f()) }, duracao: 7000 });
+    configurarAssistente('extras', { ultimo: `${data}|${origem}|${valor}`, historico: guardarHistorico(hist, { data, origem, valor, divida, reserva, lazer: voce }) });
+    confete('grande');
+    toast(`${origem} com destino: ${rumo.manchete.replace(/^Com esse dinheiro você /, '').replace(/\.$/, '')}`, { acao: { rotulo: 'Desfazer', onClick: () => desfazer.reverse().forEach((f) => f()) }, duracao: 8000 });
     setValor(0);
   };
+
   return (
     <>
-      <Titulo titulo="Dinheiro extra" sub="13º, bônus ou um dinheiro que caiu. Dê destino antes que ele suma." />
+      <Titulo titulo="Dinheiro extra" sub="13º, bônus ou um dinheiro que caiu. Eu digo o melhor rumo pra ele, antes que suma." />
       {hist.length > 0 && <Heroi pct={Math.min(100, (hist.length / 3) * 100)} anel={`${hist.length}`} anelSub={hist.length === 1 ? 'extra' : 'extras'} rotulo="Você já deu destino a" grande={brl0(totalComDestino(hist))} sub="em dinheiro extra, sem deixar sumir" cor="var(--success)" />}
       <Conquistas lista={conquistasExtras(hist)} />
-      <Agora tom={valor > 0 ? 'ok' : 'dica'} texto={valor > 0 ? 'Confira a divisão e toque em Aplicar. Dá pra desfazer logo em seguida.' : 'Caiu dinheiro extra? Digite quanto e eu divido entre dívida, reserva e você, antes de gastar.'} />
+
       <section className="gs-card">
-        <div className="gs-chips" role="group" aria-label="Origem">
-          {(['13º', 'Bônus', 'Dinheiro extra'] as const).map((o) => <button key={o} type="button" className={`gs-chip ${origem === o ? 'on' : ''}`} onClick={() => setOrigem(o)}>{o}</button>)}
+        <div className="gs-chips" role="group" aria-label="De onde veio">
+          {(['13º', 'Bônus', 'Dinheiro extra'] as const).map((o) => <button key={o} type="button" className={`gs-chip ${origem === o ? 'on' : ''}`} aria-pressed={origem === o} onClick={() => setOrigem(o)}>{o}</button>)}
         </div>
         <CampoDinheiro rotulo="Quanto entrou?" valor={valor} onChange={setValor} grande />
-        {!temDivida && <p className="gs-nota" style={{ marginTop: -6 }}>Sem dívidas abertas: a parte da dívida vai pra reserva.</p>}
+        {valor <= 0 && <p className="gs-nota" style={{ marginTop: -6 }}>Digite o valor e eu mostro o que esse dinheiro consegue fazer por você.</p>}
       </section>
+
       {valor > 0 && (
-        <section className="gs-card destaque">
-          <Rosquinha fatias={[{ id: 'd', cor: 'var(--danger)', valor: div.divida }, { id: 'r', cor: 'var(--gold-strong)', valor: div.reserva }, { id: 'l', cor: 'var(--ink-muted)', valor: div.lazer }]} centro={brl0(valor)} sub={origem} />
-          <div className="gs-tres" style={{ marginTop: 10 }}>
-            <div><span className="gs-mudo">Dívida</span><b className="gs-tab">{brl0(div.divida)}</b></div>
-            <div><span className="gs-mudo">Reserva</span><b className="gs-tab">{brl0(div.reserva)}</b></div>
-            <div><span className="gs-mudo">Pra você</span><b className="gs-tab">{brl0(div.lazer)}</b></div>
-          </div>
-          <div className="gs-dois" style={{ marginTop: 14 }}>
-            <CampoNumero rotulo="Dívida" sufixo="%" valor={pd} onChange={setPd} min={0} max={100} />
-            <CampoNumero rotulo="Reserva" sufixo="%" valor={pr} onChange={setPr} min={0} max={100} />
-          </div>
-          <CampoNumero rotulo="Pra você" sufixo="%" valor={pl} onChange={setPl} min={0} max={100} />
-          {soma !== 100 && <p className="gs-erro" role="alert" style={{ color: 'var(--danger)', fontSize: 13 }}>Os percentuais somam {soma}%. Ajuste pra fechar 100%.</p>}
-          {(efDiv || protege > 0) && (
-            <div className="gs-banner" style={{ marginBottom: 0 }}>
-              {efDiv && efDiv.meses > 0 && <div>Dívida: você termina <b>{efDiv.meses} {efDiv.meses === 1 ? 'mês' : 'meses'} antes</b> e economiza <b>{brl0(efDiv.economia)}</b> de juros.</div>}
-              {protege > 0.05 && <div>Reserva: <b>+{protege.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} {protege === 1 ? 'mês' : 'meses'}</b> de segurança.</div>}
+        <>
+          <section className="gs-card destaque">
+            <span className="gs-rotulo">O melhor rumo pra esse {origem === '13º' ? '13º' : origem.toLowerCase()}</span>
+            <p className="gs-medio" style={{ margin: '6px 0 0', fontSize: 21, lineHeight: '28px' }}>{rumo.manchete}</p>
+          </section>
+
+          <ol className="gs-rumo">
+            {rumo.destinos.map((d, i) => {
+              const Ic = ICONE[d.tipo];
+              return (
+                <li key={i} className={`gs-rumo-item ${d.tipo}`}>
+                  <span className="gs-rumo-ic" aria-hidden="true"><Ic size={20} /></span>
+                  <div className="gs-corpo">
+                    <b>{d.titulo}</b>
+                    <small>{d.resultado}</small>
+                  </div>
+                  <span className="gs-valor">{brl0(d.valor)}</span>
+                </li>
+              );
+            })}
+          </ol>
+
+          <section className="gs-card">
+            <span className="gs-rotulo">Quanto fica pra você aproveitar</span>
+            <div className="gs-chips" role="group" aria-label="Parte pra você" style={{ marginTop: 8 }}>
+              {PCTS.map((p) => <button key={p} type="button" className={`gs-chip ${pctVoce === p ? 'on' : ''}`} aria-pressed={pctVoce === p} onClick={() => setPctVoce(p)}>{p === 0 ? 'Nada' : `${p}%`}</button>)}
             </div>
-          )}
-          <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} disabled={soma !== 100} onClick={aplicar}>Aplicar</button>
-          <p className="gs-nota">Aplicar guarda a parte da reserva e abate a parte da dívida. Dá pra desfazer logo em seguida.</p>
-        </section>
+            <p className="gs-nota" style={{ marginTop: 0 }}>Uma parte pra você faz o plano durar: ninguém aguenta só cortar.</p>
+            <button type="button" className="gs-btn cheio" style={{ marginTop: 6 }} onClick={fazer}>Fazer isso</button>
+            <p className="gs-nota">Eu pago as contas atrasadas e as dívidas, guardo a reserva e registro tudo. Dá pra desfazer logo em seguida.</p>
+          </section>
+        </>
       )}
-      <MaisAjuda>
-        <p className="gs-sub" style={{ marginTop: 0 }}>Dinheiro que chega de uma vez some rápido. Dar um destino antes de gastar faz uma parte atacar a dívida, outra proteger você e outra ser aproveitada sem culpa. Você pode mudar os percentuais. A sugestão é 50% dívida, 30% reserva e 20% pra você.</p>
+
+      <MaisAjuda titulo="Por que nessa ordem">
+        <p className="gs-sub" style={{ marginTop: 0 }}>
+          1. <b>Conta atrasada</b> cobra multa e juros todo mês e pode virar nome sujo. 2. <b>Dívida cara</b> (juro acima de 1,5% ao mês, como cartão e cheque especial) cobra mais do que qualquer investimento rende. 3. <b>Reserva</b> evita que o próximo imprevisto vire dívida nova. 4. Com tudo isso em dia, o resto <Link to="/investir">pode render</Link>.
+        </p>
+        <p className="gs-sub" style={{ marginBottom: 0 }}>Dívida com juro baixo (financiamento de casa, consignado) não entra: vale mais manter a parcela em dia e usar o dinheiro na reserva.</p>
         {hist.length > 0 && (
           <>
-            <span className="gs-rotulo">Últimos extras</span>
-            {[...hist].reverse().map((r, i) => <div className="gs-linha" key={i}><div className="gs-corpo"><b>{r.origem} · {brl0(r.valor)}</b><small>{brl0(r.divida)} dívida · {brl0(r.reserva)} reserva · {brl0(r.lazer)} pra você</small></div></div>)}
+            <span className="gs-rotulo" style={{ display: 'block', marginTop: 14 }}>Últimos extras</span>
+            {[...hist].reverse().map((r, i) => <div className="gs-linha" key={i}><div className="gs-corpo"><b>{r.origem} · {brl0(r.valor)}</b><small>{brl0(r.divida)} em contas e dívidas · {brl0(r.reserva)} guardados · {brl0(r.lazer)} pra você</small></div></div>)}
           </>
         )}
       </MaisAjuda>
