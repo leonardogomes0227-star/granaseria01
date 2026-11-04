@@ -47,3 +47,26 @@ describe('reserva de emergência', () => {
     expect(mesesParaMeta(1000, 0)).toBeNull();
   });
 });
+
+import { jogoDaReserva } from './reservaLogica';
+
+describe('a reserva como um jogo', () => {
+  it('fases até a meta de 6 meses, com o que cada uma protege e quando chega', () => {
+    const e = base(); // gasto 2000/mês, guarda 500/mês
+    e.aportes = [{ id: 'a', data: '2026-10-05', valor: 1000, origem: 'reserva' }];
+    const j = jogoDaReserva(e, '2026-11');
+    expect(j.fases.map((f) => [f.nome, f.alvo, f.feita, f.quando])).toEqual([
+      ['Escudo de 1 semana', 500, true, null],
+      ['1 mês de fôlego', 2000, false, '2027-01'],
+      ['3 meses de calma', 6000, false, '2027-09'],
+      ['Reserva completa: 6 meses de segurança', 12000, false, '2028-09'],
+    ]);
+    expect(j).toMatchObject({ nivel: 1, falta: 1000 });
+    expect(j.pct).toBeCloseTo(33.3, 0);
+  });
+  it('meta de 3 meses: a última fase é a de 3 meses', () => {
+    const e = base();
+    e.config.reservaMeses = 3;
+    expect(jogoDaReserva(e, '2026-11').fases.map((f) => f.nome)).toEqual(['Escudo de 1 semana', '1 mês de fôlego', 'Reserva completa: 3 meses de calma']);
+  });
+});

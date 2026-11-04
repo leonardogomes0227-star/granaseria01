@@ -1,21 +1,24 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Check, Flame, Lock, Medal, Trophy } from 'lucide-react';
 import { useEstado } from './store';
 import { guardar, removerAporte, salvarConfig, usarReserva } from './acoes';
 import { gastoMensalMedio, guardadoNoMes, livreParaGastar, patrimonioGuardado, reservaMeta } from './selectores';
 import { Barra, CampoDinheiro, Deslizante, Dica, Folha, Titulo } from './ui';
-import { Anel } from './graficos';
 import { brl, brl0, diaCurto, mesCurto, mesDe, somaMes } from './datas';
 import { toast } from '../components/ui/Toast';
 import { useHoje } from './useHoje';
-import { acaoReserva, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
+import { acaoReserva, conquistasReserva, jogoDaReserva, mesesGuardando, mesesParaMeta, mesesProtegido, MESES_RESERVA, planoMensalReserva } from './reservaLogica';
+import { confete, vibrar } from '../lib/celebrar';
+import { getEstado } from './store';
 import { capacidadeDePagamento } from './painelDividas';
 import { situacaoAtrasos } from './atrasosLogica';
 
-/* ---------- Reserva de emergência: quantos meses você aguenta, a meta do mês e o que fazer agora ---------- */
+/* ---------- Reserva de emergência como um jogo: fases até a meta, a missão do mês, sequência e conquistas ---------- */
 
 const fmt1 = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+const MESES_NOME = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const nomeMesCurto = (mes: string) => MESES_NOME[Number(mes.slice(5, 7)) - 1];
 
 export function Reserva() {
   const e = useEstado();
@@ -36,9 +39,23 @@ export function Reserva() {
   const acao = acaoReserva(e, mes, hoje);
   const cap = capacidadeDePagamento(e.config.renda, gasto);
   const recentes = [...e.aportes].sort((a, b) => b.data.localeCompare(a.data)).slice(0, 8);
+  const jogo = jogoDaReserva(e, mes);
+  const sequencia = mesesGuardando(e, mes);
+  const missaoFeita = plano > 0 && feito >= plano - 0.005;
+  const conquistas = conquistasReserva(protegido, sequencia, completa);
   const guardarAgora = (v: number) => {
+    const antes = jogoDaReserva(getEstado(), mes).nivel;
     const id = guardar(v, 'reserva', 'reserva');
-    if (id) toast(`${brl0(v)} guardados`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+    if (!id) return;
+    const depois = jogoDaReserva(getEstado(), mes);
+    vibrar(40);
+    if (depois.nivel > antes) {
+      confete('grande');
+      toast(`Subiu de fase! ${depois.fases[depois.nivel - 1].nome}`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+    } else {
+      confete('pequeno');
+      toast(`+${brl0(v)} na reserva`, { acao: { rotulo: 'Desfazer', onClick: () => removerAporte(id) } });
+    }
   };
 
   const atrasadas = situacaoAtrasos(e, hoje).anteriores.length;
@@ -49,70 +66,109 @@ export function Reserva() {
       {meta <= 0 ? (
         <section className="gs-card destaque">
           <span className="gs-rotulo">Primeiro passo</span>
-          <p style={{ margin: '6px 0 10px' }}>Pra calcular a sua meta eu preciso saber o quanto você gasta por mês.</p>
+          <p style={{ margin: '6px 0 10px' }}>Pra montar as fases da sua reserva eu preciso saber quanto você gasta por mês.</p>
           <div className="gs-acoes" style={{ marginTop: 0 }}>
             <Link to="/mes" className="gs-btn">Cadastrar contas fixas</Link>
             <Link to="/mes?aba=dia" className="gs-btn sec">Anotar gastos</Link>
           </div>
         </section>
       ) : (
-        <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-          <div style={{ flex: 'none', width: 104 }}><Anel pct={Math.min(100, (guardado / meta) * 100)} grande={completa ? '✓' : `${Math.round(Math.min(100, (guardado / meta) * 100))}%`} sub="da meta" tamanho={104} cor="var(--success)" /></div>
-          <div>
-            <span className="gs-rotulo">{completa ? 'Reserva completa' : 'Você aguenta'}</span>
-            <p className="gs-grande" style={{ margin: '2px 0' }}>{protegido > 0 && protegido < 1 ? `${Math.max(1, Math.round(protegido * 30))} ${Math.round(protegido * 30) <= 1 ? 'dia' : 'dias'}` : `${fmt1(protegido)} ${protegido === 1 ? 'mês' : 'meses'}`}</p>
-            <p className="gs-sub" style={{ margin: 0 }}>{brl0(guardado)} de {brl0(meta)}{!completa && prontos ? ` · pronta em ${mesCurto(somaMes(mes, prontos))}` : ''}</p>
-          </div>
-        </section>
-      )}
-
-      {meta > 0 && (
         <>
-          <section className="gs-card">
-            <span className="gs-rotulo">O que fazer agora</span>
-            {atrasadas > 0 ? (
+          <section className="gs-card destaque gs-jogo">
+            {completa ? (
               <>
-                <p style={{ margin: '6px 0 0' }}>Primeiro ponha {atrasadas === 1 ? 'a conta atrasada' : `as ${atrasadas} contas atrasadas`} em dia. A multa e os juros custam mais do que a reserva rende. Depois, a reserva volta a ser a prioridade.</p>
-                <Link to="/plano/atrasos" className="gs-btn cheio" style={{ marginTop: 12 }}>Ver o plano do atraso</Link>
+                <span className="gs-rotulo">Todas as fases completas</span>
+                <p className="gs-grande" style={{ margin: '4px 0' }}><Trophy size={30} style={{ verticalAlign: '-4px', marginRight: 8, color: '#D8B060' }} />Reserva completa</p>
+                <p className="gs-sub" style={{ margin: 0 }}>{brl0(guardado)} guardados. Você aguenta {fmt1(protegido)} meses sem renda.</p>
               </>
             ) : (
-              <p style={{ margin: '6px 0 0' }}>{acao.texto}</p>
+              <>
+                <span className="gs-rotulo">Fase {jogo.nivel + 1} de {jogo.fases.length}</span>
+                <p className="gs-grande" style={{ margin: '4px 0 2px', fontSize: 'clamp(24px, 7vw, 32px)' }}>{jogo.proxima!.nome}</p>
+                <p className="gs-sub" style={{ margin: 0 }}>{jogo.proxima!.porque}</p>
+                <div className="gs-xp" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(jogo.pct)} aria-label="Progresso da fase">
+                  <i style={{ width: `${Math.max(3, jogo.pct)}%` }} />
+                  <span>{brl0(guardado)} / {brl0(jogo.proxima!.alvo)}</span>
+                </div>
+                <p className="gs-sub" style={{ margin: 0 }}>
+                  Faltam <b>{brl0(jogo.falta)}</b> pra passar de fase{jogo.proxima!.quando ? ` · no seu ritmo, em ${mesCurto(jogo.proxima!.quando)}` : ''}. Hoje você aguenta {protegido > 0 && protegido < 1 ? `${Math.max(1, Math.round(protegido * 30))} ${Math.round(protegido * 30) <= 1 ? 'dia' : 'dias'}` : `${fmt1(protegido)} ${protegido === 1 ? 'mês' : 'meses'}`} sem renda.
+                </p>
+              </>
             )}
-            {atrasadas === 0 && (acao.tipo === 'comecar' || acao.tipo === 'faltam') && acao.valor > 0 && (
-              <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} onClick={() => guardarAgora(acao.valor)}>Guardei {brl0(acao.valor)}</button>
-            )}
-            {atrasadas === 0 && acao.tipo === 'divida' && <Link to="/plano/dividas" className="gs-btn" style={{ marginTop: 12 }}>Ver minhas dívidas</Link>}
-            {atrasadas === 0 && !completa && plano > 0 && <div style={{ marginTop: 14 }}><Barra pct={Math.min(100, (feito / plano) * 100)} tom="ok" rotulo="Meta do mês" /><p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(feito)} de {brl0(plano)} neste mês</p></div>}
           </section>
 
-          {completa ? (
-            <section className="gs-card">
-              <span className="gs-rotulo">E agora?</span>
-              {[
-                <>Mantenha. Se os seus gastos subirem, a meta sobe junto e eu aviso.</>,
-                <>O que passar da meta pode render na aba <Link to="/investir">Investir</Link>.</>,
-                <>Se precisar usar a reserva, registre em “Mais ajuda”. A meta volta a ser a prioridade.</>,
-              ].map((t, i) => <div key={i} style={{ display: 'flex', gap: 12, padding: '8px 0' }}><span className="gs-check" style={{ flex: 'none', fontWeight: 700 }}>{i + 1}</span><span>{t}</span></div>)}
-            </section>
-          ) : (
-            <section className="gs-card">
-              <Deslizante rotulo="Quanto guardar por mês" valor={plano} min={50} max={Math.max(2000, Math.ceil((Math.max(plano, cap) * 1.5) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => salvarConfig({ reservaMensal: n })} />
-              {prontos ? <Dica icone={<CalendarDays size={18} />}>Guardando {brl0(plano)} por mês, você completa a reserva em <b>{prontos} {prontos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, prontos))}).</Dica> : null}
-              {e.config.renda > 0 && (plano > cap && cap > 0
-                ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Hoje sobram cerca de {brl0(cap)} por mês. {brl0(plano)} pode apertar.</p>
-                : cap > 0 ? <p className="gs-sub" style={{ margin: '8px 0 0' }}>Cabe: hoje sobram cerca de {brl0(cap)} por mês.</p> : null)}
-              {livreParaGastar(e, mes) < plano - feito && plano - feito > 0 && <p className="gs-banner" style={{ marginBottom: 0 }}>Este mês só restam {brl0(Math.max(0, livreParaGastar(e, mes)))} livres. Guardar tudo agora deixa o resto do mês apertado.</p>}
+          {!completa && (
+            <section className={`gs-card gs-missao ${missaoFeita ? 'feita' : ''}`}>
+              <span className="gs-rotulo">Missão de {nomeMesCurto(mes)}</span>
+              {atrasadas > 0 ? (
+                <>
+                  <p style={{ margin: '6px 0 0' }}><b>Missão pausada.</b> Primeiro ponha {atrasadas === 1 ? 'a conta atrasada' : `as ${atrasadas} contas atrasadas`} em dia: a multa custa mais do que a reserva rende. Depois a missão volta.</p>
+                  <Link to="/plano/atrasos" className="gs-btn cheio" style={{ marginTop: 12 }}>Ver o plano do atraso</Link>
+                </>
+              ) : acao.tipo === 'divida' ? (
+                <>
+                  <p style={{ margin: '6px 0 0' }}>{acao.texto}</p>
+                  <Link to="/plano/dividas" className="gs-btn" style={{ marginTop: 12 }}>Ver minhas dívidas</Link>
+                </>
+              ) : (
+                <>
+                  <p className="gs-medio" style={{ margin: '6px 0 8px', fontSize: 20 }}>{missaoFeita ? <><Check size={20} style={{ verticalAlign: '-3px', color: 'var(--success)' }} /> Missão cumprida: {brl0(feito)} guardados</> : `Guardar ${brl0(plano)}`}</p>
+                  <Barra pct={plano > 0 ? Math.min(100, (feito / plano) * 100) : 0} tom="ok" rotulo="Missão do mês" />
+                  <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(feito)} de {brl0(plano)}{!missaoFeita && e.config.diaSalario ? ` · guarde assim que o salário cair (dia ${e.config.diaSalario})` : ''}</p>
+                  {!missaoFeita && acao.valor > 0 && <button type="button" className="gs-btn cheio" style={{ marginTop: 12 }} onClick={() => guardarAgora(acao.valor)}>Guardei {brl0(acao.valor)}</button>}
+                  {livreParaGastar(e, mes) < 0 && !missaoFeita && <p className="gs-nota">Este mês está sem folga. Guarde o que der: até R$ 50 conta e mantém a sequência.</p>}
+                </>
+              )}
+              {sequencia >= 1 && <p className="gs-sequencia"><Flame size={16} /> {sequencia} {sequencia === 1 ? 'mês' : 'meses'} seguidos guardando</p>}
             </section>
           )}
 
-          <details className="gs-card" style={{ padding: '4px 20px' }}>
-            <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Sua meta: {metaMeses} meses de gasto (mudar)</summary>
-            <div className="gs-chips" role="group" aria-label="Meses de segurança" style={{ marginTop: 8 }}>
+          <h2 className="gs-h2">O mapa até a meta</h2>
+          <ol className="gs-fases">
+            {jogo.fases.map((f, i) => {
+              const estado = f.feita ? 'feita' : i === jogo.nivel ? 'atual' : 'bloqueada';
+              return (
+                <li key={f.n} className={`gs-fase ${estado}`}>
+                  <span className="gs-fase-no" aria-hidden="true">{f.feita ? <Check size={16} /> : estado === 'bloqueada' ? <Lock size={14} /> : f.n}</span>
+                  <div className="gs-corpo">
+                    <b>{f.nome}</b>
+                    <small>{f.porque}</small>
+                    <small className="gs-fase-meta">{brl0(f.alvo)} · {f.feita ? 'conquistada' : f.quando ? `chega em ${mesCurto(f.quando)}` : 'defina quanto guardar por mês'}</small>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+
+          <section className="gs-card">
+            <span className="gs-rotulo">A sua meta, e por quê</span>
+            <p className="gs-medio" style={{ margin: '6px 0 4px', fontSize: 19 }}>{metaMeses} meses × {brl0(gasto)} = {brl0(meta)}</p>
+            <p className="gs-sub" style={{ margin: '0 0 10px' }}>{brl0(gasto)} é o que você gasta por mês (contas fixas + a média do dia a dia). A meta é aguentar {metaMeses} meses sem renda: tempo pra se reorganizar se perder o emprego ou ficar doente, sem pegar empréstimo nem entrar no rotativo do cartão.</p>
+            <div className="gs-chips" role="group" aria-label="Meses de segurança">
               {MESES_RESERVA.map((m) => <button key={m} type="button" className={`gs-chip ${metaMeses === m ? 'on' : ''}`} aria-pressed={metaMeses === m} onClick={() => salvarConfig({ reservaMeses: m })}>{m} meses</button>)}
             </div>
-            <p className="gs-sub" style={{ margin: '4px 0 0' }}>{metaMeses === 3 ? 'Mínimo, pra quem tem renda bem estável.' : metaMeses === 6 ? 'O mais comum, pra quem tem emprego com carteira.' : 'Pra autônomo ou renda que varia.'} Seu gasto médio é {brl0(gasto)} por mês.</p>
-          </details>
+            <p className="gs-nota" style={{ margin: '0 0 16px' }}>{metaMeses === 3 ? '3 meses: o mínimo, pra quem tem renda bem estável.' : metaMeses === 6 ? '6 meses: o mais comum, pra quem tem emprego com carteira.' : '12 meses: pra autônomo ou renda que varia.'}</p>
+            {!completa && (
+              <>
+                <Deslizante rotulo="Quanto guardar por mês" valor={plano} min={50} max={Math.max(2000, Math.ceil((Math.max(plano, cap) * 1.5) / 100) * 100)} passo={50} formato={brl0} onChange={(n) => salvarConfig({ reservaMensal: n })} />
+                {prontos ? <Dica icone={<CalendarDays size={18} />}>Guardando {brl0(plano)} por mês, a reserva fica completa em <b>{prontos} {prontos === 1 ? 'mês' : 'meses'}</b> ({mesCurto(somaMes(mes, prontos))}).{prontos > 24 && jogo.proxima ? ` Parece longe? Foque na próxima fase: ${jogo.proxima.nome.toLowerCase()}${jogo.proxima.quando ? `, em ${mesCurto(jogo.proxima.quando)}` : ''}.` : ''}</Dica> : null}
+                {e.config.renda > 0 && cap > 0 && <p className="gs-sub" style={{ margin: '8px 0 0' }}>{plano > cap ? `Hoje sobram cerca de ${brl0(cap)} por mês: ${brl0(plano)} pode apertar.` : `Cabe: hoje sobram cerca de ${brl0(cap)} por mês.`}</p>}
+              </>
+            )}
+            {completa && <p className="gs-sub" style={{ margin: '8px 0 0' }}>O que passar da meta pode render na aba <Link to="/investir">Investir</Link>. Se os seus gastos subirem, a meta sobe junto e eu aviso.</p>}
+          </section>
 
+          <section className="gs-card">
+            <span className="gs-rotulo">Conquistas · {conquistas.filter((c) => c.feita).length} de {conquistas.length}</span>
+            <div className="gs-medalhas">
+              {conquistas.map((c) => (
+                <div key={c.id} className={`gs-medalha ${c.feita ? 'on' : ''}`} title={c.nome}>
+                  <span aria-hidden="true">{c.feita ? <Medal size={20} /> : <Lock size={16} />}</span>
+                  <small>{c.nome}</small>
+                </div>
+              ))}
+            </div>
+          </section>
         </>
       )}
 
