@@ -75,3 +75,54 @@ export function mesesParaMeta(falta: number, porMes: number): number | null {
   if (falta <= 0) return 0;
   return porMes > 0 ? Math.ceil(falta / porMes) : null;
 }
+
+/* ---------- a reserva como um jogo: fases até a meta, cada uma com o que ela protege e quando chega ---------- */
+export interface Fase {
+  n: number;
+  nome: string;
+  meses: number; // meses de gasto que essa fase cobre
+  alvo: number; // quanto precisa ter guardado
+  porque: string; // o que essa fase te protege
+  feita: boolean;
+  quando: string | null; // 'AAAA-MM' previsto no ritmo de agora (null se já feita ou sem ritmo)
+}
+export interface Jogo {
+  fases: Fase[];
+  nivel: number; // fases feitas
+  proxima: Fase | null;
+  falta: number; // pra próxima fase
+  pct: number; // progresso dentro da fase atual (0 a 100)
+}
+const somaMesesStr = (mes: string, n: number) => {
+  const [y, m] = mes.split('-').map(Number);
+  const t = y * 12 + (m - 1) + n;
+  return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, '0')}`;
+};
+
+export function jogoDaReserva(e: Estado, mes: string): Jogo {
+  const gasto = gastoMensalMedio(e, mes);
+  const metaMeses = e.config.reservaMeses ?? 6;
+  const guardado = Math.max(0, patrimonioGuardado(e));
+  const plano = planoMensalReserva(e);
+  const base: [number, string, string][] = [
+    [0.25, 'Escudo de 1 semana', 'Um imprevisto pequeno (conserto, remédio, uma conta que veio alta) não vira dívida.'],
+    [1, '1 mês de fôlego', 'Se a renda falhar um mês, as contas continuam pagas.'],
+    [3, '3 meses de calma', 'Tempo pra resolver um problema grande sem pânico e sem empréstimo.'],
+    [6, '6 meses de segurança', 'Dá pra procurar outro trabalho com calma se perder o emprego.'],
+    [12, '1 ano de liberdade', 'Pra quem é autônomo ou tem renda que varia: um ano inteiro coberto.'],
+  ];
+  const escolhidas = base.filter(([m]) => m < metaMeses);
+  const final = base.find(([m]) => m === metaMeses) ?? [metaMeses, `${metaMeses} meses`, 'A sua meta.'];
+  const fases = [...escolhidas, final].map(([meses, nome, porque], i) => {
+    const alvo = arred(gasto * meses);
+    const feita = gasto > 0 && guardado >= alvo;
+    const m = feita ? null : mesesParaMeta(alvo - guardado, plano);
+    return { n: i + 1, nome: i === escolhidas.length ? `Reserva completa: ${nome.toLowerCase()}` : nome, meses, alvo, porque, feita, quando: m === null ? null : somaMesesStr(mes, m) };
+  });
+  const nivel = fases.filter((f) => f.feita).length;
+  const proxima = fases.find((f) => !f.feita) ?? null;
+  const anterior = nivel > 0 ? fases[nivel - 1].alvo : 0;
+  const falta = proxima ? Math.max(0, arred(proxima.alvo - guardado)) : 0;
+  const pct = proxima && proxima.alvo > anterior ? Math.min(100, Math.max(0, ((guardado - anterior) / (proxima.alvo - anterior)) * 100)) : 100;
+  return { fases, nivel, proxima, falta, pct };
+}
