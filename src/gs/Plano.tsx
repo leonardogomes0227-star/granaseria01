@@ -61,7 +61,7 @@ export function Plano() {
       nome: 'Comprar bem',
       itens: [
         I('/plano/comprar', Timer, 'Posso comprar isso?', esperando ? `${esperando} em espera de 72h` : 'Horas de trabalho e veredito', 'comprar compra desejo 72 horas'),
-        I('/plano/parcelado', Receipt, 'À vista ou parcelado?', 'Descubra o juro escondido', 'parcelado a vista parcela desconto juros'),
+        I('/plano/parcelado', Receipt, 'À vista ou parcelado?', 'O duelo: quem sai mais barato', 'parcelado a vista parcela desconto juros sem juros'),
       ],
     },
   ];
