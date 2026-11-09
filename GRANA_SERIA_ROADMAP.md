@@ -188,3 +188,32 @@ Só este documento. Baseline: 501 testes passando.
 7. **SQL pendentes** (`supabase/fundacao.sql`, `coach.sql`): seguem como antes; nada novo depende deles. Nenhuma migration nova.
 8. **Nomes antigos** ainda existem em `src/agents.ts`, `src/missoes.ts`, `src/lib/financas.ts`, `api/coach.ts`/`server/coach.ts`, `src/coachChat/months.ts` e no mapa de migração (`ID_ANTIGO`), que precisam existir para dados antigos e para o WhatsApp. Limpeza adicional merece um PR próprio.
 9. Gráficos próprios em SVG (sem biblioteca); acessíveis por rótulo, sem tabela alternativa.
+
+---
+
+## 11. Redesign UX/UI "Prompt Master" — plano proposto (aguardando aprovação)
+
+**Diagnóstico (evidências no código, nov/2026)**
+1. Desktop desperdiça espaço: `.gs-principal { max-width: 720px }` e navegação só em abas no topo (sem lateral).
+2. Três camadas de CSS (`site.css`/`app.css`/`ouro.css` legados + `gs.css` + `gs2.css`, ~4,2 mil linhas), 25 usos de `!important`/peso 900 em títulos; a identidade pedida (sutil, grafite, dourado suave) briga com o herói preto radial e o título extrabold.
+3. Início tem ~10 blocos em sequência (coach, missão, resumo, metas, ações, gastos, checklist, rosca): é informação demais e coach/missão repetem a mesma coisa.
+4. Faltam no Início: ocultar valores, 4 KPIs fixos (saldo, receitas, despesas, economia), gráfico com troca de período, "contas próximas" resumidas, ações rápidas (despesa, receita, transferir, meta, relatórios), data e sino de avisos.
+5. Lançamentos: um único formulário com tudo visível; não há passos, nem conta, transferência, duplicar, filtro por período livre/conta nem ordenação. `Lancamento` não tem `contaId` (não existe modelo de contas).
+6. Metas moram em Evolução; não há metas concluídas, modelos (reserva, carro, viagem…) nem ícones. Orçamento por categoria existe em `/plano/orcamento`, mas não é a visão principal do Planejamento.
+7. Evolução cobre boa parte dos relatórios, mas com período fixo (6 meses), sem comparação escolhida e sem economia acumulada.
+8. Coach: histórico de conversa só em memória; sem cards de insight dentro do chat.
+9. Navegação atual (Início · Meu dinheiro · Planejar · Evolução · Coach) difere da pedida (Início · Lançamentos · Planejamento · Relatórios · Coach); Contas fixas, Calendário, Guias, Assistentes e Dados não têm menu secundário claro.
+10. Não medido ainda: Lighthouse, axe, contraste, Safari/Firefox. Bundle principal 780 kB.
+Limite: o site público foi usado só como referência (a landing é o `Landing.tsx` do repositório); nada de produção foi alterado.
+
+**Plano (cada fase fecha com testes + capturas 390/768/1280 px)**
+- F1 Design system: tokens (cor, tipo, espaço, raio, sombra) em `tokens.css`; componentes base (Card, Botão, Campo, Seleção, Modal, Alerta, Vazio, Skeleton, Tooltip); desativar camadas legadas só depois de migrar telas. Sem mudar regra financeira.
+- F2 Navegação: lateral no desktop e barra inferior no celular (Início · Lançamentos · Planejamento · Relatórios · Coach) + menu "Mais" (Contas fixas, Calendário, Ferramentas, Investir, Assistentes, Guias, Meus dados). Rotas antigas viram alias.
+- F3 Dashboard: cabeçalho (saudação, data, sino), 4 KPIs com ocultar/mostrar, gráfico com período, contas próximas, categorias, ações rápidas, insights (reaproveitando `coachRegras`). Menos blocos, sem repetição.
+- F4 Lançamentos: passos valor → tipo → categoria (ícones) → conta → data → descrição; avançados recolhidos; duplicar; histórico com período, categoria, tipo, conta e ordenação.
+- F5 Planejamento: orçamento por categoria com 3 estados; metas com modelos, prazos, concluídas.
+- F6 Coach: cards de insight, ações, sugestões, histórico local do aparelho.
+- F7 Relatórios: período livre, comparação, economia acumulada, progresso das metas.
+- F8 Revisão: acessibilidade, performance, navegadores, fluxos financeiros, testes.
+
+**Riscos:** trocar o layout afeta as 13 ferramentas (por isso F1 é por tokens, não por tela); contas/transferências exigem campo novo aditivo (`contas`, `Lancamento.contaId`) e uma regra clara para o saldo informado; renomear rotas exige alias; histórico do Coach sem tabela nova = só no aparelho.
