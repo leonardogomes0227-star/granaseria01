@@ -30,6 +30,15 @@ async function token(): Promise<string | null> {
 }
 
 interface Msg { de: 'eu' | 'coach'; texto: string }
+// Histórico só neste aparelho (localStorage): nada vai para o servidor além da pergunta enviada.
+const CHAVE_CONVERSA = 'gs-coach-conversa';
+function lerConversa(): Msg[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(CHAVE_CONVERSA) ?? '[]') as Msg[];
+    return Array.isArray(v) ? v.filter((m) => (m?.de === 'eu' || m?.de === 'coach') && typeof m.texto === 'string').slice(-40) : [];
+  } catch { return []; }
+}
+function guardarConversa(m: Msg[]) { try { localStorage.setItem(CHAVE_CONVERSA, JSON.stringify(m.slice(-40))); } catch { /* sem armazenamento */ } }
 
 export function Coach() {
   const e = useEstado();
@@ -78,7 +87,8 @@ function Rec({ r }: { r: Recomendacao }) {
 function Conversa() {
   const [ativo, setAtivo] = useState<boolean | null>(null);
   const [logado, setLogado] = useState<boolean | null>(null);
-  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [msgs, setMsgsRaw] = useState<Msg[]>(lerConversa);
+  const setMsgs = (m: Msg[]) => { setMsgsRaw(m); guardarConversa(m); };
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
@@ -140,6 +150,7 @@ function Conversa() {
         {busy && <p className="gs-msg coach" aria-busy="true">Pensando…</p>}
         <div ref={fim} />
       </div>
+      {msgs.length > 0 && <button type="button" className="gs-btn link" onClick={() => setMsgs([])}>Nova conversa</button>}
       <form className="gs-envio" onSubmit={(ev) => { ev.preventDefault(); void enviar(q); }}>
         <input value={q} onChange={(ev) => setQ(ev.target.value)} maxLength={500} placeholder="Escreva sua pergunta" aria-label="Pergunta ao coach" />
         <button type="submit" className="gs-btn" disabled={busy || !q.trim()} aria-label="Enviar"><Send size={18} /></button>

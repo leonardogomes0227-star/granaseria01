@@ -59,7 +59,7 @@ export function recomendacoes(e: Estado, hoje: string): Recomendacao[] {
   const atrasadas = contas.filter((c) => c.estado === 'atrasada');
   if (atrasadas.length > 0 && atrasoAnt.length === 0) {
     const c = atrasadas[0];
-    add({ id: 'conta-atrasada', tom: 'perigo', tipo: 'vencimento', prioridade: 95, titulo: `${c.gasto.nome} venceu`, texto: `Venceu há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}. Quanto antes pagar, menos juros.`, porque: `Vencimento em ${c.vencimento.split('-').reverse().join('/')}, valor ${brl0(c.valor)}, sem baixa registrada.`, acao: { rotulo: 'Resolver agora', rota: '/mes' } });
+    add({ id: 'conta-atrasada', tom: 'perigo', tipo: 'vencimento', prioridade: 95, titulo: `${c.gasto.nome} venceu`, texto: `Venceu há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}. Quanto antes pagar, menos juros.`, porque: `Vencimento em ${c.vencimento.split('-').reverse().join('/')}, valor ${brl0(c.valor)}, sem baixa registrada.`, acao: { rotulo: 'Resolver agora', rota: '/lancamentos?aba=contas' } });
   }
   if (disp.modo !== 'incompleto' && disp.livre < 0) {
     add({ id: 'acima-da-renda', tom: 'perigo', tipo: 'orcamento', prioridade: 90, titulo: 'Você está gastando mais do que tem', texto: `Faltam ${brl0(-disp.livre)} para fechar o mês no zero. Vamos olhar onde dá pra ajustar?`, porque: `Entradas menos compromissos e gastos do mês dá ${brl0(disp.livre)}.`, acao: { rotulo: 'Ver orçamento', rota: '/plano/orcamento' } });
@@ -67,7 +67,7 @@ export function recomendacoes(e: Estado, hoje: string): Recomendacao[] {
   const logo = contas.filter((c) => c.estado === 'vence-logo');
   if (logo.length > 0) {
     const total = logo.reduce((t, c) => t + c.valor, 0);
-    add({ id: 'vence-logo', tom: 'aviso', tipo: 'vencimento', prioridade: 80, titulo: logo.length === 1 ? `${logo[0].gasto.nome} vence ${logo[0].dias === 0 ? 'hoje' : logo[0].dias === 1 ? 'amanhã' : `em ${logo[0].dias} dias`}` : `${logo.length} contas vencem nos próximos dias`, texto: `São ${brl0(total)} nos próximos 3 dias. Que tal organizar esses pagamentos?`, porque: logo.map((c) => `${c.gasto.nome} ${brl0(c.valor)} (${c.vencimento.slice(8)}/${c.vencimento.slice(5, 7)})`).join(', '), acao: { rotulo: 'Dar baixa', rota: '/mes' } });
+    add({ id: 'vence-logo', tom: 'aviso', tipo: 'vencimento', prioridade: 80, titulo: logo.length === 1 ? `${logo[0].gasto.nome} vence ${logo[0].dias === 0 ? 'hoje' : logo[0].dias === 1 ? 'amanhã' : `em ${logo[0].dias} dias`}` : `${logo.length} contas vencem nos próximos dias`, texto: `São ${brl0(total)} nos próximos 3 dias. Que tal organizar esses pagamentos?`, porque: logo.map((c) => `${c.gasto.nome} ${brl0(c.valor)} (${c.vencimento.slice(8)}/${c.vencimento.slice(5, 7)})`).join(', '), acao: { rotulo: 'Dar baixa', rota: '/lancamentos?aba=contas' } });
   }
   if (e.cartao && e.cartao.limite > 0) {
     const v = proximaData(e.cartao.venceDia, hoje);
@@ -84,7 +84,7 @@ export function recomendacoes(e: Estado, hoje: string): Recomendacao[] {
       .sort((a, b) => b.v - b.antes - (a.v - a.antes))[0];
     if (subiu) {
       const pct = Math.round((subiu.v / subiu.antes - 1) * 100);
-      add({ id: `subiu-${subiu.cat}`, tom: 'aviso', tipo: 'orcamento', prioridade: 60, titulo: `${subiu.cat} subiu ${pct}% em relação ao mês passado`, texto: `Você já gastou ${brl0(subiu.v - subiu.antes)} a mais com ${subiu.cat.toLowerCase()} nos mesmos dias do mês passado. Vale uma olhada?`, porque: `Até o dia ${dia}: ${brl0(subiu.v)} agora contra ${brl0(subiu.antes)} em ${mesCurto(ant)}.`, acao: { rotulo: 'Ver gastos', rota: '/mes?aba=dia' } });
+      add({ id: `subiu-${subiu.cat}`, tom: 'aviso', tipo: 'orcamento', prioridade: 60, titulo: `${subiu.cat} subiu ${pct}% em relação ao mês passado`, texto: `Você já gastou ${brl0(subiu.v - subiu.antes)} a mais com ${subiu.cat.toLowerCase()} nos mesmos dias do mês passado. Vale uma olhada?`, porque: `Até o dia ${dia}: ${brl0(subiu.v)} agora contra ${brl0(subiu.antes)} em ${mesCurto(ant)}.`, acao: { rotulo: 'Ver gastos', rota: '/lancamentos?aba=dia' } });
     }
   }
   const estouros = Object.entries(e.limites).filter(([cat, lim]) => lim > 0 && (atuais.get(cat) ?? 0) >= 0 && gastoAte(e, mes, 31) >= 0 && e.lancamentos.filter((l) => mesDe(l.data) === mes && l.categoria === cat).reduce((t, l) => t + l.valor, 0) > lim);

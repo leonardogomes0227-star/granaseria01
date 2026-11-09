@@ -81,7 +81,7 @@ export function Orcamento() {
           )}
           <div className="gs-acoes">
             <button type="button" className="gs-btn sec" onClick={() => setMontar(true)}>Refazer a divisão</button>
-            <Link to="/mes?aba=dia" className="gs-btn link">Ver todos os gastos</Link>
+            <Link to="/lancamentos?aba=dia" className="gs-btn link">Ver todos os gastos</Link>
           </div>
         </>
       )}

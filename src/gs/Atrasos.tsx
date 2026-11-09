@@ -247,7 +247,7 @@ function EmDia({ separado, onAnotar }: { separado: number; onAnotar: () => void 
         </section>
       )}
       <div className="gs-acoes">
-        <Link to="/mes" className="gs-btn sec">Ver as contas do mês</Link>
+        <Link to="/lancamentos?aba=contas" className="gs-btn sec">Ver as contas do mês</Link>
       </div>
     </>
   );

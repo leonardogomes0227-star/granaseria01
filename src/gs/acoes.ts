@@ -4,7 +4,7 @@ import { atualizar, getEstado } from './store';
 import { arred, novoId, hoje as hojeSP, vencimentoNoMes } from './datas';
 import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
 import { cfgAtrasos, deOndeSai, type Atraso } from './atrasosLogica';
-import type { Estado, Meta, Receita, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
+import type { Estado, Meta, Receita, Transferencia, ContaBancaria, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
@@ -34,7 +34,7 @@ export const desfazerBaixa = (id: string, mes: string) =>
 export function salvarLancamento(l: Omit<Lancamento, 'id'> & { id?: string }): boolean {
   if (!ok(l.valor) || !l.categoria || !/^\d{4}-\d{2}-\d{2}$/.test(l.data) || l.data > hojeSP()) return false;
   atualizar((e) => {
-    const dados = { descricao: l.descricao.trim().slice(0, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, ...(l.forma ? { forma: l.forma.slice(0, 20) } : {}) };
+    const dados = { descricao: l.descricao.trim().slice(0, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, ...(l.forma ? { forma: l.forma.slice(0, 20) } : {}), ...(l.contaId ? { contaId: l.contaId } : {}) };
     return l.id ? { ...e, lancamentos: e.lancamentos.map((x) => (x.id === l.id ? { ...x, ...dados } : x)) } : { ...e, lancamentos: [...e.lancamentos, { id: novoId('l'), ...dados }] };
   });
   return true;
@@ -331,7 +331,7 @@ export const voltarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c
 export function salvarReceita(r: Omit<Receita, 'id'> & { id?: string }): boolean {
   if (!ok(r.valor) || !/^\d{4}-\d{2}-\d{2}$/.test(r.data) || r.data > hojeSP()) return false;
   atualizar((e) => {
-    const dados = { descricao: r.descricao.trim().slice(0, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo };
+    const dados = { descricao: r.descricao.trim().slice(0, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo, ...(r.contaId ? { contaId: r.contaId } : {}) };
     return r.id ? { ...e, receitas: e.receitas.map((x) => (x.id === r.id ? { ...x, ...dados } : x)) } : { ...e, receitas: [...e.receitas, { id: novoId('r'), ...dados }] };
   });
   return true;
@@ -374,3 +374,37 @@ export const removerMeta = (id: string) => atualizar((e) => ({ ...e, metas: e.me
 export const restaurarMeta = (m: Meta) => atualizar((e) => (e.metas.some((x) => x.id === m.id) ? e : { ...e, metas: [...e.metas, m] }));
 export const desligarAviso = (tipo: string, desligar: boolean) =>
   atualizar((e) => { const set = new Set(e.config.avisosDesligados ?? []); if (desligar) set.add(tipo); else set.delete(tipo); return { ...e, config: { ...e.config, avisosDesligados: [...set] } }; });
+
+/* ---------- contas e transferências (organização; não mudam o "pode gastar") ---------- */
+export function criarConta(nome: string): string | null {
+  const n = nome.trim().slice(0, 30);
+  const e = getEstado();
+  if (!n || e.contas.length >= 12 || e.contas.some((c) => c.nome.toLowerCase() === n.toLowerCase())) return null;
+  const id = novoId('cc');
+  atualizar((x) => ({ ...x, contas: [...x.contas, { id, nome: n }] }));
+  return id;
+}
+export const renomearConta = (id: string, nome: string) => {
+  const n = nome.trim().slice(0, 30);
+  if (!n) return false;
+  atualizar((x) => ({ ...x, contas: x.contas.map((c) => (c.id === id ? { ...c, nome: n } : c)) }));
+  return true;
+};
+/** Só remove conta sem transferências (não apaga histórico); os lançamentos dela ficam "sem conta". */
+export function removerConta(id: string): boolean {
+  if (getEstado().transferencias.some((t) => t.de === id || t.para === id)) return false;
+  atualizar((x) => ({ ...x, contas: x.contas.filter((c) => c.id !== id), lancamentos: x.lancamentos.map((l) => (l.contaId === id ? { ...l, contaId: undefined } : l)), receitas: x.receitas.map((r) => (r.contaId === id ? { ...r, contaId: undefined } : r)) }));
+  return true;
+}
+export function salvarTransferencia(t: Omit<Transferencia, 'id'> & { id?: string }): boolean {
+  const e = getEstado();
+  const ids = new Set(e.contas.map((c: ContaBancaria) => c.id));
+  if (!ok(t.valor) || t.de === t.para || !ids.has(t.de) || !ids.has(t.para) || !/^\d{4}-\d{2}-\d{2}$/.test(t.data) || t.data > hojeSP()) return false;
+  atualizar((x) => {
+    const dados = { data: t.data, valor: arred(t.valor), de: t.de, para: t.para, ...(t.descricao?.trim() ? { descricao: t.descricao.trim().slice(0, 80) } : {}) };
+    return t.id ? { ...x, transferencias: x.transferencias.map((y) => (y.id === t.id ? { ...y, ...dados } : y)) } : { ...x, transferencias: [...x.transferencias, { id: novoId('tr'), ...dados }] };
+  });
+  return true;
+}
+export const removerTransferencia = (id: string) => atualizar((x) => ({ ...x, transferencias: x.transferencias.filter((t) => t.id !== id) }));
+export const restaurarTransferencia = (t: Transferencia) => atualizar((x) => (x.transferencias.some((y) => y.id === t.id) ? x : { ...x, transferencias: [...x.transferencias, t] }));

@@ -24,8 +24,8 @@ export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
   if (assistenteAtivo(e, 'contas')) {
     for (const c of contasDoMes(e, hoje.slice(0, 7), hoje)) {
       if (c.estado === 'paga') continue;
-      if (c.dias < 0) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, rota: '/mes' });
-      else if (c.dias <= e.config.avisos.antecedenciaDias) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} vence ${c.dias === 0 ? 'hoje' : c.dias === 1 ? 'amanhã' : `em ${c.dias} dias`} (${brl0(c.valor)})`, rota: '/mes' });
+      if (c.dias < 0) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, rota: '/lancamentos?aba=contas' });
+      else if (c.dias <= e.config.avisos.antecedenciaDias) out.push({ id: `conta-${c.gasto.id}`, texto: `${c.gasto.nome} vence ${c.dias === 0 ? 'hoje' : c.dias === 1 ? 'amanhã' : `em ${c.dias} dias`} (${brl0(c.valor)})`, rota: '/lancamentos?aba=contas' });
     }
   }
   if (assistenteAtivo(e, 'gastos')) {

@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
-import { evolucaoDividas, frasesDeEvolucao, gastosPorCategoria, patrimonioPorMes, planejadoXRealizado, serieMensal } from './evolucaoLogica';
-import { Barras, Linha, Rosquinha } from './graficos';
+import { compararMeses, evolucaoDividas, frasesDeEvolucao, gastosPorCategoria, patrimonioPorMes, planejadoXRealizado, serieMensal } from './evolucaoLogica';
+import { Linha, Rosquinha } from './graficos';
 import { corDe } from './categorias';
 import { Barra, Titulo, Vazio } from './ui';
 import { Metas } from './Metas';
+import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
 
 /* ---------- Evolução: cada gráfico responde uma pergunta. Sem dados suficientes, diz isso em vez de inventar. ---------- */
@@ -23,6 +24,7 @@ export function Evolucao() {
   const dividas = useMemo(() => evolucaoDividas(e, hoje), [e, hoje]);
   const patri = useMemo(() => patrimonioPorMes(e, hoje), [e, hoje]);
   const mesesComDados = serie.filter((m) => m.temDados).length;
+  const comp = useMemo(() => compararMeses(serie, mes), [serie, mes]);
   const atual = serie.find((m) => m.mes === mes);
   const fixas = atual?.fixas ?? 0;
   const variaveis = atual?.variaveis ?? 0;
@@ -30,7 +32,7 @@ export function Evolucao() {
   if (mesesComDados === 0)
     return (
       <>
-        <Titulo titulo="Evolução" sub="Aqui você acompanha como seu dinheiro está mudando." />
+        <Titulo titulo="Relatórios" sub="Aqui você acompanha como seu dinheiro está mudando." />
         <Vazio titulo="Ainda não há dados para mostrar" texto="Registre receitas e despesas por alguns dias e eu monto sua evolução, sem inventar nada." acao="Adicionar movimentação" onAcao={() => abrirAdicionar()} avatar="gastos" />
         <h2 className="gs-h2">Suas metas</h2>
         <Metas />
@@ -39,7 +41,7 @@ export function Evolucao() {
 
   return (
     <>
-      <Titulo titulo="Evolução" sub="O que mudou no seu dinheiro, em linguagem simples." />
+      <Titulo titulo="Relatórios" sub="O que mudou no seu dinheiro, em linguagem simples." />
 
       {frases.length > 0 ? (
         <section className="gs-card" aria-label="O que eu notei">
@@ -51,13 +53,16 @@ export function Evolucao() {
       )}
 
       <h2 className="gs-h2">Recebi mais do que gastei?</h2>
-      {mesesComDados >= 2 ? (
-        <div className="gs-card">
-          <Barras dados={serie.map((m) => [m.receitas, m.despesas])} rotulos={serie.map((m) => mesCurto(m.mes).slice(0, 3))} nomes={['Receitas', 'Despesas']} rotulo="Receitas versus despesas por mês" />
-          {serie.some((m) => m.receitaEstimada) && <p className="gs-nota">Nos meses sem receita registrada uso a renda que você informou (estimativa).</p>}
-        </div>
-      ) : (
-        <p className="gs-nota">Preciso de pelo menos dois meses com registros para comparar. Neste mês: {brl0(atual?.receitas ?? 0)} de receitas{atual?.receitaEstimada ? ' (estimadas)' : ''} e {brl0(atual?.despesas ?? 0)} de despesas.</p>
+      <GraficoPeriodo hoje={hoje} />
+      {comp && (
+        <>
+          <h2 className="gs-h2">{mesCurto(comp.atual.mes)} × {mesCurto(comp.anterior.mes)}</h2>
+          <div className="gs-card">
+            {([['Receitas', comp.atual.receitas, comp.anterior.receitas], ['Despesas', comp.atual.despesas, comp.anterior.despesas], ['Economia', comp.atual.receitas - comp.atual.despesas, comp.anterior.receitas - comp.anterior.despesas]] as [string, number, number][]).map(([r, a, b]) => (
+              <div className="gs-linha" key={r}><div className="gs-corpo"><b>{r}</b><small>{mesCurto(comp.anterior.mes)}: {brl0(b)}</small></div><span className="gs-valor">{brl0(a)}</span></div>
+            ))}
+          </div>
+        </>
       )}
 
       <h2 className="gs-h2">Para onde vai meu dinheiro?</h2>

@@ -38,8 +38,8 @@ export function Renda() {
           <span className="gs-rotulo">Primeiro passo</span>
           <p style={{ margin: '6px 0 10px' }}>Eu preciso saber quanto você gasta por mês pra calcular o seu número.</p>
           <div className="gs-acoes" style={{ marginTop: 0 }}>
-            <Link to="/mes" className="gs-btn">Cadastrar contas fixas</Link>
-            <Link to="/mes?aba=dia" className="gs-btn sec">Anotar gastos</Link>
+            <Link to="/lancamentos?aba=contas" className="gs-btn">Cadastrar contas fixas</Link>
+            <Link to="/lancamentos?aba=dia" className="gs-btn sec">Anotar gastos</Link>
           </div>
         </section>
       </>

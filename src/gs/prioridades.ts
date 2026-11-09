@@ -24,7 +24,7 @@ export function prioridades(e: Estado, hoje: string): Prioridade[] {
   const l: Prioridade[] = [];
   for (const c of contasDoMes(e, mes, hoje)) {
     const s: Semaforo = c.estado === 'paga' ? 'verde' : c.estado === 'atrasada' ? 'vermelho' : c.estado === 'vence-logo' ? 'amarelo' : 'verde';
-    l.push({ chave: `c-${c.gasto.id}`, semaforo: s, titulo: c.gasto.nome, detalhe: c.estado === 'paga' ? 'paga' : c.estado === 'atrasada' ? `atrasada há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}` : `vence ${diaCurto(c.vencimento)}`, valor: c.valor, data: c.vencimento, rota: '/mes' });
+    l.push({ chave: `c-${c.gasto.id}`, semaforo: s, titulo: c.gasto.nome, detalhe: c.estado === 'paga' ? 'paga' : c.estado === 'atrasada' ? `atrasada há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}` : `vence ${diaCurto(c.vencimento)}`, valor: c.valor, data: c.vencimento, rota: '/lancamentos?aba=contas' });
   }
   if (e.cartao && e.cartao.limite > 0 && e.cartao.usado > 0) {
     const v = proximaData(e.cartao.venceDia, hoje);

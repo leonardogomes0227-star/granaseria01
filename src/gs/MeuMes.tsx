@@ -25,21 +25,22 @@ function SeletorMes({ mes, onMudar, maximo }: { mes: string; onMudar: (m: string
   );
 }
 
-export function MeuMes() {
+export function MeuMes({ padrao = 'contas' }: { padrao?: 'contas' | 'historico' }) {
   const [params, setParams] = useSearchParams();
-  const aba = params.get('aba') === 'dia' ? 'dia' : params.get('aba') === 'historico' ? 'historico' : 'contas';
+  const pedida = params.get('aba');
+  const aba = pedida === 'dia' ? 'dia' : pedida === 'historico' ? 'historico' : pedida === 'contas' ? 'contas' : padrao;
   const hoje = useHoje();
   const [mes, setMes] = useState(mesDe(hoje));
   return (
     <>
-      <Titulo titulo="Meu dinheiro" />
+      <Titulo titulo={padrao === 'historico' ? 'Lançamentos' : 'Meu dinheiro'} />
       <button type="button" className="gs-btn cheio" style={{ width: '100%', marginBottom: 12 }} onClick={() => abrirAdicionar()}>+ Adicionar movimentação</button>
       <div className="gs-chips" aria-label="Atalhos" style={{ margin: "4px 0 12px" }}>
         <Link to="/plano/orcamento" className="gs-chip">Orçamento</Link>
         <Link to="/plano/calendario" className="gs-chip">Calendário de contas</Link>
       </div>
       <div className="gs-seg" role="tablist" aria-label="Meu mês">
-        <button type="button" role="tab" aria-selected={aba === 'contas'} className={aba === 'contas' ? 'on' : ''} onClick={() => setParams({})}>Contas fixas</button>
+        <button type="button" role="tab" aria-selected={aba === 'contas'} className={aba === 'contas' ? 'on' : ''} onClick={() => setParams({ aba: 'contas' })}>Contas fixas</button>
         <button type="button" role="tab" aria-selected={aba === 'dia'} className={aba === 'dia' ? 'on' : ''} onClick={() => setParams({ aba: 'dia' })}>Dia a dia</button>
         <button type="button" role="tab" aria-selected={aba === 'historico'} className={aba === 'historico' ? 'on' : ''} onClick={() => setParams({ aba: 'historico' })}>Histórico</button>
       </div>
@@ -65,7 +66,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
   useEffect(() => {
     if (pedido) {
       setBaixa(pedido);
-      setParams({}, { replace: true });
+      setParams({ aba: 'contas' }, { replace: true });
     }
   }, [pedido, setParams]);
   const total = totalFixos(e, mes);

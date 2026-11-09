@@ -32,6 +32,8 @@ O app **nunca** chama isso de "saldo bancário".
 - **Meta com nome**: guardar para a meta cria um aporte `meta:<id>` (sai do disponível, não infla a reserva de emergência). Excluir a meta passa o valor para a reserva.
 - **Receita do WhatsApp** (`incomes`) entra como receita uma vez (pelo `serverId`).
 
+- **Contas e transferências** (`contas`, `transferencias`, `contaId`): só organizam. Transferir entre contas é neutro (não entra em entrou/saiu nem muda o disponível). Conta com transferência não pode ser removida; sem transferências, remover desvincula os lançamentos (nada é apagado).
+
 ## Limites conhecidos (honestos)
 - Dinheiro é `number` com `arred()` de 2 casas; o banco usa `numeric(12,2)`. Sem centavos inteiros (decisão: não migrar o estado agora).
 - Sem contas bancárias separadas, transferências, estornos e pagamento parcial de conta fixa (a baixa aceita o valor pago; o excedente/diferença não gera pendência nova).

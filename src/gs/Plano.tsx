@@ -13,6 +13,9 @@ import { Titulo } from './ui';
 import { prioridades, resumoSemaforo, totalAResolver } from './prioridades';
 import { brl } from './datas';
 import { linhasDeCategoria } from './orcamento';
+import { Metas } from './Metas';
+import { Barra } from './ui';
+import { iconeDe } from './categorias';
 import { situacaoAtrasos } from './atrasosLogica';
 
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -78,6 +81,10 @@ export function Plano() {
     <>
       <Titulo titulo="Planejamento" sub="Contas, cartão e dívidas num só lugar. Resolva primeiro o que está em vermelho." />
       <Prioridades />
+      <OrcamentoResumo />
+      <h2 className="gs-h2" id="metas">Metas financeiras</h2>
+      <Metas />
+      <h2 className="gs-h2">Ferramentas</h2>
       <section className="gs-card destaque" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ flex: 'none', width: 92 }}><Anel pct={s.nota} grande={String(s.nota)} sub="nota" cor={s.nota >= 70 ? 'var(--success)' : s.nota >= 45 ? 'var(--gold-strong)' : 'var(--danger)'} tamanho={92} /></div>
         <div>
@@ -118,7 +125,7 @@ function Prioridades() {
   const hoje = useHoje();
   const lista = prioridades(e, hoje);
   if (lista.length === 0)
-    return <p className="gs-nota">Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro. <Link to="/mes">Cadastrar contas</Link></p>;
+    return <p className="gs-nota">Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro. <Link to="/lancamentos?aba=contas">Cadastrar contas</Link></p>;
   const r = resumoSemaforo(lista);
   const abertas = lista.filter((x) => x.semaforo !== 'verde');
   return (
@@ -136,5 +143,39 @@ function Prioridades() {
         </Link>
       ))}
     </section>
+  );
+}
+
+const ESTADO_ORC = { ok: ['Dentro do orçamento', 'ok'], aviso: ['Perto do limite', 'aviso'], perigo: ['Orçamento ultrapassado', 'erro'] } as const;
+/** Orçamento por categoria: quanto já usou do que você planejou, com 3 estados. */
+function OrcamentoResumo() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const mes = mesDe(hoje);
+  const linhas = linhasDeCategoria(e, mes).filter((l) => l.limite && l.tom !== 'sem');
+  return (
+    <>
+      <h2 className="gs-h2">Orçamento do mês</h2>
+      {linhas.length === 0 ? (
+        <div className="gs-card">
+          <p className="gs-mudo" style={{ margin: 0 }}>Defina um limite para as categorias em que você quer ter mais controle (alimentação, lazer…). Aqui você acompanha quanto já usou de cada uma.</p>
+          <Link to="/plano/orcamento" className="gs-btn sec pequeno" style={{ marginTop: 10 }}>Definir orçamento</Link>
+        </div>
+      ) : (
+        <div className="gs-card">
+          {linhas.map((l) => { const I = iconeDe(l.categoria); const [txt, tom] = ESTADO_ORC[l.tom as 'ok' | 'aviso' | 'perigo']; return (
+            <div key={l.categoria} style={{ padding: '8px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="gs-ic-cat" aria-hidden="true"><I size={18} /></span>
+                <div className="gs-corpo" style={{ flex: 1, minWidth: 0 }}><b>{l.categoria}</b><small className="gs-mudo" style={{ display: 'block' }}>{brl0(l.gasto)} de {brl0(l.limite ?? 0)} utilizados</small></div>
+                <span className={`gs-badge ${tom}`}>{txt}</span>
+              </div>
+              <Barra pct={l.pct ?? 0} tom={l.tom === 'perigo' ? 'perigo' : l.tom === 'ok' ? 'ok' : ''} rotulo={`${l.categoria}: ${Math.round(l.pct ?? 0)}% do limite`} />
+            </div>
+          ); })}
+          <Link to="/plano/orcamento" className="gs-btn link">Ajustar limites</Link>
+        </div>
+      )}
+    </>
   );
 }
