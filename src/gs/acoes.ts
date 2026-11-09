@@ -4,7 +4,7 @@ import { atualizar, getEstado } from './store';
 import { arred, novoId, hoje as hojeSP, vencimentoNoMes } from './datas';
 import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
 import { cfgAtrasos, deOndeSai, type Atraso } from './atrasosLogica';
-import type { Estado, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
+import type { Estado, Meta, Receita, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
@@ -34,7 +34,7 @@ export const desfazerBaixa = (id: string, mes: string) =>
 export function salvarLancamento(l: Omit<Lancamento, 'id'> & { id?: string }): boolean {
   if (!ok(l.valor) || !l.categoria || !/^\d{4}-\d{2}-\d{2}$/.test(l.data) || l.data > hojeSP()) return false;
   atualizar((e) => {
-    const dados = { descricao: l.descricao.trim().slice(0, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria };
+    const dados = { descricao: l.descricao.trim().slice(0, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, ...(l.forma ? { forma: l.forma.slice(0, 20) } : {}) };
     return l.id ? { ...e, lancamentos: e.lancamentos.map((x) => (x.id === l.id ? { ...x, ...dados } : x)) } : { ...e, lancamentos: [...e.lancamentos, { id: novoId('l'), ...dados }] };
   });
   return true;
@@ -59,8 +59,12 @@ export function importarDoServidor(entradas: { id: number; kind: 'out' | 'in'; a
     const novos: Lancamento[] = saidas
       .filter((x) => !vistosL.has(x.id))
       .map((x) => ({ id: `srv-${x.id}`, serverId: x.id, descricao: x.description || x.category, valor: arred(x.amount), data: x.created_at.slice(0, 10), categoria: x.category }));
+    const vistosR = new Set(e.receitas.map((r) => r.serverId));
+    const receitas: Receita[] = entradas
+      .filter((x) => x.kind === 'in' && x.amount > 0 && !vistosR.has(x.id))
+      .map((x) => ({ id: `srv-in-${x.id}`, serverId: x.id, descricao: x.description || x.category || 'Receita', valor: arred(x.amount), data: x.created_at.slice(0, 10), tipo: /sal[aá]rio|holerite|pagamento mensal/i.test(`${x.description} ${x.category}`) ? ('salario' as const) : ('extra' as const) }));
     const aportes: Aporte[] = guardados.filter((x) => !vistosA.has(`srv-${x.id}`)).map((x) => ({ id: `srv-${x.id}`, data: x.created_at.slice(0, 10), valor: arred(x.amount), origem: 'manual' }));
-    return novos.length || aportes.length ? { ...e, lancamentos: [...e.lancamentos, ...novos], aportes: [...e.aportes, ...aportes] } : e;
+    return novos.length || aportes.length || receitas.length ? { ...e, lancamentos: [...e.lancamentos, ...novos], aportes: [...e.aportes, ...aportes], receitas: [...e.receitas, ...receitas] } : e;
   });
 }
 
@@ -322,3 +326,51 @@ export function naoDevo(a: Atraso): Desfazer {
 }
 export const ignorarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c) => ({ ...c, ignorados: [...new Set([...c.ignorados, chave])].slice(-200) })));
 export const voltarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c) => ({ ...c, ignorados: c.ignorados.filter((k) => k !== chave) })));
+
+/* ---------- receitas, saldo e metas ---------- */
+export function salvarReceita(r: Omit<Receita, 'id'> & { id?: string }): boolean {
+  if (!ok(r.valor) || !/^\d{4}-\d{2}-\d{2}$/.test(r.data) || r.data > hojeSP()) return false;
+  atualizar((e) => {
+    const dados = { descricao: r.descricao.trim().slice(0, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo };
+    return r.id ? { ...e, receitas: e.receitas.map((x) => (x.id === r.id ? { ...x, ...dados } : x)) } : { ...e, receitas: [...e.receitas, { id: novoId('r'), ...dados }] };
+  });
+  return true;
+}
+export const removerReceita = (id: string) => atualizar((e) => ({ ...e, receitas: e.receitas.filter((x) => x.id !== id) }));
+export const restaurarReceita = (r: Receita) => atualizar((e) => (e.receitas.some((x) => x.id === r.id) ? e : { ...e, receitas: [...e.receitas, r] }));
+
+/** "Quanto você tem na conta agora?" — a base confirmada do "pode gastar". undefined apaga. */
+export const informarSaldo = (valor: number | undefined, data = hojeSP()) =>
+  atualizar((e) => ({ ...e, config: { ...e.config, saldoInformado: valor === undefined || !Number.isFinite(valor) ? undefined : { valor: arred(valor), data } } }));
+
+export function criarMeta(m: { nome: string; alvo: number; prazo?: string }): string | null {
+  const nome = m.nome.trim().slice(0, 40);
+  if (!nome || !ok(m.alvo) || getEstado().metas.length >= 20) return null;
+  const id = novoId('m');
+  atualizar((e) => ({ ...e, metas: [...e.metas, { id, nome, alvo: arred(m.alvo), criadaEm: hojeSP(), prazo: m.prazo || undefined, guardados: [] }] }));
+  return id;
+}
+/** Guardar para uma meta: entra na meta e sai do "pode gastar" (é um aporte, mas fora da reserva de emergência). */
+export function guardarNaMeta(id: string, valor: number, data = hojeSP()): boolean {
+  if (!ok(valor)) return false;
+  atualizar((e) => ({
+    ...e,
+    metas: e.metas.map((m) => (m.id === id ? { ...m, guardados: [...m.guardados, { data, valor: arred(valor) }] } : m)),
+    aportes: [...e.aportes, { id: novoId('a'), data, valor: arred(valor), origem: 'meta' as const, agenteId: `meta:${id}` }],
+  }));
+  return true;
+}
+export const desfazerGuardarNaMeta = (id: string, data: string, valor: number) =>
+  atualizar((e) => {
+    const i = e.aportes.findIndex((a) => a.agenteId === `meta:${id}` && a.data === data && a.valor === valor);
+    return {
+      ...e,
+      aportes: i < 0 ? e.aportes : e.aportes.filter((_, k) => k !== i),
+      metas: e.metas.map((m) => { if (m.id !== id) return m; const j = m.guardados.findIndex((g) => g.data === data && g.valor === valor); return j < 0 ? m : { ...m, guardados: m.guardados.filter((_, k) => k !== j) }; }),
+    };
+  });
+/** Excluir a meta: o que já foi guardado nela passa para a reserva (o dinheiro não some). */
+export const removerMeta = (id: string) => atualizar((e) => ({ ...e, metas: e.metas.filter((m) => m.id !== id), aportes: e.aportes.map((a) => (a.agenteId === `meta:${id}` ? { ...a, agenteId: undefined, origem: 'reserva' as const } : a)) }));
+export const restaurarMeta = (m: Meta) => atualizar((e) => (e.metas.some((x) => x.id === m.id) ? e : { ...e, metas: [...e.metas, m] }));
+export const desligarAviso = (tipo: string, desligar: boolean) =>
+  atualizar((e) => { const set = new Set(e.config.avisosDesligados ?? []); if (desligar) set.add(tipo); else set.delete(tipo); return { ...e, config: { ...e.config, avisosDesligados: [...set] } }; });

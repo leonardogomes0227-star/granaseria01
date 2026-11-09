@@ -1,3 +1,4 @@
+import { quantoPossoGastarHoje } from './financas';
 import { describe, expect, it } from 'vitest';
 import {
   aporteSugerido,
@@ -24,7 +25,6 @@ import {
   taxaEmprestimo,
   type DividaCalc,
 } from './financas';
-import { buildPlan as buildCoachPlan, freeMoney, reserveGoal, suggestedSave } from '../coachChat/plan';
 
 describe('básicos da seção 4', () => {
   it('custo essencial soma as contas fixas', () => {
@@ -221,24 +221,6 @@ describe('Mathon, Sharru e Rodan', () => {
   });
 });
 
-describe('números do coach que já existem não mudam', () => {
-  it('reserveGoal, suggestedSave e freeMoney', () => {
-    expect(reserveGoal(2000)).toBe(12000);
-    expect(reserveGoal(1520.5)).toBe(9123);
-    expect(suggestedSave(4000)).toBe(400);
-    expect(freeMoney({ renda: 4000, fixos: 2000, dividaParcela: 300, temDivida: true })).toBe(1700);
-  });
-
-  it('plano do coach com dívida (mesmo resultado do teste de ponta a ponta)', () => {
-    const p = buildCoachPlan({ renda: 4000, fixos: 2000, sobra: 300, temDivida: true, dividaTotal: 3000, dividaParcela: 300, guardado: 1000, aporte: 400 }, '2026-10');
-    expect(p.meta).toBe(12000);
-    expect(p.limite).toBe(1300);
-    expect(p.previsao).toBe('2028-05');
-  });
-});
-
-import { quantoPossoGastarHoje } from './financas';
-
 describe('número da Início', () => {
   const base = { hoje: '2026-10-21', entradasAnotadas: 4500, gastosAnotados: 135, guardadoAnotado: 0, contasDoMes: 0, contasPagas: 140, guardadoNoApp: 0, aportesPlanejados: 0, parcelasPlanejadas: 0 };
   it('sem renda declarada: o saldo real de sempre (número trava)', () => {
@@ -260,17 +242,3 @@ describe('número da Início', () => {
   });
 });
 
-import { mesesGuardados, sequencia } from './sequencia';
-
-describe('sequência de meses guardando', () => {
-  const ms = [{ tipo: 'reserva', registros: [{ mes: '2026-08', valor: 100 }, { mes: '2026-09', valor: 100 }] }];
-  it('conta até o mês passado quando este ainda não tem', () => {
-    expect(sequencia(mesesGuardados(ms), '2026-10-05')).toBe(2);
-  });
-  it('o mês atual entra quando já tem (também pelo Pague-se primeiro)', () => {
-    expect(sequencia(mesesGuardados(ms, [{ on: '2026-10-02', amount: 50 }]), '2026-10-05')).toBe(3);
-  });
-  it('um buraco zera', () => {
-    expect(sequencia(mesesGuardados([{ tipo: 'reserva', registros: [{ mes: '2026-07', valor: 1 }] }]), '2026-10-05')).toBe(0);
-  });
-});

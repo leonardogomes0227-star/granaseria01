@@ -5,6 +5,7 @@ export const SCHEMA_VERSION = 1;
 export type CategoriaFixa = 'Aluguel' | 'Carro' | 'Financiamento' | 'Cartão' | 'Luz' | 'Água' | 'Internet' | 'Outros';
 export const CATEGORIAS_FIXAS: CategoriaFixa[] = ['Aluguel', 'Carro', 'Financiamento', 'Cartão', 'Luz', 'Água', 'Internet', 'Outros'];
 export const CATEGORIAS_DIA: string[] = ['Comida', 'Transporte', 'Mercado', 'Lazer', 'Saúde', 'Compras', 'Casa', 'Outros'];
+export const CATEGORIAS_MOV: string[] = [...CATEGORIAS_DIA.slice(0, -1), 'Assinaturas', 'Outros'];
 
 export interface Config {
   nome?: string;
@@ -17,6 +18,10 @@ export interface Config {
   reservaMeses?: number; // meta da reserva em meses de gasto (padrão 6)
   reservaMensal?: number; // quanto a pessoa decidiu guardar por mês (padrão: o percentual da renda)
   rendaAlvo?: number; // quanto quer receber por mês dos rendimentos (padrão: o gasto médio)
+  saldoInformado?: { valor: number; data: string }; // saldo que a própria pessoa informou (base confirmada do "pode gastar")
+  objetivo?: string; // principal objetivo financeiro (onboarding)
+  avisosDesligados?: string[]; // tipos de aviso que a pessoa desligou ('vencimento', 'orcamento', 'coach'...)
+  checklistFeito?: string[]; // passos do checklist de configuração marcados como "agora não"
 }
 
 export interface Pagamento {
@@ -38,7 +43,25 @@ export interface Lancamento {
   valor: number;
   data: string;
   categoria: string;
+  forma?: string; // pix, débito, dinheiro, cartão...
   serverId?: number; // veio do WhatsApp (api/lancamentos)
+}
+/** Receita registrada. 'salario' confirma a renda do mês; 'extra' soma ao que a pessoa tem. */
+export interface Receita {
+  id: string;
+  descricao: string;
+  valor: number;
+  data: string;
+  tipo: 'salario' | 'extra';
+  serverId?: number; // veio do WhatsApp
+}
+export interface Meta {
+  id: string;
+  nome: string;
+  alvo: number;
+  criadaEm: string;
+  prazo?: string; // 'AAAA-MM-DD' (opcional)
+  guardados: { data: string; valor: number }[];
 }
 export type OrigemAporte = 'manual' | 'reserva' | 'meta' | 'extra' | 'investimento' | 'saque';
 export interface Aporte {
@@ -182,6 +205,8 @@ export interface Estado {
   config: Config;
   gastosFixos: GastoFixo[];
   lancamentos: Lancamento[];
+  receitas: Receita[];
+  metas: Meta[];
   aportes: Aporte[];
   dividas: Divida[];
   planoDividas: PlanoDividas | null;
@@ -201,6 +226,8 @@ export const ESTADO_INICIAL = (): Estado => ({
   config: { renda: 0, horasMes: 220, avisos: { antecedenciaDias: 2, horario: '09:00' }, onboardingFeito: false, reservaPct: 10 },
   gastosFixos: [],
   lancamentos: [],
+  receitas: [],
+  metas: [],
   aportes: [],
   dividas: [],
   planoDividas: null,

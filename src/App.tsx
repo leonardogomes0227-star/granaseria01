@@ -32,20 +32,22 @@ import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
 import { MeuMes } from './gs/MeuMes';
 import { Plano } from './gs/Plano';
-import { Dividas } from './gs/Dividas';
-import { Atrasos } from './gs/Atrasos';
-import { PossoComprar } from './gs/PossoComprar';
-import { Assinaturas } from './gs/Assinaturas';
-import { Reserva } from './gs/Reserva';
-import { Renda } from './gs/Renda';
-import { Emprestimos } from './gs/Emprestimos';
-import { Extras } from './gs/Extras';
-import { Orcamento } from './gs/Orcamento';
-import { Calendario } from './gs/Calendario';
-import { ParceladoTela } from './gs/Parcelado';
-import { CartaoTela } from './gs/Cartao';
+const Dividas = lazy(() => importarComRetry(() => import('./gs/Dividas')).then((m) => ({ default: m.Dividas })));
+const Atrasos = lazy(() => importarComRetry(() => import('./gs/Atrasos')).then((m) => ({ default: m.Atrasos })));
+const PossoComprar = lazy(() => importarComRetry(() => import('./gs/PossoComprar')).then((m) => ({ default: m.PossoComprar })));
+const Assinaturas = lazy(() => importarComRetry(() => import('./gs/Assinaturas')).then((m) => ({ default: m.Assinaturas })));
+const Reserva = lazy(() => importarComRetry(() => import('./gs/Reserva')).then((m) => ({ default: m.Reserva })));
+const Renda = lazy(() => importarComRetry(() => import('./gs/Renda')).then((m) => ({ default: m.Renda })));
+const Emprestimos = lazy(() => importarComRetry(() => import('./gs/Emprestimos')).then((m) => ({ default: m.Emprestimos })));
+const Extras = lazy(() => importarComRetry(() => import('./gs/Extras')).then((m) => ({ default: m.Extras })));
+const Orcamento = lazy(() => importarComRetry(() => import('./gs/Orcamento')).then((m) => ({ default: m.Orcamento })));
+const Calendario = lazy(() => importarComRetry(() => import('./gs/Calendario')).then((m) => ({ default: m.Calendario })));
+const Evolucao = lazy(() => importarComRetry(() => import('./gs/Evolucao')).then((m) => ({ default: m.Evolucao })));
+const Coach = lazy(() => importarComRetry(() => import('./gs/Coach')).then((m) => ({ default: m.Coach })));
+const Assistentes = lazy(() => importarComRetry(() => import('./gs/Assistentes')).then((m) => ({ default: m.Assistentes })));
+const ParceladoTela = lazy(() => importarComRetry(() => import('./gs/Parcelado')).then((m) => ({ default: m.ParceladoTela })));
+const CartaoTela = lazy(() => importarComRetry(() => import('./gs/Cartao')).then((m) => ({ default: m.CartaoTela })));
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
-import { Assistentes } from './gs/Assistentes';
 import { MeusDados } from './gs/MeusDados';
 import { Sobre } from './gs/Sobre';
 import { Planos } from './gs/Planos';
@@ -269,13 +271,15 @@ function App() {
         <Route path="/plano/cartao" element={<Pagina titulo="Cartão de crédito" o="o seu cartão"><CartaoTela /></Pagina>} />
         <Route path="/plano/extras" element={<Pagina titulo="Dinheiro extra" o="a ferramenta"><Extras /></Pagina>} />
         <Route path="/investir" element={<Pagina titulo="Investir" o="a aba Investir"><Suspense fallback={null}><Investir /></Suspense></Pagina>} />
+        <Route path="/evolucao" element={<Pagina titulo="Evolução" o="a sua evolução"><Evolucao /></Pagina>} />
+        <Route path="/coach" element={<Pagina titulo="Coach" o="o seu coach"><Coach /></Pagina>} />
         <Route path="/assistentes" element={<Pagina titulo="Assistentes" o="os seus assistentes"><Assistentes /></Pagina>} />
         <Route path="/dados" element={<Pagina titulo="Meus dados" o="os seus dados"><MeusDados /></Pagina>} />
         <Route path="/sobre" element={<Pagina titulo="Sobre e avisos" o="" aberto><Sobre /></Pagina>} />
         <Route path="/planos" element={<Pagina titulo="Planos" o="" aberto><Planos /></Pagina>} />
         <Route path="/painel" element={<PainelRedirect />} />
-        {['/missoes', '/conselheiros', '/agentes', '/perfil', '/selos', '/coach', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
-          <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/plano' : de === '/perfil' ? '/dados' : de === '/selos' ? '/' : '/assistentes'} replace />} />
+        {['/missoes', '/conselheiros', '/agentes', '/perfil', '/selos', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
+          <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/plano' : de === '/perfil' ? '/dados' : de === '/selos' ? '/' : '/coach'} replace />} />
         ))}
         <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
         <Route
@@ -388,7 +392,7 @@ function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: st
         ) : (
           <LoginGate what={o}>
             <ErroGlobal>
-              <Porteiro>{children}</Porteiro>
+              <Porteiro><Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}>{children}</Suspense></Porteiro>
             </ErroGlobal>
           </LoginGate>
         )}

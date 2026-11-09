@@ -1,0 +1,66 @@
+/* Grana Séria 2.0: componentes novos (Início, coach, histórico, evolução). Usa os tokens de src/tokens.css e as classes de gs.css. */
+
+/* botão de adicionar: flutuante no celular, no topo no computador */
+.gs-fab { position: fixed; z-index: 45; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); width: 56px; height: 56px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; background: #120E0C; color: #D8B060; box-shadow: 0 10px 24px -8px rgba(18, 14, 12, .6), 0 0 0 2px #D8B060; cursor: pointer; transition: transform .15s var(--curva, ease); }
+.gs-fab:active { transform: scale(.94); }
+.gs-add-topo { display: none; }
+@media (min-width: 761px) {
+  .gs-fab { display: none; }
+  .gs-add-topo { display: inline-flex; margin-left: auto; margin-right: 12px; }
+}
+
+/* Início */
+.gs-cofre-btn { display: block; width: 100%; text-align: left; border: 0; font: inherit; cursor: pointer; }
+.gs-cofre-btn:focus-visible { outline: 3px solid #D8B060; outline-offset: 3px; }
+.gs-cofre .gs-cofre-como { margin-top: 10px; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; color: #D8B060; }
+.gs-cofre .gs-acoes .gs-btn.sec { background: transparent; color: #FBF6EC; border-color: rgba(251, 246, 236, .35); }
+.gs-coach { border-left: 4px solid var(--gold-strong); }
+.gs-coach b { display: block; font-family: var(--serif); font-size: 20px; font-weight: 500; margin: 4px 0; }
+.gs-coach p { margin: 0 0 10px; }
+.gs-coach.perigo { border-left-color: var(--danger); }
+.gs-coach.aviso { border-left-color: #C98A00; }
+.gs-coach.ok { border-left-color: var(--success); }
+.gs-missao b { display: block; font-size: 17px; margin-top: 2px; }
+.gs-resumo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.gs-ind { background: var(--ivory); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gs-ind b { font-family: var(--serif); font-size: 22px; font-weight: 500; overflow-wrap: anywhere; }
+.gs-ind small { color: var(--ink-muted); font-size: 12px; line-height: 17px; }
+.gs-ind .gs-btn.link { min-height: 36px; padding: 0; align-self: flex-start; }
+@media (min-width: 761px) { .gs-resumo { grid-template-columns: repeat(3, 1fr); } }
+
+/* cálculo explicado */
+.gs-calculo { border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin: 12px 0; }
+.gs-calculo-linha { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.gs-calculo-linha:last-child { border-bottom: 0; }
+.gs-calculo-linha b { font-weight: 600; display: block; }
+.gs-calculo-linha small { color: var(--ink-muted); font-size: 12px; }
+.gs-calculo-linha.total { background: var(--gold-soft); }
+.gs-selo { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.gs-selo.confirmado { background: rgba(31, 138, 76, .14); color: #17683A; }
+.gs-selo.estimado { background: rgba(201, 138, 0, .16); color: #8A5E00; }
+
+/* histórico */
+.gs-trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gs-trio > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gs-trio b { font-family: var(--serif); font-size: 19px; font-weight: 500; overflow-wrap: anywhere; }
+.gs-busca { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 14px; margin: 0 0 12px; background: var(--ivory); border: 1px solid var(--line-strong); border-radius: 16px; }
+.gs-busca input { flex: 1; min-width: 0; border: 0; background: transparent; font: inherit; color: inherit; outline: none; min-height: 44px; }
+.gs-select { width: 100%; min-height: 48px; margin: 0 0 12px; padding: 0 14px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--ivory); font: inherit; color: inherit; }
+.gs-linha-btn { width: 100%; background: none; border: 0; text-align: left; font: inherit; color: inherit; text-decoration: none; cursor: pointer; }
+.gs-linha-btn:focus-visible { outline: 2px solid var(--gold-strong); outline-offset: 2px; border-radius: 8px; }
+
+/* evolução e planejamento */
+.gs-frase { margin: 8px 0 0; padding-left: 12px; border-left: 3px solid var(--line-strong); }
+.gs-frase.ok { border-left-color: var(--success); }
+.gs-frase.aviso { border-left-color: #C98A00; }
+.gs-ponto { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.gs-semaforo { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(18, 14, 12, .06); }
+
+/* conversa com o coach */
+.gs-conversa { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; max-height: 52vh; overflow-y: auto; }
+.gs-msg { margin: 0; padding: 10px 14px; border-radius: 16px; max-width: 88%; line-height: 22px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gs-msg.eu { align-self: flex-end; background: #120E0C; color: #FBF6EC; border-bottom-right-radius: 4px; }
+.gs-msg.coach { align-self: flex-start; background: var(--gold-soft); border-bottom-left-radius: 4px; }
+.gs-envio { display: flex; gap: 8px; }
+.gs-envio input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--ivory); font: inherit; color: inherit; }
+@media (prefers-reduced-motion: reduce) { .gs-fab { transition: none; } }

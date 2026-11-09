@@ -1,6 +1,6 @@
 # PROGRESS
 
-**Onde estamos:** app novo no ar (areia e dourado). 5 abas: Início, Meu mês, Ferramentas, Investir, Assistentes. Capa nova pra quem não conhece finanças.
+**Onde estamos (Grana Séria 2.0, nov/26):** 5 áreas: Início, Meu dinheiro, Planejar, Evolução, Coach. Detalhes e pendências em `GRANA_SERIA_ROADMAP.md`; regras de cálculo em `docs/regras-financeiras.md`. (Texto abaixo é o histórico anterior.) Capa nova pra quem não conhece finanças.
 
 ## Feito
 - **Visual e estrutura:** tema areia/dourado em todo o site, PWA, 5 abas, avatar abre "Meus dados", capa nova (linguagem simples, glossário, exemplo, FAQ).

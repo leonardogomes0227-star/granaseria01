@@ -8,6 +8,7 @@ import './site.css';
 import './theme.css';
 import './app.css';
 import './gs/gs.css';
+import './gs/gs2.css';
 import { initAnalytics } from './analytics';
 
 initAnalytics();
