@@ -7,6 +7,18 @@ Base: auditoria da Fase 1 (nov/2026), sem nenhuma alteração de código. Comple
 
 | Fase | Tema | Status |
 |---|---|---|
+| 1 | Auditoria + roadmap | Concluída |
+| 2 | Experiência e arquitetura | Concluída (`docs/regras-financeiras.md`, rotas e navegação abaixo) |
+| 3 | Design system | Concluída em escopo enxuto (reuso de `tokens.css`/`gs.css` + `gs2.css`; sem reescrever o CSS legado) |
+| 4 | Dashboard (Início) | Concluída |
+| 5 | Meu dinheiro | Concluída (parcial: ver pendências) |
+| 6 | Planejamento | Concluída (parcial: ver pendências) |
+| 7 | Evolução | Concluída |
+| 8 | Coach financeiro | Concluída (IA depende de `ANTHROPIC_API_KEY`) |
+| 9 | Mobile e performance | Concluída (bundle inicial −18%; verificado em 390 e 1280 px) |
+| 10 | Testes finais | Concluída (ver registro) |
+
+---|---|---|
 | 1 | Auditoria + roadmap | **Concluída (aguardando aprovação)** |
 | 2 | Experiência e arquitetura | Pendente |
 | 3 | Design system | Pendente |
@@ -143,8 +155,36 @@ Cada fase termina com: `npm test`, `npm run typecheck`, `npm run lint`, `npm run
 
 ## 10. Registro de progresso
 
-### Fase 1 — Auditoria (concluída)
-- **Arquivos alterados:** `GRANA_SERIA_ROADMAP.md` (novo). Nenhum código tocado.
-- **Testes executados:** baseline `npm test` (44 arquivos, 501 testes, todos passando); `typecheck`, `typecheck:server` e `lint` sem erros.
-- **Problemas encontrados:** ver seção 3.
-- **Próxima etapa:** aguardar aprovação e respostas da seção 9; então Fase 2.
+### Fase 1 — Auditoria
+Só este documento. Baseline: 501 testes passando.
+
+### Fases 2 a 10 — Implementação (nov/2026)
+**Decisões aprovadas e aplicadas:** Investir virou item de Planejamento; saldo informado opcional; código de personagens sem rota removido (62 arquivos mortos, achados por análise de alcance a partir de `src/main.tsx` e `api/*`); personas removidas de `api/conselheiro.ts`.
+
+**Navegação nova (rotas antigas continuam como alias):** Início `/` · Meu dinheiro `/mes` · Planejar `/plano` (inclui Investir) · Evolução `/evolucao` · Coach `/coach` (Assistentes/lembretes seguem em `/assistentes`, ligado pelo Coach).
+
+**Entregue**
+- **Regra única do disponível** (`selectores.ts`, `docs/regras-financeiras.md`): modos saldo/renda/incompleto, selo confirmado × estimado, fatura aberta do cartão como compromisso, receitas (`salario` confirma renda; `extra` soma), "Como calculei" com cada linha. 12 testes.
+- **Início "Meu dia financeiro"** (`Inicio.tsx`): saudação por horário e situação (sem dados / endividado / atenção / organizado, que reordena os blocos), "pode gastar hoje" clicável, 6 indicadores com explicação, orientação do coach com "Por que estou vendo isso?", missão do dia, próximas ações, para onde vai o dinheiro, metas, checklist de configuração.
+- **Meu dinheiro:** botão global "+ Adicionar movimentação" (FAB no celular, botão no topo no PC) com despesa/receita, categoria sugerida pela descrição (Mercado, Netflix→Assinaturas, Farmácia→Saúde…), atalhos dos gastos frequentes, forma de pagamento, editar/excluir com confirmação e desfazer; aba **Histórico** com busca e filtros; conta paga derivada (sem duplicar).
+- **Planejamento:** semáforo de prioridades (contas, fatura, parcelas) no topo; Investir entra aqui.
+- **Evolução:** receitas × despesas, categorias, fixo × variável, planejado × realizado (só com limites definidos pela pessoa), dívidas, patrimônio, metas, frases comparativas que só aparecem com dados suficientes.
+- **Metas** (nova entidade): criar, guardar (sai do disponível, não infla a reserva), excluir com desfazer.
+- **Coach:** recomendações por regras, explicáveis e filtráveis (preferências de aviso) funcionam sem IA. Conversa com IA em `api/conselheiro.ts` v2: contexto **montado no servidor** (`server/coachContexto.ts`, sem nome/telefone/e-mail/descrições), login por link do WhatsApp **ou e-mail**, limite diário, `GET` informa se está ativa. Sem chave, a tela diz isso (nada simulado).
+- **Onboarding em 5 passos pulaveis** (renda, despesas fixas, dívidas, cartão, objetivo) + primeira visão (estimativa) + checklist no Início.
+- **Performance:** telas de ferramentas, Evolução e Coach com carregamento sob demanda (bundle principal 957 kB → 780 kB).
+
+**Arquivos principais:** `src/gs/{selectores,coachRegras,evolucaoLogica,movimentos,prioridades,sugestoes}.ts` (puros, testados), `src/gs/{Inicio,AdicionarMov,Historico,Evolucao,Coach,Metas,ComoCalculei,Checklist,Onboarding,Plano,MeuMes}.tsx`, `src/gs/gs2.css`, `server/coachContexto.ts`, `api/conselheiro.ts`, `src/components/AppShell.tsx`, `src/App.tsx`, `docs/regras-financeiras.md`.
+
+**Testes (finais):** 37 arquivos, 315 testes, todos passando; `typecheck`, `typecheck:server`, `lint` (0 erros), `build` verdes. A contagem caiu de 501 para 315 porque os ~220 testes de código morto removido saíram junto; os novos cobrem disponível, coach por regras, evolução, movimentos, prioridades, sugestões, migração aditiva e contexto do coach. Fluxo ponta a ponta no navegador (Playwright, 390 px): onboarding → primeira visão → adicionar despesa e receita → histórico → excluir com confirmação → criar meta e guardar → Coach, sem erros de página; sem rolagem horizontal em Início, Meu dinheiro, Planejar, Evolução e Coach (390 e 1280 px).
+
+### Pendências e limites (honestos)
+1. **Cartão:** não há ainda fechamento/corte automático da fatura nem visão de fatura por mês no calendário além do que já existia; a regra de não duplicar está feita, o "fechar fatura" é manual como antes.
+2. **Concorrência entre dispositivos** (last-write-wins no `PUT /api/painel`): não alterado (risco 9). Proposta: `updatedAt` como condição de gravação. Mudança de sincronização pede cuidado e testes próprios.
+3. **Isolamento entre usuários:** coberto por desenho (todo handler filtra por telefone/usuário do token) e pelo teste do contexto do coach, mas **sem teste automatizado por endpoint** (exige simular o Supabase). Recomendado antes de abrir para muita gente.
+4. **Recorrência de movimentações, transferências entre contas, estornos e contas bancárias separadas:** não implementados (o modelo atual é "conta fixa" + gastos). Receita recorrente é só a renda mensal informada.
+5. **Notificações:** preferências por tipo (vencimento/orçamento/coach) valem dentro do app. Lembretes por WhatsApp seguem as regras antigas (`api/lembretes`, `api/resumo`) e dependem dos modelos aprovados pela Meta (ver `PROGRESS.md`).
+6. **Conversa com IA:** só funciona com `ANTHROPIC_API_KEY` na Vercel (modelo em `CONSELHEIRO_AI_MODEL`, limite em `CONSELHEIRO_DAILY_LIMIT`). O contexto inclui nomes das contas e dívidas que a pessoa cadastrou.
+7. **SQL pendentes** (`supabase/fundacao.sql`, `coach.sql`): seguem como antes; nada novo depende deles. Nenhuma migration nova.
+8. **Nomes antigos** ainda existem em `src/agents.ts`, `src/missoes.ts`, `src/lib/financas.ts`, `api/coach.ts`/`server/coach.ts`, `src/coachChat/months.ts` e no mapa de migração (`ID_ANTIGO`), que precisam existir para dados antigos e para o WhatsApp. Limpeza adicional merece um PR próprio.
+9. Gráficos próprios em SVG (sem biblioteca); acessíveis por rótulo, sem tabela alternativa.

@@ -8,6 +8,8 @@ import { contasDoMes, faltaPagar, fixosPagos, lancamentosDoMes, limiteDiario, li
 import { CATEGORIAS_DIA, CATEGORIAS_FIXAS, type GastoFixo, type Lancamento } from './tipos';
 import { desfazerBaixa, removerGastoFixo, removerLancamento, restaurarGastoFixo, restaurarLancamento, salvarGastoFixo, salvarLancamento } from './acoes';
 import { BaixaSheet } from './BaixaSheet';
+import { Historico } from './Historico';
+import { abrirAdicionar } from './AdicionarMov';
 import { Campo, CampoDinheiro, CampoNumero, Confirmar, Folha, Titulo, Vazio } from './ui';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 
@@ -25,12 +27,13 @@ function SeletorMes({ mes, onMudar, maximo }: { mes: string; onMudar: (m: string
 
 export function MeuMes() {
   const [params, setParams] = useSearchParams();
-  const aba = params.get('aba') === 'dia' ? 'dia' : 'contas';
+  const aba = params.get('aba') === 'dia' ? 'dia' : params.get('aba') === 'historico' ? 'historico' : 'contas';
   const hoje = useHoje();
   const [mes, setMes] = useState(mesDe(hoje));
   return (
     <>
-      <Titulo titulo="Meu mês" />
+      <Titulo titulo="Meu dinheiro" />
+      <button type="button" className="gs-btn cheio" style={{ width: '100%', marginBottom: 12 }} onClick={() => abrirAdicionar()}>+ Adicionar movimentação</button>
       <div className="gs-chips" aria-label="Atalhos" style={{ margin: "4px 0 12px" }}>
         <Link to="/plano/orcamento" className="gs-chip">Orçamento</Link>
         <Link to="/plano/calendario" className="gs-chip">Calendário de contas</Link>
@@ -38,9 +41,10 @@ export function MeuMes() {
       <div className="gs-seg" role="tablist" aria-label="Meu mês">
         <button type="button" role="tab" aria-selected={aba === 'contas'} className={aba === 'contas' ? 'on' : ''} onClick={() => setParams({})}>Contas fixas</button>
         <button type="button" role="tab" aria-selected={aba === 'dia'} className={aba === 'dia' ? 'on' : ''} onClick={() => setParams({ aba: 'dia' })}>Dia a dia</button>
+        <button type="button" role="tab" aria-selected={aba === 'historico'} className={aba === 'historico' ? 'on' : ''} onClick={() => setParams({ aba: 'historico' })}>Histórico</button>
       </div>
       <SeletorMes mes={mes} onMudar={setMes} maximo={mesDe(hoje)} />
-      {aba === 'contas' ? <ContasFixas mes={mes} hoje={hoje} /> : <DiaADia mes={mes} hoje={hoje} />}
+      {aba === 'contas' ? <ContasFixas mes={mes} hoje={hoje} /> : aba === 'dia' ? <DiaADia mes={mes} hoje={hoje} /> : <Historico mes={mes} hoje={hoje} />}
     </>
   );
 }

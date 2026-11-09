@@ -14,6 +14,7 @@ npm run build
 
 ## Variáveis de ambiente (veja `.env.example`)
 - `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` (padrão `claude-haiku-5-5`): chat do Assistente de Investimentos. Sem a chave, o chat usa o modo guiado.
+- `CONSELHEIRO_AI_MODEL`, `CONSELHEIRO_DAILY_LIMIT` (opcionais): conversa com o Coach (`/api/conselheiro`, usa a mesma `ANTHROPIC_API_KEY`; sem ela o Coach mostra só as recomendações calculadas).
 - `BRAPI_TOKEN` (opcional): Ibovespa e B3 na aba Investir.
 - Supabase/WhatsApp: veja `docs/configuracao.md`.
 

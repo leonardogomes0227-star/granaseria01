@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarClock, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
+import { CalendarDays, CalendarClock, ChartLine, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
@@ -10,6 +10,8 @@ import { contasDoMes, patrimonioGuardado, reservaMeta } from './selectores';
 import { saudeFinanceira } from './saude';
 import { Anel } from './graficos';
 import { Titulo } from './ui';
+import { prioridades, resumoSemaforo, totalAResolver } from './prioridades';
+import { brl } from './datas';
 import { linhasDeCategoria } from './orcamento';
 import { situacaoAtrasos } from './atrasosLogica';
 
@@ -58,6 +60,10 @@ export function Plano() {
       ],
     },
     {
+      nome: 'Fazer o dinheiro render',
+      itens: [I('/investir', ChartLine, 'Investir', 'Um caminho em passos, com dados reais do mercado', 'investir investimento cdi selic bolsa cripto renda fixa')],
+    },
+    {
       nome: 'Comprar bem',
       itens: [
         I('/plano/comprar', Timer, 'Posso comprar isso?', esperando ? `${esperando} em espera de 72h` : 'Horas de trabalho e veredito', 'comprar compra desejo 72 horas'),
@@ -70,7 +76,8 @@ export function Plano() {
   const visiveis = grupos.map((g) => ({ ...g, itens: q ? g.itens.filter((i) => norm(`${i.titulo} ${i.busca}`).includes(q)) : g.itens })).filter((g) => g.itens.length > 0);
   return (
     <>
-      <Titulo titulo="Ferramentas" sub="Escolha o que você quer resolver. Cada uma termina numa ação." />
+      <Titulo titulo="Planejamento" sub="Contas, cartão e dívidas num só lugar. Resolva primeiro o que está em vermelho." />
+      <Prioridades />
       <section className="gs-card destaque" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ flex: 'none', width: 92 }}><Anel pct={s.nota} grande={String(s.nota)} sub="nota" cor={s.nota >= 70 ? 'var(--success)' : s.nota >= 45 ? 'var(--gold-strong)' : 'var(--danger)'} tamanho={92} /></div>
         <div>
@@ -99,5 +106,35 @@ export function Plano() {
       ))}
       {visiveis.length === 0 && <p className="gs-mudo" role="status">Nenhuma ferramenta com “{busca}”. Tente outra palavra.</p>}
     </>
+  );
+}
+
+const COR = { vermelho: 'var(--danger)', amarelo: '#C98A00', verde: 'var(--success)' } as const;
+const NOME = { vermelho: 'atrasado', amarelo: 'atenção', verde: 'em ordem' } as const;
+
+/** O que resolver primeiro: contas, fatura e parcelas com semáforo (vermelho, amarelo, verde). */
+function Prioridades() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const lista = prioridades(e, hoje);
+  if (lista.length === 0)
+    return <p className="gs-nota">Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro. <Link to="/mes">Cadastrar contas</Link></p>;
+  const r = resumoSemaforo(lista);
+  const abertas = lista.filter((x) => x.semaforo !== 'verde');
+  return (
+    <section className="gs-card" aria-label="Prioridades">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+        <b>O que resolver primeiro</b>
+        <span className="gs-mudo">{abertas.length ? `${totalAResolver(lista)} a resolver` : 'tudo organizado'} · <Link to="/plano/calendario">calendário</Link></span>
+      </div>
+      <p className="gs-mudo" style={{ margin: '4px 0 6px' }}>{r.vermelho} atrasado{r.vermelho === 1 ? '' : 's'} · {r.amarelo} em atenção · {r.verde} em ordem</p>
+      {lista.slice(0, 6).map((p) => (
+        <Link key={p.chave} to={p.rota} className="gs-linha gs-linha-btn">
+          <span className="gs-semaforo" style={{ background: COR[p.semaforo] }} role="img" aria-label={NOME[p.semaforo]} />
+          <div className="gs-corpo"><b>{p.titulo}</b><small>{p.detalhe}</small></div>
+          <span className="gs-valor">{brl(p.valor)}</span>
+        </Link>
+      ))}
+    </section>
   );
 }

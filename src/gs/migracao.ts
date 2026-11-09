@@ -96,9 +96,18 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
       reservaMeses: [3, 6, 12].includes(num(cfg.reservaMeses)) ? num(cfg.reservaMeses) : undefined,
       reservaMensal: num(cfg.reservaMensal) > 0 ? num(cfg.reservaMensal) : undefined,
       rendaAlvo: num(cfg.rendaAlvo) > 0 ? num(cfg.rendaAlvo) : undefined,
+      saldoInformado: (() => {
+        const s = obj(cfg.saldoInformado);
+        return typeof s.valor === 'number' && Number.isFinite(s.valor) && /^\d{4}-\d{2}-\d{2}$/.test(String(s.data)) ? { valor: s.valor, data: String(s.data) } : undefined;
+      })(),
+      objetivo: typeof cfg.objetivo === 'string' && cfg.objetivo ? cfg.objetivo.slice(0, 60) : undefined,
+      avisosDesligados: arr<string>(cfg.avisosDesligados).filter((x) => typeof x === 'string').slice(0, 20),
+      checklistFeito: arr<string>(cfg.checklistFeito).filter((x) => typeof x === 'string').slice(0, 20),
     },
     gastosFixos: arr<GastoFixo>(b.gastosFixos).filter((g) => g && typeof g.id === 'string').map((g) => ({ ...g, pagamentos: obj(g.pagamentos) as GastoFixo['pagamentos'] })),
     lancamentos: arr<Estado['lancamentos'][number]>(b.lancamentos).filter((l) => l && typeof l.id === 'string'),
+    receitas: arr<Estado['receitas'][number]>(b.receitas).filter((r) => r && typeof r.id === 'string' && num(r.valor) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data))).map((r) => ({ ...r, tipo: r.tipo === 'salario' ? 'salario' : 'extra' })),
+    metas: arr<Estado['metas'][number]>(b.metas).filter((m) => m && typeof m.id === 'string' && num(m.alvo) > 0).map((m) => ({ ...m, guardados: arr<{ data: string; valor: number }>(m.guardados) })).slice(0, 20),
     aportes: arr<Aporte>(b.aportes).filter((a) => a && typeof a.id === 'string'),
     dividas: arr<Divida>(b.dividas).filter((d) => d && typeof d.id === 'string').map((d) => ({ ...d, pagamentos: arr(d.pagamentos) })),
     planoDividas: (b.planoDividas as Estado['planoDividas']) ?? null,

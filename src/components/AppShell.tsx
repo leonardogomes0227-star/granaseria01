@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ChartLine, House, Sparkles, Target, Wallet, type LucideIcon } from 'lucide-react';
+import { House, Plus, Sparkles, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
+import { AdicionarMov, abrirAdicionar } from '../gs/AdicionarMov';
 import { getName, painelToken } from '../painel';
 import { useVisualDoApp } from '../gs/visual';
 import { Moeda } from './ui/Moeda';
@@ -12,14 +13,14 @@ import { useEstado } from '../gs/store';
 
 export const NAV: [string, string, LucideIcon][] = [
   ['/', 'Início', House],
-  ['/mes', 'Meu mês', Wallet],
-  ['/plano', 'Ferramentas', Target],
-  ['/investir', 'Investir', ChartLine],
-  ['/assistentes', 'Assistentes', Sparkles],
+  ['/mes', 'Meu dinheiro', Wallet],
+  ['/plano', 'Planejar', Target],
+  ['/evolucao', 'Evolução', TrendingUp],
+  ['/coach', 'Coach', Sparkles],
 ];
 
 // rotas-irmãs acendem a mesma aba
-const IGUAIS: Record<string, string[]> = { '/': ['/', '/inicio'], '/mes': ['/mes', '/meu-mes'], '/plano': ['/plano', '/missoes'], '/assistentes': ['/assistentes', '/agentes', '/conselheiros'] };
+const IGUAIS: Record<string, string[]> = { '/': ['/', '/inicio'], '/mes': ['/mes', '/meu-mes'], '/plano': ['/plano', '/missoes', '/investir'], '/coach': ['/coach', '/assistentes', '/agentes', '/conselheiros'] };
 function useAceso(): (to: string) => boolean {
   const { pathname } = useLocation();
   return (to) => (IGUAIS[to] ?? [to]).some((p) => (p === '/' ? pathname === '/' : pathname === p || pathname.startsWith(`${p}/`)));
@@ -49,12 +50,21 @@ function Casca({ children }: { children: ReactNode }) {
               </NavLink>
             ))}
           </nav>
+          <button type="button" className="gs-btn pequeno gs-add-topo" hidden={!config.onboardingFeito} onClick={() => abrirAdicionar()}>
+            <Plus size={16} aria-hidden="true" /> Adicionar movimentação
+          </button>
           <Link to="/dados" className="gs-avatar" aria-label="Meus dados">
             {inicialDo(nome)}
           </Link>
         </div>
       </header>
       <main className="gs-principal">{children}</main>
+      {config.onboardingFeito && (
+        <button type="button" className="gs-fab" onClick={() => abrirAdicionar()} aria-label="Adicionar movimentação">
+          <Plus size={26} aria-hidden="true" />
+        </button>
+      )}
+      <AdicionarMov />
       <nav className="gs-abas" aria-label="Seções">
         {NAV.map(([to, label, Icon]) => (
           <NavLink key={to} to={to} end={to === '/'} className={() => (aceso(to) ? 'on' : '')} aria-label={label}>

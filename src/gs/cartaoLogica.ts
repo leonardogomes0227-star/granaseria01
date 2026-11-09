@@ -1,7 +1,7 @@
 // Cartão de crédito: vencimento, fecho, compras (à vista e parceladas), faturas futuras e o que fazer agora. Pura, com teste.
 
-import { arred, brl0, diasEntre, vencimentoNoMes } from './datas';
-import type { Cartao, ParceladoCartao } from './tipos';
+import { arred, brl0, diasEntre, vencimentoNoMes } from './datas.js';
+import type { Cartao, ParceladoCartao } from './tipos.js';
 
 const somaMes = (mes: string, n: number) => {
   const [a, m] = mes.split('-').map(Number);
