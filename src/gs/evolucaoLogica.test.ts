@@ -38,3 +38,17 @@ describe('evolução', () => {
     expect(frasesDeEvolucao(e, HOJE).find((x) => x.id === 'guardou')?.texto).toMatch(/10%/);
   });
 });
+
+import { compararMeses, economiaAcumulada } from './evolucaoLogica';
+describe('economia acumulada e comparação', () => {
+  const e = mk({ lancamentos: [L('a', 1000, '2026-10-05'), L('b', 500, '2026-11-05')] }, 3000);
+  it('acumula receitas − despesas só dos meses com dados', () => {
+    const s = serieMensal(e, HOJE, 3);
+    expect(economiaAcumulada(s).map((x) => x.valor)).toEqual([2000, 4500]);
+  });
+  it('compara com o mês anterior; sem anterior não inventa', () => {
+    const s = serieMensal(e, HOJE, 3);
+    expect(compararMeses(s, '2026-11')?.dDespesas).toBe(-50);
+    expect(compararMeses(s, '2026-10')).toBeNull();
+  });
+});

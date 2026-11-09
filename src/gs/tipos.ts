@@ -44,6 +44,7 @@ export interface Lancamento {
   data: string;
   categoria: string;
   forma?: string; // pix, débito, dinheiro, cartão...
+  contaId?: string;
   serverId?: number; // veio do WhatsApp (api/lancamentos)
 }
 /** Receita registrada. 'salario' confirma a renda do mês; 'extra' soma ao que a pessoa tem. */
@@ -53,6 +54,7 @@ export interface Receita {
   valor: number;
   data: string;
   tipo: 'salario' | 'extra';
+  contaId?: string;
   serverId?: number; // veio do WhatsApp
 }
 export interface Meta {
@@ -62,6 +64,19 @@ export interface Meta {
   criadaEm: string;
   prazo?: string; // 'AAAA-MM-DD' (opcional)
   guardados: { data: string; valor: number }[];
+}
+/** Onde o dinheiro está (opcional): corrente, carteira, poupança… Só organiza; não muda o "pode gastar". */
+export interface ContaBancaria {
+  id: string;
+  nome: string;
+}
+export interface Transferencia {
+  id: string;
+  data: string;
+  valor: number;
+  de: string; // id da conta
+  para: string; // id da conta
+  descricao?: string;
 }
 export type OrigemAporte = 'manual' | 'reserva' | 'meta' | 'extra' | 'investimento' | 'saque';
 export interface Aporte {
@@ -207,6 +222,8 @@ export interface Estado {
   lancamentos: Lancamento[];
   receitas: Receita[];
   metas: Meta[];
+  contas: ContaBancaria[];
+  transferencias: Transferencia[];
   aportes: Aporte[];
   dividas: Divida[];
   planoDividas: PlanoDividas | null;
@@ -228,6 +245,8 @@ export const ESTADO_INICIAL = (): Estado => ({
   lancamentos: [],
   receitas: [],
   metas: [],
+  contas: [],
+  transferencias: [],
   aportes: [],
   dividas: [],
   planoDividas: null,

@@ -35,7 +35,7 @@ export function ProximasAcoes() {
     }
   };
   if (itens.length === 0)
-    return <Vazio titulo="Tudo em dia por aqui" texto={e.gastosFixos.length === 0 ? 'Cadastre suas contas fixas e eu te aviso antes de cada vencimento.' : 'Nada urgente agora. Anote seus gastos pra manter o plano certo.'} acao={e.gastosFixos.length === 0 ? 'Cadastrar contas' : 'Anotar gasto'} rota={e.gastosFixos.length === 0 ? '/mes' : '/mes?aba=dia'} />;
+    return <Vazio titulo="Tudo em dia por aqui" texto={e.gastosFixos.length === 0 ? 'Cadastre suas contas fixas e eu te aviso antes de cada vencimento.' : 'Nada urgente agora. Anote seus gastos pra manter o plano certo.'} acao={e.gastosFixos.length === 0 ? 'Cadastrar contas' : 'Anotar gasto'} rota={e.gastosFixos.length === 0 ? '/lancamentos?aba=contas' : '/lancamentos?aba=dia'} />;
   return (
     <>
       <div className="gs-lista-acoes">

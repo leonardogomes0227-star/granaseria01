@@ -126,3 +126,28 @@ export function patrimonioPorMes(e: Estado, hoje: string, n = 6): { mes: string;
   const comDado = pontos.filter((p) => p.valor !== 0);
   return comDado.length >= 2 ? pontos : null;
 }
+
+/** Economia acumulada: soma de (receitas − despesas) mês a mês, só dos meses com dados. */
+export function economiaAcumulada(serie: MesSerie[]): { mes: string; valor: number }[] {
+  let acc = 0;
+  return serie.filter((m) => m.temDados).map((m) => {
+    acc = arred(acc + m.receitas - m.despesas);
+    return { mes: m.mes, valor: acc };
+  });
+}
+
+export interface ComparacaoMes {
+  atual: MesSerie;
+  anterior: MesSerie;
+  /** variação percentual (null quando o mês anterior é zero: não dá pra comparar) */
+  dReceitas: number | null;
+  dDespesas: number | null;
+}
+const varia = (a: number, b: number) => (b > 0 ? Math.round((a / b - 1) * 100) : null);
+/** Mês atual × anterior. null se o mês anterior não tem dados. */
+export function compararMeses(serie: MesSerie[], mes: string): ComparacaoMes | null {
+  const i = serie.findIndex((m) => m.mes === mes);
+  if (i < 1 || !serie[i - 1].temDados) return null;
+  const atual = serie[i], anterior = serie[i - 1];
+  return { atual, anterior, dReceitas: varia(atual.receitas, anterior.receitas), dDespesas: varia(atual.despesas, anterior.despesas) };
+}

@@ -255,6 +255,9 @@ function App() {
             </Titled>
           }
         />
+        <Route path="/lancamentos" element={<Pagina titulo="Lançamentos" o="os seus lançamentos"><MeuMes padrao="historico" /></Pagina>} />
+        <Route path="/relatorios" element={<Pagina titulo="Relatórios" o="os seus relatórios"><Evolucao /></Pagina>} />
+        <Route path="/planejamento" element={<Navigate to="/plano" replace />} />
         <Route path="/mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
         <Route path="/meu-mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
         <Route path="/plano" element={<Pagina titulo="Plano" o="o seu plano"><Plano /></Pagina>} />

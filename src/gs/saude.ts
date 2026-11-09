@@ -34,7 +34,7 @@ export function saudeFinanceira(e: Estado, mes: string, hoje: string): Saude {
     { id: 'reserva', nome: 'Reserva de emergência', pontos: trava((meses / 6) * 100), detalhe: `${meses.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} de 6 meses`, dica: gasto > 0 ? `Guarde ${brl0(gasto * 0.2)} por mês até completar 6 meses.` : 'Cadastre suas contas fixas pra eu calcular a meta.', rota: '/plano/reserva' },
     { id: 'dividas', nome: 'Dívidas', pontos: abertas === 0 ? 100 : trava(100 - (renda > 0 ? (dividas / (renda * 12)) * 260 : 100)), detalhe: abertas === 0 ? 'nenhuma em aberto' : `${brl0(dividas)} em aberto`, dica: 'Comece pela dívida de maior juro.', rota: '/plano/dividas' },
     { id: 'poupanca', nome: 'Quanto você guarda', pontos: trava((taxa / 0.2) * 100), detalhe: `${Math.round(taxa * 100)}% da renda (meta 20%)`, dica: 'Cortar assinaturas esquecidas já ajuda.', rota: '/plano/assinaturas' },
-    { id: 'contas', nome: 'Contas em dia', pontos: atrasadas ? Math.max(0, 70 - atrasadas * 25) : 100, detalhe: atrasadas ? `${atrasadas} atrasada${atrasadas > 1 ? 's' : ''}` : 'tudo em dia', dica: 'Dê baixa nas contas que você já pagou.', rota: '/mes' },
+    { id: 'contas', nome: 'Contas em dia', pontos: atrasadas ? Math.max(0, 70 - atrasadas * 25) : 100, detalhe: atrasadas ? `${atrasadas} atrasada${atrasadas > 1 ? 's' : ''}` : 'tudo em dia', dica: 'Dê baixa nas contas que você já pagou.', rota: '/lancamentos?aba=contas' },
   ];
   const nota = Math.round(criterios.reduce((t, c) => t + c.pontos, 0) / criterios.length);
   const pior = [...criterios].sort((a, b) => a.pontos - b.pontos)[0];

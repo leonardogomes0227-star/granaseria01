@@ -1,6 +1,7 @@
 // Cores e limites sugeridos por categoria do dia a dia.
 
 export const COR_CATEGORIA: Record<string, string> = {
+  Assinaturas: '#6B5B8A',
   Casa: '#8F6A0E',
   Mercado: '#3F7A4A',
   Comida: '#B8832B',
@@ -18,3 +19,8 @@ export const limiteSugerido = (categoria: string, renda: number) => Math.round((
 
 export type Grupo = 'necessidades' | 'desejos';
 export const GRUPO: Record<string, Grupo> = { Casa: 'necessidades', Mercado: 'necessidades', Saúde: 'necessidades', Transporte: 'necessidades', Comida: 'desejos', Lazer: 'desejos', Compras: 'desejos', Outros: 'desejos' };
+
+import { Car, HeartPulse, House, Repeat, ShoppingBag, ShoppingCart, Tag, Ticket, Utensils, type LucideIcon } from 'lucide-react';
+/** Ícone de cada categoria do dia a dia. */
+export const ICONE_CATEGORIA: Record<string, LucideIcon> = { Comida: Utensils, Transporte: Car, Mercado: ShoppingCart, Lazer: Ticket, Saúde: HeartPulse, Compras: ShoppingBag, Casa: House, Assinaturas: Repeat, Outros: Tag };
+export const iconeDe = (c: string): LucideIcon => ICONE_CATEGORIA[c] ?? Tag;

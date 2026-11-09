@@ -108,6 +108,8 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
     lancamentos: arr<Estado['lancamentos'][number]>(b.lancamentos).filter((l) => l && typeof l.id === 'string'),
     receitas: arr<Estado['receitas'][number]>(b.receitas).filter((r) => r && typeof r.id === 'string' && num(r.valor) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(r.data))).map((r) => ({ ...r, tipo: r.tipo === 'salario' ? 'salario' : 'extra' })),
     metas: arr<Estado['metas'][number]>(b.metas).filter((m) => m && typeof m.id === 'string' && num(m.alvo) > 0).map((m) => ({ ...m, guardados: arr<{ data: string; valor: number }>(m.guardados) })).slice(0, 20),
+    contas: arr<{ id: string; nome: string }>(b.contas).filter((c) => c && typeof c.id === 'string' && typeof c.nome === 'string' && c.nome.trim()).map((c) => ({ id: c.id, nome: c.nome.trim().slice(0, 30) })).slice(0, 12),
+    transferencias: arr<Estado['transferencias'][number]>(b.transferencias).filter((t) => t && typeof t.id === 'string' && num(t.valor) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(String(t.data)) && typeof t.de === 'string' && typeof t.para === 'string'),
     aportes: arr<Aporte>(b.aportes).filter((a) => a && typeof a.id === 'string'),
     dividas: arr<Divida>(b.dividas).filter((d) => d && typeof d.id === 'string').map((d) => ({ ...d, pagamentos: arr(d.pagamentos) })),
     planoDividas: (b.planoDividas as Estado['planoDividas']) ?? null,

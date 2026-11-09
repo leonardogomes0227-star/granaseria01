@@ -13,7 +13,7 @@ export function Checklist({ onRenda }: { onRenda: () => void }) {
   const dispensados = new Set(e.config.checklistFeito ?? []);
   const passos: Passo[] = [
     { id: 'renda', titulo: 'Informar sua renda', feito: e.config.renda > 0, acao: onRenda },
-    { id: 'fixas', titulo: 'Cadastrar despesas fixas', feito: e.gastosFixos.length > 0, rota: '/mes' },
+    { id: 'fixas', titulo: 'Cadastrar despesas fixas', feito: e.gastosFixos.length > 0, rota: '/lancamentos?aba=contas' },
     { id: 'gasto', titulo: 'Registrar o primeiro gasto', feito: e.lancamentos.length > 0, acao: () => abrirAdicionar() },
     { id: 'cartao', titulo: 'Adicionar seu cartão (se tiver)', feito: Boolean(e.cartao), rota: '/plano/cartao' },
     { id: 'dividas', titulo: 'Cadastrar dívidas (se tiver)', feito: e.dividas.length > 0, rota: '/plano/dividas' },

@@ -110,7 +110,7 @@ export function acaoOrcamento(e: Estado, mes: string, hoje: string): AcaoOrcamen
     const sobra = quase.limite! - quase.gasto;
     return { tom: 'aviso', texto: `${quase.categoria} já usou ${Math.round(quase.pct!)}%. Restam ${brl0(sobra)} pra ${r.restam} ${r.restam === 1 ? 'dia' : 'dias'} (${brl0(sobra / r.restam)} por dia).` };
   }
-  if (e.lancamentos.filter((l) => l.data.slice(0, 7) === mes).length === 0) return { tom: 'aviso', texto: 'Ainda não tem gasto anotado neste mês. Anote o primeiro pelo WhatsApp ou aqui no app.', rota: '/mes?aba=dia' };
+  if (e.lancamentos.filter((l) => l.data.slice(0, 7) === mes).length === 0) return { tom: 'aviso', texto: 'Ainda não tem gasto anotado neste mês. Anote o primeiro pelo WhatsApp ou aqui no app.', rota: '/lancamentos?aba=dia' };
   if (!linhas.some((l) => l.limite)) return { tom: 'aviso', texto: 'Defina limites pelas categorias. Com 1 toque eu sugiro os valores.' };
   if (r.orcamento > 0 && r.sobraProjetada < 0) return { tom: 'aviso', texto: `No ritmo de agora você passa ${brl0(-r.sobraProjetada)} do que sobra no mês. Gaste uns ${brl0(Math.max(0, r.porDia))} por dia daqui pra frente.` };
   return { tom: 'ok', texto: r.orcamento > 0 ? `No trilho. Você pode gastar ${brl0(Math.max(0, r.porDia))} por dia até o fim do mês.` : 'No trilho.' };

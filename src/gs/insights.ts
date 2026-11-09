@@ -43,10 +43,10 @@ export function getInsights(e: Estado, hoje: string, opts: { cdiMensalPct?: numb
 
   if (assistenteAtivo(e, 'contas')) {
     for (const c of contasDoMes(e, mes, hoje)) {
-      if (c.estado === 'atrasada') lista.push({ id: `conta-${c.gasto.id}`, prioridade: 100 + Math.min(20, -c.dias), texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, acao: { rotulo: 'Dar baixa', tipo: 'dar-baixa', refId: c.gasto.id, rota: '/mes' } });
+      if (c.estado === 'atrasada') lista.push({ id: `conta-${c.gasto.id}`, prioridade: 100 + Math.min(20, -c.dias), texto: `${c.gasto.nome} está atrasada desde ${diaCurto(c.vencimento)} (${brl0(c.valor)})`, acao: { rotulo: 'Dar baixa', tipo: 'dar-baixa', refId: c.gasto.id, rota: '/lancamentos?aba=contas' } });
       else if (c.estado !== 'paga' && c.dias <= Math.max(3, e.config.avisos.antecedenciaDias)) {
         const quando = c.dias === 0 ? 'vence hoje' : c.dias === 1 ? 'vence amanhã' : `vence em ${c.dias} dias`;
-        lista.push({ id: `conta-${c.gasto.id}`, prioridade: 90 - c.dias, texto: `${c.gasto.nome} ${quando} (${brl0(c.valor)})`, acao: { rotulo: 'Dar baixa', tipo: 'dar-baixa', refId: c.gasto.id, rota: '/mes' } });
+        lista.push({ id: `conta-${c.gasto.id}`, prioridade: 90 - c.dias, texto: `${c.gasto.nome} ${quando} (${brl0(c.valor)})`, acao: { rotulo: 'Dar baixa', tipo: 'dar-baixa', refId: c.gasto.id, rota: '/lancamentos?aba=contas' } });
       }
     }
   }
@@ -79,8 +79,8 @@ export function getInsights(e: Estado, hoje: string, opts: { cdiMensalPct?: numb
 
   if (assistenteAtivo(e, 'gastos') && renda > 0) {
     const livre = livreParaGastar(e, mes);
-    if (livre < 0) lista.push({ id: 'sem-folga', prioridade: 70, texto: `Sem folga este mês. Corte ${brl0(quantoCortar(e, mes))} para fechar no zero`, acao: { rotulo: 'Ver gastos', tipo: 'ir', rota: '/mes?aba=dia' } });
-    else lista.push({ id: 'limite-diario', prioridade: 30, texto: `Você pode gastar ${brl0(limiteDiario(e, mes, hoje))} por dia até o fim do mês`, acao: { rotulo: 'Anotar gasto', tipo: 'ir', rota: '/mes?aba=dia' } });
+    if (livre < 0) lista.push({ id: 'sem-folga', prioridade: 70, texto: `Sem folga este mês. Corte ${brl0(quantoCortar(e, mes))} para fechar no zero`, acao: { rotulo: 'Ver gastos', tipo: 'ir', rota: '/lancamentos?aba=dia' } });
+    else lista.push({ id: 'limite-diario', prioridade: 30, texto: `Você pode gastar ${brl0(limiteDiario(e, mes, hoje))} por dia até o fim do mês`, acao: { rotulo: 'Anotar gasto', tipo: 'ir', rota: '/lancamentos?aba=dia' } });
   }
 
   if (assistenteAtivo(e, 'assinaturas')) {

@@ -1,27 +1,28 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRightLeft, ChartColumn, ChevronRight, Eye, EyeOff, Info, Minus, Plus, Sparkles, Target } from 'lucide-react';
 import { getName } from '../painel';
 import { useEstado } from './store';
 import { brl, brl0, mesDe, nomeMes } from './datas';
-import { detalheDisponivel, faltaPagar, fatiasDaRenda, fixosPagos, patrimonioGuardado, receitasRecebidas, totalVariaveis } from './selectores';
+import { detalheDisponivel, fixosPagos, receitasRecebidas, totalVariaveis } from './selectores';
 import { missaoDoDia, recomendacoes, situacaoFinanceira, type Recomendacao } from './coachRegras';
 import { gastosPorCategoria } from './evolucaoLogica';
+import { prioridades } from './prioridades';
 import { informarSaldo } from './acoes';
-import { Rosca } from './Rosca';
 import { CampoDinheiro, Folha, Titulo } from './ui';
 import { FormRenda } from './Onboarding';
 import { useHoje } from './useHoje';
-import { ProximasAcoes } from './ProximasAcoes';
-import { ResumoSemana } from './ResumoSemana';
 import { ComoCalculei } from './ComoCalculei';
-import { Metas } from './Metas';
+import { NovaMeta } from './Metas';
 import { Checklist } from './Checklist';
+import { BaixaSheet } from './BaixaSheet';
+import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
-import { corDe } from './categorias';
+import { corDe, iconeDe } from './categorias';
+import { definirOculto, mascarar, useOculto } from './privacidade';
 import { toast } from '../components/ui/Toast';
 
-/* ---------- Início: "Meu dia financeiro" ---------- */
+/* ---------- Início: o centro de controle. Em poucos segundos: quanto posso gastar, como está o mês, o que resolver. ---------- */
 
 const primeiroNome = (n: string) => {
   const p = n.trim().split(/\s+/)[0] ?? '';
@@ -31,52 +32,53 @@ const saudacao = () => {
   const h = new Date().getHours();
   return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 };
-const FRASE_SITUACAO = {
-  'sem-dados': 'Vamos começar? Em poucos passos eu te mostro como está seu mês.',
-  endividado: 'Hoje o foco é organizar as dívidas e as contas, um passo de cada vez.',
-  atencao: 'Seu mês pede um pouco de atenção. Vamos olhar juntos.',
-  organizado: 'Você está organizado. Vamos cuidar do seu dinheiro hoje?',
-} as const;
+const COR = { vermelho: 'var(--danger)', amarelo: '#C98A00', verde: 'var(--success)' } as const;
+const NOME = { vermelho: 'atrasado', amarelo: 'atenção', verde: 'em ordem' } as const;
 
 export function Inicio() {
   const e = useEstado();
   const hoje = useHoje();
+  const nav = useNavigate();
   const mes = mesDe(hoje);
+  const oculto = useOculto();
   const [renda, setRenda] = useState(false);
   const [saldo, setSaldo] = useState(false);
   const [calc, setCalc] = useState(false);
+  const [meta, setMeta] = useState(false);
+  const [baixa, setBaixa] = useState<string | null>(null);
   const nome = primeiroNome(e.config.nome || getName() || '');
   const disp = useMemo(() => detalheDisponivel(e, mes, hoje), [e, mes, hoje]);
   const sit = useMemo(() => situacaoFinanceira(e, hoje), [e, hoje]);
   const recs = useMemo(() => recomendacoes(e, hoje), [e, hoje]);
   const missao = useMemo(() => missaoDoDia(e, hoje), [e, hoje]);
-  const fatias = useMemo(() => fatiasDaRenda(e, mes), [e, mes]);
-  const semRenda = e.config.renda <= 0;
-  const cats = useMemo(() => gastosPorCategoria(e, mes).slice(0, 3), [e, mes]);
-  const pendentes = e.gastosFixos.filter((g) => !g.pagamentos[mes]).length;
+  const cats = useMemo(() => gastosPorCategoria(e, mes).slice(0, 5), [e, mes]);
+  const proximas = useMemo(() => prioridades(e, hoje).filter((p) => p.semaforo !== 'verde').slice(0, 4), [e, hoje]);
+  const m = (t: string) => mascarar(t, oculto);
 
-  const blocoAcoes = (
-    <>
-      <h2 className="gs-h2">Próximas ações</h2>
-      <ProximasAcoes />
-    </>
-  );
-  const blocoMetas = (
-    <>
-      <h2 className="gs-h2">Suas metas</h2>
-      <Metas compacto />
-      {e.metas.length > 0 && <Link to="/evolucao" className="gs-btn link">Ver todas as metas</Link>}
-    </>
-  );
+  const registradas = receitasRecebidas(e, mes);
+  const receitas = registradas > 0 ? registradas : e.config.renda;
+  const receitaEstimada = registradas === 0 && e.config.renda > 0;
+  const despesas = totalVariaveis(e, mes) + fixosPagos(e, mes);
+  const economia = receitas - despesas;
+  const semDados = sit === 'sem-dados';
+  const totalCats = cats.reduce((t, c) => t + c.valor, 0);
+  const insights = recs.filter((r) => r.id !== 'comecar').slice(0, 3);
+  const mostrarMissao = missao.acao && !insights.some((r) => r.titulo === missao.texto || r.acao?.rota === missao.acao?.rota) && missao.id !== 'ok';
 
   return (
     <>
-      <Titulo titulo={`${saudacao()}${nome ? `, ${nome}` : ''}!`} sub={FRASE_SITUACAO[sit]} />
+      <div className="gs-cab">
+        <Titulo titulo={`${saudacao()}${nome ? `, ${nome}` : ''}!`} sub={semDados ? 'Vamos começar? Em poucos passos eu te mostro como está seu mês.' : undefined} />
+        <button type="button" className="gs-icone-btn" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'} title={oculto ? 'Mostrar valores' : 'Ocultar valores'}>
+          {oculto ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
+        </button>
+      </div>
 
+      {/* quanto posso gastar hoje */}
       {disp.modo === 'incompleto' ? (
         <section className="gs-cofre" aria-label="Quanto você pode gastar hoje">
           <span>Pode gastar hoje</span>
-          <b style={{ fontSize: 28, lineHeight: 1.2 }}>Ainda não sei</b>
+          <b style={{ fontSize: 26, lineHeight: 1.2 }}>Ainda não sei</b>
           <p>{disp.avisos[0]}</p>
           <div className="gs-acoes" style={{ marginTop: 14 }}>
             <button type="button" className="gs-btn" onClick={() => setRenda(true)}>Informar minha renda</button>
@@ -85,115 +87,125 @@ export function Inicio() {
         </section>
       ) : (
         <button type="button" className="gs-cofre gs-cofre-btn" onClick={() => setCalc(true)} aria-label="Quanto você pode gastar hoje. Toque para ver como foi calculado.">
-          <span>Pode gastar hoje{disp.temEstimativa ? ' · estimado' : ' · confirmado'}</span>
-          <b>{brl(disp.porDia)}</b>
-          <p>
-            {disp.livre < 0 ? `Seus compromissos passam ${brl0(-disp.livre)} do que você tem neste mês.` : `${brl0(disp.livre)} livres no mês · ${disp.diasRestantes} ${disp.diasRestantes === 1 ? 'dia' : 'dias'} até o fim`}
-          </p>
+          <span>Pode gastar hoje · {disp.temEstimativa ? 'estimado' : 'confirmado'}</span>
+          <b>{m(brl(disp.porDia))}</b>
+          <p>{disp.livre < 0 ? `Seus compromissos passam ${m(brl0(-disp.livre))} do que você tem neste mês.` : `${m(brl0(disp.livre))} livres no mês · ${disp.diasRestantes} ${disp.diasRestantes === 1 ? 'dia' : 'dias'} até o fim`}</p>
           <p className="gs-cofre-como">Como calculei <ChevronRight size={14} aria-hidden="true" /></p>
         </button>
       )}
-      {disp.modo !== 'incompleto' && disp.avisos.length > 0 && <p className="gs-nota" style={{ margin: '-6px 4px 14px' }}>{disp.avisos[0]}</p>}
 
-      {sit === 'sem-dados' && <Checklist onRenda={() => setRenda(true)} />}
-
-      <CoachCard rec={recs[0]} />
-
-      <section className="gs-card gs-missao" aria-label="Missão financeira de hoje">
-        <span className="gs-rotulo">Minha missão financeira de hoje</span>
-        <b>{missao.titulo}</b>
-        <p className="gs-mudo" style={{ margin: '2px 0 10px' }}>{missao.texto}</p>
-        {missao.acao && (missao.acao.rota ? <Link className="gs-btn sec pequeno" to={missao.acao.rota}>{missao.acao.rotulo}</Link> : <button type="button" className="gs-btn sec pequeno" onClick={() => abrirAdicionar()}>{missao.acao.rotulo}</button>)}
-        {missao.feita && <span className="gs-etiqueta ok">Concluída</span>}
-      </section>
-
-      {sit === 'endividado' || sit === 'atencao' ? blocoAcoes : null}
-
-      {sit !== 'sem-dados' && (
+      {semDados ? (
+        <Checklist onRenda={() => setRenda(true)} />
+      ) : (
         <>
-          <h2 className="gs-h2">{nomeMes(mes)}</h2>
-          <div className="gs-resumo">
-            <Indicador rotulo="Saldo conhecido" valor={e.config.saldoInformado ? brl0(e.config.saldoInformado.valor) : '—'} nota={e.config.saldoInformado ? `informado em ${e.config.saldoInformado.data.split('-').reverse().slice(0, 2).join('/')}` : 'informe para um número mais firme'} acao={e.config.saldoInformado ? 'Atualizar' : 'Informar'} onAcao={() => setSaldo(true)} />
-            <Indicador rotulo="Receitas do mês" valor={brl0(receitasRecebidas(e, mes))} nota={receitasRecebidas(e, mes) > 0 ? 'o que você registrou como recebido' : semRenda ? 'nada registrado' : `previsto: ${brl0(e.config.renda)} (ainda não registrado)`} />
-            <Indicador rotulo="Despesas do mês" valor={brl0(totalVariaveis(e, mes) + fixosPagos(e, mes))} nota="dia a dia + contas fixas já pagas" />
-            <Indicador rotulo="Reservado" valor={brl0(patrimonioGuardado(e))} nota="sua reserva de emergência" />
-            <Indicador rotulo="Disponível no mês" valor={disp.modo === 'incompleto' ? '—' : brl0(disp.livre)} nota={disp.modo === 'incompleto' ? 'faltam dados' : 'o que sobra depois dos compromissos'} />
-            <Indicador rotulo="Contas pendentes" valor={`${pendentes}`} nota={pendentes ? `${brl0(faltaPagar(e, mes))} a pagar neste mês` : 'tudo pago neste mês'} />
-          </div>
-        </>
-      )}
+          {/* 4 indicadores */}
+          <section className="gs-kpis" aria-label={`Resumo de ${nomeMes(mes)}`}>
+            <Kpi rotulo="Saldo disponível" valor={disp.modo === 'incompleto' ? '—' : m(brl0(disp.livre))} nota="livre depois dos compromissos" dica="O que sobra no mês depois de contas, parcelas, fatura e reserva. Não é o saldo do banco." tom={disp.livre < 0 ? 'erro' : undefined} acao={e.config.saldoInformado ? undefined : { rotulo: 'Informar saldo', onClick: () => setSaldo(true) }} />
+            <Kpi rotulo="Receitas do mês" valor={m(brl0(receitas))} nota={receitaEstimada ? 'estimada (renda informada)' : 'recebidas'} dica="Receitas que você registrou. Sem registro, uso a renda informada, marcada como estimada." />
+            <Kpi rotulo="Despesas do mês" valor={m(brl0(despesas))} nota="dia a dia + contas pagas" dica="Gastos anotados mais contas fixas já pagas neste mês." />
+            <Kpi rotulo="Economia do mês" valor={m(brl0(economia))} nota={receitas > 0 ? `${Math.round((economia / receitas) * 100)}% da receita${receitaEstimada ? ' (estimada)' : ''}` : 'sem receita'} dica="Receitas menos despesas do mês." tom={economia < 0 ? 'erro' : economia > 0 ? 'ok' : undefined} />
+          </section>
 
-      {sit !== 'endividado' && sit !== 'atencao' && sit !== 'sem-dados' && blocoMetas}
-      {(sit === 'organizado' || sit === 'sem-dados') && blocoAcoes}
+          {/* ações rápidas */}
+          <nav className="gs-rapidas" aria-label="Ações rápidas">
+            <button type="button" onClick={() => abrirAdicionar({ tipo: 'despesa' })}><Minus size={20} aria-hidden="true" /><span>Despesa</span></button>
+            <button type="button" onClick={() => abrirAdicionar({ tipo: 'receita' })}><Plus size={20} aria-hidden="true" /><span>Receita</span></button>
+            <button type="button" onClick={() => abrirAdicionar({ tipo: 'transferencia' })}><ArrowRightLeft size={20} aria-hidden="true" /><span>Transferir</span></button>
+            <button type="button" onClick={() => setMeta(true)}><Target size={20} aria-hidden="true" /><span>Meta</span></button>
+            <button type="button" onClick={() => nav('/relatorios')}><ChartColumn size={20} aria-hidden="true" /><span>Relatórios</span></button>
+          </nav>
 
-      {sit !== 'sem-dados' && (
-        <>
-          <h2 className="gs-h2">Para onde está indo</h2>
-          <ResumoSemana />
-          {cats.length > 0 ? (
-            <div className="gs-card" style={{ marginTop: 12 }}>
-              <span className="gs-rotulo">Maiores gastos do mês</span>
-              {cats.map((c) => (
-                <div key={c.categoria} style={{ margin: '10px 0 0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{c.categoria}</span>
-                    <b className="gs-tab">{brl0(c.valor)}{c.anterior > 0 ? <small className="gs-mudo"> · mês passado {brl0(c.anterior)}</small> : null}</b>
-                  </div>
-                  <div className="gs-barra" aria-hidden="true"><i style={{ width: `${Math.min(100, c.pct)}%`, background: corDe(c.categoria) }} /></div>
-                </div>
-              ))}
-              <Link to="/evolucao" className="gs-btn link">Ver minha evolução</Link>
+          <div className="gs-grade2">
+            <div>
+              <h2 className="gs-h2">Evolução financeira</h2>
+              <GraficoPeriodo hoje={hoje} compacto />
+              <Link to="/relatorios" className="gs-btn link">Ver relatórios completos</Link>
             </div>
-          ) : (
-            <p className="gs-nota">Anote seus gastos do dia a dia e eu mostro aqui para onde seu dinheiro está indo.</p>
-          )}
+            <div>
+              <h2 className="gs-h2">Contas próximas</h2>
+              {proximas.length === 0 ? (
+                <div className="gs-card"><p className="gs-mudo" style={{ margin: 0 }}>{e.gastosFixos.length === 0 && !e.cartao && e.dividas.length === 0 ? 'Cadastre suas contas fixas e eu aviso antes de cada vencimento.' : 'Nada vencendo ou atrasado agora. Tudo em ordem.'}</p>{e.gastosFixos.length === 0 && <Link to="/lancamentos?aba=contas" className="gs-btn link">Cadastrar contas</Link>}</div>
+              ) : (
+                <div className="gs-card">
+                  {proximas.map((p) => (
+                    <div className="gs-linha" key={p.chave}>
+                      <span className="gs-semaforo" style={{ background: COR[p.semaforo] }} role="img" aria-label={NOME[p.semaforo]} />
+                      <div className="gs-corpo"><b>{p.titulo}</b><small>{p.detalhe}</small></div>
+                      <span className="gs-valor">{m(brl(p.valor))}</span>
+                      {p.chave.startsWith('c-') ? <button type="button" className="gs-btn sec pequeno" onClick={() => setBaixa(p.chave.slice(2))}>Pagar</button> : <Link to={p.rota} className="gs-btn sec pequeno">Abrir</Link>}
+                    </div>
+                  ))}
+                  <Link to="/plano" className="gs-btn link">Ver todos os compromissos</Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="gs-grade2">
+            <div>
+              <h2 className="gs-h2">Para onde vai o dinheiro</h2>
+              {cats.length === 0 ? (
+                <div className="gs-card"><p className="gs-mudo" style={{ margin: 0 }}>Anote seus gastos e eu mostro aqui as categorias que mais pesam.</p><button type="button" className="gs-btn link" onClick={() => abrirAdicionar()}>Adicionar gasto</button></div>
+              ) : (
+                <div className="gs-card">
+                  {cats.map((c) => { const I = iconeDe(c.categoria); return (
+                    <div key={c.categoria} className="gs-cat-linha">
+                      <span className="gs-ic-cat" aria-hidden="true"><I size={18} /></span>
+                      <div className="gs-corpo">
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><b>{c.categoria}</b><span className="gs-tab">{m(brl0(c.valor))} · {totalCats > 0 ? Math.round((c.valor / totalCats) * 100) : 0}%</span></div>
+                        <div className="gs-barra" aria-hidden="true"><i style={{ width: `${Math.min(100, c.pct)}%`, background: corDe(c.categoria) }} /></div>
+                      </div>
+                    </div>
+                  ); })}
+                </div>
+              )}
+            </div>
+            <div>
+              <h2 className="gs-h2">Insights do coach</h2>
+              {insights.length === 0 ? <div className="gs-card"><p className="gs-mudo" style={{ margin: 0 }}>Quando houver dados suficientes, as recomendações aparecem aqui.</p></div> : insights.map((r) => <Insight key={r.id} r={r} />)}
+              {mostrarMissao && missao.acao && (
+                <div className="gs-card gs-missao"><span className="gs-rotulo">Missão de hoje</span><b>{missao.titulo}</b><p className="gs-mudo" style={{ margin: '2px 0 8px' }}>{missao.texto}</p>{missao.acao.rota ? <Link className="gs-btn sec pequeno" to={missao.acao.rota}>{missao.acao.rotulo}</Link> : <button type="button" className="gs-btn sec pequeno" onClick={() => abrirAdicionar()}>{missao.acao.rotulo}</button>}</div>
+              )}
+              <Link to="/coach" className="gs-btn link"><Sparkles size={14} aria-hidden="true" /> Falar com o coach</Link>
+            </div>
+          </div>
+          <Checklist onRenda={() => setRenda(true)} />
         </>
-      )}
-
-      {(sit === 'endividado' || sit === 'atencao') && blocoMetas}
-      {sit !== 'sem-dados' && <Checklist onRenda={() => setRenda(true)} />}
-
-      {!semRenda && (
-        <details className="gs-card" style={{ padding: '4px 20px', marginTop: 16 }}>
-          <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600 }}>Pra onde vai a sua renda</summary>
-          <Rosca fatias={fatias} guardadoTotal={patrimonioGuardado(e)} />
-        </details>
       )}
 
       <ComoCalculei aberta={calc} onFechar={() => setCalc(false)} d={disp} />
+      <BaixaSheet gasto={e.gastosFixos.find((g) => g.id === baixa) ?? null} mes={mes} onFechar={() => setBaixa(null)} />
+      <NovaMeta aberta={meta} onFechar={() => setMeta(false)} />
       <Folha aberta={renda} onFechar={() => setRenda(false)} titulo="Sua renda por mês">
-        <FormRenda onFeito={() => setRenda(false)} rotuloBotao="Salvar" />
+        <FormRenda onFeito={() => setRenda(false)} rotuloBotao="Salvar" concluir={false} />
       </Folha>
       <SaldoSheet key={String(saldo)} aberta={saldo} onFechar={() => setSaldo(false)} atual={e.config.saldoInformado?.valor} />
     </>
   );
 }
 
-function Indicador({ rotulo, valor, nota, acao, onAcao }: { rotulo: string; valor: string; nota: string; acao?: string; onAcao?: () => void }) {
+function Kpi({ rotulo, valor, nota, dica, tom, acao }: { rotulo: string; valor: string; nota: string; dica: string; tom?: 'ok' | 'erro'; acao?: { rotulo: string; onClick: () => void } }) {
   return (
-    <div className="gs-ind">
-      <span className="gs-rotulo">{rotulo}</span>
+    <div className={`gs-kpi ${tom ?? ''}`}>
+      <span className="gs-rotulo">{rotulo} <span className="gs-dica-info" role="img" aria-label={dica} title={dica}><Info size={12} aria-hidden="true" /></span></span>
       <b className="gs-tab">{valor}</b>
       <small>{nota}</small>
-      {acao && <button type="button" className="gs-btn link" onClick={onAcao}>{acao}</button>}
+      {acao && <button type="button" className="gs-btn link" onClick={acao.onClick}>{acao.rotulo}</button>}
     </div>
   );
 }
 
-function CoachCard({ rec }: { rec: Recomendacao | undefined }) {
+function Insight({ r }: { r: Recomendacao }) {
   const [porque, setPorque] = useState(false);
-  if (!rec) return null;
   return (
-    <section className={`gs-card gs-coach ${rec.tom}`} aria-label="Orientação do coach">
-      <span className="gs-rotulo"><Sparkles size={13} style={{ verticalAlign: -2 }} aria-hidden="true" /> Seu coach tem uma orientação para você</span>
-      <b>{rec.titulo}</b>
-      <p>{rec.texto}</p>
+    <section className={`gs-card gs-coach ${r.tom}`}>
+      <b>{r.titulo}</b>
+      <p>{r.texto}</p>
       <div className="gs-acoes">
-        {rec.acao && (rec.acao.rota ? <Link className="gs-btn" to={rec.acao.rota}>{rec.acao.rotulo}</Link> : <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}>{rec.acao.rotulo}</button>)}
-        <button type="button" className="gs-btn link" aria-expanded={porque} onClick={() => setPorque(!porque)}>Por que estou vendo isso?</button>
-        <Link to="/coach" className="gs-btn link">Falar com o coach</Link>
+        {r.acao && (r.acao.rota ? <Link className="gs-btn sec pequeno" to={r.acao.rota}>{r.acao.rotulo}</Link> : <button type="button" className="gs-btn sec pequeno" onClick={() => abrirAdicionar()}>{r.acao.rotulo}</button>)}
+        <button type="button" className="gs-btn link" aria-expanded={porque} onClick={() => setPorque(!porque)}>Por quê?</button>
       </div>
-      {porque && <p className="gs-nota">{rec.porque}</p>}
+      {porque && <p className="gs-nota">{r.porque}</p>}
     </section>
   );
 }

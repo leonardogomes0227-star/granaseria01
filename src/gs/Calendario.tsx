@@ -26,7 +26,7 @@ export function Calendario() {
     return (
       <>
         <Titulo titulo="Calendário de contas" sub="Do salário até o próximo salário: o que vence e quanto sobra." />
-        <Vazio titulo="Cadastre suas contas fixas" texto="Aluguel, luz, internet… Eu ponho cada uma na ordem em que vence, depois do seu salário, e mostro quanto sobra depois de cada uma." acao="Cadastrar contas" rota="/mes" avatar="contas" />
+        <Vazio titulo="Cadastre suas contas fixas" texto="Aluguel, luz, internet… Eu ponho cada uma na ordem em que vence, depois do seu salário, e mostro quanto sobra depois de cada uma." acao="Cadastrar contas" rota="/lancamentos?aba=contas" avatar="contas" />
       </>
     );
 

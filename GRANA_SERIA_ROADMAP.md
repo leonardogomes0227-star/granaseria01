@@ -217,3 +217,15 @@ Limite: o site público foi usado só como referência (a landing é o `Landing.
 - F8 Revisão: acessibilidade, performance, navegadores, fluxos financeiros, testes.
 
 **Riscos:** trocar o layout afeta as 13 ferramentas (por isso F1 é por tokens, não por tela); contas/transferências exigem campo novo aditivo (`contas`, `Lancamento.contaId`) e uma regra clara para o saldo informado; renomear rotas exige alias; histórico do Coach sem tabela nova = só no aparelho.
+
+### Redesign UX/UI 2.0 — execução (nov/2026)
+**Status:** Fases 1 a 8 concluídas, com as decisões aprovadas (contas opcionais e transferência neutra; menu Mais; histórico do Coach só no aparelho; cartão claro em vez do preto).
+- **F1 Design system:** tokens `--ds-*` e componentes (`gs-badge`, `gs-skeleton`, `gs-icone-btn`, categorias com ícone, Kpi) em `src/gs/gs2.css`; cartão de destaque claro com filete dourado suave; títulos mais leves (650); áreas de toque de 44 px.
+- **F2 Navegação:** lateral no desktop (≥900 px) e barra inferior no celular com Início · Lançamentos · Planejamento · Relatórios · Coach; "Mais" (menu agrupado) no celular e na lateral; sino com contagem de avisos; data no topo. Rotas novas `/lancamentos`, `/relatorios`; as antigas (`/mes`, `/evolucao`, `/assistentes`) continuam.
+- **F3 Dashboard:** saudação, ocultar/mostrar valores (preferência do aparelho), "pode gastar hoje" explicado, 4 indicadores com dica, ações rápidas (despesa, receita, transferir, meta, relatórios), gráfico 3/6/12 meses com comparação, contas próximas com "Pagar", categorias com %, insights do coach, checklist.
+- **F4 Lançamentos:** adicionar em 3 passos (valor/tipo → categoria com ícones → conta e data) para despesa, receita e transferência; "mais opções" recolhido; editar, duplicar, excluir com confirmação; histórico com período (mês, 7 dias, 30 dias, ano), tipo, categoria, conta e ordenação; gerenciar contas. Dado novo, só aditivo: `contas`, `transferencias`, `contaId`.
+- **F5 Planejamento:** orçamento por categoria com 3 estados, metas com modelos, prazo com valor mensal sugerido e metas concluídas.
+- **F6 Coach:** histórico da conversa no aparelho, "Nova conversa".
+- **F7 Relatórios:** período 3/6/12 meses, comparação mês × mês, economia acumulada.
+- **F8 Revisão:** 320 testes, `typecheck`, `typecheck:server`, `lint` (0 erros), `build`. Playwright em 390 e 1280 px: sem erros de página nem rolagem horizontal; fluxo completo (onboarding, despesa com categoria sugerida, receita, transferência, duplicar, excluir, ocultar valores, meta) passou.
+- **Não feito / limites:** sem axe/Lighthouse e sem Safari/Firefox (só Chromium); switches do Coach têm área de toque ampliada por CSS, mas medem 52×32; saldo por conta não existe (contas só organizam); o formulário antigo "Dia a dia" continua na aba própria; bundle principal 798 kB.
