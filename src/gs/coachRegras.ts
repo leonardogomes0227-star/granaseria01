@@ -7,6 +7,7 @@ import { atrasosAbertos } from './atrasosBase.js';
 import { proximaData } from './cartaoLogica.js';
 import { totalDividas } from './dividas.js';
 import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, salarioConfirmado } from './selectores.js';
+import { regrasExtras } from './coachExtras.js';
 import type { Estado } from './tipos.js';
 
 export type Situacao = 'sem-dados' | 'endividado' | 'atencao' | 'organizado';
@@ -110,6 +111,7 @@ export function recomendacoes(e: Estado, hoje: string): Recomendacao[] {
     const g = metaEmAndamento.guardados.reduce((t, x) => t + x.valor, 0);
     add({ id: 'meta-evolui', tom: 'ok', tipo: 'coach', prioridade: 20, titulo: `Você está evoluindo na meta ${metaEmAndamento.nome}`, texto: `Já são ${brl0(g)} de ${brl0(metaEmAndamento.alvo)} (${Math.round((g / metaEmAndamento.alvo) * 100)}%). Continue assim.`, porque: `Soma dos valores que você guardou nesta meta.`, acao: { rotulo: 'Ver metas', rota: '/evolucao' } });
   }
+  for (const r of regrasExtras(e, hoje, disp)) add(r);
   if (situacaoFinanceira(e, hoje) === 'sem-dados') {
     add({ id: 'comecar', tom: 'info', tipo: 'coach', prioridade: 10, titulo: 'Vamos começar pelo básico', texto: 'Me conte sua renda e anote o primeiro gasto. Com isso já consigo te mostrar quanto você pode gastar hoje.', porque: 'Ainda não há dados suficientes para uma análise.', acao: { rotulo: 'Adicionar movimentação', abrir: 'adicionar' } });
   }

@@ -11,6 +11,9 @@ import { pedirPermissaoAvisos } from './avisos';
 
 /* ---------- Meus dados: o que o app sabe de você, e o controle total ---------- */
 
+/** Preferências deste aparelho que não vão para o servidor (histórico do coach, ocultar valores, última conta). */
+const PREFERENCIAS_LOCAIS = ['gs-coach-conversa', 'gs-ocultar-valores', 'gs-ultima-conta'];
+
 export function MeusDados() {
   const navigate = useNavigate();
   const e0 = getEstado();
@@ -103,19 +106,24 @@ export function MeusDados() {
           <Link to="/sobre" className="gs-btn pequeno sec">Abrir</Link></div>
       </section>
 
-      <section className="gs-card perigo">
-        <b>Apagar todos os dados</b>
-        <p className="gs-sub" style={{ margin: '4px 0 12px' }}>Remove renda, contas, gastos, dívidas e assistentes, deste aparelho e da cópia na sua conta (se você entrou). Não dá pra desfazer.</p>
-        <button type="button" className="gs-btn perigo" onClick={() => setApagar(1)}>Apagar tudo</button>
+      <section className="gs-card perigo" id="limpar" aria-label="Limpar meus dados">
+        <b>Limpar meus dados (site e WhatsApp)</b>
+        <p className="gs-sub" style={{ margin: '4px 0 8px' }}>Apaga tudo e recomeça do zero:</p>
+        <ul className="gs-lista-simples">
+          <li><b>No site:</b> renda, contas, gastos, receitas, dívidas, metas, cartão, histórico do coach e preferências, neste aparelho e na cópia guardada na sua conta.</li>
+          <li><b>No WhatsApp:</b> gastos e entradas anotados por mensagem, seu plano, o histórico e o link de acesso ao painel.</li>
+        </ul>
+        <p className="gs-nota">Não dá pra desfazer. Se quiser guardar uma cópia antes, use "Exportar (JSON)" aqui em cima.</p>
+        <button type="button" className="gs-btn perigo" onClick={() => setApagar(1)}>Limpar tudo</button>
       </section>
 
-      <Confirmar aberta={apagar === 1} titulo="Apagar tudo?" texto="Você vai perder todos os dados do app, neste aparelho e na cópia guardada na sua conta (se você entrou com o WhatsApp ou o e-mail)." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
+      <Confirmar aberta={apagar === 1} titulo="Limpar tudo?" texto="Você vai perder todos os dados do app e do WhatsApp: neste aparelho e na cópia guardada na sua conta e no seu número. Depois disso, o app volta ao começo." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
       <Confirmar
         aberta={apagar === 2}
-        titulo="Tem certeza?"
-        texto="Última chance: depois disso o app volta ao começo."
+        titulo="Última confirmação"
+        texto="Para confirmar, digite a palavra abaixo. Depois disso não há como recuperar."
         digitar="APAGAR"
-        rotulo="Apagar tudo agora"
+        rotulo="Limpar tudo agora"
         onCancelar={() => setApagar(0)}
         onConfirmar={async () => {
           // primeiro a cópia no servidor: se não der pra apagar, não finge que apagou e não mexe no aparelho
@@ -123,7 +131,7 @@ export function MeusDados() {
           const [numero, conta] = await Promise.all([apagarCopiaDoNumero(), apagarCopiaDaConta().catch(() => false)]);
           if (!numero || !conta) {
             void startPainelSync().catch(() => undefined);
-            toast('Não consegui apagar a cópia guardada na sua conta. Confira a internet e tente de novo.');
+            toast('Não consegui limpar a cópia guardada no servidor. Nada foi apagado neste aparelho. Confira a internet e tente de novo.');
             setApagar(0);
             return;
           }
@@ -134,7 +142,11 @@ export function MeusDados() {
           } catch {
             // sem localStorage
           }
+          for (const k of PREFERENCIAS_LOCAIS) {
+            try { localStorage.removeItem(k); } catch { /* sem localStorage */ }
+          }
           setApagar(0);
+          toast('Tudo limpo: site e WhatsApp. Você pode começar de novo.');
           navigate('/');
         }}
       />

@@ -213,3 +213,4 @@ html.gs-app .gs-btn { box-shadow: none; }
 .gs-tipo-divida:hover { background: var(--ds-ouro-fundo); border-color: var(--ds-ouro); }
 .gs-tipo-divida b { display: block; font-weight: 600; font-size: 15px; }
 .gs-tipo-divida small { display: block; color: var(--ink-muted); font-size: 13px; }
+.gs-lista-simples { margin: 0 0 8px; padding-left: 18px; font-size: 14px; line-height: 21px; } .gs-lista-simples li { margin-bottom: 4px; }
