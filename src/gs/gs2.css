@@ -14,12 +14,12 @@
 .gs-cofre-btn:focus-visible { outline: 3px solid #D8B060; outline-offset: 3px; }
 .gs-cofre .gs-cofre-como { margin-top: 10px; display: inline-flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; color: #D8B060; }
 .gs-cofre .gs-acoes .gs-btn.sec { background: transparent; color: #FBF6EC; border-color: rgba(251, 246, 236, .35); }
-.gs-coach { border-left: 4px solid var(--gold-strong); }
+.gs-coach { border-color: var(--gold-strong); }
 .gs-coach b { display: block; font-family: var(--serif); font-size: 20px; font-weight: 500; margin: 4px 0; }
 .gs-coach p { margin: 0 0 10px; }
-.gs-coach.perigo { border-left-color: var(--danger); }
-.gs-coach.aviso { border-left-color: #C98A00; }
-.gs-coach.ok { border-left-color: var(--success); }
+.gs-coach.perigo { border-color: var(--danger); }
+.gs-coach.aviso { border-color: #C98A00; }
+.gs-coach.ok { border-color: var(--success); }
 .gs-missao b { display: block; font-size: 17px; margin-top: 2px; }
 .gs-resumo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gs-ind { background: var(--ivory); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -86,7 +86,7 @@ html.gs-app .gs-grande { font-weight: var(--ds-valor); }
 html.gs-app .gs-h2 { font-size: 18px; line-height: 24px; font-weight: 600; margin: 24px 0 10px; }
 
 /* o cartão de destaque deixa de ser preto: claro, com filete dourado discreto */
-html.gs-app .gs-cofre { background: var(--ivory); color: var(--ink); border: 1px solid var(--line); border-top: 3px solid var(--ds-ouro); box-shadow: var(--ds-sombra); border-radius: var(--ds-raio-card); }
+html.gs-app .gs-cofre { background: var(--ivory); color: var(--ink); border: 1px solid var(--ds-ouro); box-shadow: var(--ds-sombra); border-radius: var(--ds-raio-card); }
 html.gs-app .gs-cofre span { color: var(--gold-texto); }
 html.gs-app .gs-cofre b { font-weight: 650; letter-spacing: -0.035em; font-size: clamp(40px, 11vw, 56px); }
 html.gs-app .gs-cofre p { color: var(--ink-muted); }
@@ -336,3 +336,5 @@ html.gs-app[data-tema="escuro"] .gs-icone-btn:hover, html.gs-app[data-tema="escu
 @keyframes gs-pop { 0% { transform: scale(.5); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .gs-marco-check { animation: none; } }
 .gs-corte { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+.gs-h3-semana { display: block; font-size: 17px; font-weight: 600; margin-bottom: 2px; }

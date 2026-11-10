@@ -251,7 +251,7 @@ function RevisaoSemana() {
   const dif = anterior.gasto >= 50 ? Math.round((r.gasto / anterior.gasto - 1) * 100) : null;
   return (
     <section className="gs-card" aria-label="Revisão da semana">
-      <span className="gs-rotulo">Sua semana</span>
+      <b className="gs-h3-semana">Sua semana</b>
       <p style={{ margin: '4px 0' }}>
         Você gastou <b>{mascarar(brl0(r.gasto), oculto)}</b> na semana passada
         {dif !== null ? <>, <b>{Math.abs(dif)}% {dif <= 0 ? 'menos' : 'mais'}</b> que na anterior</> : ''}
