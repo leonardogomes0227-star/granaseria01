@@ -43,7 +43,7 @@ export function PossoComprar() {
   };
   return (
     <>
-      <Titulo titulo="Posso comprar isso?" sub="Veja quanto a compra custa em horas de trabalho e se cabe no seu mês." />
+      <Titulo titulo="Posso comprar isso?" sub="Veja se a compra cabe no seu mês." />
       {(resumo.desistiu + resumo.comprou > 0 || espera.length > 0) && (
         <Heroi pct={resumo.pctDesistiu} anel={`${Math.round(resumo.pctDesistiu)}%`} anelSub="desistências" rotulo="Você já economizou" grande={brl0(economizado)} sub={`${resumo.desistiu} ${resumo.desistiu === 1 ? 'compra evitada' : 'compras evitadas'}${espera.length ? ` · ${espera.length} em espera` : ''}`} cor="var(--success)" />
       )}

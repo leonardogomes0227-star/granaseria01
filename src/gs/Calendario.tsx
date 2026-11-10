@@ -25,7 +25,7 @@ export function Calendario() {
   if (!temContas)
     return (
       <>
-        <Titulo titulo="Calendário de contas" sub="Do salário até o próximo salário: o que vence e quanto sobra." />
+        <Titulo titulo="Calendário de contas" sub="O que vence e quanto sobra até o próximo salário." />
         <Vazio titulo="Cadastre suas contas fixas" texto="Aluguel, luz, internet… Eu ponho cada uma na ordem em que vence, depois do seu salário, e mostro quanto sobra depois de cada uma." acao="Cadastrar contas" rota="/lancamentos?aba=contas" avatar="contas" />
       </>
     );
@@ -41,7 +41,7 @@ export function Calendario() {
 
   return (
     <>
-      <Titulo titulo="Calendário de contas" sub="Do salário até o próximo salário: o que vence e quanto sobra." />
+      <Titulo titulo="Calendário de contas" sub="O que vence e quanto sobra até o próximo salário." />
 
       <section className={`gs-card ${linha.sobra < 0 ? 'perigo' : 'destaque'}`}>
         <span className="gs-rotulo">Até o próximo salário ({diaCurto(ciclo.proximo)})</span>
@@ -137,7 +137,7 @@ function PassoTempo({ p, hoje, marcaHoje, onBaixa }: { p: PassoDoCiclo; hoje: st
 function PerguntaSalario() {
   return (
     <>
-      <Titulo titulo="Calendário de contas" sub="Do salário até o próximo salário: o que vence e quanto sobra." />
+      <Titulo titulo="Calendário de contas" sub="O que vence e quanto sobra até o próximo salário." />
       <section className="gs-card destaque">
         <span className="gs-rotulo">Uma pergunta antes</span>
         <p className="gs-grande" style={{ margin: '4px 0 6px', fontSize: 26 }}>Que dia o seu salário cai?</p>

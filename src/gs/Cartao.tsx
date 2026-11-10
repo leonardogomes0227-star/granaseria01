@@ -39,7 +39,7 @@ export function CartaoTela() {
   if (!c || editar)
     return (
       <>
-        <Titulo titulo="Cartão de crédito" sub="Veja a fatura, o limite e as parcelas que já estão por vir." />
+        <Titulo titulo="Cartão de crédito" sub="Fatura, limite e parcelas." />
         <section className="gs-card destaque">
           <span className="gs-rotulo">{c ? 'Atualizar dados' : 'Comece por aqui'}</span>
           {!c && <p style={{ margin: '6px 0 10px' }}>Quatro dados do seu cartão, que estão no app do banco. Pode chutar o que não souber.</p>}
@@ -68,7 +68,7 @@ export function CartaoTela() {
 
   return (
     <>
-      <Titulo titulo="Cartão de crédito" sub="A fatura, o limite e as parcelas que já estão por vir." />
+      <Titulo titulo="Cartão de crédito" sub="Fatura, limite e parcelas." />
       <Heroi pct={uso} anel={`${Math.round(uso)}%`} anelSub="do limite" rotulo="Fatura atual" grande={brl0(c.usado)} sub={`Vence em ${venc.dias} ${venc.dias === 1 ? 'dia' : 'dias'} (dia ${c.venceDia}) · limite ${brl0(c.limite)}`} cor={cor} />
       <Agora tom={acao.tom} texto={acao.texto}>
         <div className="gs-acoes">

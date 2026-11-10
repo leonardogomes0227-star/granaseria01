@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, CalendarClock, ChartLine, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
 import { useEstado } from './store';
@@ -7,10 +6,8 @@ import { brl0, mesCurto, mesDe } from './datas';
 import { paraSim, saldoAtual, simular } from './dividas';
 import { assinaturasTotal } from './resumos';
 import { contasDoMes, patrimonioGuardado, reservaMeta } from './selectores';
-import { saudeFinanceira } from './saude';
-import { Anel } from './graficos';
 import { Titulo } from './ui';
-import { prioridades, resumoSemaforo, totalAResolver } from './prioridades';
+import { prioridades, totalAResolver } from './prioridades';
 import { brl } from './datas';
 import { linhasDeCategoria } from './orcamento';
 import { Metas } from './Metas';
@@ -18,7 +15,6 @@ import { Barra } from './ui';
 import { iconeDe } from './categorias';
 import { situacaoAtrasos } from './atrasosLogica';
 
-const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 /* ---------- Ferramentas (rota /plano): as ferramentas, cada uma com o seu estado e um porquê ---------- */
 
@@ -28,7 +24,6 @@ export function Plano() {
   const mes = mesDe(hoje);
   const total = e.dividas.reduce((t, d) => t + saldoAtual(d), 0);
   const sim = e.planoDividas && total > 0 ? simular(paraSim(e.dividas), e.planoDividas.pagamentoMensal, e.planoDividas.estrategia) : null;
-  const s = saudeFinanceira(e, mes, hoje);
   const aPagar = contasDoMes(e, mes, hoje).filter((c) => c.estado !== 'paga').length;
   const noLimite = linhasDeCategoria(e, mes).filter((l) => l.tom === 'aviso' || l.tom === 'perigo').length;
   const meta = reservaMeta(e, mes);
@@ -74,30 +69,15 @@ export function Plano() {
       ],
     },
   ];
-  const [busca, setBusca] = useState('');
-  const q = norm(busca.trim());
-  const visiveis = grupos.map((g) => ({ ...g, itens: q ? g.itens.filter((i) => norm(`${i.titulo} ${i.busca}`).includes(q)) : g.itens })).filter((g) => g.itens.length > 0);
+  const visiveis = grupos;
   return (
     <>
-      <Titulo titulo="Planejamento" sub="Contas, cartão e dívidas num só lugar. Resolva primeiro o que está em vermelho." />
+      <Titulo titulo="Planejamento" sub="Resolva primeiro o que está em vermelho." />
       <Prioridades />
       <OrcamentoResumo />
       <h2 className="gs-h2" id="metas">Metas financeiras</h2>
       <Metas />
-      <h2 className="gs-h2">Ferramentas</h2>
-      <section className="gs-card destaque" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{ flex: 'none', width: 92 }}><Anel pct={s.nota} grande={String(s.nota)} sub="nota" cor={s.nota >= 70 ? 'var(--success)' : s.nota >= 45 ? 'var(--gold-strong)' : 'var(--danger)'} tamanho={92} /></div>
-        <div>
-          <b>Comece por aqui</b>
-          <p className="gs-mudo" style={{ margin: '2px 0 8px' }}>{s.pior.nome}: {s.pior.detalhe}. {s.pior.dica}</p>
-          <Link to={s.pior.rota} className="gs-btn pequeno">Abrir</Link>
-        </div>
-      </section>
-      <label className="gs-campo" style={{ marginTop: 16 }}>
-        <span style={{ position: "absolute", left: -9999 }}>Buscar ferramenta</span>
-        <input type="search" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Buscar: dívida, cartão, reserva…" maxLength={40} />
-      </label>
-      {visiveis.map((g) => (
+            {visiveis.map((g) => (
         <section key={g.nome} aria-label={g.nome}>
           <h2 className="gs-h2">{g.nome}</h2>
           <div className="gs-card" style={{ padding: '4px 16px' }}>
@@ -111,7 +91,6 @@ export function Plano() {
           </div>
         </section>
       ))}
-      {visiveis.length === 0 && <p className="gs-mudo" role="status">Nenhuma ferramenta com “{busca}”. Tente outra palavra.</p>}
     </>
   );
 }
@@ -127,19 +106,17 @@ function Prioridades() {
   if (lista.length === 0)
     return (
       <section className="gs-card">
-        <p className="gs-mudo" style={{ margin: 0 }}>Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro.</p>
+        <p className="gs-mudo" style={{ margin: 0 }}>Cadastre suas contas e eu mostro o que vence primeiro.</p>
         <div className="gs-acoes"><Link to="/lancamentos?aba=contas" className="gs-btn sec pequeno">Cadastrar contas</Link><Link to="/plano/dividas" className="gs-btn sec pequeno">Cadastrar dívidas</Link><Link to="/plano/atrasos?anotar=1" className="gs-btn sec pequeno">Anotar conta atrasada</Link></div>
       </section>
     );
-  const r = resumoSemaforo(lista);
   const abertas = lista.filter((x) => x.semaforo !== 'verde');
   return (
     <section className="gs-card" aria-label="Prioridades">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
         <b>O que resolver primeiro</b>
-        <span className="gs-mudo">{abertas.length ? `${totalAResolver(lista)} a resolver` : 'tudo organizado'} · <Link to="/plano/calendario">calendário</Link></span>
+        <span className="gs-mudo">{abertas.length ? `${totalAResolver(lista)} a resolver` : 'tudo em ordem'}</span>
       </div>
-      <p className="gs-mudo" style={{ margin: '4px 0 6px' }}>{r.vermelho} atrasado{r.vermelho === 1 ? '' : 's'} · {r.amarelo} em atenção · {r.verde} em ordem</p>
       {lista.slice(0, 6).map((p) => (
         <Link key={p.chave} to={p.rota} className="gs-linha gs-linha-btn">
           <span className="gs-semaforo" style={{ background: COR[p.semaforo] }} role="img" aria-label={NOME[p.semaforo]} />
@@ -147,7 +124,7 @@ function Prioridades() {
           <span className="gs-valor">{brl(p.valor)}</span>
         </Link>
       ))}
-      <div className="gs-acoes"><Link to="/plano/atrasos?anotar=1" className="gs-btn sec pequeno">+ Anotar conta atrasada</Link><Link to="/plano/dividas" className="gs-btn sec pequeno">+ Cadastrar dívida</Link></div>
+      <div className="gs-acoes"><Link to="/plano/atrasos?anotar=1" className="gs-btn link">+ Conta atrasada</Link><Link to="/plano/dividas" className="gs-btn link">+ Dívida</Link></div>
     </section>
   );
 }
@@ -164,8 +141,8 @@ function OrcamentoResumo() {
       <h2 className="gs-h2">Orçamento do mês</h2>
       {linhas.length === 0 ? (
         <div className="gs-card">
-          <p className="gs-mudo" style={{ margin: 0 }}>Defina um limite para as categorias em que você quer ter mais controle (alimentação, lazer…). Aqui você acompanha quanto já usou de cada uma.</p>
-          <Link to="/plano/orcamento" className="gs-btn sec pequeno" style={{ marginTop: 10 }}>Definir orçamento</Link>
+          <p className="gs-mudo" style={{ margin: 0 }}>Defina um limite por categoria e acompanhe quanto já usou.</p>
+          <Link to="/plano/orcamento" className="gs-btn sec pequeno" style={{ marginTop: 10 }}>Definir limites</Link>
         </div>
       ) : (
         <div className="gs-card">

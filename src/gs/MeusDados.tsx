@@ -64,7 +64,7 @@ export function MeusDados() {
 
   return (
     <>
-      <Titulo titulo="Meus dados" sub="Fica no seu aparelho. Se você entrou com o WhatsApp ou o e-mail, uma cópia fica na sua conta. Você apaga tudo quando quiser." />
+      <Titulo titulo="Meus dados" sub="Seus dados ficam no aparelho e na sua conta." />
       <section className="gs-card">
         <Campo rotulo="Nome" valor={nome} onChange={setNome} placeholder="Como quer ser chamado" maxLength={40} />
         <CampoDinheiro rotulo="Renda por mês" valor={renda} onChange={setRenda} />
