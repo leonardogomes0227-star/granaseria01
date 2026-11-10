@@ -268,3 +268,58 @@ html.gs-app .gs-folha h2 { font-size: var(--t-secao) !important; font-weight: 60
 .gs-kpi { padding: 12px 10px; }
 .gs-kpi b { font-size: 18px; }
 @media (min-width: 900px) { .gs-kpis { grid-template-columns: repeat(3, 1fr); gap: 12px; } .gs-kpi b { font-size: var(--t-valor); } }
+.gs-check-linha { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0 0 10px; font-size: var(--t-aux, 13px); color: var(--ink-muted); cursor: pointer; }
+.gs-check-linha input { width: 22px; height: 22px; accent-color: var(--ds-ouro); flex: none; }
+.gs-tag-est { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--ds-aviso-fundo); color: #7A5700; margin-left: 6px; vertical-align: middle; }
+
+/* ==========================================================================
+   Tema escuro (opção da pessoa): html[data-tema="escuro"]. Mesmos tokens, outros valores.
+   ========================================================================== */
+html.gs-app[data-tema="escuro"] {
+  color-scheme: dark;
+  --bg: #0A0A0A; --bg-2: #141414; --surface: #1A1A1A; --ivory: #161616;
+  --gold: #B8975A; --gold-strong: #D4B06A; --gold-soft: #221C10; --gold-texto: #D9B97A;
+  --ink: #F3F4F6; --ink-muted: #9CA3AF;
+  --success: #10B981; --warning: #F59E0B; --danger: #EF4444;
+  --line: rgba(255, 255, 255, .08); --line-strong: rgba(255, 255, 255, .16);
+  --sombra: none; --ds-sombra: none;
+  --ds-ouro: #C9A45C; --ds-ouro-fundo: #221C10;
+  --ds-ok-fundo: rgba(16, 185, 129, .14); --ds-aviso-fundo: rgba(245, 158, 11, .14); --ds-erro-fundo: rgba(239, 68, 68, .14);
+}
+html.gs-app[data-tema="escuro"] body { background: #0A0A0A !important; }
+html.gs-app[data-tema="escuro"] .gs-topo2 { background: rgba(10, 10, 10, .9); }
+html.gs-app[data-tema="escuro"] .gs-abas { background: rgba(14, 14, 14, .94); }
+html.gs-app[data-tema="escuro"] .gs-lateral { background: #101010; }
+html.gs-app[data-tema="escuro"] .gs-card, html.gs-app[data-tema="escuro"] .gs-kpi { background: #151515; border-color: var(--line); }
+html.gs-app[data-tema="escuro"] .gs-cofre, html.gs-app[data-tema="escuro"] .gs-card.destaque:has(.gs-grande, svg[role="img"]) { background: #151515; --ink: #F3F4F6; --ink-muted: #9CA3AF; --bg-2: #141414; --line: rgba(255,255,255,.08); }
+html.gs-app[data-tema="escuro"] .gs-card.aviso, html.gs-app[data-tema="escuro"] .gs-banner, html.gs-app[data-tema="escuro"] .gs-dica { background: #1C1810; border-color: rgba(212, 176, 106, .3); }
+html.gs-app[data-tema="escuro"] .gs-card.perigo, html.gs-app[data-tema="escuro"] .gs-env.perigo, html.gs-app[data-tema="escuro"] .gs-veredito.nao-cabe { background: #1E1212; border-color: rgba(239, 68, 68, .4); }
+html.gs-app[data-tema="escuro"] .gs-missao.feita, html.gs-app[data-tema="escuro"] .gs-veredito.cabe, html.gs-app[data-tema="escuro"] .gs-lado.vence { background: #0F1D17; }
+html.gs-app[data-tema="escuro"] .gs-etiqueta.ok, html.gs-app[data-tema="escuro"] .gs-conselho.ok { background: var(--ds-ok-fundo); color: #34D399; }
+html.gs-app[data-tema="escuro"] .gs-etiqueta.aviso, html.gs-app[data-tema="escuro"] .gs-conselho.aviso { background: var(--ds-aviso-fundo); color: #FBBF24; }
+html.gs-app[data-tema="escuro"] .gs-etiqueta.perigo, html.gs-app[data-tema="escuro"] .gs-conselho.perigo, html.gs-app[data-tema="escuro"] .gs-parcelas-tempo span { background: var(--ds-erro-fundo); color: #F87171; }
+html.gs-app[data-tema="escuro"] .gs-badge.ok { color: #34D399; } html.gs-app[data-tema="escuro"] .gs-badge.aviso { color: #FBBF24; } html.gs-app[data-tema="escuro"] .gs-badge.erro { color: #F87171; }
+html.gs-app[data-tema="escuro"] .gs-selo.confirmado { color: #34D399; } html.gs-app[data-tema="escuro"] .gs-selo.estimado, html.gs-app[data-tema="escuro"] .gs-tag-est { color: #FBBF24; }
+html.gs-app[data-tema="escuro"] .gs-ic-cat.ok { color: #34D399; }
+html.gs-app[data-tema="escuro"] .gs-coach.perigo { background: #1E1212; } html.gs-app[data-tema="escuro"] .gs-coach.aviso { background: #1C1810; } html.gs-app[data-tema="escuro"] .gs-coach.ok { background: #0F1D17; } html.gs-app[data-tema="escuro"] .gs-coach.info { background: #151515; }
+html.gs-app[data-tema="escuro"] .gs-msg.eu { background: #2A2417; color: #F3F4F6; }
+html.gs-app[data-tema="escuro"] .gs-msg.coach { background: #1A1A1A; }
+html.gs-app[data-tema="escuro"] .gs-skeleton, html.gs-app[data-tema="escuro"] .gs-esqueleto { background: linear-gradient(100deg, #141414 30%, #222 50%, #141414 70%); background-size: 200% 100%; }
+html.gs-app[data-tema="escuro"] .gs-btn { color: #0A0A0A; }
+html.gs-app[data-tema="escuro"] .gs-btn.sec, html.gs-app[data-tema="escuro"] .gs-btn.perigo { color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-btn.perigo { color: #fff; }
+html.gs-app[data-tema="escuro"] .gs-btn.link { color: var(--gold-texto); }
+html.gs-app[data-tema="escuro"] .gs-fab { color: #0A0A0A; }
+html.gs-app[data-tema="escuro"] .gs-campo input, html.gs-app[data-tema="escuro"] .gs-campo select, html.gs-app[data-tema="escuro"] .gs-campo textarea, html.gs-app[data-tema="escuro"] .gs-select, html.gs-app[data-tema="escuro"] .gs-busca, html.gs-app[data-tema="escuro"] .gs-novaconta input { background: #101010; color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-folha { background: #141414; color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-chip, html.gs-app[data-tema="escuro"] .gs-cat, html.gs-app[data-tema="escuro"] .gs-rapidas button, html.gs-app[data-tema="escuro"] .gs-tipo-divida { background: #151515; color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-chip.on, html.gs-app[data-tema="escuro"] .gs-cat.on { background: #2A2417; color: var(--gold-texto); }
+html.gs-app[data-tema="escuro"] .gs-seg { background: #101010; } html.gs-app[data-tema="escuro"] .gs-seg button.on { background: #222; color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-barra { background: rgba(255, 255, 255, .1); }
+html.gs-app[data-tema="escuro"] .gs-avatar { background: #151515; color: var(--ink); }
+html.gs-app[data-tema="escuro"] .gs-parcelas-bloco { background: #1C1810; }
+html.gs-app[data-tema="escuro"] .gs-sino-badge { color: #fff; }
+html.gs-app[data-tema="escuro"] .gs-icone-btn:hover, html.gs-app[data-tema="escuro"] .gs-mais-link:hover { background: #1C1C1C; }
+.gs-passo b, .gs-plano-topo b { display: block; }
+.gs-passo b { font-size: var(--t-secao); margin: 2px 0; }
+.gs-linha-triagem small { display: block; }

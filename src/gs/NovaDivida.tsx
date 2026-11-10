@@ -28,10 +28,11 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
   const [mensal, setMensal] = useState(0);
   const [dia, setDia] = useState<number | ''>('');
   const [faltam, setFaltam] = useState<number | ''>('');
+  const [estimado, setEstimado] = useState(false);
   const [erro, setErro] = useState('');
   const [feita, setFeita] = useState<{ nome: string; estimou: number; juros: number; calculado: boolean } | null>(null);
 
-  const zerar = () => { setPasso(1); setT(null); setNome(''); setTotal(0); setMensal(0); setDia(''); setFaltam(''); setErro(''); setFeita(null); };
+  const zerar = () => { setPasso(1); setT(null); setNome(''); setTotal(0); setMensal(0); setDia(''); setFaltam(''); setEstimado(false); setErro(''); setFeita(null); };
   const fechar = () => { onFechar(); setTimeout(zerar, 200); };
 
   // abre já no tipo pedido (ex.: "Financiamento da casa" vindo do cadastro de contas)
@@ -57,7 +58,7 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
     }
     const estimou = mensal > 0 ? 0 : Math.max(10, Math.round(saldo * (juros / 100 + 0.01)));
     const final = nome.trim() || t.nome;
-    const ok = salvarDivida({ nome: final, saldo, jurosMensal: juros, parcelaMinima: mensal > 0 ? mensal : estimou, venceDia: typeof dia === 'number' ? dia : undefined, tipo: t.tipo, parcelasRestantes: n > 0 ? n : undefined });
+    const ok = salvarDivida({ nome: final, saldo, jurosMensal: juros, parcelaMinima: mensal > 0 ? mensal : estimou, venceDia: typeof dia === 'number' ? dia : undefined, tipo: t.tipo, estimado, parcelasRestantes: n > 0 ? n : undefined });
     if (!ok) return setErro('Não consegui salvar. Confira o nome e o valor.');
     setFeita({ nome: final, estimou, juros, calculado });
     toast(`Dívida cadastrada: ${final}`);
@@ -91,6 +92,7 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
           <p className="gs-nota" style={{ marginTop: -6 }}>Tudo opcional, menos o total (ou a parcela com quantas faltam). Em branco, eu estimo e aviso na tela. Com total, parcela e quantas faltam, eu calculo o juro real.</p>
           <Campo rotulo="Nome ou credor (opcional)" valor={nome} onChange={setNome} placeholder="Ex.: Nubank, Banco do Brasil" maxLength={60} />
           <CampoNumero rotulo="Vence todo dia… (opcional)" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" />
+          <label className="gs-check-linha"><input type="checkbox" checked={estimado} onChange={(ev) => setEstimado(ev.target.checked)} /> <span>Não tenho certeza do valor (é uma estimativa)</span></label>
           {erro && (total > 0 || (mensal > 0 && typeof faltam === 'number')) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
           <div className="gs-acoes">
             <button type="button" className="gs-btn sec" onClick={() => { setPasso(1); setErro(''); }}>Voltar</button>

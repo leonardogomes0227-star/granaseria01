@@ -101,6 +101,7 @@ export interface Divida {
   venceDia?: number; // dia do mês em que vence a parcela (opcional)
   tipo?: 'parcelada' | 'rotativa'; // parcelada: financiamento, empréstimo, crediário (parcela fixa)
   parcelasRestantes?: number; // só nas parceladas, quando a pessoa informa
+  estimado?: boolean; // a pessoa não tinha certeza do valor (Modo Recuperação marca como "valor estimado")
 }
 export type Estrategia = 'bola-de-neve' | 'maior-juro';
 export interface PlanoDividas {
@@ -213,6 +214,15 @@ export interface AtrasoManual {
   vencimento: string; // 'AAAA-MM-DD'
   categoria?: string;
   gastoId?: string; // quando é de uma conta fixa cadastrada
+  estimado?: boolean;
+}
+
+/** Modo Recuperação: acompanhamento para quem está endividado. `raioXFeito` marca que o mapeamento inicial terminou. */
+export interface Recuperacao {
+  ativo: boolean;
+  desde?: string; // 'AAAA-MM-DD'
+  raioXFeito: boolean;
+  ofertaDispensada?: boolean; // a pessoa disse "agora não" para a oferta no Início
 }
 
 export interface Estado {
@@ -236,6 +246,7 @@ export interface Estado {
   limites: Record<string, number>; // limite mensal por categoria do dia a dia
   cartao: Cartao | null;
   atrasos?: AtrasosCfg;
+  recuperacao: Recuperacao;
 }
 
 export const ESTADO_INICIAL = (): Estado => ({
@@ -257,4 +268,5 @@ export const ESTADO_INICIAL = (): Estado => ({
   investir: { simulacao: { saldoVirtual: 10000, posicoes: [], historico: [] }, chat: [], mensagensHoje: { data: '', qtd: 0 } },
   limites: {},
   cartao: null,
+  recuperacao: { ativo: false, raioXFeito: false },
 });

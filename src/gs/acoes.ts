@@ -89,7 +89,7 @@ export function salvarDivida(d: Omit<Divida, 'id' | 'pagamentos'> & { id?: strin
   if (!d.nome.trim() || !ok(d.saldo) || d.jurosMensal < 0 || d.parcelaMinima < 0) return false;
   atualizar((e) => {
     const dia = d.venceDia && Number.isInteger(d.venceDia) && d.venceDia >= 1 && d.venceDia <= 31 ? d.venceDia : undefined;
-    const dados = { nome: d.nome.trim().slice(0, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima), venceDia: dia, tipo: d.tipo, parcelasRestantes: d.parcelasRestantes && d.parcelasRestantes > 0 ? Math.round(d.parcelasRestantes) : undefined };
+    const dados = { nome: d.nome.trim().slice(0, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima), venceDia: dia, tipo: d.tipo, estimado: d.estimado ? true : undefined, parcelasRestantes: d.parcelasRestantes && d.parcelasRestantes > 0 ? Math.round(d.parcelasRestantes) : undefined };
     return d.id ? { ...e, dividas: e.dividas.map((x) => (x.id === d.id ? { ...x, ...dados } : x)) } : { ...e, dividas: [...e.dividas, { id: novoId('dv'), pagamentos: [], cadastradaEm: hojeSP(), ...dados }] };
   });
   return true;
@@ -293,9 +293,9 @@ export function pagarAtraso(a: Atraso, valor: number, data = hojeSP(), opts: { e
 }
 
 /** Anota parcelas que ficaram pra trás (uma por mês). Devolve as anotadas, pra desfazer. */
-export function anotarAtraso(p: { nome: string; valor: number; diaVencimento: number; meses: string[]; categoria?: string; gastoId?: string }): AtrasoManual[] {
+export function anotarAtraso(p: { nome: string; valor: number; diaVencimento: number; meses: string[]; categoria?: string; gastoId?: string; estimado?: boolean }): AtrasoManual[] {
   if (!p.nome.trim() || !ok(p.valor) || !(p.diaVencimento >= 1 && p.diaVencimento <= 31) || p.meses.length === 0) return [];
-  const novos: AtrasoManual[] = p.meses.map((mes) => ({ id: novoId('at'), nome: p.nome.trim().slice(0, 60), valor: arred(p.valor), mes, vencimento: vencimentoNoMes(mes, Math.round(p.diaVencimento)), categoria: p.categoria, gastoId: p.gastoId }));
+  const novos: AtrasoManual[] = p.meses.map((mes) => ({ id: novoId('at'), nome: p.nome.trim().slice(0, 60), valor: arred(p.valor), mes, vencimento: vencimentoNoMes(mes, Math.round(p.diaVencimento)), categoria: p.categoria, gastoId: p.gastoId, ...(p.estimado ? { estimado: true } : {}) }));
   atualizar((e) => comAtrasos(e, (c) => ({ ...c, manuais: [...(c.manuais ?? []), ...novos].slice(-100) })));
   return novos;
 }
@@ -408,3 +408,7 @@ export function salvarTransferencia(t: Omit<Transferencia, 'id'> & { id?: string
 }
 export const removerTransferencia = (id: string) => atualizar((x) => ({ ...x, transferencias: x.transferencias.filter((t) => t.id !== id) }));
 export const restaurarTransferencia = (t: Transferencia) => atualizar((x) => (x.transferencias.some((y) => y.id === t.id) ? x : { ...x, transferencias: [...x.transferencias, t] }));
+
+/* ---------- Modo Recuperação ---------- */
+export const definirRecuperacao = (patch: Partial<import('./tipos').Recuperacao>) =>
+  atualizar((e) => ({ ...e, recuperacao: { ...e.recuperacao, ...patch } }));

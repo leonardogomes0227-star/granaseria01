@@ -14,6 +14,8 @@ import { FormRenda } from './Onboarding';
 import { useHoje } from './useHoje';
 import { ComoCalculei } from './ComoCalculei';
 import { Checklist } from './Checklist';
+import { passoDoDia, planoDeSaida } from './recuperacaoLogica';
+import { definirRecuperacao } from './acoes';
 import { abrirAdicionar } from './AdicionarMov';
 import { BaixaSheet } from './BaixaSheet';
 import { corDe, iconeDe } from './categorias';
@@ -99,7 +101,7 @@ export function Inicio() {
             <Kpi rotulo="Economia" valor={m(brl0(economia))} nota={receitas > 0 ? `${Math.round((economia / receitas) * 100)}% da receita` : 'sem receita'} dica="Receitas menos despesas do mês." tom={economia < 0 ? 'erro' : economia > 0 ? 'ok' : undefined} />
           </section>
 
-          {insights[0] && <Insight r={insights[0]} />}
+          {e.recuperacao.ativo ? <CartaoRecuperacao /> : sit === 'endividado' && !e.recuperacao.ofertaDispensada ? <OfertaRecuperacao /> : insights[0] && <Insight r={insights[0]} />}
 
           <h2 className="gs-h2">Contas próximas</h2>
           {proximas.length === 0 ? (
@@ -185,5 +187,47 @@ function SaldoSheet({ aberta, onFechar, atual }: { aberta: boolean; onFechar: ()
         </div>
       </form>
     </Folha>
+  );
+}
+
+/** Quem ligou o Modo Recuperação vê o plano de saída no topo do Início: quanto deve e o passo de hoje. */
+function CartaoRecuperacao() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const oculto = useOculto();
+  const plano = useMemo(() => planoDeSaida(e, hoje), [e, hoje]);
+  const passo = useMemo(() => passoDoDia(e, hoje), [e, hoje]);
+  if (!e.recuperacao.raioXFeito)
+    return (
+      <section className="gs-card gs-coach aviso">
+        <b>Falta pouco para o seu plano de saída</b>
+        <p>Termine o raio-X para eu mostrar o que pagar primeiro e quando você fica em dia.</p>
+        <Link to="/recuperacao" className="gs-btn">Continuar o raio-X</Link>
+      </section>
+    );
+  return (
+    <section className="gs-card gs-coach aviso" aria-label="Plano de saída">
+      <span className="gs-rotulo">Plano de saída{plano.temEstimativa && <span className="gs-tag-est">valor estimado</span>}</span>
+      <b>Você deve {mascarar(brl0(plano.totalDevido), oculto)}</b>
+      <p>{passo.titulo}. {passo.texto}</p>
+      <div className="gs-acoes">
+        <Link to={passo.rota ?? '/recuperacao'} className="gs-btn">{passo.tipo === 'pagar' ? 'Resolver agora' : 'Abrir'}</Link>
+        <Link to="/recuperacao" className="gs-btn link">Ver o plano completo</Link>
+      </div>
+    </section>
+  );
+}
+
+/** Oferta única, sem pressão: aparece para quem tem dívida ou atraso e some se a pessoa disser "agora não". */
+function OfertaRecuperacao() {
+  return (
+    <section className="gs-card gs-coach info">
+      <b>Está difícil fechar o mês?</b>
+      <p>Monte um plano de saída: o que pagar primeiro e quando você fica em dia.</p>
+      <div className="gs-acoes">
+        <Link to="/recuperacao" className="gs-btn">Montar meu plano</Link>
+        <button type="button" className="gs-btn link" onClick={() => definirRecuperacao({ ofertaDispensada: true })}>Agora não</button>
+      </div>
+    </section>
   );
 }

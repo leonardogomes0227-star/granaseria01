@@ -274,3 +274,13 @@ Critério: cada elemento precisa ajudar numa decisão ou tarefa; informação re
 
 ### Correção: o cursor pulava para o campo de valor ao digitar (nov/2026)
 Feedback com print (Nova dívida): ao digitar o nome, o foco voltava para o campo do valor. Causa: `Folha` (`ui.tsx`) tinha `onFechar` como dependência do efeito de foco; em componentes que guardam o próprio estado (Nova dívida, Adicionar, Conta rápida), `onFechar` muda a cada tecla, o efeito rodava de novo e devolvia o foco ao primeiro campo. Correção: `onFechar` fica numa ref e o efeito roda só ao abrir/fechar. O foco inicial também passou a ir para o primeiro campo de digitação (antes ia para o primeiro botão, ex.: "Despesa"). Verificado com digitação tecla a tecla no navegador: falhava antes da correção e passa depois (nome, dia e descrição).
+
+### Modo Recuperação + tema escuro (nov/2026)
+Decisões do dono: tema escuro como **opção** (claro segue padrão) e começar pelo **Modo Recuperação**. Cartão sob Controle (parcelas futuras, impacto de compras, importar fatura CSV) fica para a próxima fase.
+- **Modo Recuperação** (`/recuperacao`, menu Mais → "Modo recuperação"; `Recuperacao.tsx`, lógica pura em `recuperacaoLogica.ts`, 9 testes):
+  - **Acolhimento** ("Está difícil fechar o mês?") → **Raio-X** em 6 passos puláveis (renda, contas fixas, contas atrasadas, dívidas e parcelas, cartão, pronto), reaproveitando os formulários existentes. Valores incertos recebem a tag **"valor estimado"** (`Divida.estimado`, `AtrasoManual.estimado`).
+  - **Plano de saída:** quanto devo, data estimada de ficar em dia (ou aviso honesto de que não dá para calcular), **passo de hoje** (um só), **triagem** com o porquê (1º essenciais atrasados, 2º o que mais pesa/juros altos, 3º o resto), **orçamento de emergência** (essenciais × outras fixas × supérfluos e quanto cortar libera), **vitórias** (já paguei, quitadas, dias sem supérfluo) e revisão da semana. Refazer o raio-X e sair do modo a qualquer momento.
+  - **Início:** cartão do plano de saída para quem ligou o modo; oferta única ("Montar meu plano" / "Agora não") para quem tem dívida ou atraso.
+  - Dado novo, só aditivo: `recuperacao` (ativo, desde, raioXFeito, ofertaDispensada).
+- **Tema escuro** (`tema.ts` + bloco `html[data-tema="escuro"]` em `gs2.css`): botão sol/lua no topo, lembrado no aparelho, paleta #0A0A0A/#151515, verde #10B981, vermelho #EF4444, âmbar #F59E0B.
+- **Limites:** a triagem usa a regra fixa essencial → juros altos (≥ 8% ao mês) → resto (sem escolha de estratégia); a data de ficar em dia combina o plano de atrasos com a simulação de dívidas e depende de gastos anotados; sem push/WhatsApp novo para o modo; o prompt original pedia Tailwind, mas o app segue com CSS próprio e tokens.

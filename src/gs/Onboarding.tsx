@@ -111,7 +111,7 @@ const SUGESTOES: { nome: string; categoria: string }[] = [
 ];
 
 /** Despesas fixas em lista: toque numa conta, informe valor e dia, e ela vira um cartão. Nada fica "pendente" na tela. */
-function PassoDespesas({ onFeito }: { onFeito: () => void }) {
+export function PassoDespesas({ onFeito, semParcelas = false }: { onFeito: () => void; semParcelas?: boolean }) {
   const e = useEstado();
   const [conta, setConta] = useState<ContaInicial | null>(null);
   const [parcela, setParcela] = useState(false);
@@ -143,7 +143,7 @@ function PassoDespesas({ onFeito }: { onFeito: () => void }) {
         <button type="button" className="gs-chip" onClick={() => setConta({ nome: 'Outra conta', categoria: 'Outros', nomeLivre: true })}>+ Outra conta</button>
       </div>
 
-      <div className="gs-parcelas-bloco">
+      {!semParcelas && <div className="gs-parcelas-bloco">
         <b>Parcela de casa, carro ou loja?</b>
         <p className="gs-nota" style={{ margin: '2px 0 8px' }}>Financiamento acaba um dia. Cadastre com quantas parcelas faltam e eu mostro quando termina.</p>
         <button type="button" className="gs-btn sec pequeno" onClick={() => setParcela(true)}>+ Cadastrar parcela</button>
@@ -153,13 +153,13 @@ function PassoDespesas({ onFeito }: { onFeito: () => void }) {
             <button type="button" className="gs-btn link" onClick={() => removerParcela(d)}>Remover</button>
           </div>
         ))}
-      </div>
+      </div>}
 
       <div className="gs-acoes">
-        <button type="button" className="gs-btn cheio" onClick={onFeito}>{e.gastosFixos.length || e.dividas.length ? 'Continuar' : 'Pular por agora'}</button>
+        <button type="button" className="gs-btn cheio" onClick={onFeito}>{e.gastosFixos.length || (!semParcelas && e.dividas.length) ? 'Continuar' : 'Pular por agora'}</button>
       </div>
       <ContaRapida conta={conta} onFechar={() => setConta(null)} />
-      <NovaDividaSheet aberta={parcela} onFechar={() => setParcela(false)} />
+      {!semParcelas && <NovaDividaSheet aberta={parcela} onFechar={() => setParcela(false)} />}
     </>
   );
 }
