@@ -1,30 +1,21 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { arred } from './datas';
 import { assistentePorId } from './assistentes';
 import { Anel } from './graficos';
+import { DecimalInput } from '../components/DecimalInput';
 import { CalendarDays, Gift, Landmark, Lightbulb, PiggyBank, Search, Sprout, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 
-/* ---------- campo de dinheiro com máscara (digita centavos, mostra R$ 1.234,56) ---------- */
+/* ---------- campo de dinheiro: digita o valor do jeito que fala (870 = R$ 870; 870,50 com centavos) ---------- */
 export function CampoDinheiro({ rotulo, valor, onChange, placeholder = 'R$ 0,00', grande = false, erro, autoFocus }: { rotulo: string; valor: number; onChange: (n: number) => void; placeholder?: string; grande?: boolean; erro?: string; autoFocus?: boolean }) {
-  const texto = valor > 0 ? valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '';
+  // digitação natural: "870" vale R$ 870; vírgula para centavos ("870,50"); o ponto de milhar entra sozinho
   return (
     <label className="gs-campo">
       <span>{rotulo}</span>
-      <input
-        className={grande ? 'gs-dinheiro' : ''}
-        inputMode="numeric"
-        autoComplete="off"
-        autoFocus={autoFocus}
-        placeholder={placeholder}
-        value={texto}
-        aria-invalid={Boolean(erro)}
-        onChange={(e) => {
-          const d = e.target.value.replace(/\D/g, '').slice(0, 11);
-          onChange(d ? arred(Number(d) / 100) : 0);
-        }}
-      />
+      <div className={`gs-dinheiro-caixa ${grande ? 'grande' : ''}`}>
+        <i aria-hidden="true">R$</i>
+        <DecimalInput className={grande ? 'gs-dinheiro' : ''} value={valor} onChange={onChange} placeholder={placeholder.replace(/^R\$\s?/, '')} autoFocus={autoFocus} aria-invalid={Boolean(erro)} />
+      </div>
       {erro && <em className="gs-erro">{erro}</em>}
     </label>
   );

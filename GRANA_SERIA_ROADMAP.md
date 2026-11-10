@@ -254,3 +254,9 @@ Feedback: ao trocar de conta (Aluguel → Luz) o nome/valor/data ficavam iguais,
 - **Troca de tipo:** no formulário de contas fixas e no "Anotar conta atrasada", escolher outro tipo agora troca o nome sugerido (nunca um nome digitado pela pessoa). No onboarding, trocar de tipo salva a conta anterior se estava completa e limpa os campos.
 - **Parcelas:** "Nova dívida" ganhou "Parcelas que faltam"; o saldo pode ser calculado pela parcela × quantas faltam; com total, parcela e parcelas restantes, o juro real é calculado. Tipos novos: "Financiamento da casa" e "Parcela do carro ou moto". O onboarding tem "Cadastrar parcela (casa, carro, loja)" e mostra "faltam N parcelas"; em Contas fixas, escolher Financiamento/Carro sugere cadastrar como dívida parcelada (`/plano/dividas?nova=<tipo>`).
 - Decisão: parcela com prazo é **dívida parcelada**, não conta fixa (assim entra no plano de quitação e no disponível sem duplicar).
+
+### Passo "contas fixas" refeito e campo de dinheiro natural (nov/2026)
+Feedback com print: o passo era confuso e bugado (formulário único com campos grudados, erro solto na tela, dívida de teste misturada).
+- **Campo de dinheiro (todo o app):** deixou de ser máscara de centavos (digitar "870" dava R$ 8,70). Agora é digitação natural: "870" = R$ 870, "150,50" = R$ 150,50, o ponto de milhar entra sozinho, com "R$" fixo à esquerda (`CampoDinheiro` usa `DecimalInput`).
+- **Contas fixas no onboarding em lista:** toque numa conta sugerida (Aluguel, Condomínio, Luz, Água, Internet, Celular, Escola, Plano de saúde ou "Outra conta") → folha curta (`ContaRapida`) com valor e dia, sempre aberta limpa → a conta vira um cartão ("R$ 870,00 · todo dia 15"), editável e removível com desfazer. Erros só aparecem depois de tentar salvar.
+- **Parcelas** no mesmo passo, com "faltam N parcelas" e remover.
