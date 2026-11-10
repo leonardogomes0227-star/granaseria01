@@ -65,7 +65,7 @@ function Casca({ children }: { children: ReactNode }) {
     </div>
   ));
   return (
-    <div className="gs-casca gs-app2">
+    <div className={`gs-casca gs-app2${e.config.onboardingFeito ? '' : ' gs-sem-menu'}`}>
       <aside className="gs-lateral" aria-label="Menu principal">
         <Link to="/" className="gs-marca" aria-label="Grana Séria, início"><Moeda tamanho={30} /><span>Grana Séria</span></Link>
         <nav aria-label="Seções">

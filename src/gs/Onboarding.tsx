@@ -6,6 +6,7 @@ import { CampoDinheiro, CampoNumero, Campo } from './ui';
 import { salvarConfig, salvarGastoFixo, removerGastoFixo } from './acoes';
 import { detalheDisponivel } from './selectores';
 import { brl, hoje as hojeSP, mesDe } from './datas';
+import { toast } from '../components/ui/Toast';
 
 /* ---------- Primeira abertura: só a renda. O resto é opcional. ---------- */
 
@@ -109,13 +110,23 @@ function PassoDespesas({ onFeito }: { onFeito: () => void }) {
   const [valor, setValor] = useState(0);
   const [dia, setDia] = useState<number | ''>('');
   const [erro, setErro] = useState('');
-  const adicionar = () => {
+  /** Adiciona a conta digitada. Devolve true se entrou (e limpa os campos); false mostra o que falta. */
+  const adicionar = (): boolean => {
     const n = nome === 'Outros' ? custom.trim() : nome;
-    if (!n) return setErro('Dê um nome para a conta.');
-    if (!(valor > 0)) return setErro('Digite o valor.');
-    if (typeof dia !== 'number' || dia < 1 || dia > 31) return setErro('Informe o dia do vencimento (1 a 31).');
-    if (!salvarGastoFixo({ nome: n, valor, diaVencimento: dia, categoria: nome, criadaEm: hojeSP() })) return setErro('Confira os dados.');
+    const falha = (m: string) => { setErro(m); return false; };
+    if (!n) return falha('Dê um nome para a conta.');
+    if (!(valor > 0)) return falha('Digite o valor.');
+    if (typeof dia !== 'number' || dia < 1 || dia > 31) return falha('Informe o dia do vencimento (1 a 31).');
+    if (!salvarGastoFixo({ nome: n, valor, diaVencimento: dia, categoria: nome, criadaEm: hojeSP() })) return falha('Confira os dados.');
     setValor(0); setDia(''); setCustom(''); setErro('');
+    toast(`${n} adicionada`);
+    return true;
+  };
+  // quem preencheu e apertou "Continuar" não perde a conta: ela entra antes de seguir
+  const preenchido = valor > 0 || dia !== '' || (nome === 'Outros' && custom.trim() !== '');
+  const continuar = () => {
+    if (preenchido && !adicionar()) return;
+    onFeito();
   };
   return (
     <>
@@ -128,7 +139,7 @@ function PassoDespesas({ onFeito }: { onFeito: () => void }) {
       <CampoDinheiro rotulo="Valor por mês" valor={valor} onChange={setValor} />
       <CampoNumero rotulo="Dia do vencimento" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" />
       {erro && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
-      <button type="button" className="gs-btn sec" onClick={adicionar}>Adicionar conta</button>
+      <button type="button" className="gs-btn sec" onClick={adicionar}>+ Adicionar esta conta e cadastrar outra</button>
       {e.gastosFixos.length > 0 && (
         <div style={{ margin: '12px 0' }}>
           {e.gastosFixos.map((g) => (
@@ -140,7 +151,7 @@ function PassoDespesas({ onFeito }: { onFeito: () => void }) {
         </div>
       )}
       <div className="gs-acoes">
-        <button type="button" className="gs-btn cheio" onClick={onFeito}>{e.gastosFixos.length ? 'Continuar' : 'Pular por agora'}</button>
+        <button type="button" className="gs-btn cheio" onClick={continuar}>{preenchido ? 'Adicionar e continuar' : e.gastosFixos.length ? 'Continuar' : 'Pular por agora'}</button>
       </div>
     </>
   );
