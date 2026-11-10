@@ -68,20 +68,25 @@ export function Folha({ aberta, onFechar, titulo, children }: { aberta: boolean;
   const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   const ativo = useRef<Element | null>(null);
+  // onFechar muda de identidade a cada render de quem usa a folha. Se ele fosse dependência do efeito, cada letra digitada
+  // refaria o efeito e devolveria o foco ao primeiro campo (o do valor). Por isso fica numa ref e o efeito só roda ao abrir/fechar.
+  const fecharRef = useRef(onFechar);
+  fecharRef.current = onFechar;
   useEffect(() => {
     if (!aberta) return;
     ativo.current = document.activeElement;
     const antes = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && onFechar();
+    const tecla = (e: KeyboardEvent) => e.key === 'Escape' && fecharRef.current();
     window.addEventListener('keydown', tecla);
-    ref.current?.querySelector<HTMLElement>('input,select,textarea,button')?.focus();
+    // o foco inicial vai para o primeiro campo de digitação (abre o teclado já no valor); só sem campo é que vai para um botão
+    (ref.current?.querySelector<HTMLElement>('input:not([type=hidden]),textarea,select') ?? ref.current?.querySelector<HTMLElement>('button'))?.focus();
     return () => {
       window.removeEventListener('keydown', tecla);
       document.body.style.overflow = antes;
       (ativo.current as HTMLElement | null)?.focus?.();
     };
-  }, [aberta, onFechar]);
+  }, [aberta]);
   if (!aberta) return null;
   return createPortal(
     <div className="gs-fundo" onMouseDown={(e) => e.target === e.currentTarget && onFechar()}>

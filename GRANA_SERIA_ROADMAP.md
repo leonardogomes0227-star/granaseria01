@@ -271,3 +271,6 @@ Critério: cada elemento precisa ajudar numa decisão ou tarefa; informação re
 - Coach: 3 orientações em vez de 5 e textos curtos. Ferramentas: "Pra entender" e "Conquistas" recolhidos.
 **Padronização:** escala tipográfica global (`--t-pagina` 26, `--t-secao` 17, `--t-valor-xl` 44, `--t-valor` 20, `--t-texto` 15, `--t-label` 12, `--t-aux` 13), espaçamento de seção único e subtítulos reescritos (15 telas).
 **Limites:** as 13 ferramentas só receberam a escala global e os blocos recolhidos, sem reescrita tela a tela; sem teste com pessoas reais (o "teste dos 65 anos" foi feito só como revisão de leitura das telas).
+
+### Correção: o cursor pulava para o campo de valor ao digitar (nov/2026)
+Feedback com print (Nova dívida): ao digitar o nome, o foco voltava para o campo do valor. Causa: `Folha` (`ui.tsx`) tinha `onFechar` como dependência do efeito de foco; em componentes que guardam o próprio estado (Nova dívida, Adicionar, Conta rápida), `onFechar` muda a cada tecla, o efeito rodava de novo e devolvia o foco ao primeiro campo. Correção: `onFechar` fica numa ref e o efeito roda só ao abrir/fechar. O foco inicial também passou a ir para o primeiro campo de digitação (antes ia para o primeiro botão, ex.: "Despesa"). Verificado com digitação tecla a tecla no navegador: falhava antes da correção e passa depois (nome, dia e descrição).
