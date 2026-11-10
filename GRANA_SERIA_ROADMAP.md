@@ -358,3 +358,10 @@ Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (
 - Sem `ANTHROPIC_API_KEY`: a conversa livre diz que não está ativada e os 9 assuntos continuam funcionando (D3).
 - Exemplos com números das funções: `docs/coach-exemplos.md` (gerado por teste).
 - Testes: 45 arquivos, 395 testes.
+
+### Etapa 8 — mostrar o valor (concluída)
+- **Anotar por foto no botão +**: `api/comprovante.ts` usa a mesma leitura do bot (`server/receipt.ts`); o que vier preenche o formulário e a pessoa confere antes de salvar. Fatura com várias compras é desviada para "Importar fatura". Sem a chave de IA, o site diz que não está ativado e sugere o WhatsApp. Limite diário (`COMPROVANTE_DAILY_LIMIT`, padrão 20). O arquivo não é guardado.
+- **WhatsApp** no fim do onboarding e no Perfil (exemplos de `docs/whatsapp-assistente.md`), e selo "via WhatsApp" nos lançamentos vindos do bot.
+- **Importar fatura** em Pagar abre direto a folha de importação (`/plano/cartao#importar`).
+- **Sua semana no caminho** (`semanaNoCaminho` em `voltou.ts`, com teste): o que foi pago e guardado nos últimos 7 dias e quantos meses o destino chegou mais perto (comparando com o estado de 7 dias atrás).
+- `/planos` fala de resultado. Preços e links de pagamento (`src/config.ts`) não foram mexidos.

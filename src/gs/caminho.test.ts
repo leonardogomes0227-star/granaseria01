@@ -213,3 +213,15 @@ describe('bem-vindo de volta', () => {
     expect(v.mudancas.join(' · ')).toBe('Internet venceu · caiu R$ 3.000 de salário pelo WhatsApp · você ficou 5 dias sem anotar');
   });
 });
+
+describe('semana no caminho', () => {
+  it('diz o que foi pago e quantos meses o destino chegou mais perto', async () => {
+    const { semanaNoCaminho } = await import('./voltou');
+    const e = base({ dividas: [{ ...divida('c', 'Cartão', 6000, 8, 300), cadastradaEm: '2026-10-01', pagamentos: [{ data: '2026-11-08', valor: 2000 }] }], planoDividas: { estrategia: 'bola-de-neve', pagamentoMensal: 900, criadoEm: HOJE } });
+    const s = semanaNoCaminho(e, HOJE)!;
+    expect(s.pagou).toBe(2000);
+    expect(s.mesesMaisPerto).toBeGreaterThan(0);
+    expect(s.frase).toContain('mais perto');
+    expect(semanaNoCaminho(base(), HOJE)).toBeNull();
+  });
+});

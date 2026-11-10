@@ -9,7 +9,7 @@ import { detalheDisponivel } from './selectores';
 import { situacaoFinanceira } from './coachRegras';
 import { calcularCaminho, destino, fraseDoMarco, marcosAComemorar, marcosVisiveis, type Marco as TMarco } from './caminho';
 import { passoAtual, passosDoMes, resumoDosPassos } from './passos';
-import { resumoDaVolta } from './voltou';
+import { resumoDaVolta, semanaNoCaminho } from './voltou';
 import { comemorarMarcos, dispensarVolta, recomecarPassos, registrarVisita, informarSaldo } from './acoes';
 import { CampoDinheiro, Folha } from './ui';
 import { FormRenda } from './Onboarding';
@@ -52,6 +52,7 @@ export function TelaCaminho() {
   const atual = passoAtual(passos);
   const resumo = resumoDosPassos(passos);
   const sit = useMemo(() => situacaoFinanceira(e, hoje), [e, hoje]);
+  const semana = useMemo(() => semanaNoCaminho(e, hoje), [e, hoje]);
   const volta = useMemo(() => (e.caminho.voltaDispensada ? null : resumoDaVolta(e, new Date())), [e]);
   const festa = useMemo(() => marcosAComemorar(e, marcos), [e, marcos]);
   const { executar, folhas } = useExecutarPasso(hoje);
@@ -158,6 +159,13 @@ export function TelaCaminho() {
       )}
 
       {ordem.map((id) => <div key={id}>{blocos[id]}</div>)}
+
+      {semana && (
+        <section className="cm-card suave" aria-label="Sua semana no caminho">
+          <Eyebrow>Sua semana no caminho</Eyebrow>
+          <p style={{ margin: '6px 0 0', fontSize: 15.5, lineHeight: 1.5 }}>{oculto ? 'Valores ocultos.' : semana.frase}</p>
+        </section>
+      )}
 
       <Link to="/coach" className="cm-card" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit', marginTop: 24 }}>
         <Sparkles size={26} aria-hidden="true" style={{ color: 'var(--cm-ouro)', flex: 'none' }} />

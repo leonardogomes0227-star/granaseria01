@@ -10,12 +10,15 @@ import { Titulo } from './ui';
 const NO_GRATIS = ['Teste de 7 dias com tudo liberado', 'Depois, sem prazo: diagnóstico, Início e Meu mês (contas fixas e gastos do dia a dia)', 'Dados no seu aparelho'];
 const NO_PAGO = [
   'Tudo do plano grátis, sem prazo',
-  'As 11 ferramentas: quitar dívidas, reserva, cartão, orçamento, calendário e mais',
-  'Investir: mercado ao vivo, simulação e conversa',
-  'Assistente no WhatsApp: anote gastos e entradas por texto ou por áudio e veja seu mês e seu saldo',
-  'Dados guardados na sua conta, em qualquer aparelho',
+  'Seu caminho até sair das dívidas: a data em que você fica livre, e o que fazer a cada mês',
+  'Um Coach que resolve com você, com os seus números, um passo de cada vez',
+  'Anote pelo WhatsApp e por foto: "gastei 35 no mercado", a foto do cupom ou do pix',
+  'Saiba antes de decidir: o que uma compra, um parcelamento ou um empréstimo fazem com a sua data',
+  'Mande a fatura do cartão (PDF, foto ou texto) e veja para onde foi o dinheiro',
+  'Reserva, metas e investir em passos, com dados reais do mercado',
+  'Seus dados na sua conta, em qualquer aparelho',
 ];
-const EM_BREVE = ['Anotar por foto do cupom', 'Lembretes das contas e do plano no WhatsApp', 'Leitura da fatura do cartão'];
+const EM_BREVE = ['Lembretes das contas e do plano no WhatsApp'];
 
 interface Cartao {
   id: 'gratis' | 'mensal' | 'anual';

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { waLink } from '../whatsapp';
 import { useNavigate } from 'react-router-dom';
 import { Moeda } from '../components/ui/Moeda';
 import { atualizar, useEstado } from './store';
@@ -187,7 +188,7 @@ function PrimeiraVisao({ temDivida, temCartao, onIr }: { temDivida: boolean | nu
     <>
       <h1 className="gs-titulo">Sua primeira visão</h1>
       {d.modo === 'incompleto' ? (
-        <p className="gs-sub">Você pulou a renda, então ainda não sei quanto você pode gastar. Sem problema: informe depois no Início.</p>
+        <p className="gs-sub">Você pulou a renda, então ainda não sei quanto você pode gastar. Sem problema: informe depois, no seu caminho.</p>
       ) : (
         <p className="gs-sub">
           Pelo que você me contou, você pode gastar cerca de <b>{brl(d.porDia)}</b> por dia até o fim do mês. É uma <b>estimativa</b>: ela fica mais certeira quando você registra gastos e informa seu saldo.
@@ -195,9 +196,15 @@ function PrimeiraVisao({ temDivida, temCartao, onIr }: { temDivida: boolean | nu
       )}
       <div className="gs-acoes">
         {proximos.map(([t, r]) => <button key={r} type="button" className="gs-btn sec" onClick={() => onIr(r)}>{t}</button>)}
-        <button type="button" className="gs-btn cheio" onClick={() => onIr()}>Ir para o início</button>
+        <button type="button" className="gs-btn cheio" onClick={() => onIr()}>Ver meu caminho</button>
       </div>
-      <p className="gs-nota">No Início tem um checklist para completar o resto no seu ritmo.</p>
+      <section className="cm-card" style={{ marginTop: 20 }} aria-label="WhatsApp">
+        <span className="cm-eyebrow">Mais fácil ainda</span>
+        <b style={{ display: 'block', font: '600 22px/1.2 var(--cm-serif)', margin: '6px 0' }}>Anote gastos pelo WhatsApp</b>
+        <p className="cm-mudo" style={{ margin: '0 0 12px' }}>Mande <b>gastei 35 no mercado</b> ou uma <b>foto do cupom</b>. Eu anoto e aparece aqui.</p>
+        <a className="gs-btn sec" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Conectar o WhatsApp</a>
+      </section>
+      <p className="gs-nota">No Caminho tem um checklist para completar o resto no seu ritmo.</p>
     </>
   );
 }
