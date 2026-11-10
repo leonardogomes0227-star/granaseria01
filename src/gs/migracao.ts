@@ -146,6 +146,7 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
           .slice(-100),
       };
     })(),
+    outrosCartoes: arr<Record<string, unknown>>(b.outrosCartoes).filter((c) => c && typeof c.id === 'string' && typeof c.nome === 'string' && c.nome.trim()).map((c) => ({ id: String(c.id), nome: String(c.nome).trim().slice(0, 30), limite: Math.max(0, num(c.limite)), usado: Math.max(0, num(c.usado)), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))) })).slice(0, 6),
     recuperacao: (() => {
       const r = obj(b.recuperacao);
       return { ativo: Boolean(r.ativo), desde: typeof r.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.desde) ? r.desde : undefined, raioXFeito: Boolean(r.raioXFeito), ofertaDispensada: Boolean(r.ofertaDispensada), marcos: arr<string>(r.marcos).filter((x) => typeof x === 'string').slice(0, 30) };

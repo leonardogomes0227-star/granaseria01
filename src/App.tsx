@@ -48,6 +48,7 @@ const Assistentes = lazy(() => importarComRetry(() => import('./gs/Assistentes')
 const ParceladoTela = lazy(() => importarComRetry(() => import('./gs/Parcelado')).then((m) => ({ default: m.ParceladoTela })));
 const CartaoTela = lazy(() => importarComRetry(() => import('./gs/Cartao')).then((m) => ({ default: m.CartaoTela })));
 const Recuperacao = lazy(() => importarComRetry(() => import('./gs/Recuperacao')).then((m) => ({ default: m.Recuperacao })));
+const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m) => ({ default: m.Cortar })));
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
 import { Sobre } from './gs/Sobre';
@@ -257,6 +258,7 @@ function App() {
           }
         />
         <Route path="/lancamentos" element={<Pagina titulo="Lançamentos" o="os seus lançamentos"><MeuMes padrao="historico" /></Pagina>} />
+        <Route path="/plano/cortar" element={<Pagina titulo="Onde cortar" o="a ferramenta"><Cortar /></Pagina>} />
         <Route path="/recuperacao" element={<Pagina titulo="Modo recuperação" o="o modo recuperação"><Recuperacao /></Pagina>} />
         <Route path="/relatorios" element={<Pagina titulo="Relatórios" o="os seus relatórios"><Evolucao /></Pagina>} />
         <Route path="/planejamento" element={<Navigate to="/plano" replace />} />

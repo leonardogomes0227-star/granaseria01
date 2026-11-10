@@ -11,6 +11,7 @@ import { acaoReserva } from './reservaLogica';
 import { acaoCartao } from './cartaoLogica';
 import { situacaoAtrasos } from './atrasosLogica';
 import { mesCurto } from './datas';
+import { passoDoDia } from './recuperacaoLogica';
 import type { Estado } from './tipos';
 
 export interface Aviso {
@@ -21,6 +22,11 @@ export interface Aviso {
 
 export function avisosPendentes(e: Estado, hoje: string): Aviso[] {
   const out: Aviso[] = [];
+  // Modo Recuperação: o passo do dia vira o aviso do dia (notificação do navegador, se a pessoa deixou)
+  if (e.recuperacao.ativo && e.recuperacao.raioXFeito) {
+    const p = passoDoDia(e, hoje);
+    out.push({ id: `recup-${hoje}`, texto: `Seu passo de hoje: ${p.titulo}`, rota: p.rota ?? '/recuperacao' });
+  }
   if (assistenteAtivo(e, 'contas')) {
     for (const c of contasDoMes(e, hoje.slice(0, 7), hoje)) {
       if (c.estado === 'paga') continue;

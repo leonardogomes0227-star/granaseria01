@@ -241,6 +241,7 @@ function Painel() {
               <div className="gs-corte">
                 <span className="gs-rotulo">Onde cortar primeiro</span>
                 {corte.categorias.map((c) => <div className="gs-linha" key={c.categoria}><div className="gs-corpo"><b>{c.categoria}</b></div><span className="gs-valor">{m(brl0(c.valor))}</span></div>)}
+                <Link to="/plano/cortar" className="gs-btn link">Ver tudo em Onde cortar</Link>
                 {corte.assinaturas.n > 0 && <div className="gs-linha"><div className="gs-corpo"><b>Assinaturas ativas ({corte.assinaturas.n})</b><small><Link to="/plano/assinaturas">Revisar e cancelar</Link></small></div><span className="gs-valor">{m(brl0(corte.assinaturas.total))}</span></div>}
               </div>
             )}

@@ -10,6 +10,21 @@ import type { Estado } from './tipos.js';
 
 const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 
+/** Gastos que se repetem: mesma descrição em 2+ meses (últimos ~100 dias), valores até 15% parecidos. O maior primeiro. */
+export function gastosRecorrentes(e: Estado, hoje: string): { nome: string; meses: number; valor: number; valores: number[] }[] {
+  const desde = somaDias(hoje, -100);
+  const grupos = new Map<string, { nome: string; meses: Set<string>; valores: number[] }>();
+  for (const l of e.lancamentos) {
+    if (l.data < desde || !l.descricao.trim() || l.descricao === l.categoria) continue;
+    const k = norm(l.descricao);
+    const g = grupos.get(k) ?? { nome: l.descricao, meses: new Set(), valores: [] };
+    g.meses.add(mesDe(l.data));
+    g.valores.push(l.valor);
+    grupos.set(k, g);
+  }
+  return [...grupos.values()].filter((g) => g.meses.size >= 2 && Math.max(...g.valores) <= Math.min(...g.valores) * 1.15).map((g) => ({ nome: g.nome, meses: g.meses.size, valor: g.valores[g.valores.length - 1], valores: g.valores })).sort((a, b) => b.valor - a.valor);
+}
+
 export function regrasExtras(e: Estado, hoje: string, disp: Disponivel): Recomendacao[] {
   const mes = mesDe(hoje);
   const dia = Number(hoje.slice(8, 10));
@@ -29,20 +44,10 @@ export function regrasExtras(e: Estado, hoje: string, disp: Disponivel): Recomen
   }
 
   // 2) gasto recorrente: mesma descrição em 2+ meses com valores parecidos (assinaturas e afins)
-  const desde = somaDias(hoje, -100);
-  const grupos = new Map<string, { nome: string; meses: Set<string>; valores: number[] }>();
-  for (const l of e.lancamentos) {
-    if (l.data < desde || !l.descricao.trim() || l.descricao === l.categoria) continue;
-    const k = norm(l.descricao);
-    const g = grupos.get(k) ?? { nome: l.descricao, meses: new Set(), valores: [] };
-    g.meses.add(mesDe(l.data));
-    g.valores.push(l.valor);
-    grupos.set(k, g);
-  }
-  const rec = [...grupos.values()].filter((g) => g.meses.size >= 2 && Math.max(...g.valores) <= Math.min(...g.valores) * 1.15).sort((a, b) => b.valores[0] - a.valores[0])[0];
+  const rec = gastosRecorrentes(e, hoje)[0];
   if (rec) {
-    const v = rec.valores[rec.valores.length - 1];
-    out.push({ id: `recorrente-${norm(rec.nome)}`, tom: 'info', tipo: 'coach', prioridade: 40, titulo: `${rec.nome} parece um gasto que se repete todo mês`, texto: `Cerca de ${brl0(v)} por mês, ${brl0(v * 12)} por ano. Vale conferir se você ainda usa e se compensa.`, porque: `Apareceu em ${rec.meses.size} meses diferentes, com valores parecidos (${rec.valores.map((x) => brl0(x)).join(', ')}).`, acao: { rotulo: 'Revisar gastos escondidos', rota: '/plano/assinaturas' } });
+    const v = rec.valor;
+    out.push({ id: `recorrente-${norm(rec.nome)}`, tom: 'info', tipo: 'coach', prioridade: 40, titulo: `${rec.nome} parece um gasto que se repete todo mês`, texto: `Cerca de ${brl0(v)} por mês, ${brl0(v * 12)} por ano. Vale conferir se você ainda usa e se compensa.`, porque: `Apareceu em ${rec.meses} meses diferentes, com valores parecidos (${rec.valores.map((x) => brl0(x)).join(', ')}).`, acao: { rotulo: 'Onde cortar', rota: '/plano/cortar' } });
   }
 
   // 3) meta com prazo atrasada em relação ao ritmo esperado

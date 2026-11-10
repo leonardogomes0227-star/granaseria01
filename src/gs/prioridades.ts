@@ -31,6 +31,11 @@ export function prioridades(e: Estado, hoje: string): Prioridade[] {
     const uso = (e.cartao.usado / e.cartao.limite) * 100;
     l.push({ chave: 'cartao', semaforo: v.dias <= 2 || uso > 90 ? 'vermelho' : v.dias <= 7 || uso > 70 ? 'amarelo' : 'verde', titulo: 'Fatura do cartão', detalhe: `vence ${diaCurto(v.data)} · ${Math.round(uso)}% do limite`, valor: e.cartao.usado, data: v.data, rota: '/plano/cartao' });
   }
+  for (const oc of e.outrosCartoes ?? []) {
+    if (oc.usado <= 0) continue;
+    const v = proximaData(oc.venceDia, hoje);
+    l.push({ chave: `oc-${oc.id}`, semaforo: v.dias <= 2 ? 'vermelho' : v.dias <= 7 ? 'amarelo' : 'verde', titulo: `Fatura ${oc.nome}`, detalhe: `vence ${diaCurto(v.data)}`, valor: oc.usado, data: v.data, rota: '/plano/cartao' });
+  }
   for (const d of e.dividas) {
     if (saldoAtual(d) <= 0 || !d.venceDia) continue;
     const data = vencimentoNoMes(mes, d.venceDia);

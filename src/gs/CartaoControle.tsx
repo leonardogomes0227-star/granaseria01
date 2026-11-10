@@ -2,15 +2,17 @@ import { useMemo, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { salvarCartao } from './acoes';
-import { analiseFatura, aplicarFatura, impactoCompra, lerFaturaCsv, parceladasDaFatura, totalFatura, type LeituraFatura } from './faturaCsv';
+import { removerOutroCartao, restaurarOutroCartao, salvarCartao, salvarOutroCartao } from './acoes';
+import { analiseFatura, aplicarFatura, impactoCompra, parceladasDaFatura, totalFatura, type LeituraFatura } from './faturaCsv';
 import { proximasFaturas } from './cartaoLogica';
+import { lerArquivoFatura, lerTextoDaFatura } from './lerArquivoFatura';
 import { folgaMensal } from './selectores';
 import { brl, brl0, mesCurto, mesDe, novoId, somaMes } from './datas';
 import { iconeDe } from './categorias';
-import { Barra, CampoDinheiro, CampoNumero, Folha } from './ui';
-import { toast } from '../components/ui/Toast';
-import type { Cartao } from './tipos';
+import { Barra, Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
+import { apagarComDesfazer, toast } from '../components/ui/Toast';
+import { proximaData } from './cartaoLogica';
+import type { Cartao, OutroCartao } from './tipos';
 
 /* ---------- Cartão sob controle: projeção das parcelas, limite do mês, simulador de compra e importar fatura ---------- */
 
@@ -21,12 +23,34 @@ export function CartaoControle({ c }: { c: Cartao }) {
   const [simular, setSimular] = useState(false);
   const [importar, setImportar] = useState(false);
   const [limite, setLimite] = useState(false);
+  const [outro, setOutro] = useState<OutroCartao | 'novo' | null>(null);
   const meses = useMemo(() => proximasFaturas(c, 6), [c]);
   const max = Math.max(...meses, 1);
   const lim = c.limitePessoal;
   const uso = lim ? (c.usado / lim) * 100 : 0;
+  const outros = e.outrosCartoes ?? [];
+  const totalFaturas = c.usado + outros.reduce((t, o) => t + o.usado, 0);
+  const linhaCartao = (nome: string, usado: number, limiteBanco: number, venceDia: number, extra?: OutroCartao) => {
+    const v = proximaData(venceDia, hoje);
+    return (
+      <div className="gs-linha" key={extra?.id ?? 'principal'}>
+        <div className="gs-corpo"><b>{nome}</b><small>vence dia {venceDia} ({v.dias === 0 ? 'hoje' : `em ${v.dias} ${v.dias === 1 ? 'dia' : 'dias'}`}){limiteBanco > 0 ? ` · ${Math.round((usado / limiteBanco) * 100)}% do limite` : ''}</small></div>
+        <span className="gs-valor">{brl0(usado)}</span>
+        {extra && <button type="button" className="gs-btn link" onClick={() => setOutro(extra)}>Editar</button>}
+      </div>
+    );
+  };
   return (
     <>
+      {outros.length > 0 && (
+        <section className="gs-card" aria-label="Todas as faturas">
+          <span className="gs-rotulo">Todas as faturas</span>
+          {linhaCartao('Cartão principal', c.usado, c.limite, c.venceDia)}
+          {outros.map((o) => linhaCartao(o.nome, o.usado, o.limite, o.venceDia, o))}
+          <p style={{ margin: '8px 0 0' }}>Total em aberto: <b>{brl0(totalFaturas)}</b></p>
+        </section>
+      )}
+
       <section className="gs-card" aria-label="Parcelas nos próximos meses">
         <span className="gs-rotulo">Parcelas já combinadas</span>
         {meses.every((v) => v === 0) ? (
@@ -62,7 +86,9 @@ export function CartaoControle({ c }: { c: Cartao }) {
       <div className="gs-acoes">
         <button type="button" className="gs-btn sec" onClick={() => setSimular(true)}>Simular uma compra</button>
         <button type="button" className="gs-btn sec" onClick={() => setImportar(true)}><Upload size={16} aria-hidden="true" /> Importar fatura</button>
+        <button type="button" className="gs-btn link" onClick={() => setOutro('novo')}>+ Outro cartão</button>
       </div>
+      <OutroCartaoSheet valor={outro} onFechar={() => setOutro(null)} />
 
       <LimiteSheet aberta={limite} c={c} onFechar={() => setLimite(false)} />
       <SimuladorSheet aberta={simular} c={c} folga={folgaMensal(e, mesDe(hoje)).folga} renda={renda} onFechar={() => setSimular(false)} />
@@ -118,10 +144,13 @@ function ImportarSheet({ aberta, c, onFechar }: { aberta: boolean; c: Cartao; on
   const [leitura, setLeitura] = useState<LeituraFatura | null>(null);
   const [colado, setColado] = useState('');
   const [pct, setPct] = useState(30);
+  const [lendo, setLendo] = useState('');
+  const hoje = useHoje();
   const arquivo = useRef<HTMLInputElement>(null);
   const analise = useMemo(() => (leitura && !leitura.erro ? analiseFatura(leitura.compras) : null), [leitura]);
   const fechar = () => { setLeitura(null); setColado(''); onFechar(); };
-  const ler = (txt: string) => setLeitura(txt.trim() ? lerFaturaCsv(txt) : null);
+  const ler = (txt: string) => setLeitura(txt.trim() ? lerTextoDaFatura(txt, hoje) : null);
+  const lerArquivo = async (f: File) => { setLendo('Lendo o arquivo…'); setLeitura(await lerArquivoFatura(f, hoje, setLendo)); setLendo(''); };
   const aplicar = () => {
     if (!leitura || leitura.erro) return;
     const antes = c;
@@ -134,14 +163,15 @@ function ImportarSheet({ aberta, c, onFechar }: { aberta: boolean; c: Cartao; on
     <Folha aberta={aberta} onFechar={fechar} titulo="Importar fatura">
       {!leitura || leitura.erro ? (
         <>
-          <p className="gs-sub" style={{ marginTop: 0 }}>Baixe a fatura em CSV no app do banco e escolha o arquivo. Ele é lido no seu aparelho; eu guardo só o total e as parcelas.</p>
-          <input ref={arquivo} type="file" accept=".csv,text/csv,text/plain" hidden onChange={async (ev) => { const f = ev.target.files?.[0]; if (f) ler(await f.text()); ev.target.value = ''; }} />
-          <button type="button" className="gs-btn cheio" onClick={() => arquivo.current?.click()}><Upload size={16} aria-hidden="true" /> Escolher arquivo CSV</button>
-          <details className="gs-aprende"><summary>Ou cole o conteúdo</summary>
-            <textarea className="gs-area" rows={5} value={colado} onChange={(ev) => { setColado(ev.target.value); ler(ev.target.value); }} aria-label="Conteúdo do CSV" placeholder="date,category,title,amount" />
+          <p className="gs-sub" style={{ marginTop: 0 }}>Escolha a fatura: CSV, PDF ou uma foto/print. Tudo é lido no seu aparelho, sem enviar para ninguém; eu guardo só o total e as parcelas.</p>
+          <input ref={arquivo} type="file" accept=".csv,.txt,.pdf,text/csv,text/plain,application/pdf,image/*" hidden onChange={(ev) => { const f = ev.target.files?.[0]; if (f) void lerArquivo(f); ev.target.value = ''; }} />
+          <button type="button" className="gs-btn cheio" disabled={Boolean(lendo)} onClick={() => arquivo.current?.click()}><Upload size={16} aria-hidden="true" /> Escolher arquivo</button>
+          {lendo && <p className="gs-mudo" role="status" aria-live="polite">{lendo}</p>}
+          <details className="gs-aprende"><summary>Ou copie e cole o texto da fatura</summary>
+            <textarea className="gs-area" rows={5} value={colado} onChange={(ev) => { setColado(ev.target.value); ler(ev.target.value); }} aria-label="Texto da fatura" placeholder="03 NOV  Padaria  R$ 12,50" />
           </details>
           {leitura?.erro && <p role="alert" style={{ color: 'var(--danger)' }}>{leitura.erro}</p>}
-          <p className="gs-nota">Foto ou PDF ainda não: dependem de IA.</p>
+          <p className="gs-nota">Foto e PDF funcionam sem internet de IA, mas a leitura pode errar: confira a lista antes de usar.</p>
         </>
       ) : (
         <>
@@ -171,6 +201,42 @@ function ImportarSheet({ aberta, c, onFechar }: { aberta: boolean; c: Cartao; on
           <p className="gs-nota">"Usar" troca a fatura atual por {brl0(totalFatura(leitura.compras))}. Dá para desfazer logo depois.</p>
         </>
       )}
+    </Folha>
+  );
+}
+
+function OutroCartaoSheet({ valor, onFechar }: { valor: OutroCartao | 'novo' | null; onFechar: () => void }) {
+  if (!valor) return null;
+  return <Formulario key={valor === 'novo' ? 'novo' : valor.id} edit={valor === 'novo' ? null : valor} onFechar={onFechar} />;
+}
+
+function Formulario({ edit, onFechar }: { edit: OutroCartao | null; onFechar: () => void }) {
+  const [nome, setNome] = useState(edit?.nome ?? '');
+  const [limite, setLimite] = useState(edit?.limite ?? 0);
+  const [usado, setUsado] = useState(edit?.usado ?? 0);
+  const [dia, setDia] = useState<number | ''>(edit?.venceDia ?? '');
+  const [tentou, setTentou] = useState(false);
+  const diaOk = typeof dia === 'number' && dia >= 1 && dia <= 31;
+  const salvar = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    setTentou(true);
+    if (!nome.trim() || !diaOk) return;
+    if (!salvarOutroCartao({ id: edit?.id, nome, limite, usado, venceDia: dia as number })) return toast('Não consegui salvar (limite de 6 cartões extras).');
+    toast(`${nome.trim()} ${edit ? 'atualizado' : 'adicionado'}`);
+    onFechar();
+  };
+  return (
+    <Folha aberta onFechar={onFechar} titulo={edit ? `Editar ${edit.nome}` : 'Outro cartão'}>
+      <form onSubmit={salvar} noValidate>
+        <Campo rotulo="Nome do cartão" valor={nome} onChange={setNome} placeholder="Ex.: Nubank, Inter, Loja" maxLength={30} autoFocus erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />
+        <CampoDinheiro rotulo="Fatura atual" valor={usado} onChange={setUsado} />
+        <CampoDinheiro rotulo="Limite (opcional)" valor={limite} onChange={setLimite} />
+        <CampoNumero rotulo="Vence todo dia…" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" erro={tentou && !diaOk ? 'Digite um dia de 1 a 31.' : undefined} />
+        <div className="gs-acoes">
+          <button type="submit" className="gs-btn cheio">Salvar</button>
+          {edit && <button type="button" className="gs-btn link" onClick={() => { const c = edit; removerOutroCartao(c.id); apagarComDesfazer(`${c.nome} removido`, () => restaurarOutroCartao(c)); onFechar(); }}>Remover</button>}
+        </div>
+      </form>
     </Folha>
   );
 }

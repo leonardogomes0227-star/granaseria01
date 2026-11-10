@@ -104,6 +104,14 @@ export interface Divida {
   parcelasRestantes?: number; // só nas parceladas, quando a pessoa informa
   estimado?: boolean; // a pessoa não tinha certeza do valor (Modo Recuperação marca como "valor estimado")
 }
+/** Outros cartões além do principal: só a fatura e o vencimento (para ver tudo que vence num lugar só). */
+export interface OutroCartao {
+  id: string;
+  nome: string;
+  limite: number;
+  usado: number; // fatura atual
+  venceDia: number;
+}
 export type Estrategia = 'bola-de-neve' | 'maior-juro';
 export interface PlanoDividas {
   estrategia: Estrategia;
@@ -248,6 +256,7 @@ export interface Estado {
   semanaVista?: string; // segunda-feira da última semana mostrada
   limites: Record<string, number>; // limite mensal por categoria do dia a dia
   cartao: Cartao | null;
+  outrosCartoes: OutroCartao[];
   atrasos?: AtrasosCfg;
   recuperacao: Recuperacao;
 }
@@ -271,5 +280,6 @@ export const ESTADO_INICIAL = (): Estado => ({
   investir: { simulacao: { saldoVirtual: 10000, posicoes: [], historico: [] }, chat: [], mensagensHoje: { data: '', qtd: 0 } },
   limites: {},
   cartao: null,
+  outrosCartoes: [],
   recuperacao: { ativo: false, raioXFeito: false },
 });

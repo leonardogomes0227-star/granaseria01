@@ -4,7 +4,7 @@ import { atualizar, getEstado } from './store';
 import { arred, novoId, hoje as hojeSP, vencimentoNoMes } from './datas';
 import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
 import { cfgAtrasos, deOndeSai, type Atraso } from './atrasosLogica';
-import type { Estado, Meta, Receita, Transferencia, ContaBancaria, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
+import type { Estado, OutroCartao, Meta, Receita, Transferencia, ContaBancaria, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
@@ -422,3 +422,17 @@ export const desfazerAdiar = (chave: string) =>
 export const marcarSemanaVista = (segunda: string) => atualizar((e) => ({ ...e, semanaVista: segunda }));
 export const registrarMarco = (id: string) =>
   atualizar((e) => (e.recuperacao.marcos?.includes(id) ? e : { ...e, recuperacao: { ...e.recuperacao, marcos: [...(e.recuperacao.marcos ?? []), id] } }));
+
+/* ---------- outros cartões (fatura e vencimento) ---------- */
+export function salvarOutroCartao(c: Omit<OutroCartao, 'id'> & { id?: string }): boolean {
+  const nome = c.nome.trim().slice(0, 30);
+  if (!nome || c.usado < 0 || c.limite < 0 || !(c.venceDia >= 1 && c.venceDia <= 31)) return false;
+  if (!c.id && getEstado().outrosCartoes.length >= 6) return false;
+  atualizar((e) => {
+    const dados = { nome, limite: arred(c.limite), usado: arred(c.usado), venceDia: Math.round(c.venceDia) };
+    return c.id ? { ...e, outrosCartoes: e.outrosCartoes.map((x) => (x.id === c.id ? { ...x, ...dados } : x)) } : { ...e, outrosCartoes: [...e.outrosCartoes, { id: novoId('oc'), ...dados }] };
+  });
+  return true;
+}
+export const removerOutroCartao = (id: string) => atualizar((e) => ({ ...e, outrosCartoes: e.outrosCartoes.filter((c) => c.id !== id) }));
+export const restaurarOutroCartao = (c: OutroCartao) => atualizar((e) => (e.outrosCartoes.some((x) => x.id === c.id) ? e : { ...e, outrosCartoes: [...e.outrosCartoes, c] }));

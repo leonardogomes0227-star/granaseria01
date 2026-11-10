@@ -51,7 +51,7 @@ export function guardarNoMes(e: Estado, mes: string): number {
 }
 
 /** Fatura do cartão ainda aberta: compra no cartão não vira "gasto" até pagar a fatura (ela é o compromisso), então não duplica. */
-export const faturaAberta = (e: Estado) => arred(Math.max(0, e.cartao?.usado ?? 0));
+export const faturaAberta = (e: Estado) => arred(Math.max(0, e.cartao?.usado ?? 0) + (e.outrosCartoes ?? []).reduce((t, c) => t + Math.max(0, c.usado), 0));
 
 /** O que sai do mês antes do dia a dia: contas fixas, parcelas de dívida, fatura aberta, o que vai pra reserva e pra conta atrasada. */
 export const compromissosDoMes = (e: Estado, mes: string) => arred(totalFixos(e, mes) + folgaMensal(e, mes).parcelas + faturaAberta(e) + guardarNoMes(e, mes) + atrasoNoMes(e, mes));
