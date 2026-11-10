@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRightLeft, Check, Copy } from 'lucide-react';
 import { useEstado } from './store';
 import { atalhosFrequentes, sugerirCategoria, sugerirForma } from './sugestoes';
-import { criarConta, removerLancamento, removerReceita, removerTransferencia, restaurarLancamento, restaurarReceita, restaurarTransferencia, salvarLancamento, salvarReceita, salvarTransferencia } from './acoes';
+import { comprarNoCartao, criarConta, removerLancamento, removerReceita, removerTransferencia, restaurarLancamento, restaurarReceita, restaurarTransferencia, salvarLancamento, salvarReceita, salvarTransferencia } from './acoes';
 import { CATEGORIAS_MOV, type Lancamento, type Receita, type Transferencia } from './tipos';
 import { brl, hoje as hojeSP, somaDias } from './datas';
 import { iconeDe } from './categorias';
 import { Campo, CampoDinheiro, Folha } from './ui';
+import { impactoCompra } from './faturaCsv';
+import { folgaMensal } from './selectores';
+import { mesDe } from './datas';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 
 /* ---------- "+ Adicionar": despesa, receita ou transferência em 3 passos curtos (valor → categoria → conta e data) ---------- */
@@ -50,6 +53,8 @@ export function AdicionarMov() {
   const [editId, setEditId] = useState<string | null>(null);
   const [original, setOriginal] = useState<Lancamento | Receita | Transferencia | null>(null);
   const [apagar, setApagar] = useState(false);
+  const [parcelasCartao, setParcelasCartao] = useState(1);
+  const [avisoCartao, setAvisoCartao] = useState('');
   const contasRef = useRef(e.contas);
   contasRef.current = e.contas;
   const hoje = hojeSP();
@@ -61,7 +66,7 @@ export function AdicionarMov() {
       const p = (ev as CustomEvent<PedidoAdicionar>).detail ?? {};
       const g = p.editarGasto, r = p.editarReceita, t = p.editarTransferencia;
       const ultima = lerConta();
-      setErro(''); setApagar(false); setNovaConta('');
+      setErro(''); setApagar(false); setNovaConta(''); setParcelasCartao(1); setAvisoCartao('');
       setOriginal(g ?? r ?? t ?? null);
       setEditId(g?.id ?? r?.id ?? t?.id ?? null);
       setTudo(Boolean(g ?? r ?? t));
@@ -113,6 +118,18 @@ export function AdicionarMov() {
     if (m) { setErro(m); if (!tudo) setPasso(validar1() ? 1 : 2); return; }
     if (data > hojeSP()) return setErro('A data não pode ser no futuro.');
     if (conta) guardarConta(conta);
+    // compra no crédito com cartão cadastrado: entra na fatura (e nas parcelas), não vira gasto à parte, para não contar duas vezes
+    if (tipo === 'despesa' && forma === 'Crédito' && e.cartao && !editId) {
+      const imp = impactoCompra(e.cartao, { valor, parcelas: parcelasCartao }, folgaMensal(e, mesDe(hojeSP())).folga);
+      if (imp.veredito !== 'cabe' && avisoCartao !== `${valor}:${parcelasCartao}`) {
+        setAvisoCartao(`${valor}:${parcelasCartao}`);
+        setErro('');
+        return;
+      }
+      if (!comprarNoCartao({ descricao: desc || cat || 'Compra', valor, parcelas: parcelasCartao })) return setErro('Não consegui registrar no cartão.');
+      toast(parcelasCartao > 1 ? `Compra no cartão: ${parcelasCartao}x de ${brl(valor / parcelasCartao)}` : `Compra no cartão: ${brl(valor)} na fatura`);
+      return fechar();
+    }
     if (tipo === 'despesa') {
       if (!salvarLancamento({ id: editId ?? undefined, descricao: desc, valor, data, categoria: cat || 'Outros', forma: forma || undefined, contaId: conta || undefined, serverId: (original as Lancamento | null)?.serverId })) return setErro('Confira os dados e tente de novo.');
       toast(`${editId ? 'Gasto atualizado' : 'Gasto anotado'}: ${brl(valor)} em ${cat || 'Outros'}`);
@@ -233,11 +250,26 @@ export function AdicionarMov() {
               <button type="button" className={`gs-chip ${outraData ? 'on' : ''}`} onClick={() => setOutraData(true)}>Outro dia</button>
             </div>
             {outraData && <Campo rotulo="Data" valor={data} onChange={setData} tipo="date" />}
-            {tipo === 'despesa' && (
+            {tipo === 'despesa' && e.cartao && (
+              <>
+                <span className="gs-rotulo">Como pagou?</span>
+                <div className="gs-chips" role="group" aria-label="Forma de pagamento">{FORMAS.map((f) => <button key={f} type="button" className={`gs-chip ${forma === f ? 'on' : ''}`} aria-pressed={forma === f} onClick={() => { setForma(forma === f ? '' : f); setAvisoCartao(''); }}>{f}</button>)}</div>
+              </>
+            )}
+            {tipo === 'despesa' && !e.cartao && (
               <details className="gs-avancado">
                 <summary>Mais opções (forma de pagamento)</summary>
                 <div className="gs-chips" role="group" aria-label="Forma de pagamento">{FORMAS.map((f) => <button key={f} type="button" className={`gs-chip ${forma === f ? 'on' : ''}`} onClick={() => setForma(forma === f ? '' : f)}>{f}</button>)}</div>
               </details>
+            )}
+            {tipo === 'despesa' && forma === 'Crédito' && e.cartao && !editId && (
+              <>
+                <span className="gs-rotulo">Parcelas no cartão</span>
+                <div className="gs-chips" role="group" aria-label="Parcelas no cartão">
+                  {[1, 2, 3, 6, 10, 12].map((x) => <button key={x} type="button" className={`gs-chip ${parcelasCartao === x ? 'on' : ''}`} aria-pressed={parcelasCartao === x} onClick={() => { setParcelasCartao(x); setAvisoCartao(''); }}>{x === 1 ? 'À vista' : `${x}x`}</button>)}
+                </div>
+                {valor > 0 && <AvisoCartao c={e.cartao} valor={valor} n={parcelasCartao} folga={folgaMensal(e, mesDe(hoje)).folga} confirmado={avisoCartao === `${valor}:${parcelasCartao}`} />}
+              </>
             )}
             {!tudo && tipo === 'despesa' && !cat && <p className="gs-nota">Sem categoria, o gasto entra em "Outros".</p>}
           </section>
@@ -246,7 +278,7 @@ export function AdicionarMov() {
         {erro && !(erro === 'Digite o valor.' && !(valor > 0) && ver(1)) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
         {(tudo || passo === 3 || (passo === 2 && tipo === 'despesa')) && (
           <div className="gs-acoes">
-            <button type="submit" className="gs-btn cheio"><Check size={16} aria-hidden="true" /> Salvar</button>
+            <button type="submit" className="gs-btn cheio"><Check size={16} aria-hidden="true" /> {avisoCartao === `${valor}:${parcelasCartao}` ? 'Registrar mesmo assim' : 'Salvar'}</button>
             {editId && <button type="button" className="gs-btn sec" onClick={duplicar}><Copy size={16} aria-hidden="true" /> Duplicar</button>}
             {editId && !apagar && <button type="button" className="gs-btn link" onClick={() => setApagar(true)}>Excluir</button>}
             {editId && apagar && <button type="button" className="gs-btn perigo" onClick={excluir}>Confirmar exclusão</button>}
@@ -258,5 +290,16 @@ export function AdicionarMov() {
         )}
       </form>
     </Folha>
+  );
+}
+
+/** Antes de registrar no crédito: cabe no plano? Só avisa (a decisão é da pessoa). */
+function AvisoCartao({ c, valor, n, folga, confirmado }: { c: NonNullable<import('./tipos').Estado['cartao']>; valor: number; n: number; folga: number; confirmado: boolean }) {
+  const i = impactoCompra(c, { valor, parcelas: n }, folga);
+  const tom = i.veredito === 'cabe' ? 'ok' : i.veredito === 'aperta' ? 'aviso' : 'erro';
+  return (
+    <p className={`gs-banner ${tom}`} role={i.veredito === 'cabe' ? 'status' : 'alert'} style={confirmado ? { borderColor: 'var(--danger)' } : undefined}>
+      <b>{i.veredito === 'cabe' ? 'Cabe no seu plano.' : i.veredito === 'aperta' ? 'Isso aperta o seu mês.' : 'Isso não cabe no seu plano.'}</b> {i.motivo} A fatura iria a {brl(i.faturaDepois)}.{i.veredito !== 'cabe' ? ' Toque em "Registrar mesmo assim" se for seguir.' : ''}
+    </p>
   );
 }

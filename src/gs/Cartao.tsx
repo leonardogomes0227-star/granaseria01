@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { comprarNoCartao, pagarFaturaCartao, salvarCartao, salvarDivida } from './acoes';
-import { Agora, Barra, Campo, CampoDinheiro, CampoNumero, Dica, Folha, Heroi, MaisAjuda, Titulo } from './ui';
-import { brl0, mesCurto, somaMes } from './datas';
-import { acaoCartao, comprometidoTotal, proximaData, proximasFaturas, usoDoLimite } from './cartaoLogica';
+import { Agora, Campo, CampoDinheiro, CampoNumero, Dica, Folha, Heroi, MaisAjuda, Titulo } from './ui';
+import { brl0 } from './datas';
+import { acaoCartao, comprometidoTotal, proximaData, usoDoLimite } from './cartaoLogica';
 import { toast } from '../components/ui/Toast';
+import { CartaoControle } from './CartaoControle';
 
 /* ---------- Cartão de crédito: a fatura, o que já está combinado pra frente e o melhor dia de comprar ---------- */
 
@@ -60,8 +61,6 @@ export function CartaoTela() {
   const uso = usoDoLimite(c);
   const venc = proximaData(c.venceDia, hoje);
   const acao = acaoCartao(c, hoje);
-  const futuras = proximasFaturas(c, 3);
-  const maxFut = Math.max(...futuras, 1);
   const comprom = comprometidoTotal(c);
   const dia = Number(hoje.slice(8, 10));
   const cor = uso > 80 ? 'var(--danger)' : uso > 30 ? 'var(--gold-strong)' : 'var(--success)';
@@ -89,20 +88,12 @@ export function CartaoTela() {
         </div>
       </Agora>
 
-      {comprom > 0 && (
-        <section className="gs-card">
-          <span className="gs-rotulo">Já combinado pras próximas faturas</span>
-          <p style={{ margin: '6px 0 0' }}>Parcelas que ainda vão cair: <b>{brl0(comprom)}</b>.</p>
-          {futuras.map((v, i) => (
-            v > 0 ? (
-              <div key={i} style={{ display: 'grid', gridTemplateColumns: '60px 1fr auto', gap: 10, alignItems: 'center', marginTop: 8, fontSize: 13 }}>
-                <span className="gs-mudo">{mesCurto(somaMes(hoje.slice(0, 7), i + 1))}</span>
-                <Barra pct={(v / maxFut) * 100} rotulo={`Parcelas em ${mesCurto(somaMes(hoje.slice(0, 7), i + 1))}`} />
-                <b className="gs-tab">{brl0(v)}</b>
-              </div>
-            ) : null
-          ))}
+      <CartaoControle c={c} />
+      {(c.parcelados ?? []).length > 0 && (
+        <section className="gs-card" aria-label="Compras parceladas">
+          <span className="gs-rotulo">Compras parceladas</span>
           {(c.parcelados ?? []).map((p) => <div className="gs-linha" key={p.id}><div className="gs-corpo"><b>{p.descricao}</b><small>{p.restantes} {p.restantes === 1 ? 'parcela' : 'parcelas'} de {brl0(p.parcela)}</small></div></div>)}
+          <p className="gs-nota">Total ainda por vir: {brl0(comprom)}.</p>
         </section>
       )}
 
