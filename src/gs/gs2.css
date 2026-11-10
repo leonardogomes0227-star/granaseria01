@@ -221,3 +221,10 @@ html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec:hover
 /* na configuração inicial o menu não aparece: um passo de cada vez */
 .gs-sem-menu .gs-lateral, .gs-sem-menu .gs-abas, .gs-sem-menu .gs-so-mobile { display: none !important; }
 .gs-parcelas-bloco { margin: 14px 0; padding: 12px 14px; border-radius: 14px; background: var(--ds-ouro-fundo); border: 1px solid var(--line); }
+
+/* campo de dinheiro com "R$" fixo à esquerda */
+.gs-dinheiro-caixa { position: relative; }
+.gs-dinheiro-caixa > i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-style: normal; font-weight: 600; color: var(--ink-muted); pointer-events: none; }
+.gs-dinheiro-caixa input { padding-left: 44px !important; }
+.gs-dinheiro-caixa.grande > i { font-size: 20px; }
+.gs-dinheiro-caixa.grande input { padding-left: 54px !important; }
