@@ -206,3 +206,10 @@ html.gs-app .gs-btn { box-shadow: none; }
 .gs-btn.link { min-height: 44px; padding-left: 6px; padding-right: 6px; }
 .gs-banner[style*="flex"] .gs-btn.link { display: inline-flex; min-height: 44px; padding: 0 8px; }
 .gs-app2 .gs-card svg[role="img"] { max-width: 540px; margin-left: auto; margin-right: auto; }
+
+/* nova dívida simples */
+.gs-tipos-divida { display: grid; gap: 8px; margin: 0 0 8px; }
+.gs-tipo-divida { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 10px 14px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--ivory); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.gs-tipo-divida:hover { background: var(--ds-ouro-fundo); border-color: var(--ds-ouro); }
+.gs-tipo-divida b { display: block; font-weight: 600; font-size: 15px; }
+.gs-tipo-divida small { display: block; color: var(--ink-muted); font-size: 13px; }

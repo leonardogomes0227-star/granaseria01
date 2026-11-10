@@ -125,7 +125,12 @@ function Prioridades() {
   const hoje = useHoje();
   const lista = prioridades(e, hoje);
   if (lista.length === 0)
-    return <p className="gs-nota">Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro. <Link to="/lancamentos?aba=contas">Cadastrar contas</Link></p>;
+    return (
+      <section className="gs-card">
+        <p className="gs-mudo" style={{ margin: 0 }}>Cadastre contas fixas, cartão ou dívidas e eu organizo aqui o que vence primeiro.</p>
+        <div className="gs-acoes"><Link to="/lancamentos?aba=contas" className="gs-btn sec pequeno">Cadastrar contas</Link><Link to="/plano/dividas" className="gs-btn sec pequeno">Cadastrar dívidas</Link><Link to="/plano/atrasos?anotar=1" className="gs-btn sec pequeno">Anotar conta atrasada</Link></div>
+      </section>
+    );
   const r = resumoSemaforo(lista);
   const abertas = lista.filter((x) => x.semaforo !== 'verde');
   return (
@@ -142,6 +147,7 @@ function Prioridades() {
           <span className="gs-valor">{brl(p.valor)}</span>
         </Link>
       ))}
+      <div className="gs-acoes"><Link to="/plano/atrasos?anotar=1" className="gs-btn sec pequeno">+ Anotar conta atrasada</Link><Link to="/plano/dividas" className="gs-btn sec pequeno">+ Cadastrar dívida</Link></div>
     </section>
   );
 }

@@ -229,3 +229,9 @@ Limite: o site público foi usado só como referência (a landing é o `Landing.
 - **F7 Relatórios:** período 3/6/12 meses, comparação mês × mês, economia acumulada.
 - **F8 Revisão:** 320 testes, `typecheck`, `typecheck:server`, `lint` (0 erros), `build`. Playwright em 390 e 1280 px: sem erros de página nem rolagem horizontal; fluxo completo (onboarding, despesa com categoria sugerida, receita, transferência, duplicar, excluir, ocultar valores, meta) passou.
 - **Não feito / limites:** sem axe/Lighthouse e sem Safari/Firefox (só Chromium); switches do Coach têm área de toque ampliada por CSS, mas medem 52×32; saldo por conta não existe (contas só organizam); o formulário antigo "Dia a dia" continua na aba própria; bundle principal 798 kB.
+
+### Ajustes pós-uso (nov/2026): dívidas, atrasos e renda extra
+Feedback do dono: cadastrar dívida era confuso; faltava um jeito claro de anotar contas atrasadas e renda extra.
+- **Nova dívida simples** (`NovaDivida.tsx`): tipo (cartão, empréstimo, financiamento, loja, cheque especial, outra) → quanto deve (e quanto paga por mês, opcional) → pronto, com "adicionar outra". O juro usa um valor comum do tipo e a parcela é estimada quando não informada; ambos são avisados na tela. O formulário completo continua em "Já sei os detalhes" e na edição.
+- **Conta atrasada:** atalhos em Mais, Planejamento, Início e na folha de adicionar abrem o "Anotar conta atrasada" que já existia (`/plano/atrasos?anotar=1`).
+- **Renda extra:** em Adicionar → Receita há fontes prontas (freelance, venda, 13º, bônus, reembolso, aluguel), o texto "Renda extra (fora o salário)", aviso de que soma no mês, atalho "Melhor destino" (`/plano/extras`) e o indicador de receitas mostra quanto veio de renda extra. Renda extra **recorrente** (todo mês) ainda não existe: cada entrada é lançada quando acontece.

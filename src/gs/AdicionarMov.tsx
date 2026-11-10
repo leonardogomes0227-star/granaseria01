@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRightLeft, Check, Copy } from 'lucide-react';
 import { useEstado } from './store';
 import { atalhosFrequentes, sugerirCategoria, sugerirForma } from './sugestoes';
@@ -22,6 +23,7 @@ export interface PedidoAdicionar {
 }
 export const abrirAdicionar = (p: PedidoAdicionar = {}) => window.dispatchEvent(new CustomEvent<PedidoAdicionar>(EVENTO_ADICIONAR, { detail: p }));
 
+const FONTES_EXTRA = ['Freelance / bico', 'Venda', '13º salário', 'Bônus / comissão', 'Reembolso', 'Aluguel recebido'];
 const FORMAS = ['Pix', 'Débito', 'Crédito', 'Dinheiro'];
 const CHAVE_CONTA = 'gs-ultima-conta';
 const lerConta = () => { try { return localStorage.getItem(CHAVE_CONTA) ?? ''; } catch { return ''; } };
@@ -29,6 +31,7 @@ const guardarConta = (id: string) => { try { localStorage.setItem(CHAVE_CONTA, i
 
 export function AdicionarMov() {
   const e = useEstado();
+  const nav = useNavigate();
   const [aberta, setAberta] = useState(false);
   const [passo, setPasso] = useState(1);
   const [tudo, setTudo] = useState(false); // edição: tudo numa tela só
@@ -115,7 +118,8 @@ export function AdicionarMov() {
       toast(`${editId ? 'Gasto atualizado' : 'Gasto anotado'}: ${brl(valor)} em ${cat || 'Outros'}`);
     } else if (tipo === 'receita') {
       if (!salvarReceita({ id: editId ?? undefined, descricao: desc, valor, data, tipo: rTipo, contaId: conta || undefined, serverId: (original as Receita | null)?.serverId })) return setErro('Confira os dados e tente de novo.');
-      toast(`${editId ? 'Receita atualizada' : 'Receita registrada'}: ${brl(valor)}`);
+      if (rTipo === 'extra' && !editId) toast(`Renda extra registrada: +${brl(valor)} no que você tem este mês`, { acao: { rotulo: 'Melhor destino', onClick: () => nav('/plano/extras') } });
+      else toast(`${editId ? 'Receita atualizada' : 'Receita registrada'}: ${brl(valor)}`);
     } else {
       if (!salvarTransferencia({ id: editId ?? undefined, data, valor, de: conta, para: destino, descricao: desc })) return setErro('Confira os dados e tente de novo.');
       toast(`Transferência registrada: ${brl(valor)}`);
@@ -186,9 +190,12 @@ export function AdicionarMov() {
             {tipo === 'receita' && (
               <>
                 <Campo rotulo="De onde veio? (opcional)" valor={desc} onChange={setDesc} placeholder="Ex.: salário, freela" maxLength={80} />
+                <div className="gs-chips" role="group" aria-label="Fontes de renda extra">
+                  {FONTES_EXTRA.map((f) => <button key={f} type="button" className="gs-chip" onClick={() => { setDesc(f); setRTipo('extra'); }}>{f}</button>)}
+                </div>
                 <div className="gs-chips" role="group" aria-label="Tipo de receita">
                   <button type="button" className={`gs-chip ${rTipo === 'salario' ? 'on' : ''}`} onClick={() => setRTipo('salario')}>Salário / renda do mês</button>
-                  <button type="button" className={`gs-chip ${rTipo === 'extra' ? 'on' : ''}`} onClick={() => setRTipo('extra')}>Outra receita</button>
+                  <button type="button" className={`gs-chip ${rTipo === 'extra' ? 'on' : ''}`} onClick={() => setRTipo('extra')}>Renda extra (fora o salário)</button>
                 </div>
               </>
             )}
@@ -246,6 +253,9 @@ export function AdicionarMov() {
           </div>
         )}
         {!tudo && passo === 1 && <button type="button" className="gs-btn cheio" onClick={proximo}>Continuar</button>}
+        {!tudo && passo === 1 && (
+          <p className="gs-nota">É uma <button type="button" className="gs-btn link" onClick={() => { fechar(); nav('/plano/atrasos?anotar=1'); }}>conta atrasada</button> ou uma <button type="button" className="gs-btn link" onClick={() => { fechar(); nav('/plano/dividas'); }}>dívida</button>? Anote ali.</p>
+        )}
       </form>
     </Folha>
   );

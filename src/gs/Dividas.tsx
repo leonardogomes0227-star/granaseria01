@@ -4,6 +4,7 @@ import { useEstado } from './store';
 import { brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntre, vencimentoNoMes } from './datas';
 import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, saldoAtual, simular } from './dividas';
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
+import { NovaDividaSheet } from './NovaDivida';
 import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Anel, LinhaDoTempo } from './graficos';
 import { gastoMensalMedio } from './selectores';
@@ -21,22 +22,24 @@ import type { Divida } from './tipos';
 export function Dividas() {
   const e = useEstado();
   const [editando, setEditando] = useState<Divida | 'nova' | null>(null);
+  const [simples, setSimples] = useState(false);
   const [festa, setFesta] = useState<Quitada | null>(null);
   const tem = e.dividas.length > 0;
   return (
     <>
       <Titulo titulo="Quitar dívidas" sub="Descubra o dia em que você fica livre delas." />
       {tem ? (
-        <Painel onNova={() => setEditando('nova')} onEditar={setEditando} onQuitou={setFesta} />
+        <Painel onNova={() => setSimples(true)} onEditar={setEditando} onQuitou={setFesta} />
       ) : (
         <section className="gs-card destaque">
           <h2 className="gs-h2" style={{ marginTop: 0 }}>Cadastre sua primeira dívida</h2>
           <p style={{ margin: '0 0 10px' }}>Em 1 minuto você vê:</p>
           {['O dia em que você fica livre das dívidas', 'Quanto cabe no seu bolso por mês', 'Um aviso antes de cada parcela vencer'].map((t) => <div key={t} style={{ display: 'flex', gap: 10, padding: '4px 0' }}><span className="gs-check" style={{ flex: 'none' }}>✓</span><span>{t}</span></div>)}
-          <button type="button" className="gs-btn cheio" style={{ marginTop: 14 }} onClick={() => setEditando('nova')}>Cadastrar dívida</button>
+          <button type="button" className="gs-btn cheio" style={{ marginTop: 14 }} onClick={() => setSimples(true)}>Cadastrar dívida</button>
           <p className="gs-nota">Não sabe o juro ou a parcela? Pode chutar. Você ajusta depois.</p>
         </section>
       )}
+      <NovaDividaSheet aberta={simples} onFechar={() => setSimples(false)} onCompleto={() => setEditando('nova')} />
       <FormDivida valor={editando} onFechar={() => setEditando(null)} />
       <FestaQuitou quitada={festa} onFechar={() => setFesta(null)} />
     </>

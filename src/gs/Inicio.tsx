@@ -58,6 +58,7 @@ export function Inicio() {
   const registradas = receitasRecebidas(e, mes);
   const receitas = registradas > 0 ? registradas : e.config.renda;
   const receitaEstimada = registradas === 0 && e.config.renda > 0;
+  const extras = e.receitas.filter((r) => mesDe(r.data) === mes && r.tipo === 'extra').reduce((t, r) => t + r.valor, 0);
   const despesas = totalVariaveis(e, mes) + fixosPagos(e, mes);
   const economia = receitas - despesas;
   const semDados = sit === 'sem-dados';
@@ -101,7 +102,7 @@ export function Inicio() {
           {/* 4 indicadores */}
           <section className="gs-kpis" aria-label={`Resumo de ${nomeMes(mes)}`}>
             <Kpi rotulo="Saldo disponível" valor={disp.modo === 'incompleto' ? '—' : m(brl0(disp.livre))} nota="livre depois dos compromissos" dica="O que sobra no mês depois de contas, parcelas, fatura e reserva. Não é o saldo do banco." tom={disp.livre < 0 ? 'erro' : undefined} acao={e.config.saldoInformado ? undefined : { rotulo: 'Informar saldo', onClick: () => setSaldo(true) }} />
-            <Kpi rotulo="Receitas do mês" valor={m(brl0(receitas))} nota={receitaEstimada ? 'estimada (renda informada)' : 'recebidas'} dica="Receitas que você registrou. Sem registro, uso a renda informada, marcada como estimada." />
+            <Kpi rotulo="Receitas do mês" valor={m(brl0(receitas))} nota={receitaEstimada ? 'estimada (renda informada)' : extras > 0 ? `inclui ${m(brl0(extras))} de renda extra` : 'recebidas'} dica="Receitas que você registrou. Sem registro, uso a renda informada, marcada como estimada." />
             <Kpi rotulo="Despesas do mês" valor={m(brl0(despesas))} nota="dia a dia + contas pagas" dica="Gastos anotados mais contas fixas já pagas neste mês." />
             <Kpi rotulo="Economia do mês" valor={m(brl0(economia))} nota={receitas > 0 ? `${Math.round((economia / receitas) * 100)}% da receita${receitaEstimada ? ' (estimada)' : ''}` : 'sem receita'} dica="Receitas menos despesas do mês." tom={economia < 0 ? 'erro' : economia > 0 ? 'ok' : undefined} />
           </section>
@@ -124,7 +125,7 @@ export function Inicio() {
             <div>
               <h2 className="gs-h2">Contas próximas</h2>
               {proximas.length === 0 ? (
-                <div className="gs-card"><p className="gs-mudo" style={{ margin: 0 }}>{e.gastosFixos.length === 0 && !e.cartao && e.dividas.length === 0 ? 'Cadastre suas contas fixas e eu aviso antes de cada vencimento.' : 'Nada vencendo ou atrasado agora. Tudo em ordem.'}</p>{e.gastosFixos.length === 0 && <Link to="/lancamentos?aba=contas" className="gs-btn link">Cadastrar contas</Link>}</div>
+                <div className="gs-card"><p className="gs-mudo" style={{ margin: 0 }}>{e.gastosFixos.length === 0 && !e.cartao && e.dividas.length === 0 ? 'Cadastre suas contas fixas e eu aviso antes de cada vencimento.' : 'Nada vencendo ou atrasado agora. Tudo em ordem.'}</p>{e.gastosFixos.length === 0 && <Link to="/lancamentos?aba=contas" className="gs-btn link">Cadastrar contas</Link>}<Link to="/plano/atrasos?anotar=1" className="gs-btn link">Anotar conta atrasada</Link></div>
               ) : (
                 <div className="gs-card">
                   {proximas.map((p) => (
@@ -136,6 +137,7 @@ export function Inicio() {
                     </div>
                   ))}
                   <Link to="/plano" className="gs-btn link">Ver todos os compromissos</Link>
+                  <Link to="/plano/atrasos?anotar=1" className="gs-btn link">Anotar conta atrasada</Link>
                 </div>
               )}
             </div>
