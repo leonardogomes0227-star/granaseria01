@@ -220,3 +220,4 @@ html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec { bac
 html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec:hover { background: var(--bg-2); }
 /* na configuração inicial o menu não aparece: um passo de cada vez */
 .gs-sem-menu .gs-lateral, .gs-sem-menu .gs-abas, .gs-sem-menu .gs-so-mobile { display: none !important; }
+.gs-parcelas-bloco { margin: 14px 0; padding: 12px 14px; border-radius: 14px; background: var(--ds-ouro-fundo); border: 1px solid var(--line); }

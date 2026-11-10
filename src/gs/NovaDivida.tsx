@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Car, CreditCard, HelpCircle, Landmark, ShoppingBag, Wallet, type LucideIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Car, CreditCard, Home, HelpCircle, Landmark, ShoppingBag, Wallet, type LucideIcon } from 'lucide-react';
 import { salvarDivida } from './acoes';
 import { brl } from './datas';
+import { completarParcelada } from './painelDividas';
 import { Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
 import { toast } from '../components/ui/Toast';
 
@@ -12,35 +13,53 @@ interface Tipo { nome: string; dica: string; juros: number; tipo: 'parcelada' | 
 const TIPOS: Tipo[] = [
   { nome: 'Cartão de crédito', dica: 'Fatura que não foi paga inteira', juros: 12, tipo: 'rotativa', icone: CreditCard },
   { nome: 'Empréstimo', dica: 'Banco, financeira ou consignado', juros: 4, tipo: 'parcelada', icone: Landmark },
-  { nome: 'Financiamento', dica: 'Carro, moto, casa', juros: 1.5, tipo: 'parcelada', icone: Car },
+  { nome: 'Financiamento da casa', dica: 'Casa ou apartamento (parcelas por muitos anos)', juros: 1, tipo: 'parcelada', icone: Home },
+  { nome: 'Parcela do carro ou moto', dica: 'Financiamento de veículo', juros: 1.8, tipo: 'parcelada', icone: Car },
   { nome: 'Loja / crediário', dica: 'Compra parcelada na loja', juros: 5, tipo: 'parcelada', icone: ShoppingBag },
   { nome: 'Cheque especial', dica: 'Saldo negativo na conta', juros: 8, tipo: 'rotativa', icone: Wallet },
   { nome: 'Outra dívida', dica: 'Parente, amigo, outra coisa', juros: 0, tipo: 'parcelada', icone: HelpCircle },
 ];
 
-export function NovaDividaSheet({ aberta, onFechar, onCompleto }: { aberta: boolean; onFechar: () => void; onCompleto: () => void }) {
+export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: { aberta: boolean; onFechar: () => void; onCompleto?: () => void; tipoInicial?: string }) {
   const [passo, setPasso] = useState<1 | 2 | 3>(1);
   const [t, setT] = useState<Tipo | null>(null);
   const [nome, setNome] = useState('');
   const [total, setTotal] = useState(0);
   const [mensal, setMensal] = useState(0);
   const [dia, setDia] = useState<number | ''>('');
+  const [faltam, setFaltam] = useState<number | ''>('');
   const [erro, setErro] = useState('');
-  const [feita, setFeita] = useState<{ nome: string; estimou: number; juros: number } | null>(null);
+  const [feita, setFeita] = useState<{ nome: string; estimou: number; juros: number; calculado: boolean } | null>(null);
 
-  const zerar = () => { setPasso(1); setT(null); setNome(''); setTotal(0); setMensal(0); setDia(''); setErro(''); setFeita(null); };
+  const zerar = () => { setPasso(1); setT(null); setNome(''); setTotal(0); setMensal(0); setDia(''); setFaltam(''); setErro(''); setFeita(null); };
   const fechar = () => { onFechar(); setTimeout(zerar, 200); };
+
+  // abre já no tipo pedido (ex.: "Financiamento da casa" vindo do cadastro de contas)
+  useEffect(() => {
+    const pedido = tipoInicial ? TIPOS.find((x) => x.nome === tipoInicial) : undefined;
+    if (aberta && pedido) { setT(pedido); setPasso(2); }
+  }, [aberta, tipoInicial]);
 
   const salvar = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!t) return;
-    if (!(total > 0)) return setErro('Quanto você deve no total? Pode ser um valor aproximado.');
+    const n = typeof faltam === 'number' && faltam > 0 ? faltam : 0;
+    if (!(total > 0) && !(mensal > 0 && n > 0)) return setErro('Informe quanto você deve no total, ou então o valor da parcela e quantas faltam.');
     if (typeof dia === 'number' && (dia < 1 || dia > 31)) return setErro('O dia do vencimento vai de 1 a 31.');
-    const estimou = mensal > 0 ? 0 : Math.max(10, Math.round(total * (t.juros / 100 + 0.01)));
+    // saldo: o que a pessoa disse; sem isso, calculado pela parcela e pelo número de parcelas que faltam
+    const saldo = total > 0 ? total : completarParcelada({ parcela: mensal, n, juros: t.juros }).saldo;
+    // juro: com saldo, parcela e parcelas que faltam, dá pra calcular o juro real; senão, o comum do tipo
+    let juros = t.juros;
+    let calculado = false;
+    if (t.tipo === 'parcelada' && total > 0 && mensal > 0 && n > 0) {
+      const c = completarParcelada({ parcela: mensal, n, saldo: total });
+      if (c.juros > 0 && c.juros <= 15) { juros = c.juros; calculado = true; }
+    }
+    const estimou = mensal > 0 ? 0 : Math.max(10, Math.round(saldo * (juros / 100 + 0.01)));
     const final = nome.trim() || t.nome;
-    const ok = salvarDivida({ nome: final, saldo: total, jurosMensal: t.juros, parcelaMinima: mensal > 0 ? mensal : estimou, venceDia: typeof dia === 'number' ? dia : undefined, tipo: t.tipo });
+    const ok = salvarDivida({ nome: final, saldo, jurosMensal: juros, parcelaMinima: mensal > 0 ? mensal : estimou, venceDia: typeof dia === 'number' ? dia : undefined, tipo: t.tipo, parcelasRestantes: n > 0 ? n : undefined });
     if (!ok) return setErro('Não consegui salvar. Confira o nome e o valor.');
-    setFeita({ nome: final, estimou, juros: t.juros });
+    setFeita({ nome: final, estimou, juros, calculado });
     toast(`Dívida cadastrada: ${final}`);
     setPasso(3);
   };
@@ -58,18 +77,21 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto }: { aberta: bool
               </button>
             ))}
           </div>
-          <button type="button" className="gs-btn link" onClick={() => { fechar(); onCompleto(); }}>Já sei os detalhes (formulário completo)</button>
+          {onCompleto && <button type="button" className="gs-btn link" onClick={() => { fechar(); onCompleto(); }}>Já sei os detalhes (formulário completo)</button>}
         </>
       )}
       {passo === 2 && t && (
         <form onSubmit={salvar} noValidate>
           <p className="gs-sub" style={{ marginTop: 0 }}><b>{t.nome}</b>. Só o essencial; o resto você ajusta depois.</p>
-          <CampoDinheiro rotulo="Quanto você deve no total?" valor={total} onChange={setTotal} grande autoFocus erro={erro && !(total > 0) ? erro : undefined} />
-          <CampoDinheiro rotulo="Quanto você paga por mês? (opcional)" valor={mensal} onChange={setMensal} placeholder="Não sei" />
-          <p className="gs-nota" style={{ marginTop: -6 }}>Se deixar em branco, eu estimo e aviso na tela.</p>
+          <CampoDinheiro rotulo="Quanto você deve no total?" valor={total} onChange={setTotal} grande autoFocus erro={erro && !(total > 0) && !(mensal > 0 && typeof faltam === 'number') ? erro : undefined} />
+          <div className="gs-dois">
+            <CampoDinheiro rotulo="Valor da parcela por mês" valor={mensal} onChange={setMensal} placeholder="Não sei" />
+            <CampoNumero rotulo="Parcelas que faltam" valor={faltam} onChange={setFaltam} min={1} max={480} placeholder="Ex.: 36" />
+          </div>
+          <p className="gs-nota" style={{ marginTop: -6 }}>Tudo opcional, menos o total (ou a parcela com quantas faltam). Em branco, eu estimo e aviso na tela. Com total, parcela e quantas faltam, eu calculo o juro real.</p>
           <Campo rotulo="Nome ou credor (opcional)" valor={nome} onChange={setNome} placeholder="Ex.: Nubank, Banco do Brasil" maxLength={60} />
           <CampoNumero rotulo="Vence todo dia… (opcional)" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" />
-          {erro && (total > 0) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
+          {erro && (total > 0 || (mensal > 0 && typeof faltam === 'number')) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
           <div className="gs-acoes">
             <button type="button" className="gs-btn sec" onClick={() => { setPasso(1); setErro(''); }}>Voltar</button>
             <button type="submit" className="gs-btn cheio">Salvar dívida</button>
@@ -79,7 +101,7 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto }: { aberta: bool
       {passo === 3 && feita && (
         <>
           <p className="gs-sub" style={{ marginTop: 0 }}><b>{feita.nome}</b> entrou na sua lista de dívidas.</p>
-          {feita.juros > 0 && <p className="gs-nota">Usei <b>{String(feita.juros).replace('.', ',')}% ao mês</b>, um juro comum para esse tipo. Se souber o juro certo, toque na dívida na lista e ajuste.</p>}
+          {feita.juros > 0 && <p className="gs-nota">{feita.calculado ? <>Calculei o juro pela parcela: cerca de <b>{String(feita.juros).replace('.', ',')}% ao mês</b>.</> : <>Usei <b>{String(feita.juros).replace('.', ',')}% ao mês</b>, um juro comum para esse tipo. Se souber o juro certo, toque na dívida na lista e ajuste.</>}</p>}
           {feita.estimou > 0 && <p className="gs-nota">Você não informou o valor mensal, então estimei <b>{brl(feita.estimou)}</b> por mês. Ajuste na lista quando souber.</p>}
           <div className="gs-acoes">
             <button type="button" className="gs-btn cheio" onClick={zerar}>Adicionar outra dívida</button>

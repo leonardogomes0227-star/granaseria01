@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { getEstado, useEstado } from './store';
@@ -377,6 +377,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
   const [dia, setDia] = useState<number | ''>('');
   const [n, setN] = useState(1);
   const [tentou, setTentou] = useState(false);
+  const nomeAuto = useRef('');
   const escolher = (id: string) => {
     const g = e.gastosFixos.find((x) => x.id === id);
     setGastoId(id);
@@ -421,7 +422,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
         <>
           <div className="gs-chips" role="group" aria-label="Tipo">
             {CATEGORIAS_FIXAS.map((c) => (
-              <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); if (!nome.trim() && c !== 'Outros') setNome(c); }}>{c}</button>
+              <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); if (!nome.trim() || nome === nomeAuto.current) { const novo = c === 'Outros' ? '' : c; setNome(novo); nomeAuto.current = novo; } }}>{c}</button>
             ))}
           </div>
           <Campo rotulo="Nome" valor={nome} onChange={setNome} placeholder="Ex.: Parcela da moto" maxLength={60} erro={tentou && !nome.trim() ? 'Dê um nome.' : undefined} />

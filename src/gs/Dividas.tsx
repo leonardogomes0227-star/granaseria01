@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useEstado } from './store';
 import { brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntre, vencimentoNoMes } from './datas';
 import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, saldoAtual, simular } from './dividas';
@@ -23,6 +23,16 @@ export function Dividas() {
   const e = useEstado();
   const [editando, setEditando] = useState<Divida | 'nova' | null>(null);
   const [simples, setSimples] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const pedido = params.get('nova');
+  useEffect(() => {
+    if (pedido) {
+      setSimples(true);
+      if (pedido !== '1') setTipoPedido(pedido);
+      setParams({}, { replace: true });
+    }
+  }, [pedido, setParams]);
+  const [tipoPedido, setTipoPedido] = useState<string | undefined>(undefined);
   const [festa, setFesta] = useState<Quitada | null>(null);
   const tem = e.dividas.length > 0;
   return (
@@ -39,7 +49,7 @@ export function Dividas() {
           <p className="gs-nota">Não sabe o juro ou a parcela? Pode chutar. Você ajusta depois.</p>
         </section>
       )}
-      <NovaDividaSheet aberta={simples} onFechar={() => setSimples(false)} onCompleto={() => setEditando('nova')} />
+      <NovaDividaSheet aberta={simples} tipoInicial={tipoPedido} onFechar={() => { setSimples(false); setTipoPedido(undefined); }} onCompleto={() => setEditando('nova')} />
       <FormDivida valor={editando} onFechar={() => setEditando(null)} />
       <FestaQuitou quitada={festa} onFechar={() => setFesta(null)} />
     </>
