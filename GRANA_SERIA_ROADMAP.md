@@ -349,3 +349,12 @@ Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (
 ### Etapa 6 — ferramentas que resolvem (parcial)
 `Impacto.tsx`: `ImpactoNoCaminho` (antes → depois na data do destino), `BotaoCaminho` ("Colocar no meu caminho") e `Resposta`. Ligado em Posso comprar, À vista ou parcelado, Empréstimo, Onde cortar, Gastos escondidos e Dinheiro extra. Verificado no navegador: compra de R$ 1.800 → "atrasa 1 mês" → passo aparece no Caminho.
 **Falta:** aplicar a peça `Resposta` (frase + "Como cheguei nisso" + 1 botão) nas demais ferramentas, uma a uma; salvar a etapa nas ferramentas de vários passos (o registro e o estado já suportam).
+
+### Etapa 7 — Coach que resolve (concluída)
+- `src/gs/coachFluxos.ts`: os 9 problemas prontos (o mês não fecha, conta atrasada, sair das dívidas, empréstimo/parcelamento, posso comprar, dinheiro extra, juntar para algo, onde estou errando, explica meu número), por regras e sem IA, com as funções testadas. Cada um diagnostica, dá **uma** direção, mostra o impacto no caminho e termina em cartão de ação.
+- `server/coachTools.ts`: 11 ferramentas de cálculo (ver_caminho, simular_impacto, analisar_compra, comparar_parcelado, comparar_emprestimos, plano_atrasos, simular_quitacao, dividir_extra, plano_meta, orcamento_atual, disponivel_hoje) e 8 de ação, rodando **no servidor sobre o estado salvo**. As de ação só propõem: voltam como cartões [Fazer] [Ajustar] [Agora não]. Rotas propostas pela IA são validadas (só telas do app).
+- `api/conselheiro.ts`: tool use em até 5 rodadas, system prompt com o método (entender, diagnosticar, direção, comprometer, acompanhar), 80 palavras, situação grave (Procon, consumidor.gov.br, Serasa Limpa Nome, CVV 188), sem nome de personagem.
+- `Coach.tsx`: abre no assunto da tela de origem (`?de=`), pergunta da busca vira a primeira mensagem (`?pergunta=`), mensagens do Coach em papel e as da pessoa em grafite, mini-cartão antes/depois, mensagem pronta para negociar, "Conversas anteriores" (no aparelho), "O que combinamos" (editar, apagar, recomeçar) e a volta combinada (lembrete) no topo.
+- Sem `ANTHROPIC_API_KEY`: a conversa livre diz que não está ativada e os 9 assuntos continuam funcionando (D3).
+- Exemplos com números das funções: `docs/coach-exemplos.md` (gerado por teste).
+- Testes: 45 arquivos, 395 testes.

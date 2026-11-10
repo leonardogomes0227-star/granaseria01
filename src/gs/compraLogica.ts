@@ -1,10 +1,10 @@
 // Posso comprar isso?: o que você já evitou, o contexto da compra e as conquistas. Pura, com teste.
 
-import { arred, brl0 } from './datas';
-import { maiorJuroMensal } from './dividas';
-import { capacidadeDePagamento } from './painelDividas';
-import { gastoMensalMedio, patrimonioGuardado, reservaMeta } from './selectores';
-import type { Desejo, Estado } from './tipos';
+import { arred, brl0 } from './datas.js';
+import { maiorJuroMensal } from './dividas.js';
+import { capacidadeDePagamento } from './painelDividas.js';
+import { gastoMensalMedio, patrimonioGuardado, reservaMeta } from './selectores.js';
+import type { Desejo, Estado } from './tipos.js';
 
 export interface ResumoDesejos {
   economizado: number;

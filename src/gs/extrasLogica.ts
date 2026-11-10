@@ -1,12 +1,12 @@
 // Dinheiro extra: o efeito de cada parte, o histórico e as conquistas. Pura, com teste.
 
-import { arred, brl0, mesCurto } from './datas';
-import { gastoMensalMedio, patrimonioGuardado, reservaMeta } from './selectores';
-import { situacaoAtrasos, type Atraso } from './atrasosLogica';
-import { jogoDaReserva } from './reservaLogica';
-import { saldoAtual } from './dividas';
-import { ordenar, simular, type DividaSim } from './dividas';
-import type { Estado, Estrategia } from './tipos';
+import { arred, brl0, mesCurto } from './datas.js';
+import { gastoMensalMedio, patrimonioGuardado, reservaMeta } from './selectores.js';
+import { situacaoAtrasos, type Atraso } from './atrasosLogica.js';
+import { jogoDaReserva } from './reservaLogica.js';
+import { saldoAtual } from './dividas.js';
+import { ordenar, simular, type DividaSim } from './dividas.js';
+import type { Estado, Estrategia } from './tipos.js';
 
 export interface RegistroExtra {
   data: string;

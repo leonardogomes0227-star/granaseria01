@@ -1,11 +1,11 @@
 // Evolução: séries e comparações honestas. Cada função só devolve algo quando há dados suficientes
 // (a tela mostra "ainda não dá pra comparar" em vez de inventar). Puro, com teste.
 
-import { arred, brl0, mesCurto, mesDe, somaDias, somaMes } from './datas';
-import { saldoAtual } from './dividas';
-import { fixosPagos, guardadoNoMes, receitasDoMes, totalVariaveis } from './selectores';
-import { resumoDaSemana } from './insights';
-import type { Estado } from './tipos';
+import { arred, brl0, mesCurto, mesDe, somaDias, somaMes } from './datas.js';
+import { saldoAtual } from './dividas.js';
+import { fixosPagos, guardadoNoMes, receitasDoMes, totalVariaveis } from './selectores.js';
+import { resumoDaSemana } from './insights.js';
+import type { Estado } from './tipos.js';
 
 export interface MesSerie {
   mes: string;

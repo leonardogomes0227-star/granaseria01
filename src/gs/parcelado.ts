@@ -1,7 +1,7 @@
 // À vista ou parcelado: o juro escondido na parcela. Pura, com teste.
 
-import { arred, brl0 } from './datas';
-import { taxaEfetiva } from './ferramentas';
+import { arred, brl0 } from './datas.js';
+import { taxaEfetiva } from './ferramentas.js';
 
 export interface Parcelado {
   total: number;

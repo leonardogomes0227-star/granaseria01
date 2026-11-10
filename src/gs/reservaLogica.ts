@@ -1,9 +1,9 @@
 // Lógica da reserva de emergência: meses de proteção, meta do mês, o que fazer agora e conquistas. Pura, com teste.
 
-import { arred, brl0, diasEntre, vencimentoNoMes } from './datas';
-import { gastoMensalMedio, guardadoNoMes, patrimonioGuardado, reservaMeta } from './selectores';
-import { maiorJuroMensal } from './dividas';
-import type { Estado } from './tipos';
+import { arred, brl0, diasEntre, vencimentoNoMes } from './datas.js';
+import { gastoMensalMedio, guardadoNoMes, patrimonioGuardado, reservaMeta } from './selectores.js';
+import { maiorJuroMensal } from './dividas.js';
+import type { Estado } from './tipos.js';
 
 export const MESES_RESERVA = [3, 6, 12] as const;
 

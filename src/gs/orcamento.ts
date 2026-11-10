@@ -1,9 +1,9 @@
 // Orçamento: o quanto de cada categoria já foi e a regra 50/30/20 com os números da pessoa. Pura, com teste.
 
-import { COR_CATEGORIA, GRUPO, PARTE_SUGERIDA } from './categorias';
-import { arred, brl0, diasNoMes, diasRestantes, somaMes } from './datas';
-import { atrasoNoMes, folgaMensal, guardarNoMes, lancamentosDoMes, limiteDiario, livreParaGastar, totalFixos, totalVariaveis } from './selectores';
-import type { Estado } from './tipos';
+import { COR_CATEGORIA, GRUPO, PARTE_SUGERIDA } from './categorias.js';
+import { arred, brl0, diasNoMes, diasRestantes, somaMes } from './datas.js';
+import { atrasoNoMes, folgaMensal, guardarNoMes, lancamentosDoMes, limiteDiario, livreParaGastar, totalFixos, totalVariaveis } from './selectores.js';
+import type { Estado } from './tipos.js';
 
 export interface LinhaCategoria {
   categoria: string;

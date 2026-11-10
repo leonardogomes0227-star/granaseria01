@@ -281,31 +281,40 @@ function ajusteDe(mud: Mudanca, alvo: Marco | null): Ajuste {
   if (mud.tipo === 'corte') return { porMes: Math.max(0, mud.porMes) };
   const p = mud.tipo === 'compra' ? (mud.parcelas && mud.parcelas > 1 ? { valor: mud.valor / mud.parcelas, meses: mud.parcelas } : null) : { valor: mud.valor, meses: mud.meses };
   if (!p) return { deUmaVez: -Math.max(0, (mud as { valor: number }).valor) };
-  // parcela que dura mais que o caminho até o marco pesa todo mês; a que acaba antes pesa pelo total
+  // parcela que dura mais que o caminho até o marco pesa todo mês; a que acaba antes pesa pelo total;
+  // se o marco é para este mês, só a primeira parcela entra na conta dele
   const falta = alvo?.faltaMeses ?? 0;
-  return p.meses >= falta && falta > 0 ? { porMes: -Math.max(0, p.valor) } : { deUmaVez: -Math.max(0, arred(p.valor * p.meses)) };
+  if (falta <= 0) return { deUmaVez: -Math.max(0, p.valor) };
+  return p.meses >= falta ? { porMes: -Math.max(0, p.valor) } : { deUmaVez: -Math.max(0, arred(p.valor * p.meses)) };
 }
 
 export function simularImpacto(e: Estado, hoje: string, mud: Mudanca): Impacto | null {
   const antes = calcularCaminho(e, hoje);
   const iAtual = antes.findIndex((m) => m.status === 'atual');
   if (iAtual < 0) return null;
-  // o destino: o marco atual; se ele não tem data, o próximo que tem
-  const alvo = antes.slice(iAtual).find((m) => m.status !== 'nao-se-aplica' && m.dataPrevista);
-  if (!alvo?.dataPrevista) return null;
-  const depois = calcularCaminho(e, hoje, ajusteDe(mud, alvo)).find((m) => m.id === alvo.id);
-  const dataDepois = depois?.status === 'feito' ? mesDe(hoje) : depois?.dataPrevista ?? null;
-  const meses = dataDepois ? mesesEntre(alvo.dataPrevista, dataDepois) : 0;
-  const nome = alvo.titulo.charAt(0).toLowerCase() + alvo.titulo.slice(1);
-  const qtd = (n: number) => `${n} ${n === 1 ? 'mês' : 'meses'}`;
-  const frase = !dataDepois
-    ? `Com isso, "${nome}" fica sem data: o que sobra por mês deixa de cobrir o plano.`
-    : meses === 0
-      ? `Não muda a data: "${nome}" continua em ${nomeMes(alvo.dataPrevista)}.`
-      : meses > 0
-        ? `"${alvo.titulo}" atrasa ${qtd(meses)}: de ${nomeMes(alvo.dataPrevista)} para ${nomeMes(dataDepois)}.`
-        : `Você chega ${qtd(-meses)} antes: "${nome}" passa de ${nomeMes(alvo.dataPrevista)} para ${nomeMes(dataDepois)}.`;
-  return { marcoId: alvo.id, titulo: alvo.titulo, dataAntes: alvo.dataPrevista, dataDepois, meses, frase };
+  // o destino é o marco atual; se a decisão não mexe na data dele (ex.: uma conta pequena que fecha neste mês),
+  // mostra o próximo marco em que ela pesa. "Dinheiro trabalhando" acompanha a reserva, então não entra na comparação.
+  const candidatos = antes.slice(iAtual).filter((m) => m.status !== 'nao-se-aplica' && m.dataPrevista && m.id !== 'investir');
+  let primeiro: Impacto | null = null;
+  for (const alvo of candidatos) {
+    const depois = calcularCaminho(e, hoje, ajusteDe(mud, alvo)).find((m) => m.id === alvo.id);
+    const dataDepois = depois?.status === 'feito' ? mesDe(hoje) : depois?.dataPrevista ?? null;
+    const meses = dataDepois ? mesesEntre(alvo.dataPrevista!, dataDepois) : 0;
+    const nome = alvo.titulo.charAt(0).toLowerCase() + alvo.titulo.slice(1);
+    const qtd = (n: number) => `${n} ${n === 1 ? 'mês' : 'meses'}`;
+    const quando = (m: string) => (alvo.id === 'renda' ? m.slice(0, 4) : nomeMes(m));
+    const frase = !dataDepois
+      ? `Com isso, "${nome}" fica sem data: o que sobra por mês deixa de cobrir o plano.`
+      : meses === 0
+        ? `Não muda a data: "${nome}" continua em ${quando(alvo.dataPrevista!)}.`
+        : meses > 0
+          ? `"${alvo.titulo}" atrasa ${qtd(meses)}: de ${quando(alvo.dataPrevista!)} para ${quando(dataDepois)}.`
+          : `Você chega ${qtd(-meses)} antes: "${nome}" passa de ${quando(alvo.dataPrevista!)} para ${quando(dataDepois)}.`;
+    const imp: Impacto = { marcoId: alvo.id, titulo: alvo.titulo, dataAntes: alvo.dataPrevista!, dataDepois, meses, frase };
+    if (meses !== 0 || !dataDepois) return imp;
+    primeiro ??= imp;
+  }
+  return primeiro;
 }
 
 /** Marcos que ficaram prontos e ainda não foram comemorados (a festa acontece uma vez). Quem nunca teve o problema não ganha festa por ele. */
