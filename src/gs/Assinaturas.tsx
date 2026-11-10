@@ -5,6 +5,7 @@ import { projecaoAnos, SUGESTOES_ASSINATURAS, TAXA_PADRAO_ASSINATURAS } from './
 import { cancelarAssinatura, marcarUsoAssinatura, reativarAssinatura, removerAssinatura, salvarAssinatura } from './acoes';
 import { brl, brl0, mesDe } from './datas';
 import { Agora, Barra, Campo, CampoDinheiro, CampoNumero, Conquistas, Folha, Heroi, MaisAjuda, Titulo } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { toast } from '../components/ui/Toast';
 import { acaoAssinaturas, conquistasAssinaturas, resumoAssinaturas, revisada } from './assinaturasLogica';
 import type { Assinatura } from './tipos';
@@ -43,6 +44,7 @@ export function Assinaturas() {
         )}
         {acao.tipo === 'vazio' && <button type="button" className="gs-btn" style={{ marginTop: 12 }} onClick={() => setNova(true)}>+ Adicionar assinatura</button>}
       </Agora>
+      {acao.alvo && acao.tipo === 'cortar' && <ImpactoNoCaminho mudanca={{ tipo: 'corte', porMes: acao.alvo.valor }} passo={{ titulo: `Cancelar ${acao.alvo.nome}`, detalhe: `${brl0(acao.alvo.valor)} a menos por mês (${brl0(acao.alvo.valor * 12)} por ano).`, rota: '/plano/assinaturas', origem: 'assinaturas' }} />}
       <Conquistas lista={conquistasAssinaturas(e.assinaturas, mes)} />
 
       {ativas.length > 0 && (

@@ -7,6 +7,7 @@ import { DIA_ESSENCIAL, ondeCortar } from './recuperacaoLogica';
 import { brl0, mesDe, mesCurto } from './datas';
 import { iconeDe } from './categorias';
 import { Titulo, Vazio } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { mascarar, useOculto } from './privacidade';
 
 /* ---------- Onde cortar: o que você paga todo mês, o que se repete e o que mais pesa, com a economia somada ---------- */
@@ -38,6 +39,8 @@ export function Cortar() {
             <p className="gs-mudo" style={{ margin: 0 }}>por mês, de {m(brl0(base))} em gastos que dá para reduzir (supérfluos do mês e assinaturas). É uma simulação, não uma garantia.</p>
             <label className="gs-campo" style={{ marginTop: 10 }}><span>Quanto cortar</span><input type="range" min={10} max={100} step={10} value={pct} onChange={(ev) => setPct(Number(ev.target.value))} aria-label="Percentual de corte" /></label>
           </section>
+
+          <ImpactoNoCaminho mudanca={base > 0 ? { tipo: 'corte', porMes: Math.round((base * pct) / 100) } : null} passo={{ titulo: `Cortar ${brl0((base * pct) / 100)} por mês`, detalhe: `${pct}% dos gastos que dá para reduzir. O que sobrar vai para o seu destino.`, rota: '/plano/cortar', origem: 'cortar' }} />
 
           {corte.assinaturas.n > 0 && (
             <section className="gs-card" aria-label="Assinaturas">

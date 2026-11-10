@@ -327,3 +327,25 @@ O dono autorizou seguir sem parar a cada etapa ("tudo permitido"); as decisões 
 - Estado: campo aditivo `caminho` (passos, ocultos, última visita, último passo, marcos comemorados, etapas, método de quitação) com `migrar()` e teste. Nenhuma migration no Supabase.
 - Testes: 44 arquivos, 385 testes (25 novos).
 - **Limites honestos:** os marcos correm em sequência e a data do "viver de renda" usa uma taxa hipotética de 0,7% ao mês (dita nas premissas); "primeiro investimento" é reconhecido por aporte com origem `investimento`; uma parcela nova mais curta que o caminho é tratada pelo valor total.
+
+### Etapa 2 — visual "luxo areia e dourado" (concluída)
+- `src/gs/caminho.css`: as variáveis que o app inteiro já usava (`--bg`, `--surface`, `--gold`, `--ink`, `--line`, `--ds-*`…) passam a apontar para a paleta nova, então todas as telas antigas mudaram de roupa sem reescrita. Fontes Cormorant Garamond (títulos e números) e Manrope (interface), textura de papel, botão principal em ouro, folha de ouro só na data do destino e no "pode gastar".
+- `Moeda` em CSS 3D (9 discos, G na frente, S no verso, giro de 8s; parada com "reduzir movimento"; no logo fica parada em 3/4).
+- `src/gs/base.tsx`: Card, CartaoDestino, LinhaDoTempo/Passo, Marco/Selo, ToolTile, ToolHeader, Segmented, ListItem, StatusDot, BottomSheet, NumPad, ProgressRing, EmptyState, Skeleton, Citacao. Página interna `/dev/ui`.
+- **Direção (skill design-taste, pedida pelo dono):** o app é um livro-caixa. As ferramentas viraram linhas tipográficas (nome, a pergunta que resolvem, estado) em vez de grade de cartões com ícone; nada de degradê de enfeite nem etiqueta em caixa alta em todo título.
+- **Limite:** o MVP `docs/referencia/grana-seria-referencia.html` não estava no repositório; o visual seguiu a descrição da seção 8 do prompt.
+
+### Etapa 3 — navegação (concluída)
+Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (Perfil) no topo; lateral com as mesmas áreas no desktop. Menu "Mais", sino e botão de tema saíram do topo (o tema está no Perfil). Rotas novas: `/pagar`, `/gastos`, `/guardar`, `/perfil`, `/ferramentas`, `/dev/ui`. Todas as antigas continuam (verificado no navegador, 40 endereços sem erro): `/plano` e `/planejamento` abrem "Todas as ferramentas" (`/plano#metas` abre as metas em Guardar). A aba acesa de cada endereço sai do registro (`areaDaRota`).
+**Fusões aplicadas** (`ALIAS_FERRAMENTAS` em `App.tsx`; desfazer = apagar a linha): minhas-contas, quitar-dividas, comparador-de-emprestimo, vale-a-pena-comprar, decimo-terceiro, caca-vazamentos e calculadora-de-meta abrem a ferramenta nova. As outras 8 antigas seguem como eram e ganharam lugar no registro.
+
+### Etapa 4 — tela "Seu caminho" (concluída)
+`TelaCaminho.tsx`: Bem-vindo de volta (depois de 24h: o que mudou, onde parou, "Continuar de onde parei" com brilho), cartão do destino (marco atual, data, progresso, premissas em um toque, "Ver o caminho todo"), "Hoje você pode gastar" com "Como calculei", busca "O que você quer resolver?" (14 perguntas, busca sem acento, "Pergunte ao Coach" quando não acha), passos do mês em linha do tempo (ação direta com desfazer, esconder, recomeçar), entrada do Coach, todas as ferramentas e citação. Estados adaptativos reordenam os blocos. Festa de marco uma vez por marco, com imagem para compartilhar.
+**Correção do R$ 0 × R$ 10.000:** os indicadores Receitas/Despesas/Economia calculados na tela saíram; o que aparece é o "pode gastar" e a "sobra prevista", os dois de `detalheDisponivel`.
+
+### Etapa 5 — áreas (concluída)
+`Areas.tsx`: Pagar (quanto falta, próximo passo com botão, contas por urgência com faixa de dias), Gastos (limite do dia, para onde foi, últimos lançamentos com selo "via WhatsApp"), Guardar (anel da reserva com a moeda, data prevista, metas). Cada área termina na grade de ferramentas do registro, por objetivo, com o que está em vermelho no topo e "Continuar (passo N de M)" quando há etapa salva. Perfil com WhatsApp, dados, lembretes, planos, tema, instalar e limpar dados.
+
+### Etapa 6 — ferramentas que resolvem (parcial)
+`Impacto.tsx`: `ImpactoNoCaminho` (antes → depois na data do destino), `BotaoCaminho` ("Colocar no meu caminho") e `Resposta`. Ligado em Posso comprar, À vista ou parcelado, Empréstimo, Onde cortar, Gastos escondidos e Dinheiro extra. Verificado no navegador: compra de R$ 1.800 → "atrasa 1 mês" → passo aparece no Caminho.
+**Falta:** aplicar a peça `Resposta` (frase + "Como cheguei nisso" + 1 botão) nas demais ferramentas, uma a uma; salvar a etapa nas ferramentas de vários passos (o registro e o estado já suportam).

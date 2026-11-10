@@ -6,6 +6,7 @@ import { useHoje } from './useHoje';
 import { compararOfertas } from './ferramentas';
 import { configurarAssistente, salvarDivida } from './acoes';
 import { Agora, CampoDinheiro, CampoNumero, Dica, Heroi, MaisAjuda, Titulo } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { Barras } from './graficos';
 import { avaliarOferta, custoDoEmprestimo, ofertaComoDivida, porPrazo, TAXAS_TIPICAS } from './emprestimosLogica';
 import { capacidadeDePagamento } from './painelDividas';
@@ -137,6 +138,13 @@ function QuantoCusta({ onComparar }: { onComparar: () => void }) {
         </>
       ) : (
         <p className="gs-mudo" style={{ margin: '4px 4px 0' }}>Preencha o valor, as parcelas e a taxa (ou a parcela) pra ver quanto custa.</p>
+      )}
+
+      {c && n > 0 && (
+        <ImpactoNoCaminho
+          mudanca={{ tipo: 'parcela', valor: c.parcela, meses: n }}
+          passo={{ titulo: `Pedir o CET por escrito antes de pegar ${brl0(c.valor)}`, detalhe: `Em ${n}x de ${brl0(c.parcela)}, você devolve ${brl0(c.total)}: ${brl0(c.juros)} só de juros.`, rota: '/plano/emprestimos', origem: 'emprestimos' }}
+        />
       )}
 
       <MaisAjuda>

@@ -6,6 +6,7 @@ import { decidirDesejo, esperar72h, salvarConfig } from './acoes';
 import { brl, brl0, mesDe } from './datas';
 import { Link } from 'react-router-dom';
 import { Campo, CampoDinheiro, CampoNumero, Conquistas, Dica, Heroi, MaisAjuda, Titulo } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { conquistasCompra, conselho, contextoCompra, equivalencias, PERGUNTAS_COMPRA, resumoDesejos, type Respostas } from './compraLogica';
 import { Anel } from './graficos';
 import { PiggyBank, ShoppingCart, Sprout, Target } from 'lucide-react';
@@ -71,6 +72,8 @@ export function PossoComprar() {
             </p>
             {ctx?.mesesParaJuntar && <p className="gs-sub" style={{ margin: '6px 0 0' }}>Guardando o que sobra por mês, você junta em cerca de <b>{ctx.mesesParaJuntar} {ctx.mesesParaJuntar === 1 ? 'mês' : 'meses'}</b>.</p>}
           </section>
+
+          <ImpactoNoCaminho mudanca={{ tipo: 'compra', valor }} passo={{ titulo: `Decidir a compra${item.trim() ? `: ${item.trim()}` : ''} (${brl0(valor)})`, detalhe: a.veredito === 'cabe' ? 'Cabe no mês. Se ainda quiser depois de 72 horas, compre de cabeça fria.' : 'Não cabe folgado agora. Esperar 72 horas costuma resolver a vontade.', rota: '/plano/comprar', origem: 'comprar' }} />
 
           {e.config.renda > 0 && a.horas > 0 && (
             <section className="gs-card">

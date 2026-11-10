@@ -196,3 +196,20 @@ describe('estado do caminho', () => {
     expect(marcosAComemorar({ ...e, caminho: { ...e.caminho, marcosFeitos: ['dividas-caras', 'dividas'] } }, ms)).toEqual([]);
   });
 });
+
+describe('bem-vindo de volta', () => {
+  it('só depois de 24h; conta o que venceu, o que veio do WhatsApp e os dias sem anotar', async () => {
+    const { resumoDaVolta } = await import('./voltou');
+    const agora = new Date('2026-11-10T15:00:00-03:00');
+    const e = base({
+      gastosFixos: [conta('i', 'Internet', 100, 8, { pagamentos: pagas(['2026-10'], 100) })],
+      receitas: [{ id: 'r', descricao: 'Salário', valor: 3000, data: '2026-11-09', tipo: 'salario', serverId: 7 }],
+    });
+    const com = (ultimaVisita?: string) => ({ ...e, caminho: { ...e.caminho, ultimaVisita } });
+    expect(resumoDaVolta(com(undefined), agora)).toBeNull();
+    expect(resumoDaVolta(com('2026-11-10T09:00:00-03:00'), agora)).toBeNull();
+    const v = resumoDaVolta(com('2026-11-05T10:00:00-03:00'), agora)!;
+    expect(v.desde).toBe('quinta');
+    expect(v.mudancas.join(' · ')).toBe('Internet venceu · caiu R$ 3.000 de salário pelo WhatsApp · você ficou 5 dias sem anotar');
+  });
+});

@@ -128,7 +128,9 @@ export function passosDoMes(e: Estado, hoje: string, opts: { comOcultos?: boolea
     const marco = calcularCaminho(e, hoje).find((m) => m.id === 'objetivo');
     const porMes = marco?.porMes ?? 0;
     const noMes = alvo.guardados.filter((g) => mesDe(g.data) === mes).reduce((t, g) => t + g.valor, 0);
-    if (porMes > 0) {
+    // meta sem prazo espera a reserva ficar completa: é o mesmo dinheiro, e ele não pode ser contado duas vezes
+    const naVez = Boolean(alvo.prazo && alvo.prazo > hoje) || reservaPronta || meta <= 0;
+    if (porMes > 0 && naVez) {
       const id = `meta:${alvo.id}:${mes}`;
       if (noMes >= porMes - 0.005) add({ id, titulo: `Guardar ${brl0(porMes)} para ${alvo.nome}`, detalhe: `Feito: ${brl0(noMes)} guardados neste mês.`, acao: { rotulo: 'Ver a meta', rota: '/guardar#metas' }, origem: 'meta' }, 'feito');
       else add({ id, titulo: `Guardar ${brl0(porMes - noMes)} para ${alvo.nome}`, detalhe: `Faltam ${brl0(marco?.faltaValor ?? 0)} para chegar lá. Nesse ritmo você mantém a data.`, acao: { rotulo: 'Guardar na meta', handler: 'guardar-meta', refId: alvo.id, valor: porMes - noMes }, origem: 'meta' });

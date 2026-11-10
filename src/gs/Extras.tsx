@@ -4,6 +4,7 @@ import { CalendarClock, Gift, PiggyBank, Sprout, Target } from 'lucide-react';
 import { useEstado } from './store';
 import { configurarAssistente, desfazerPagamentoDivida, guardar, pagarAtraso, pagarDivida, removerAporte, separarExtraParaAtraso } from './acoes';
 import { Conquistas, Heroi, MaisAjuda, Titulo, CampoDinheiro } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { conquistasExtras, guardarHistorico, lerHistorico, rumoDoExtra, totalComDestino, type TipoDestino } from './extrasLogica';
 import { brl0, hoje as hojeSP } from './datas';
 import { useHoje } from './useHoje';
@@ -75,6 +76,8 @@ export function Extras() {
             <span className="gs-rotulo">O melhor rumo pra esse {origem === '13º' ? '13º' : origem.toLowerCase()}</span>
             <p className="gs-medio" style={{ margin: '6px 0 0', fontSize: 21, lineHeight: '28px' }}>{rumo.manchete}</p>
           </section>
+
+          <ImpactoNoCaminho mudanca={{ tipo: 'extra', valor: Math.max(0, valor - (rumo.destinos.find((d) => d.tipo === 'voce')?.valor ?? 0)) }} passo={{ titulo: `Dar destino ao ${origem === '13º' ? '13º' : origem.toLowerCase()} de ${brl0(valor)}`, detalhe: rumo.manchete, rota: '/plano/extras', origem: 'extras' }} />
 
           <ol className="gs-rumo">
             {rumo.destinos.map((d, i) => {

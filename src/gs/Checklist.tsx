@@ -17,7 +17,7 @@ export function Checklist({ onRenda }: { onRenda: () => void }) {
     { id: 'gasto', titulo: 'Registrar o primeiro gasto', feito: e.lancamentos.length > 0, acao: () => abrirAdicionar() },
     { id: 'cartao', titulo: 'Adicionar seu cartão (se tiver)', feito: Boolean(e.cartao), rota: '/plano/cartao' },
     { id: 'dividas', titulo: 'Cadastrar dívidas (se tiver)', feito: e.dividas.length > 0, rota: '/plano/dividas' },
-    { id: 'meta', titulo: 'Definir sua primeira meta', feito: e.metas.length > 0, rota: '/evolucao' },
+    { id: 'meta', titulo: 'Definir sua primeira meta', feito: e.metas.length > 0, rota: '/guardar#metas' },
   ];
   const resolvido = (p: Passo) => p.feito || dispensados.has(p.id);
   const feitos = passos.filter((p) => p.feito).length;
