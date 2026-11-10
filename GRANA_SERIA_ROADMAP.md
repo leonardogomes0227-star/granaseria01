@@ -260,3 +260,14 @@ Feedback com print: o passo era confuso e bugado (formulário único com campos 
 - **Campo de dinheiro (todo o app):** deixou de ser máscara de centavos (digitar "870" dava R$ 8,70). Agora é digitação natural: "870" = R$ 870, "150,50" = R$ 150,50, o ponto de milhar entra sozinho, com "R$" fixo à esquerda (`CampoDinheiro` usa `DecimalInput`).
 - **Contas fixas no onboarding em lista:** toque numa conta sugerida (Aluguel, Condomínio, Luz, Água, Internet, Celular, Escola, Plano de saúde ou "Outra conta") → folha curta (`ContaRapida`) com valor e dia, sempre aberta limpa → a conta vira um cartão ("R$ 870,00 · todo dia 15"), editável e removível com desfazer. Erros só aparecem depois de tentar salvar.
 - **Parcelas** no mesmo passo, com "faltam N parcelas" e remover.
+
+### Simplificação radical (nov/2026) — auditoria de utilidade
+Critério: cada elemento precisa ajudar numa decisão ou tarefa; informação repetida sai; uma ação principal por página.
+**Removido da interface principal (a função continua acessível em outro lugar):**
+- Início: gráfico (está em Relatórios), 5 atalhos (o "+" cobre despesa, receita e transferência; metas em Planejamento), "missão do dia" e 2 dos 3 insights, indicador "Saldo disponível" (repetia o cartão "pode gastar"), ícones de dica nos indicadores, faixa de avisos no topo (repetia o sino, o coach e "Contas próximas"). Ficou: pode gastar hoje, 3 indicadores, 1 orientação, contas próximas, 3 maiores gastos.
+- Lançamentos: aba "Dia a dia" (formulário duplicado do "+"), atalhos Orçamento/Calendário (estão em Planejamento) e o botão "Adicionar" repetido; filtros avançados viraram "Mais filtros".
+- Planejamento: nota de saúde 0–100 e busca de ferramentas; ficaram prioridades, orçamento, metas e a lista de ferramentas.
+- Relatórios: metas (ficam em Planejamento), "fixo × variável" e a rosca repetida.
+- Coach: 3 orientações em vez de 5 e textos curtos. Ferramentas: "Pra entender" e "Conquistas" recolhidos.
+**Padronização:** escala tipográfica global (`--t-pagina` 26, `--t-secao` 17, `--t-valor-xl` 44, `--t-valor` 20, `--t-texto` 15, `--t-label` 12, `--t-aux` 13), espaçamento de seção único e subtítulos reescritos (15 telas).
+**Limites:** as 13 ferramentas só receberam a escala global e os blocos recolhidos, sem reescrita tela a tela; sem teste com pessoas reais (o "teste dos 65 anos" foi feito só como revisão de leitura das telas).

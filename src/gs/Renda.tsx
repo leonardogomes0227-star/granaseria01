@@ -33,7 +33,7 @@ export function Renda() {
   if (gasto <= 0)
     return (
       <>
-        <Titulo titulo="Viver de renda" sub="Quando o rendimento do seu dinheiro paga as suas contas." />
+        <Titulo titulo="Viver de renda" sub="Quando o rendimento paga as suas contas." />
         <section className="gs-card destaque">
           <span className="gs-rotulo">Primeiro passo</span>
           <p style={{ margin: '6px 0 10px' }}>Eu preciso saber quanto você gasta por mês pra calcular o seu número.</p>
@@ -63,7 +63,7 @@ export function Renda() {
 
   return (
     <>
-      <Titulo titulo="Viver de renda" sub="Quando o rendimento do seu dinheiro paga as suas contas." />
+      <Titulo titulo="Viver de renda" sub="Quando o rendimento paga as suas contas." />
 
       <section className="gs-card destaque">
         <span className="gs-rotulo">A ideia em uma frase</span>

@@ -37,7 +37,7 @@ export function Emprestimos() {
   const aba = params.get('aba') === 'comparar' ? 'comparar' : 'custa';
   return (
     <>
-      <Titulo titulo="Empréstimo" sub="Antes de assinar, veja quanto ele custa de verdade." />
+      <Titulo titulo="Empréstimo" sub="Veja quanto ele custa de verdade." />
       <div className="gs-seg" role="tablist" aria-label="Empréstimo" style={{ marginBottom: 14 }}>
         <button type="button" role="tab" aria-selected={aba === 'custa'} className={aba === 'custa' ? 'on' : ''} onClick={() => setParams({})}>Quanto custa</button>
         <button type="button" role="tab" aria-selected={aba === 'comparar'} className={aba === 'comparar' ? 'on' : ''} onClick={() => setParams({ aba: 'comparar' })}>Comparar ofertas</button>

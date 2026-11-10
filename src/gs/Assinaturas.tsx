@@ -27,7 +27,7 @@ export function Assinaturas() {
   const cortar = (a: Assinatura) => { cancelarAssinatura(a.id); toast(`${a.nome} cortada: ${brl0(a.valor)} a menos por mês`, { acao: { rotulo: 'Desfazer', onClick: () => reativarAssinatura(a.id) } }); };
   return (
     <>
-      <Titulo titulo="Gastos escondidos" sub="O que você paga todo mês sem ver, e o que você realmente usa." />
+      <Titulo titulo="Gastos escondidos" sub="O que você paga todo mês sem ver." />
       <Heroi pct={r.pctRevisado} anel={`${Math.round(r.pctRevisado)}%`} anelSub="revisado" rotulo="Você paga por mês" grande={brl0(r.total)} sub={`${brl0(r.anual)} por ano${r.cortado > 0 ? ` · já cortou ${brl0(r.cortado)}/mês` : ''}`} cor="var(--success)" />
       <Agora tom={acao.tom} texto={acao.texto}>
         {acao.alvo && acao.tipo === 'revisar' && (

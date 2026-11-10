@@ -39,7 +39,7 @@ export function ParceladoTela() {
 
   return (
     <>
-      <Titulo titulo="À vista ou parcelado?" sub="Coloque os dois preços e veja quem ganha o duelo." />
+      <Titulo titulo="À vista ou parcelado?" sub="Compare os dois preços." />
       <section className="gs-card">
         <Campo rotulo="O que você quer comprar? (opcional)" valor={item} onChange={setItem} placeholder="Ex.: geladeira" maxLength={60} />
         <CampoDinheiro rotulo="Preço à vista" valor={avista} onChange={setAvista} grande />

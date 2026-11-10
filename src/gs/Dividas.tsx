@@ -37,7 +37,7 @@ export function Dividas() {
   const tem = e.dividas.length > 0;
   return (
     <>
-      <Titulo titulo="Quitar dívidas" sub="Descubra o dia em que você fica livre delas." />
+      <Titulo titulo="Quitar dívidas" sub="Descubra quando você fica livre delas." />
       {tem ? (
         <Painel onNova={() => setSimples(true)} onEditar={setEditando} onQuitou={setFesta} />
       ) : (

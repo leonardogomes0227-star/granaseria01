@@ -61,7 +61,7 @@ export function Reserva() {
   const atrasadas = situacaoAtrasos(e, hoje).anteriores.length;
   return (
     <>
-      <Titulo titulo="Reserva de emergência" sub="O dinheiro que segura a sua vida se a renda parar." />
+      <Titulo titulo="Reserva de emergência" sub="O que segura você se a renda parar." />
 
       {meta <= 0 ? (
         <section className="gs-card destaque">

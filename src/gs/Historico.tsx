@@ -50,6 +50,8 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
       <div className="gs-chips" role="group" aria-label="Período">
         {PERIODOS.map(([k, r]) => <button key={k} type="button" className={`gs-chip ${periodo === k ? 'on' : ''}`} aria-pressed={periodo === k} onClick={() => setPeriodo(k)}>{r}</button>)}
       </div>
+      <details className="gs-aprende">
+        <summary>Mais filtros{f.tipo !== 'todos' || f.categoria || f.contaId ? ' (ativos)' : ''}</summary>
       <div className="gs-chips" role="group" aria-label="Filtrar por tipo">
         {TIPOS.map(([k, r]) => <button key={k} type="button" className={`gs-chip ${f.tipo === k ? 'on' : ''}`} onClick={() => setF({ ...f, tipo: k })}>{r}</button>)}
       </div>
@@ -74,6 +76,7 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
         </select>
       )}
       <button type="button" className="gs-btn link" onClick={() => setContas(true)}>Gerenciar contas</button>
+      </details>
       <ContasSheet aberta={contas} onFechar={() => setContas(false)} />
       {lista.length === 0 ? (
         <Vazio titulo={todos.length === 0 ? 'Nada registrado neste mês' : 'Nada encontrado com esse filtro'} texto={todos.length === 0 ? 'Registre uma receita ou uma despesa em poucos segundos.' : 'Tente outra busca ou limpe os filtros.'} acao={todos.length === 0 ? 'Adicionar movimentação' : undefined} onAcao={() => abrirAdicionar()} avatar="gastos" />

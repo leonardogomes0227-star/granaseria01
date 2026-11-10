@@ -39,14 +39,14 @@ export function Orcamento() {
   if (e.config.renda <= 0)
     return (
       <>
-        <Titulo titulo="Orçamento" sub="Quanto ainda dá em cada coisa este mês." />
+        <Titulo titulo="Orçamento" sub="Quanto ainda dá em cada categoria." />
         <Vazio titulo="Informe sua renda" texto="Com ela eu calculo quanto sobra pro dia a dia e divido em envelopes: mercado, transporte, lazer…" acao="Informar renda" rota="/dados" avatar="gastos" />
       </>
     );
 
   return (
     <>
-      <Titulo titulo="Orçamento" sub={`Quanto ainda dá em cada coisa em ${nomeMes(mes)}.`} />
+      <Titulo titulo="Orçamento" sub={`Quanto ainda dá em cada categoria em ${nomeMes(mes)}.`} />
 
       <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
         <div style={{ flex: 'none', width: 96 }}><Anel pct={r.pctUsado} grande={`${Math.round(r.pctUsado)}%`} sub="já foi" tamanho={96} cor={r.pctUsado > r.pctMes + 10 ? 'var(--danger)' : 'var(--gold-strong)'} /></div>

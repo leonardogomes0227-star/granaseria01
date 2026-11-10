@@ -61,7 +61,7 @@ export function Assistentes() {
   };
   return (
     <>
-      <Titulo titulo="Assistentes" sub="Cada um cuida de uma coisa. Ligue só os que fazem sentido pra você." />
+      <Titulo titulo="Assistentes" sub="Ligue os lembretes que quiser." />
       <h2 className="gs-h2" style={{ marginTop: 0 }}>Meus assistentes</h2>
       <div className="gs-card">
         {meus.length === 0 ? <p className="gs-mudo" style={{ margin: 0 }}>Nenhum ligado. Escolha abaixo.</p> : meus.map((a) => <Card key={a.id} a={a} />)}

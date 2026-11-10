@@ -52,7 +52,7 @@ export function Atrasos() {
 
   return (
     <>
-      <Titulo titulo="Sair do atraso" sub="Conta que ficou pra trás não some. A gente põe tudo em dia, um passo de cada vez." />
+      <Titulo titulo="Sair do atraso" sub="Ponha as contas em dia, um passo de cada vez." />
 
       <section className={`gs-card ${tom === 'perigo' ? 'perigo' : 'destaque'}`}>
         <span className="gs-rotulo">Atrasado hoje</span>
@@ -225,7 +225,7 @@ export function Atrasos() {
 function EmDia({ separado, onAnotar }: { separado: number; onAnotar: () => void }) {
   return (
     <>
-      <Titulo titulo="Sair do atraso" sub="Conta que ficou pra trás não some. A gente põe tudo em dia, um passo de cada vez." />
+      <Titulo titulo="Sair do atraso" sub="Ponha as contas em dia, um passo de cada vez." />
       <section className="gs-card destaque">
         <span className="gs-rotulo">Tudo em dia</span>
         <p className="gs-grande" style={{ margin: '4px 0' }}>Nenhuma conta atrasada</p>

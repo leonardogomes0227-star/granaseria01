@@ -14,9 +14,9 @@ import { Titulo } from './ui';
 
 const SUGESTOES = ['Quanto posso gastar neste final de semana?', 'Quais são meus maiores gastos?', 'Qual conta devo priorizar?', 'Estou melhorando financeiramente?', 'Por que estou terminando o mês sem dinheiro?'];
 const AVISOS: [string, string, string][] = [
-  ['vencimento', 'Contas e faturas perto de vencer', 'Avisos de vencimento e atraso (atraso grave continua aparecendo).'],
-  ['orcamento', 'Orçamento e gastos acima do padrão', 'Quando uma categoria sobe ou passa do limite que você definiu.'],
-  ['coach', 'Sugestões do coach', 'Ideias para guardar, metas e próximos passos.'],
+  ['vencimento', 'Contas e faturas perto de vencer', 'Vencimentos e atrasos.'],
+  ['orcamento', 'Orçamento e gastos acima do padrão', 'Gastos que sobem ou passam do limite.'],
+  ['coach', 'Sugestões do coach', 'Ideias para guardar e metas.'],
 ];
 
 async function token(): Promise<string | null> {
@@ -47,12 +47,12 @@ export function Coach() {
   const desligados = new Set(e.config.avisosDesligados ?? []);
   return (
     <>
-      <Titulo titulo="Coach financeiro" sub="Orientações baseadas nos seus dados reais, sem julgamentos." />
-      <h2 className="gs-h2">Para você agora</h2>
-      {recs.slice(0, 5).map((r) => <Rec key={r.id} r={r} />)}
-      <h2 className="gs-h2">Converse com o coach</h2>
+      <Titulo titulo="Coach financeiro" sub="Orientações a partir dos seus dados." />
+      <h2 className="gs-h2">Agora</h2>
+      {recs.slice(0, 3).map((r) => <Rec key={r.id} r={r} />)}
+      <h2 className="gs-h2">Pergunte ao coach</h2>
       <Conversa />
-      <h2 className="gs-h2">Avisos que você quer receber</h2>
+      <h2 className="gs-h2">Avisos</h2>
       <div className="gs-card">
         {AVISOS.map(([id, titulo, texto]) => (
           <div className="gs-assist" key={id}>
@@ -64,7 +64,7 @@ export function Coach() {
         ))}
         <Link to="/assistentes" className="gs-btn link">Configurar lembretes por dia e horário</Link>
       </div>
-      <p className="gs-nota">O coach é educação financeira: não promete resultados nem substitui um profissional, principalmente em dívidas complexas ou investimentos.</p>
+      <p className="gs-nota">Educação financeira. Não substitui um profissional.</p>
     </>
   );
 }
@@ -103,14 +103,14 @@ function Conversa() {
     return (
       <div className="gs-card">
         <b>A conversa com o coach ainda não está ativada</b>
-        <p className="gs-mudo">Ela depende de uma chave de IA configurada no servidor do app. Enquanto isso, as orientações acima continuam sendo calculadas dos seus dados.</p>
+        <p className="gs-mudo">Enquanto isso, as orientações acima continuam funcionando.</p>
       </div>
     );
   if (!logado)
     return (
       <div className="gs-card">
         <b>Entre para conversar</b>
-        <p className="gs-mudo">O coach precisa saber quem é você para ler os seus números com segurança. Entre com seu e-mail ou pelo link do WhatsApp.</p>
+        <p className="gs-mudo">Entre com seu e-mail ou pelo link do WhatsApp.</p>
         <Link to="/entrar" className="gs-btn">Entrar</Link>
       </div>
     );
@@ -141,7 +141,7 @@ function Conversa() {
     <div className="gs-card">
       {msgs.length === 0 && (
         <>
-          <p className="gs-mudo" style={{ marginTop: 0 }}><Sparkles size={14} style={{ verticalAlign: -2 }} aria-hidden="true" /> Pergunte sobre o seu dinheiro. Eu uso só os seus dados; se faltar alguma informação, eu pergunto.</p>
+          <p className="gs-mudo" style={{ marginTop: 0 }}><Sparkles size={14} style={{ verticalAlign: -2 }} aria-hidden="true" /> Pergunte sobre o seu dinheiro. Uso só os seus dados.</p>
           <div className="gs-chips">{SUGESTOES.map((s) => <button key={s} type="button" className="gs-chip" onClick={() => void enviar(s)}>{s}</button>)}</div>
         </>
       )}

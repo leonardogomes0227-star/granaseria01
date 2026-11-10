@@ -158,11 +158,10 @@ export function Titulo({ titulo, sub }: { titulo: string; sub?: string }) {
 
 /** "Pra entender": um parágrafo que explica o porquê, em linguagem simples. */
 export const Aprende = ({ titulo, texto }: { titulo: string; texto: string }) => (
-  <section className="gs-card" style={{ background: 'var(--gold-soft)', borderColor: 'transparent' }}>
-    <div className="gs-rotulo">Pra entender</div>
-    <h3 style={{ margin: '4px 0 6px', fontFamily: 'var(--serif)', fontSize: 18 }}>{titulo}</h3>
-    <p style={{ margin: 0 }}>{texto}</p>
-  </section>
+  <details className="gs-aprende">
+    <summary>Pra entender: {titulo}</summary>
+    <p>{texto}</p>
+  </details>
 );
 
 /** Controle deslizante com valor grande em cima e limites embaixo. */
@@ -214,9 +213,12 @@ export function Agora({ tom = 'ok', texto, children }: { tom?: 'ok' | 'aviso' | 
 
 export const Conquistas = ({ lista }: { lista: string[] }) =>
   lista.length === 0 ? null : (
-    <div className="gs-chips" aria-label="Conquistas">
-      {lista.map((c) => <span key={c} className="gs-etiqueta ok">★ {c}</span>)}
-    </div>
+    <details className="gs-aprende">
+      <summary>Conquistas ({lista.length})</summary>
+      <div className="gs-chips" aria-label="Conquistas" style={{ marginTop: 8 }}>
+        {lista.map((c) => <span key={c} className="gs-etiqueta ok">★ {c}</span>)}
+      </div>
+    </details>
   );
 
 export const MaisAjuda = ({ children, titulo = 'Mais ajuda' }: { children: ReactNode; titulo?: string }) => (

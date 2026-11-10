@@ -228,3 +228,43 @@ html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec:hover
 .gs-dinheiro-caixa input { padding-left: 44px !important; }
 .gs-dinheiro-caixa.grande > i { font-size: 20px; }
 .gs-dinheiro-caixa.grande input { padding-left: 54px !important; }
+
+/* ==========================================================================
+   Simplificação radical · escala tipográfica global e respiro
+   Uma escala só (tokens --t-*), usada por títulos, valores, textos e legendas. Nada de tamanhos aleatórios.
+   ========================================================================== */
+html.gs-app {
+  --t-pagina: 26px;   /* título da página */
+  --t-secao: 17px;    /* título de seção */
+  --t-valor-xl: 44px; /* o valor que manda na tela (ex.: pode gastar hoje) */
+  --t-valor: 20px;    /* valores em cartões e listas */
+  --t-texto: 15px;    /* texto comum */
+  --t-label: 12px;    /* rótulos em caixa-alta */
+  --t-aux: 13px;      /* informação auxiliar */
+  --esp-secao: 28px;  /* respiro entre seções */
+}
+html.gs-app .gs-titulo { font-size: var(--t-pagina) !important; line-height: 1.2 !important; font-weight: 650 !important; margin-bottom: 4px; }
+html.gs-app .gs-sub { font-size: var(--t-texto); line-height: 22px; margin: 0 0 16px; color: var(--ink-muted); }
+html.gs-app .gs-h2 { font-size: var(--t-secao) !important; line-height: 24px !important; font-weight: 600 !important; margin: var(--esp-secao) 0 10px; }
+html.gs-app .gs-grande { font-size: var(--t-valor-xl); line-height: 1.1; font-weight: 650 !important; }
+html.gs-app .gs-medio { font-size: var(--t-valor); line-height: 26px; font-weight: 600 !important; }
+html.gs-app .gs-rotulo { font-size: var(--t-label); }
+html.gs-app .gs-mudo, html.gs-app .gs-nota { font-size: var(--t-aux); line-height: 19px; }
+html.gs-app .gs-valor { font-size: var(--t-texto); font-weight: 600; }
+html.gs-app .gs-cofre b { font-size: clamp(40px, 11vw, var(--t-valor-xl)); }
+html.gs-app .gs-kpi b { font-size: var(--t-valor); }
+html.gs-app .gs-card { padding: 16px; margin-bottom: 12px; }
+html.gs-app .gs-principal { line-height: 1.5; }
+html.gs-app .gs-folha h2 { font-size: var(--t-secao) !important; font-weight: 600 !important; }
+
+/* blocos de apoio recolhidos: "Pra entender" e "Conquistas" só aparecem se a pessoa abrir */
+.gs-aprende { margin: 8px 0 14px; border-radius: 14px; background: transparent; }
+.gs-aprende summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: var(--t-aux); font-weight: 600; color: var(--gold-texto); list-style: none; }
+.gs-aprende summary::-webkit-details-marker { display: none; }
+.gs-aprende summary::before { content: '+'; display: inline-block; width: 18px; font-weight: 700; }
+.gs-aprende[open] summary::before { content: '–'; }
+.gs-aprende p { margin: 0 0 8px 18px; font-size: var(--t-aux); line-height: 20px; color: var(--ink-muted); }
+.gs-kpis { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gs-kpi { padding: 12px 10px; }
+.gs-kpi b { font-size: 18px; }
+@media (min-width: 900px) { .gs-kpis { grid-template-columns: repeat(3, 1fr); gap: 12px; } .gs-kpi b { font-size: var(--t-valor); } }
