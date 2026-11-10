@@ -101,6 +101,7 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
         return typeof s.valor === 'number' && Number.isFinite(s.valor) && /^\d{4}-\d{2}-\d{2}$/.test(String(s.data)) ? { valor: s.valor, data: String(s.data) } : undefined;
       })(),
       objetivo: typeof cfg.objetivo === 'string' && cfg.objetivo ? cfg.objetivo.slice(0, 60) : undefined,
+      adiados: Object.fromEntries(Object.entries(obj(cfg.adiados)).filter(([, v]) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)).slice(0, 50)) as Record<string, string>,
       avisosDesligados: arr<string>(cfg.avisosDesligados).filter((x) => typeof x === 'string').slice(0, 20),
       checklistFeito: arr<string>(cfg.checklistFeito).filter((x) => typeof x === 'string').slice(0, 20),
     },
@@ -147,7 +148,7 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
     })(),
     recuperacao: (() => {
       const r = obj(b.recuperacao);
-      return { ativo: Boolean(r.ativo), desde: typeof r.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.desde) ? r.desde : undefined, raioXFeito: Boolean(r.raioXFeito), ofertaDispensada: Boolean(r.ofertaDispensada) };
+      return { ativo: Boolean(r.ativo), desde: typeof r.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.desde) ? r.desde : undefined, raioXFeito: Boolean(r.raioXFeito), ofertaDispensada: Boolean(r.ofertaDispensada), marcos: arr<string>(r.marcos).filter((x) => typeof x === 'string').slice(0, 30) };
     })(),
     cartao: (() => {
       const c = obj(b.cartao);

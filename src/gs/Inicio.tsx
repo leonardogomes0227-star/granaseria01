@@ -15,7 +15,9 @@ import { useHoje } from './useHoje';
 import { ComoCalculei } from './ComoCalculei';
 import { Checklist } from './Checklist';
 import { passoDoDia, planoDeSaida } from './recuperacaoLogica';
-import { definirRecuperacao } from './acoes';
+import { adiarAviso, definirRecuperacao, desfazerAdiar, marcarSemanaVista } from './acoes';
+import { resumoDaSemana, segundaDe } from './insights';
+import { somaDias } from './datas';
 import { abrirAdicionar } from './AdicionarMov';
 import { BaixaSheet } from './BaixaSheet';
 import { corDe, iconeDe } from './categorias';
@@ -49,7 +51,8 @@ export function Inicio() {
   const sit = useMemo(() => situacaoFinanceira(e, hoje), [e, hoje]);
   const recs = useMemo(() => recomendacoes(e, hoje), [e, hoje]);
   const cats = useMemo(() => gastosPorCategoria(e, mes).slice(0, 3), [e, mes]);
-  const proximas = useMemo(() => prioridades(e, hoje).filter((p) => p.semaforo !== 'verde').slice(0, 4), [e, hoje]);
+  const proximas = useMemo(() => prioridades(e, hoje).filter((p) => p.semaforo !== 'verde' && !((e.config.adiados?.[p.chave] ?? '') > hoje)).slice(0, 4), [e, hoje]);
+  const adiar = (chave: string, nome: string) => { adiarAviso(chave, somaDias(hoje, 2)); toast(`${nome}: aviso adiado por 2 dias`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerAdiar(chave) } }); };
   const m = (t: string) => mascarar(t, oculto);
 
   const registradas = receitasRecebidas(e, mes);
@@ -103,6 +106,8 @@ export function Inicio() {
 
           {e.recuperacao.ativo ? <CartaoRecuperacao /> : sit === 'endividado' && !e.recuperacao.ofertaDispensada ? <OfertaRecuperacao /> : insights[0] && <Insight r={insights[0]} />}
 
+          <RevisaoSemana />
+
           <h2 className="gs-h2">Contas próximas</h2>
           {proximas.length === 0 ? (
             <p className="gs-mudo">{e.gastosFixos.length === 0 && !e.cartao && e.dividas.length === 0 ? <>Cadastre suas contas fixas. <Link to="/lancamentos?aba=contas">Cadastrar</Link></> : 'Nada vencendo ou atrasado.'}</p>
@@ -113,6 +118,7 @@ export function Inicio() {
                   <span className="gs-semaforo" style={{ background: COR[p.semaforo] }} role="img" aria-label={NOME[p.semaforo]} />
                   <div className="gs-corpo"><b>{p.titulo}</b><small>{p.detalhe} · {m(brl(p.valor))}</small></div>
                   {p.chave.startsWith('c-') ? <button type="button" className="gs-btn sec pequeno" onClick={() => setBaixa(p.chave.slice(2))}>Pagar</button> : <Link to={p.rota} className="gs-btn sec pequeno">Abrir</Link>}
+                  {p.semaforo === 'amarelo' && <button type="button" className="gs-btn link" onClick={() => adiar(p.chave, p.titulo)} aria-label={`Adiar aviso de ${p.titulo} por 2 dias`}>Adiar</button>}
                 </div>
               ))}
             </div>
@@ -227,6 +233,34 @@ function OfertaRecuperacao() {
       <div className="gs-acoes">
         <Link to="/recuperacao" className="gs-btn">Montar meu plano</Link>
         <button type="button" className="gs-btn link" onClick={() => definirRecuperacao({ ofertaDispensada: true })}>Agora não</button>
+      </div>
+    </section>
+  );
+}
+
+/** No começo da semana (segunda a quarta), um resumo da semana que passou, com uma ação. Some ao fechar e volta na semana seguinte. */
+function RevisaoSemana() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const segunda = segundaDe(hoje);
+  const dow = new Date(`${hoje}T12:00:00Z`).getUTCDay(); // 1 = segunda
+  const r = useMemo(() => resumoDaSemana(e, hoje, 1), [e, hoje]);
+  const anterior = useMemo(() => resumoDaSemana(e, hoje, 2), [e, hoje]);
+  const oculto = useOculto();
+  if (![1, 2, 3].includes(dow) || e.semanaVista === segunda || (r.gasto === 0 && r.contasPagas === 0)) return null;
+  const dif = anterior.gasto >= 50 ? Math.round((r.gasto / anterior.gasto - 1) * 100) : null;
+  return (
+    <section className="gs-card" aria-label="Revisão da semana">
+      <span className="gs-rotulo">Sua semana</span>
+      <p style={{ margin: '4px 0' }}>
+        Você gastou <b>{mascarar(brl0(r.gasto), oculto)}</b> na semana passada
+        {dif !== null ? <>, <b>{Math.abs(dif)}% {dif <= 0 ? 'menos' : 'mais'}</b> que na anterior</> : ''}
+        {r.categoriaTop ? <>. O que mais pesou: {r.categoriaTop.nome}</> : ''}.
+      </p>
+      <p className="gs-mudo" style={{ margin: 0 }}>{r.recomendacao}</p>
+      <div className="gs-acoes">
+        <Link to="/relatorios" className="gs-btn sec pequeno">Ver relatórios</Link>
+        <button type="button" className="gs-btn link" onClick={() => marcarSemanaVista(segunda)}>Entendi</button>
       </div>
     </section>
   );

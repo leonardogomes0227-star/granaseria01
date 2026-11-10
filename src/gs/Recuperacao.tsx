@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, hoje as hojeSP, mesCurto, mesDe, nomeMes } from './datas';
-import { definirRecuperacao, removerAnotados, removerDivida, restaurarDivida, salvarCartao } from './acoes';
-import { passoDoDia, planoDeSaida, sobrevivencia, triagem, vitorias, type ItemTriagem } from './recuperacaoLogica';
+import { definirRecuperacao, registrarMarco, removerAnotados, removerDivida, restaurarDivida, salvarCartao } from './acoes';
+import { marcosConquistados, ondeCortar, passoDoDia, planoDeSaida, sobrevivencia, triagem, vitorias, type ItemTriagem } from './recuperacaoLogica';
 import { detalheDisponivel } from './selectores';
 import { resumoDaSemana } from './insights';
 import { PassoDespesas, FormRenda } from './Onboarding';
@@ -183,6 +183,8 @@ function Painel() {
   const vit = useMemo(() => vitorias(e, hoje), [e, hoje]);
   const semana = useMemo(() => resumoDaSemana(e, hoje, 1), [e, hoje]);
   const [sair, setSair] = useState(false);
+  const corte = useMemo(() => ondeCortar(e, mes), [e, mes]);
+  const novoMarco = useMemo(() => marcosConquistados(e, hoje).find((x) => !(e.recuperacao.marcos ?? []).includes(x.id)), [e, hoje]);
   const grupos = [1, 2, 3].map((g) => ({ g, itens: lista.filter((i) => i.grupo === g) })).filter((x) => x.itens.length > 0);
   const totalGasto = sob.essenciais + sob.outrasFixas + sob.superfluos;
   const segunda = new Date().getDay() === 1;
@@ -190,6 +192,13 @@ function Painel() {
   return (
     <>
       <Titulo titulo="Meu plano de saída" />
+
+      {novoMarco && (
+        <section className="gs-card gs-marco" role="status" aria-label="Conquista">
+          <span className="gs-marco-check" aria-hidden="true"><Check size={20} /></span>
+          <div><b>{novoMarco.titulo}</b><p className="gs-mudo" style={{ margin: '2px 0 8px' }}>{novoMarco.texto}</p><button type="button" className="gs-btn sec pequeno" onClick={() => registrarMarco(novoMarco.id)}>Valeu!</button></div>
+        </section>
+      )}
 
       <section className="gs-card gs-plano-topo" aria-label="Resumo do plano">
         <span className="gs-rotulo">Você deve</span>
@@ -228,6 +237,13 @@ function Painel() {
             <Faixa rotulo="Outras contas fixas" valor={sob.outrasFixas} total={totalGasto} oculto={oculto} />
             <Faixa rotulo="Supérfluos" valor={sob.superfluos} total={totalGasto} oculto={oculto} aviso />
             {sob.superfluos > 0 && <p className="gs-nota">Cortar os supérfluos libera até {m(brl0(sob.superfluos))} por mês para as dívidas.</p>}
+            {(corte.categorias.length > 0 || corte.assinaturas.n > 0) && (
+              <div className="gs-corte">
+                <span className="gs-rotulo">Onde cortar primeiro</span>
+                {corte.categorias.map((c) => <div className="gs-linha" key={c.categoria}><div className="gs-corpo"><b>{c.categoria}</b></div><span className="gs-valor">{m(brl0(c.valor))}</span></div>)}
+                {corte.assinaturas.n > 0 && <div className="gs-linha"><div className="gs-corpo"><b>Assinaturas ativas ({corte.assinaturas.n})</b><small><Link to="/plano/assinaturas">Revisar e cancelar</Link></small></div><span className="gs-valor">{m(brl0(corte.assinaturas.total))}</span></div>}
+              </div>
+            )}
           </>
         ) : <p className="gs-mudo" style={{ margin: 0 }}>Anote seus gastos e eu separo o essencial do que dá para cortar.</p>}
         {disp.modo !== 'incompleto' && <p className="gs-mudo" style={{ margin: '10px 0 0' }}>Teto de hoje: <b>{m(brl(disp.porDia))}</b></p>}

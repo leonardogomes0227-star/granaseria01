@@ -154,3 +154,33 @@ export function vitorias(e: Estado, hoje: string): Vitorias {
   }
   return { pago, quitadas, diasSemSuperfluo: diasEntre(desde, hoje) >= 0 ? n : 0 };
 }
+
+/** Maiores gastos supérfluos do mês, por categoria, e as assinaturas ativas: o que dá para cortar primeiro. */
+export interface OndeCortar {
+  categorias: { categoria: string; valor: number }[];
+  assinaturas: { total: number; n: number };
+}
+export function ondeCortar(e: Estado, mes: string): OndeCortar {
+  const m = new Map<string, number>();
+  for (const l of e.lancamentos) if (mesDe(l.data) === mes && !DIA_ESSENCIAL.includes(l.categoria)) m.set(l.categoria, (m.get(l.categoria) ?? 0) + l.valor);
+  const categorias = [...m.entries()].map(([categoria, valor]) => ({ categoria, valor: Math.round(valor * 100) / 100 })).sort((a, b) => b.valor - a.valor).slice(0, 3);
+  const ativas = (e.assinaturas ?? []).filter((a) => a.ativa);
+  return { categorias, assinaturas: { total: Math.round(ativas.reduce((t, a) => t + a.valor, 0) * 100) / 100, n: ativas.length } };
+}
+
+export interface Marco {
+  id: string;
+  titulo: string;
+  texto: string;
+}
+/** Conquistas da recuperação, em ordem. A tela comemora as que ainda não foram comemoradas (`recuperacao.marcos`). */
+export function marcosConquistados(e: Estado, hoje: string): Marco[] {
+  const v = vitorias(e, hoje);
+  const m: Marco[] = [];
+  if (e.recuperacao.raioXFeito) m.push({ id: 'raiox', titulo: 'Primeiro passo dado', texto: 'Você mapeou tudo o que deve. A parte mais difícil é olhar para o problema, e você olhou.' });
+  if (v.pago > 0) m.push({ id: 'primeiro-pagamento', titulo: 'Primeiro pagamento feito', texto: 'Qualquer valor conta. Agora a dívida é menor do que ontem.' });
+  if (v.quitadas >= 1) m.push({ id: 'primeira-quitada', titulo: 'Uma dívida quitada', texto: 'Uma a menos para se preocupar. Siga a ordem do plano para a próxima.' });
+  // só comemora se a pessoa está anotando: sem nenhum gasto registrado, "7 dias sem supérfluo" não prova nada
+  if (v.diasSemSuperfluo >= 7 && e.lancamentos.some((l) => l.data >= somaDias(hoje, -7))) m.push({ id: 'sete-dias', titulo: '7 dias sem gasto supérfluo', texto: 'Uma semana inteira só no essencial. Isso libera dinheiro para as dívidas.' });
+  return m;
+}

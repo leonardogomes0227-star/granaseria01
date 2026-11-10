@@ -22,6 +22,7 @@ export interface Config {
   objetivo?: string; // principal objetivo financeiro (onboarding)
   avisosDesligados?: string[]; // tipos de aviso que a pessoa desligou ('vencimento', 'orcamento', 'coach'...)
   checklistFeito?: string[]; // passos do checklist de configuração marcados como "agora não"
+  adiados?: Record<string, string>; // aviso (chave) → 'AAAA-MM-DD' até quando fica escondido do Início ("Adiar")
 }
 
 export interface Pagamento {
@@ -224,6 +225,7 @@ export interface Recuperacao {
   desde?: string; // 'AAAA-MM-DD'
   raioXFeito: boolean;
   ofertaDispensada?: boolean; // a pessoa disse "agora não" para a oferta no Início
+  marcos?: string[]; // conquistas já comemoradas (para não repetir a mensagem)
 }
 
 export interface Estado {

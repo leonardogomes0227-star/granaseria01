@@ -412,3 +412,13 @@ export const restaurarTransferencia = (t: Transferencia) => atualizar((x) => (x.
 /* ---------- Modo Recuperação ---------- */
 export const definirRecuperacao = (patch: Partial<import('./tipos').Recuperacao>) =>
   atualizar((e) => ({ ...e, recuperacao: { ...e.recuperacao, ...patch } }));
+
+/** "Adiar": esconde um aviso do Início por alguns dias (não paga nem muda a conta). */
+export const adiarAviso = (chave: string, ate: string) =>
+  atualizar((e) => ({ ...e, config: { ...e.config, adiados: { ...Object.fromEntries(Object.entries(e.config.adiados ?? {}).filter(([, v]) => v >= hojeSP())), [chave]: ate } } }));
+export const desfazerAdiar = (chave: string) =>
+  atualizar((e) => { const a = { ...(e.config.adiados ?? {}) }; delete a[chave]; return { ...e, config: { ...e.config, adiados: a } }; });
+/** Revisão da semana já vista (guarda a segunda-feira da semana). */
+export const marcarSemanaVista = (segunda: string) => atualizar((e) => ({ ...e, semanaVista: segunda }));
+export const registrarMarco = (id: string) =>
+  atualizar((e) => (e.recuperacao.marcos?.includes(id) ? e : { ...e, recuperacao: { ...e.recuperacao, marcos: [...(e.recuperacao.marcos ?? []), id] } }));
