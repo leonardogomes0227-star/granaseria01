@@ -213,6 +213,18 @@ export async function trackEvent(phone: string, event: string, note?: string): P
 }
 
 /** "Apagar meus dados" (LGPD): gastos, perfil, conversa em andamento, contadores e métricas deste número. */
+/** "Limpar tudo": apaga os dados do número (gastos, entradas, plano, conversa do bot, coach) mas MANTÉM o link de acesso ao
+ *  painel e o contador de uso. O perfil volta vazio (não é apagado), então a pessoa segue conectada e recomeça do zero. */
+export async function clearWhatsAppData(phone: string): Promise<void> {
+  const targets = [`expenses?phone=eq.${phone}`, `incomes?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`];
+  for (const t of targets) {
+    const res = await rest(t, { method: 'DELETE' });
+    if (!res.ok && !t.startsWith('incomes')) throw new Error(`Supabase delete ${res.status}: ${await res.text()}`);
+  }
+  await saveProfile(phone, {});
+  for (const t of ['coach_perfil', 'coach_chat', 'coach_plano', 'coach_aportes']) await rest(`${t}?phone=eq.${phone}`, { method: 'DELETE' }).catch(() => undefined);
+}
+
 export async function eraseWhatsAppData(phone: string): Promise<void> {
   const targets = [`expenses?phone=eq.${phone}`, `incomes?phone=eq.${phone}`, `wa_profiles?phone=eq.${phone}`, `wa_sessions?phone=eq.${phone}`, `wa_usage?phone=eq.${phone}`, `wa_events?person=eq.${personHash(phone)}`];
   // o coach (supabase/coach.sql) também é dado da pessoa; se as tabelas não existirem, segue

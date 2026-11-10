@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { apagarCopiaDoNumero, clearPainelToken, painelToken, startPainelSync, stopPainelSync } from '../painel';
-import { apagarCopiaDaConta, clearLocalData } from '../sync';
+import { apagarCopiaDoNumero, limparCopiaDoNumero, clearPainelToken, painelToken, startPainelSync, stopPainelSync } from '../painel';
+import { apagarCopiaDaConta, clearLocalData, limparCopiaDaConta, stopSync } from '../sync';
 import { apagarTudo, getEstado, STORE_KEY, substituir } from './store';
 import { salvarConfig } from './acoes';
 import { Campo, CampoDinheiro, CampoNumero, Confirmar, Titulo } from './ui';
@@ -25,6 +25,7 @@ export function MeusDados() {
   const [hora, setHora] = useState(e0.config.avisos.horario);
   const [pct, setPct] = useState<number | ''>(e0.config.reservaPct);
   const [apagar, setApagar] = useState<0 | 1 | 2>(0);
+  const [limpar, setLimpar] = useState<0 | 1 | 2>(0);
   const arquivo = useRef<HTMLInputElement>(null);
 
   const salvar = () => {
@@ -107,23 +108,59 @@ export function MeusDados() {
       </section>
 
       <section className="gs-card perigo" id="limpar" aria-label="Limpar meus dados">
-        <b>Limpar meus dados (site e WhatsApp)</b>
-        <p className="gs-sub" style={{ margin: '4px 0 8px' }}>Apaga tudo e recomeça do zero:</p>
+        <b>Limpar tudo e recomeçar</b>
+        <p className="gs-sub" style={{ margin: '4px 0 8px' }}>Zera os seus dados e <b>mantém a sua conta e o WhatsApp conectados</b>. Você não precisa entrar de novo.</p>
         <ul className="gs-lista-simples">
-          <li><b>No site:</b> renda, contas, gastos, receitas, dívidas, metas, cartão, histórico do coach e preferências, neste aparelho e na cópia guardada na sua conta.</li>
-          <li><b>No WhatsApp:</b> gastos e entradas anotados por mensagem, seu plano, o histórico e o link de acesso ao painel.</li>
+          <li><b>No site:</b> renda, contas, gastos, receitas, dívidas, metas, cartão, histórico do coach e preferências, neste aparelho e na cópia da conta.</li>
+          <li><b>No WhatsApp:</b> gastos e entradas anotados por mensagem, seu plano e a conversa com o assistente.</li>
         </ul>
         <p className="gs-nota">Não dá pra desfazer. Se quiser guardar uma cópia antes, use "Exportar (JSON)" aqui em cima.</p>
-        <button type="button" className="gs-btn perigo" onClick={() => setApagar(1)}>Limpar tudo</button>
+        <button type="button" className="gs-btn perigo" onClick={() => setLimpar(1)}>Limpar tudo</button>
       </section>
 
-      <Confirmar aberta={apagar === 1} titulo="Limpar tudo?" texto="Você vai perder todos os dados do app e do WhatsApp: neste aparelho e na cópia guardada na sua conta e no seu número. Depois disso, o app volta ao começo." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
+      <section className="gs-card">
+        <b>Apagar conta e desconectar</b>
+        <p className="gs-sub" style={{ margin: '4px 0 12px' }}>Faz o mesmo que "Limpar tudo" e ainda apaga o acesso: o link do painel e a conta de e-mail. Para voltar, você precisa conectar o WhatsApp de novo.</p>
+        <button type="button" className="gs-btn sec" onClick={() => setApagar(1)}>Apagar conta e desconectar</button>
+      </section>
+
+      <Confirmar aberta={limpar === 1} titulo="Limpar tudo?" texto="Você vai perder todos os dados do app e do WhatsApp. Sua conta e a conexão com o WhatsApp continuam." rotulo="Continuar" onCancelar={() => setLimpar(0)} onConfirmar={() => setLimpar(2)} />
+      <Confirmar
+        aberta={limpar === 2}
+        titulo="Última confirmação"
+        texto="Para confirmar, digite a palavra abaixo. Depois disso não há como recuperar."
+        digitar="LIMPAR"
+        rotulo="Limpar tudo agora"
+        onCancelar={() => setLimpar(0)}
+        onConfirmar={async () => {
+          // primeiro o servidor: se não der pra limpar, não finge que limpou e não mexe no aparelho
+          stopPainelSync();
+          stopSync();
+          const [numero, conta] = await Promise.all([limparCopiaDoNumero(), limparCopiaDaConta().catch(() => false)]);
+          if (!numero || !conta) {
+            void startPainelSync().catch(() => undefined);
+            toast('Não consegui limpar a cópia guardada no servidor. Nada foi apagado neste aparelho. Confira a internet e tente de novo.');
+            setLimpar(0);
+            return;
+          }
+          const nomeAntes = (() => { try { return localStorage.getItem('gs-nome'); } catch { return null; } })();
+          apagarTudo();
+          clearLocalData();
+          for (const k of [STORE_KEY, ...PREFERENCIAS_LOCAIS]) {
+            try { localStorage.removeItem(k); } catch { /* sem localStorage */ }
+          }
+          if (nomeAntes) { try { localStorage.setItem('gs-nome', nomeAntes); } catch { /* sem localStorage */ } }
+          setLimpar(0);
+          window.location.assign('/'); // recarrega: a sincronização recomeça já com tudo vazio
+        }}
+      />
+      <Confirmar aberta={apagar === 1} titulo="Apagar conta e desconectar?" texto="Além dos dados, você perde o acesso: o link do painel e a conta de e-mail. Para voltar, precisa conectar o WhatsApp de novo." rotulo="Continuar" onCancelar={() => setApagar(0)} onConfirmar={() => setApagar(2)} />
       <Confirmar
         aberta={apagar === 2}
         titulo="Última confirmação"
         texto="Para confirmar, digite a palavra abaixo. Depois disso não há como recuperar."
         digitar="APAGAR"
-        rotulo="Limpar tudo agora"
+        rotulo="Apagar conta agora"
         onCancelar={() => setApagar(0)}
         onConfirmar={async () => {
           // primeiro a cópia no servidor: se não der pra apagar, não finge que apagou e não mexe no aparelho
@@ -131,7 +168,7 @@ export function MeusDados() {
           const [numero, conta] = await Promise.all([apagarCopiaDoNumero(), apagarCopiaDaConta().catch(() => false)]);
           if (!numero || !conta) {
             void startPainelSync().catch(() => undefined);
-            toast('Não consegui limpar a cópia guardada no servidor. Nada foi apagado neste aparelho. Confira a internet e tente de novo.');
+            toast('Não consegui apagar a cópia guardada no servidor. Nada foi apagado neste aparelho. Confira a internet e tente de novo.');
             setApagar(0);
             return;
           }

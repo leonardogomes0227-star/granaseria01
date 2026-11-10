@@ -239,3 +239,9 @@ Feedback do dono: cadastrar dívida era confuso; faltava um jeito claro de anota
 ### Orientações do coach e botão de limpar dados (nov/2026)
 - **Novas orientações por regras** (`coachExtras.ts`, 7 testes): previsão de falta de dinheiro no ritmo atual, gasto recorrente (assinaturas), meta com prazo atrasada, renda extra recebida (sugere o destino), cartão a partir de 70% do limite, reserva abaixo de 3 meses e "gastando menos que no mês passado". Cada uma só aparece com dados suficientes e traz o "por quê" com os números.
 - **Limpar meus dados (site e WhatsApp):** seção reformulada em Meus dados (e item no menu Mais) que lista o que será apagado, com dupla confirmação (digitar APAGAR). Apaga no servidor (gastos e entradas do WhatsApp, plano, histórico, links de acesso, cópia da conta) e só depois limpa o aparelho (estado, histórico do coach, ocultar valores, última conta). Se o servidor falhar, nada é apagado localmente.
+
+### "Limpar tudo" que mantém a conta (nov/2026)
+Feedback: o botão antigo apagava também o acesso (link do WhatsApp e conta), obrigando a conectar de novo. Agora há dois botões em Meus dados:
+- **Limpar tudo e recomeçar** (principal): `DELETE /api/painel?manter=1` esvazia gastos, entradas, plano, conversa do bot, coach e a cópia da conta, mas **mantém** o link do painel, a conta de e-mail e o nome. No aparelho limpa estado e preferências e recarrega. Confirmação digitando LIMPAR; se o servidor falhar, nada é apagado localmente.
+- **Apagar conta e desconectar** (secundário): o comportamento antigo (apaga também o acesso).
+Testes: `server/painelApagar.test.ts` (limpar não chama a rotina que apaga o acesso) e fluxo no navegador com o servidor simulado.

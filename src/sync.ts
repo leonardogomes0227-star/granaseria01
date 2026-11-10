@@ -155,6 +155,16 @@ export async function apagarCopiaDaConta(): Promise<boolean> {
   return true;
 }
 
+/** "Limpar tudo": esvazia a cópia guardada na conta de e-mail, mas mantém a conta e a sessão. */
+export async function limparCopiaDaConta(): Promise<boolean> {
+  if (!supabase) return true;
+  const { data } = await supabase.auth.getSession();
+  const id = data.session?.user.id;
+  if (!id) return true;
+  const { error } = await supabase.from('user_state').update({ state: {}, updated_at: new Date().toISOString() }).eq('user_id', id);
+  return !error;
+}
+
 /** Ao sair da conta, os dados continuam neste aparelho — quem quiser limpar usa "apagar meus dados". */
 export function clearLocalData() {
   for (const k of [...SYNC_KEYS, SYNCED_AT_KEY]) write(k, null);
