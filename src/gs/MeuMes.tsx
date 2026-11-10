@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEstado } from './store';
@@ -145,8 +145,10 @@ function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' |
   const [dia, setDia] = useState<number | ''>('');
   const [cat, setCat] = useState<string>('Outros');
   const [tentou, setTentou] = useState(false);
+  const nomeAuto = useRef('');
   useEffect(() => {
     if (!valor) return;
+    nomeAuto.current = '';
     setNome(edit?.nome ?? '');
     setV(edit?.valor ?? 0);
     setDia(edit?.diaVencimento ?? '');
@@ -158,9 +160,12 @@ function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' |
     <Folha aberta={Boolean(valor)} onFechar={onFechar} titulo={edit ? 'Editar conta' : 'Nova conta fixa'}>
       <div className="gs-chips" role="group" aria-label="Atalhos">
         {CATEGORIAS_FIXAS.map((c) => (
-          <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); if (!nome.trim() && c !== 'Outros') setNome(c); }}>{c}</button>
+          <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); /* trocar de tipo troca o nome sugerido, mas nunca um nome que a pessoa digitou */ if (!nome.trim() || nome === nomeAuto.current) { const novo = c === 'Outros' ? '' : c; setNome(novo); nomeAuto.current = novo; } }}>{c}</button>
         ))}
       </div>
+      {(cat === 'Financiamento' || cat === 'Carro') && !edit && (
+        <p className="gs-banner" role="note">Tem número de parcelas (casa, carro, loja)? Cadastre como <b>dívida parcelada</b>: assim eu mostro quantas faltam e quando acaba. <Link to={`/plano/dividas?nova=${cat === 'Carro' ? 'Parcela do carro ou moto' : 'Financiamento da casa'}`} className="gs-btn link">Cadastrar parcela</Link></p>
+      )}
       <Campo rotulo="Nome" valor={nome} onChange={setNome} placeholder="Ex.: Aluguel" maxLength={60} erro={erroNome} />
       <div className="gs-dois">
         <CampoDinheiro rotulo="Valor" valor={v} onChange={setV} erro={tentou && !(v > 0) ? 'Digite o valor.' : undefined} />

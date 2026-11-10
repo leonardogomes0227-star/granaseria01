@@ -248,3 +248,9 @@ Testes: `server/painelApagar.test.ts` (limpar não chama a rotina que apaga o ac
 
 ### Correção do passo "despesas fixas" do onboarding (nov/2026)
 Feedback com print: o botão "Adicionar conta" ficava ilegível (botão secundário claro sobre cartão claro, resto do tema escuro antigo em `gs.css`) e quem preenchia e apertava "Pular por agora" perdia a conta digitada. Agora: o botão secundário tem contraste (override em `gs2.css`), "Adicionar e continuar" salva o que foi digitado antes de avançar, campos incompletos mostram o que falta em vez de serem descartados, e o menu some durante a configuração inicial.
+
+### Contas fixas e parcelas (nov/2026)
+Feedback: ao trocar de conta (Aluguel → Luz) o nome/valor/data ficavam iguais, e faltava cadastrar parcela (casa, carro) com quantas faltam.
+- **Troca de tipo:** no formulário de contas fixas e no "Anotar conta atrasada", escolher outro tipo agora troca o nome sugerido (nunca um nome digitado pela pessoa). No onboarding, trocar de tipo salva a conta anterior se estava completa e limpa os campos.
+- **Parcelas:** "Nova dívida" ganhou "Parcelas que faltam"; o saldo pode ser calculado pela parcela × quantas faltam; com total, parcela e parcelas restantes, o juro real é calculado. Tipos novos: "Financiamento da casa" e "Parcela do carro ou moto". O onboarding tem "Cadastrar parcela (casa, carro, loja)" e mostra "faltam N parcelas"; em Contas fixas, escolher Financiamento/Carro sugere cadastrar como dívida parcelada (`/plano/dividas?nova=<tipo>`).
+- Decisão: parcela com prazo é **dívida parcelada**, não conta fixa (assim entra no plano de quitação e no disponível sem duplicar).
