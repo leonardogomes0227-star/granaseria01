@@ -95,6 +95,19 @@ export const siteEvent = (event: string) => post({ event });
 export const sendFeedback = (tool: string, kind: 'up' | 'down', note?: string) => post({ feedback: { tool, kind, note } });
 
 /** "Apagar tudo": pede ao servidor pra apagar a cópia ligada ao número. true = não sobrou cópia (ou nunca houve). */
+/** "Limpar tudo": esvazia o que está guardado pelo número, mas mantém o link de acesso (a pessoa segue conectada). */
+export async function limparCopiaDoNumero(): Promise<boolean> {
+  const token = painelToken();
+  if (!token) return true;
+  const res = await fetch('/api/painel?manter=1', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+  if (!res) return false;
+  if (res.status === 401) {
+    clearPainelToken(); // o link já não valia
+    return true;
+  }
+  return res.ok;
+}
+
 export async function apagarCopiaDoNumero(): Promise<boolean> {
   const token = painelToken();
   if (!token) return true;
