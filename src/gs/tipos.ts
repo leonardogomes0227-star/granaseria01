@@ -196,6 +196,7 @@ export interface Cartao {
   venceDia: number;
   parcelados?: ParceladoCartao[];
   pagas?: { data: string; valor: number }[]; // faturas já pagas
+  limitePessoal?: number; // quanto a pessoa decidiu gastar no cartão por fatura (menor que o limite do banco)
 }
 
 /** Sair do atraso: quanto a pessoa tira por mês pra pôr as contas em dia e o que já separou. */

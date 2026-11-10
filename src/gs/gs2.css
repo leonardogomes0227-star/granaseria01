@@ -323,3 +323,8 @@ html.gs-app[data-tema="escuro"] .gs-icone-btn:hover, html.gs-app[data-tema="escu
 .gs-passo b, .gs-plano-topo b { display: block; }
 .gs-passo b { font-size: var(--t-secao); margin: 2px 0; }
 .gs-linha-triagem small { display: block; }
+
+/* cartão sob controle */
+.gs-proj-linha { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; margin-top: 8px; font-size: var(--t-aux); }
+.gs-proj-linha b { font-size: var(--t-aux); white-space: nowrap; }
+.gs-area { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--ivory); color: var(--ink); font: inherit; font-size: 13px; resize: vertical; }

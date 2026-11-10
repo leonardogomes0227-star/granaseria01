@@ -284,3 +284,12 @@ Decisões do dono: tema escuro como **opção** (claro segue padrão) e começar
   - Dado novo, só aditivo: `recuperacao` (ativo, desde, raioXFeito, ofertaDispensada).
 - **Tema escuro** (`tema.ts` + bloco `html[data-tema="escuro"]` em `gs2.css`): botão sol/lua no topo, lembrado no aparelho, paleta #0A0A0A/#151515, verde #10B981, vermelho #EF4444, âmbar #F59E0B.
 - **Limites:** a triagem usa a regra fixa essencial → juros altos (≥ 8% ao mês) → resto (sem escolha de estratégia); a data de ficar em dia combina o plano de atrasos com a simulação de dívidas e depende de gastos anotados; sem push/WhatsApp novo para o modo; o prompt original pedia Tailwind, mas o app segue com CSS próprio e tokens.
+
+### Cartão sob Controle (nov/2026)
+Na tela do cartão (`/plano/cartao`, `CartaoControle.tsx`; lógica pura em `faturaCsv.ts`, 8 testes):
+- **Parcelas já combinadas** nos próximos 6 meses, com a porcentagem da renda comprometida.
+- **Meu limite para a fatura** (`Cartao.limitePessoal`): barra e aviso quando passa.
+- **Simular uma compra:** valor e parcelas → o que pesa por mês, fatura depois, parcelas antes → depois e veredito (cabe / aperta / não cabe) comparando a parcela com o que sobra por mês e com o limite pessoal.
+- **Importar fatura (CSV):** lê o formato do Nubank (`date,category,title,amount`) e variações (`;`, vírgula decimal, data brasileira, BOM), ignora pagamento e estorno, acha "Parcela 2/6", categoriza, mostra para onde foi e **onde dá para cortar** (com simulação de X% de corte, marcada como simulação). "Usar esta fatura" troca a fatura atual pelo total lido e coloca/atualiza as parcelas futuras sem duplicar; tem desfazer. O arquivo não é guardado.
+- **Aviso consciente no "+":** com cartão cadastrado, "Como pagou?" fica visível; no Crédito há parcelas e um aviso (cabe / aperta / não cabe) antes de registrar; a compra entra **na fatura** (e nas parcelas), não como gasto à parte, para não contar duas vezes. Só avisa: a pessoa decide ("Registrar mesmo assim").
+- **Limites:** só CSV (PDF e foto dependem de IA); o CSV do banco deve trazer data, descrição e valor; a categorização é por palavras (compras sem palavra conhecida caem em "Outros"); o veredito usa a sobra mensal estimada do app (otimista sem gastos anotados).
