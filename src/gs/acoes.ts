@@ -436,3 +436,31 @@ export function salvarOutroCartao(c: Omit<OutroCartao, 'id'> & { id?: string }):
 }
 export const removerOutroCartao = (id: string) => atualizar((e) => ({ ...e, outrosCartoes: e.outrosCartoes.filter((c) => c.id !== id) }));
 export const restaurarOutroCartao = (c: OutroCartao) => atualizar((e) => (e.outrosCartoes.some((x) => x.id === c.id) ? e : { ...e, outrosCartoes: [...e.outrosCartoes, c] }));
+
+/* ---------- O Caminho: passos colocados pelas ferramentas e pelo Coach, o que foi escondido e onde a pessoa parou ---------- */
+const comCaminho = (e: Estado, fn: (c: Estado['caminho']) => Estado['caminho']): Estado => ({ ...e, caminho: fn(e.caminho) });
+
+/** "Colocar no meu caminho": cria um passo no plano do mês. O mesmo título da mesma origem não entra duas vezes. */
+export function colocarNoCaminho(p: { titulo: string; detalhe: string; rota?: string; origem: string; lembrarEm?: string }): string | null {
+  const titulo = p.titulo.trim().slice(0, 120);
+  if (!titulo) return null;
+  const igual = getEstado().caminho.passos.find((x) => !x.feitoEm && x.origem === p.origem && x.titulo === titulo);
+  if (igual) return igual.id;
+  const id = novoId('ps');
+  atualizar((e) => comCaminho(e, (c) => ({ ...c, passos: [...c.passos, { id, titulo, detalhe: p.detalhe.trim().slice(0, 300), rota: p.rota, origem: p.origem, criadoEm: hojeSP(), lembrarEm: p.lembrarEm }].slice(-40) })));
+  return id;
+}
+export const concluirPasso = (id: string, feito = true) => atualizar((e) => comCaminho(e, (c) => ({ ...c, passos: c.passos.map((p) => (p.id === id ? { ...p, feitoEm: feito ? hojeSP() : undefined } : p)) })));
+export const editarPasso = (id: string, patch: { titulo?: string; detalhe?: string }) => atualizar((e) => comCaminho(e, (c) => ({ ...c, passos: c.passos.map((p) => (p.id === id ? { ...p, titulo: patch.titulo?.trim().slice(0, 120) || p.titulo, detalhe: patch.detalhe?.trim().slice(0, 300) ?? p.detalhe } : p)) })));
+export const removerPasso = (id: string) => atualizar((e) => comCaminho(e, (c) => ({ ...c, passos: c.passos.filter((p) => p.id !== id) })));
+/** Esconde um passo até o fim do mês (ele volta no mês seguinte, se ainda fizer sentido). */
+export const ocultarPasso = (id: string, mes = hojeSP().slice(0, 7)) => atualizar((e) => comCaminho(e, (c) => ({ ...c, ocultos: { ...c.ocultos, [id]: mes } })));
+export const mostrarPasso = (id: string) => atualizar((e) => comCaminho(e, (c) => ({ ...c, ocultos: Object.fromEntries(Object.entries(c.ocultos).filter(([k]) => k !== id)) })));
+/** Recomeçar: volta tudo o que foi escondido e desmarca o que foi colocado à mão. */
+export const recomecarPassos = () => atualizar((e) => comCaminho(e, (c) => ({ ...c, ocultos: {}, passos: c.passos.map((p) => ({ ...p, feitoEm: undefined })) })));
+export const registrarVisita = (ultimoPasso?: string, agora = new Date()) => atualizar((e) => comCaminho(e, (c) => ({ ...c, ultimaVisita: agora.toISOString(), ultimoPasso: ultimoPasso ?? c.ultimoPasso, voltaDispensada: undefined })));
+export const dispensarVolta = (agora = new Date()) => atualizar((e) => comCaminho(e, (c) => ({ ...c, voltaDispensada: agora.toISOString(), ultimaVisita: agora.toISOString() })));
+export const comemorarMarcos = (ids: string[]) => atualizar((e) => comCaminho(e, (c) => ({ ...c, marcosFeitos: [...new Set([...c.marcosFeitos, ...ids])].slice(0, 20) })));
+/** Ferramenta de várias etapas: guarda onde a pessoa parou (0 = terminou ou não começou). */
+export const salvarEtapa = (ferramentaId: string, etapa: number) => atualizar((e) => (e.caminho.etapas[ferramentaId] === etapa || (!etapa && !(ferramentaId in e.caminho.etapas)) ? e : comCaminho(e, (c) => ({ ...c, etapas: etapa > 0 ? { ...c.etapas, [ferramentaId]: etapa } : Object.fromEntries(Object.entries(c.etapas).filter(([k]) => k !== ferramentaId)) }))));
+export const escolherMetodoQuitacao = (m: 'bola-de-neve' | 'maior-juro') => atualizar((e) => (e.planoDividas ? { ...e, planoDividas: { ...e.planoDividas, estrategia: m } } : comCaminho(e, (c) => ({ ...c, metodoQuitacao: m }))));

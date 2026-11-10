@@ -308,3 +308,22 @@ Pedido: tudo do prompt dentro do site, sem gastar com API. Tudo abaixo roda **no
 - **Avisos do navegador voltaram:** ao tirar a faixa de avisos do topo eu havia desligado as notificações; `NotificadorAvisos` as religa, e o passo do dia do Modo Recuperação vira o aviso do dia.
 - **Open Finance (leitura direta do banco)** continua fora: exige parceiro regulamentado pago. Os quatro caminhos acima cobrem a mesma necessidade de graça. Lembretes por WhatsApp também ficam fora (exigem modelos pagos da Meta).
 - **Limites:** OCR e PDF podem errar (por isso a conferência); PDFs escaneados como imagem não têm texto (a tela sugere enviar a foto); outros cartões não têm parcelas próprias; o parser de texto não foi testado com faturas reais de todos os bancos.
+
+---
+
+## 12. O Caminho (remodelação v3, nov/2026)
+
+Ideia: o app mostra onde a pessoa está, onde quer chegar, em quanto tempo, e leva um passo por vez. Auditoria completa em `docs/o-caminho.md`.
+O dono autorizou seguir sem parar a cada etapa ("tudo permitido"); as decisões tomadas sem perguntar estão na seção 9 daquele documento.
+
+### Etapa 0 — auditoria (concluída)
+`docs/o-caminho.md`: inventário confirmado (com 14 achados fora da tabela), fusões das ferramentas antigas, origem de cada número da Início, as datas dos 7 marcos, o que estava escondido, teste de utilidade e plano de arquivos.
+**Causa do "R$ 0,00 × Economia R$ 10.000":** a "Economia" era calculada dentro de `Inicio.tsx` (receitas − despesas já pagas, usando a renda informada mesmo sem ter caído), enquanto o "pode gastar" desconta o que ainda vai sair. Duas réguas.
+
+### Etapa 1 — motores (concluída)
+- `src/gs/caminho.ts`: `calcularCaminho(estado, hoje)` devolve os 7 marcos com status, data prevista, quanto falta, valor por mês, progresso, premissas e a pendência quando não há data. `simularImpacto(estado, hoje, mudança)` compara a data do destino antes e depois de uma compra, parcela, corte ou dinheiro extra. Nenhuma conta nova: usa `planoDeRecuperacao`, `simular`, `mesesParaMeta`, `planoDaMeta`, `mesesAteMeta`.
+- `src/gs/passos.ts`: `passosDoMes` junta atrasos, contas a vencer, pagar-se primeiro (segurado com atraso), limite do dia, faturas, parcelas do plano, passos colocados à mão e a meta do mês, sem repetir.
+- `src/gs/registroFerramentas.ts`: 40 ferramentas com área, grupo, pergunta que resolve, status vivo e palavras de busca; as 14 perguntas de "O que você quer resolver?" e a busca sem acento.
+- Estado: campo aditivo `caminho` (passos, ocultos, última visita, último passo, marcos comemorados, etapas, método de quitação) com `migrar()` e teste. Nenhuma migration no Supabase.
+- Testes: 44 arquivos, 385 testes (25 novos).
+- **Limites honestos:** os marcos correm em sequência e a data do "viver de renda" usa uma taxa hipotética de 0,7% ao mês (dita nas premissas); "primeiro investimento" é reconhecido por aporte com origem `investimento`; uma parcela nova mais curta que o caminho é tratada pelo valor total.

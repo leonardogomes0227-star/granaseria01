@@ -151,6 +151,24 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
       const r = obj(b.recuperacao);
       return { ativo: Boolean(r.ativo), desde: typeof r.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.desde) ? r.desde : undefined, raioXFeito: Boolean(r.raioXFeito), ofertaDispensada: Boolean(r.ofertaDispensada), marcos: arr<string>(r.marcos).filter((x) => typeof x === 'string').slice(0, 30) };
     })(),
+    caminho: (() => {
+      const c = obj(b.caminho);
+      const dia = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : undefined);
+      const iso = (v: unknown) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : undefined);
+      return {
+        passos: arr<Record<string, unknown>>(c.passos)
+          .filter((p) => p && typeof p.id === 'string' && typeof p.titulo === 'string' && p.titulo.trim())
+          .map((p) => ({ id: String(p.id), titulo: String(p.titulo).slice(0, 120), detalhe: typeof p.detalhe === 'string' ? p.detalhe.slice(0, 300) : '', rota: typeof p.rota === 'string' && p.rota.startsWith('/') ? p.rota : undefined, origem: typeof p.origem === 'string' ? p.origem.slice(0, 40) : 'manual', criadoEm: dia(p.criadoEm) ?? '2026-01-01', feitoEm: dia(p.feitoEm), lembrarEm: dia(p.lembrarEm) }))
+          .slice(-40),
+        ocultos: Object.fromEntries(Object.entries(obj(c.ocultos)).filter(([, v]) => typeof v === 'string' && /^\d{4}-\d{2}$/.test(v)).slice(-100)) as Record<string, string>,
+        ultimaVisita: iso(c.ultimaVisita),
+        ultimoPasso: typeof c.ultimoPasso === 'string' ? c.ultimoPasso.slice(0, 120) : undefined,
+        voltaDispensada: iso(c.voltaDispensada),
+        marcosFeitos: arr<string>(c.marcosFeitos).filter((x) => typeof x === 'string').slice(0, 20),
+        etapas: Object.fromEntries(Object.entries(obj(c.etapas)).filter(([, v]) => typeof v === 'number' && Number.isFinite(v) && v >= 0).slice(0, 30)) as Record<string, number>,
+        metodoQuitacao: c.metodoQuitacao === 'bola-de-neve' || c.metodoQuitacao === 'maior-juro' ? (c.metodoQuitacao as 'bola-de-neve' | 'maior-juro') : undefined,
+      };
+    })(),
     cartao: (() => {
       const c = obj(b.cartao);
       return num(c.limite) > 0 ? { limite: num(c.limite), usado: Math.max(0, num(c.usado)), fechaDia: Math.min(31, Math.max(1, num(c.fechaDia, 1))), venceDia: Math.min(31, Math.max(1, num(c.venceDia, 1))), parcelados: arr<NonNullable<Estado['cartao']>['parcelados'] extends (infer U)[] | undefined ? U : never>(c.parcelados).filter((p) => p && typeof p.id === 'string' && num(p.parcela) > 0 && num(p.restantes) > 0), pagas: arr<{ data: string; valor: number }>(c.pagas).filter((p) => p && typeof p.data === 'string' && num(p.valor) > 0), limitePessoal: num(c.limitePessoal) > 0 ? num(c.limitePessoal) : undefined } : null;

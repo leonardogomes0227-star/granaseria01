@@ -236,6 +236,29 @@ export interface Recuperacao {
   marcos?: string[]; // conquistas já comemoradas (para não repetir a mensagem)
 }
 
+/** Passo que uma ferramenta ou o Coach colocou no plano do mês ("Colocar no meu caminho"). */
+export interface PassoManual {
+  id: string;
+  titulo: string;
+  detalhe: string;
+  rota?: string;
+  origem: string; // id da ferramenta ou 'coach'
+  criadoEm: string; // 'AAAA-MM-DD'
+  feitoEm?: string;
+  lembrarEm?: string; // 'AAAA-MM-DD': o Coach combinou de voltar a perguntar
+}
+/** O Caminho: o que a pessoa colocou no plano, o que escondeu e onde parou. Só aditivo. */
+export interface CaminhoEstado {
+  passos: PassoManual[];
+  ocultos: Record<string, string>; // id do passo → mês ('AAAA-MM') em que foi escondido
+  ultimaVisita?: string; // ISO com hora
+  ultimoPasso?: string; // id do passo em que a pessoa estava
+  voltaDispensada?: string; // ISO: o "Bem-vindo de volta" foi fechado para esta visita
+  marcosFeitos: string[]; // marcos já comemorados (a festa acontece uma vez)
+  etapas: Record<string, number>; // ferramenta de várias etapas → etapa em que parou
+  metodoQuitacao?: Estrategia; // escolhido pelo Coach antes de existir um plano
+}
+
 export interface Estado {
   schemaVersion: number;
   config: Config;
@@ -259,6 +282,7 @@ export interface Estado {
   outrosCartoes: OutroCartao[];
   atrasos?: AtrasosCfg;
   recuperacao: Recuperacao;
+  caminho: CaminhoEstado;
 }
 
 export const ESTADO_INICIAL = (): Estado => ({
@@ -282,4 +306,5 @@ export const ESTADO_INICIAL = (): Estado => ({
   cartao: null,
   outrosCartoes: [],
   recuperacao: { ativo: false, raioXFeito: false },
+  caminho: { passos: [], ocultos: {}, marcosFeitos: [], etapas: {} },
 });
