@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CalendarDays, CalendarClock, ChartLine, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
+import { CalendarDays, CalendarClock, ChartLine, ChartPie, ChevronRight, CreditCard, Gift, Landmark, PiggyBank, Receipt, Scissors, Search, Sprout, Target, Timer, type LucideIcon } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
@@ -46,6 +46,7 @@ export function Plano() {
       itens: [
         I('/plano/orcamento', ChartPie, 'Orçamento', e.config.renda > 0 && noLimite ? `${noLimite} categoria${noLimite > 1 ? 's' : ''} no limite` : 'Limite por categoria e 50/30/20', 'orcamento limite categoria gastos 50 30 20'),
         I('/plano/calendario', CalendarDays, 'Calendário de contas', e.gastosFixos.length ? `${aPagar} a pagar · o que sobra até o salário` : 'Do salário até o próximo salário', 'calendario contas vencimento boleto salario'),
+        I('/plano/cortar', Scissors, 'Onde cortar', 'O que dá para reduzir primeiro', 'cortar economizar reduzir gastos supérfluos assinatura'),
         I('/plano/assinaturas', Search, 'Gastos escondidos', assinaturasTotal(e) > 0 ? `${brl0(assinaturasTotal(e))} por mês` : 'Ache o que você paga sem ver', 'assinaturas streaming gastos escondidos'),
       ],
     },

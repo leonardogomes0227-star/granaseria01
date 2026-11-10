@@ -22,6 +22,7 @@ export interface Config {
   objetivo?: string; // principal objetivo financeiro (onboarding)
   avisosDesligados?: string[]; // tipos de aviso que a pessoa desligou ('vencimento', 'orcamento', 'coach'...)
   checklistFeito?: string[]; // passos do checklist de configuração marcados como "agora não"
+  adiados?: Record<string, string>; // aviso (chave) → 'AAAA-MM-DD' até quando fica escondido do Início ("Adiar")
 }
 
 export interface Pagamento {
@@ -102,6 +103,14 @@ export interface Divida {
   tipo?: 'parcelada' | 'rotativa'; // parcelada: financiamento, empréstimo, crediário (parcela fixa)
   parcelasRestantes?: number; // só nas parceladas, quando a pessoa informa
   estimado?: boolean; // a pessoa não tinha certeza do valor (Modo Recuperação marca como "valor estimado")
+}
+/** Outros cartões além do principal: só a fatura e o vencimento (para ver tudo que vence num lugar só). */
+export interface OutroCartao {
+  id: string;
+  nome: string;
+  limite: number;
+  usado: number; // fatura atual
+  venceDia: number;
 }
 export type Estrategia = 'bola-de-neve' | 'maior-juro';
 export interface PlanoDividas {
@@ -224,6 +233,7 @@ export interface Recuperacao {
   desde?: string; // 'AAAA-MM-DD'
   raioXFeito: boolean;
   ofertaDispensada?: boolean; // a pessoa disse "agora não" para a oferta no Início
+  marcos?: string[]; // conquistas já comemoradas (para não repetir a mensagem)
 }
 
 export interface Estado {
@@ -246,6 +256,7 @@ export interface Estado {
   semanaVista?: string; // segunda-feira da última semana mostrada
   limites: Record<string, number>; // limite mensal por categoria do dia a dia
   cartao: Cartao | null;
+  outrosCartoes: OutroCartao[];
   atrasos?: AtrasosCfg;
   recuperacao: Recuperacao;
 }
@@ -269,5 +280,6 @@ export const ESTADO_INICIAL = (): Estado => ({
   investir: { simulacao: { saldoVirtual: 10000, posicoes: [], historico: [] }, chat: [], mensagensHoje: { data: '', qtd: 0 } },
   limites: {},
   cartao: null,
+  outrosCartoes: [],
   recuperacao: { ativo: false, raioXFeito: false },
 });

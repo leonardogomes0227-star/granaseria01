@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Bell, BookOpen, CalendarClock, CalendarDays, ChartColumn, Gift, ChartPie, House, Info, Landmark, LifeBuoy, Menu, Moon, Plus, Receipt, Sparkles, Sun, Target, Trash2, TrendingUp, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { Bell, BookOpen, CalendarClock, CalendarDays, ChartColumn, Gift, ChartPie, House, Info, Landmark, LifeBuoy, Menu, Moon, Plus, Receipt, Scissors, Sparkles, Sun, Target, Trash2, TrendingUp, UserRound, Wallet, type LucideIcon } from 'lucide-react';
 import { AdicionarMov, abrirAdicionar } from '../gs/AdicionarMov';
 import { getName, painelToken } from '../painel';
 import { useVisualDoApp } from '../gs/visual';
@@ -26,7 +26,7 @@ export const NAV: [string, string, LucideIcon][] = [
 /** Menu "Mais": tudo o que não é uma das 5 áreas, agrupado por finalidade. */
 export const MAIS: { grupo: string; itens: [string, string, LucideIcon][] }[] = [
   { grupo: 'Dia a dia', itens: [['/lancamentos?aba=contas', 'Contas fixas', Receipt], ['/plano/atrasos?anotar=1', 'Anotar conta atrasada', CalendarClock], ['/plano/extras', 'Renda extra (13º, bônus, freela)', Gift], ['/plano/calendario', 'Calendário de contas', CalendarDays], ['/assistentes', 'Lembretes e assistentes', Bell]] },
-  { grupo: 'Planejar e crescer', itens: [['/recuperacao', 'Modo recuperação', LifeBuoy], ['/plano/orcamento', 'Orçamento', ChartPie], ['/plano/dividas', 'Dívidas', Landmark], ['/investir', 'Investir', TrendingUp]] },
+  { grupo: 'Planejar e crescer', itens: [['/recuperacao', 'Modo recuperação', LifeBuoy], ['/plano/orcamento', 'Orçamento', ChartPie], ['/plano/cortar', 'Onde cortar', Scissors], ['/plano/dividas', 'Dívidas', Landmark], ['/investir', 'Investir', TrendingUp]] },
   { grupo: 'Aprender e ajustar', itens: [['/guias', 'Guias', BookOpen], ['/dados', 'Meus dados', UserRound], ['/dados#limpar', 'Limpar meus dados', Trash2], ['/sobre', 'Sobre e avisos', Info]] },
 ];
 

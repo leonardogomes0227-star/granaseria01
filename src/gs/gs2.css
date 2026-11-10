@@ -328,3 +328,11 @@ html.gs-app[data-tema="escuro"] .gs-icone-btn:hover, html.gs-app[data-tema="escu
 .gs-proj-linha { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; margin-top: 8px; font-size: var(--t-aux); }
 .gs-proj-linha b { font-size: var(--t-aux); white-space: nowrap; }
 .gs-area { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--ivory); color: var(--ink); font: inherit; font-size: 13px; resize: vertical; }
+
+/* conquistas do modo recuperação */
+.gs-marco { display: flex; gap: 14px; align-items: flex-start; border-left: 4px solid var(--success); }
+.gs-marco b { display: block; font-size: var(--t-secao); }
+.gs-marco-check { flex: none; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--ds-ok-fundo); color: var(--success); animation: gs-pop .5s var(--curva, ease) both; }
+@keyframes gs-pop { 0% { transform: scale(.5); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gs-marco-check { animation: none; } }
+.gs-corte { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }

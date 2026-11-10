@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ESTADO_INICIAL, type Estado } from './tipos';
-import { passoDoDia, planoDeSaida, sobrevivencia, triagem, vitorias } from './recuperacaoLogica';
+import { marcosConquistados, ondeCortar, passoDoDia, planoDeSaida, sobrevivencia, triagem, vitorias } from './recuperacaoLogica';
 
 const HOJE = '2026-11-20';
 const base = (p: Partial<Estado> = {}): Estado => {
@@ -66,5 +66,19 @@ describe('modo recuperação', () => {
     expect(v.pago).toBe(100);
     expect(v.quitadas).toBe(1);
     expect(v.diasSemSuperfluo).toBe(3); // 18, 19 e 20
+  });
+  it('onde cortar: maiores supérfluos do mês e assinaturas ativas', () => {
+    const e = base({ lancamentos: [{ id: '1', descricao: 'a', valor: 300, data: '2026-11-03', categoria: 'Lazer' }, { id: '2', descricao: 'b', valor: 120, data: '2026-11-04', categoria: 'Compras' }, { id: '3', descricao: 'c', valor: 500, data: '2026-11-05', categoria: 'Mercado' }], assinaturas: [{ id: 's', nome: 'Netflix', valor: 55.9, ativa: true, personalizada: false }, { id: 't', nome: 'Velha', valor: 20, ativa: false, personalizada: false }] });
+    const o = ondeCortar(e, '2026-11');
+    expect(o.categorias.map((c) => c.categoria)).toEqual(['Lazer', 'Compras']); // Mercado é essencial
+    expect(o.assinaturas).toEqual({ total: 55.9, n: 1 });
+  });
+  it('marcos: só aparecem quando acontecem', () => {
+    const e = base();
+    expect(marcosConquistados(e, HOJE)).toEqual([]);
+    e.recuperacao = { ativo: true, desde: '2026-11-01', raioXFeito: true };
+    expect(marcosConquistados(e, HOJE).map((m) => m.id)).toEqual(['raiox']);
+    e.dividas = [divida('d', 'Cartão', 100, 0, 50, { pagamentos: [{ data: '2026-11-10', valor: 100 }] })];
+    expect(marcosConquistados(e, HOJE).map((m) => m.id)).toEqual(['raiox', 'primeiro-pagamento', 'primeira-quitada']);
   });
 });

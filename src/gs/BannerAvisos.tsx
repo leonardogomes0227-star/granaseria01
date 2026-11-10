@@ -52,3 +52,15 @@ export function BannerAvisos() {
     </div>
   );
 }
+
+/** Só dispara as notificações do navegador (quando a pessoa deixou), sem desenhar nada na tela. */
+export function NotificadorAvisos() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const itens = useMemo(() => avisosPendentes(e, hoje), [e, hoje]);
+  useEffect(() => {
+    const agora = new Date().toTimeString().slice(0, 5);
+    if (agora >= e.config.avisos.horario) for (const a of itens) avisarUmaVez(a.id, 'Grana Séria', a.texto, hoje);
+  }, [itens, e.config.avisos.horario, hoje]);
+  return null;
+}
