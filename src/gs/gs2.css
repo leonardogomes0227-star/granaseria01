@@ -214,3 +214,9 @@ html.gs-app .gs-btn { box-shadow: none; }
 .gs-tipo-divida b { display: block; font-weight: 600; font-size: 15px; }
 .gs-tipo-divida small { display: block; color: var(--ink-muted); font-size: 13px; }
 .gs-lista-simples { margin: 0 0 8px; padding-left: 18px; font-size: 14px; line-height: 21px; } .gs-lista-simples li { margin-bottom: 4px; }
+
+/* o cartão de destaque agora é claro: os botões secundários dele também (antes ficavam claros sobre claro) */
+html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec { background: var(--ivory); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: none; }
+html.gs-app .gs-card.destaque:has(.gs-grande, svg[role="img"]) .gs-btn.sec:hover { background: var(--bg-2); }
+/* na configuração inicial o menu não aparece: um passo de cada vez */
+.gs-sem-menu .gs-lateral, .gs-sem-menu .gs-abas, .gs-sem-menu .gs-so-mobile { display: none !important; }

@@ -245,3 +245,6 @@ Feedback: o botão antigo apagava também o acesso (link do WhatsApp e conta), o
 - **Limpar tudo e recomeçar** (principal): `DELETE /api/painel?manter=1` esvazia gastos, entradas, plano, conversa do bot, coach e a cópia da conta, mas **mantém** o link do painel, a conta de e-mail e o nome. No aparelho limpa estado e preferências e recarrega. Confirmação digitando LIMPAR; se o servidor falhar, nada é apagado localmente.
 - **Apagar conta e desconectar** (secundário): o comportamento antigo (apaga também o acesso).
 Testes: `server/painelApagar.test.ts` (limpar não chama a rotina que apaga o acesso) e fluxo no navegador com o servidor simulado.
+
+### Correção do passo "despesas fixas" do onboarding (nov/2026)
+Feedback com print: o botão "Adicionar conta" ficava ilegível (botão secundário claro sobre cartão claro, resto do tema escuro antigo em `gs.css`) e quem preenchia e apertava "Pular por agora" perdia a conta digitada. Agora: o botão secundário tem contraste (override em `gs2.css`), "Adicionar e continuar" salva o que foi digitado antes de avançar, campos incompletos mostram o que falta em vez de serem descartados, e o menu some durante a configuração inicial.
