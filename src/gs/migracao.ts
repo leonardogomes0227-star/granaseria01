@@ -141,9 +141,13 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
         ignorados: arr<string>(a.ignorados).filter((x) => typeof x === 'string').slice(-200),
         manuais: arr<Record<string, unknown>>(a.manuais)
           .filter((m) => m && typeof m.id === 'string' && typeof m.nome === 'string' && num(m.valor) > 0 && /^\d{4}-\d{2}$/.test(String(m.mes)) && /^\d{4}-\d{2}-\d{2}$/.test(String(m.vencimento)))
-          .map((m) => ({ id: String(m.id), nome: String(m.nome), valor: num(m.valor), mes: String(m.mes), vencimento: String(m.vencimento), categoria: typeof m.categoria === 'string' ? m.categoria : undefined, gastoId: typeof m.gastoId === 'string' ? m.gastoId : undefined }))
+          .map((m) => ({ id: String(m.id), nome: String(m.nome), valor: num(m.valor), mes: String(m.mes), vencimento: String(m.vencimento), estimado: m.estimado === true ? true : undefined, categoria: typeof m.categoria === 'string' ? m.categoria : undefined, gastoId: typeof m.gastoId === 'string' ? m.gastoId : undefined }))
           .slice(-100),
       };
+    })(),
+    recuperacao: (() => {
+      const r = obj(b.recuperacao);
+      return { ativo: Boolean(r.ativo), desde: typeof r.desde === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.desde) ? r.desde : undefined, raioXFeito: Boolean(r.raioXFeito), ofertaDispensada: Boolean(r.ofertaDispensada) };
     })(),
     cartao: (() => {
       const c = obj(b.cartao);

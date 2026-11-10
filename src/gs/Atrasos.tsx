@@ -368,7 +368,7 @@ function Negociar({ atrasos, porMes }: { atrasos: Atraso[]; porMes: number }) {
 }
 
 /* ---------- anotar à mão: parcela que já estava atrasada antes de usar o app, ou conta que não está cadastrada ---------- */
-function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string; onFechar: () => void }) {
+export function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string; onFechar: () => void }) {
   const e = useEstado();
   const [gastoId, setGastoId] = useState('');
   const [nome, setNome] = useState('');
@@ -376,6 +376,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
   const [valor, setValor] = useState(0);
   const [dia, setDia] = useState<number | ''>('');
   const [n, setN] = useState(1);
+  const [estimado, setEstimado] = useState(false);
   const [tentou, setTentou] = useState(false);
   const nomeAuto = useRef('');
   const escolher = (id: string) => {
@@ -390,6 +391,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
     if (!aberta) return;
     escolher(getEstado().gastosFixos[0]?.id ?? '');
     setN(1);
+    setEstimado(false);
     setTentou(false);
   }, [aberta]); // eslint-disable-line react-hooks/exhaustive-deps
   // não anota duas vezes o mesmo mês da mesma conta
@@ -403,7 +405,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
   const salvar = () => {
     setTentou(true);
     if (!nome.trim() || !(valor > 0) || !(typeof dia === 'number' && dia >= 1) || meses.length === 0) return;
-    const novos = anotarAtraso({ nome, valor, diaVencimento: dia, meses, categoria: cat, gastoId: gastoId || undefined });
+    const novos = anotarAtraso({ nome, valor, diaVencimento: dia, meses, categoria: cat, gastoId: gastoId || undefined, estimado });
     if (novos.length === 0) return;
     const ids = novos.map((x) => x.id);
     toast(`${novos.length === 1 ? '1 parcela' : `${novos.length} parcelas`} de ${nome.trim()} anotada${novos.length === 1 ? '' : 's'}`, { acao: { rotulo: 'Desfazer', onClick: () => removerAnotados(ids) } });
@@ -438,6 +440,7 @@ function AnotarSheet({ aberta, hoje, onFechar }: { aberta: boolean; hoje: string
           <button key={x} type="button" className={`gs-chip ${n === x ? 'on' : ''}`} aria-pressed={n === x} onClick={() => setN(x)}>{x}</button>
         ))}
       </div>
+      <label className="gs-check-linha"><input type="checkbox" checked={estimado} onChange={(ev) => setEstimado(ev.target.checked)} /> <span>Não tenho certeza do valor (é uma estimativa)</span></label>
       <p className="gs-nota">
         {meses.length > 0 ? `Vou anotar: ${meses.map(mesCurto).join(', ')}.` : 'Essas já estão na lista.'} A deste mês não precisa: ela aparece sozinha quando passar do vencimento.
       </p>

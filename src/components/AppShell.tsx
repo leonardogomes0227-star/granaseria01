@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Bell, BookOpen, CalendarClock, CalendarDays, ChartColumn, Gift, ChartPie, House, Info, Landmark, Menu, Plus, Receipt, Sparkles, Target, Trash2, TrendingUp, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { Bell, BookOpen, CalendarClock, CalendarDays, ChartColumn, Gift, ChartPie, House, Info, Landmark, LifeBuoy, Menu, Moon, Plus, Receipt, Sparkles, Sun, Target, Trash2, TrendingUp, UserRound, Wallet, type LucideIcon } from 'lucide-react';
 import { AdicionarMov, abrirAdicionar } from '../gs/AdicionarMov';
 import { getName, painelToken } from '../painel';
 import { useVisualDoApp } from '../gs/visual';
@@ -9,6 +9,7 @@ import { useEstado } from '../gs/store';
 import { useHoje } from '../gs/useHoje';
 import { recomendacoes } from '../gs/coachRegras';
 import { Folha } from '../gs/ui';
+import { definirTema, useTema } from '../gs/tema';
 
 /* ---------- A casca do app: lateral no PC, barra de baixo no celular ---------- */
 // Início · Lançamentos · Planejamento · Relatórios · Coach. O resto (contas fixas, calendário, investir, guias, dados…)
@@ -25,7 +26,7 @@ export const NAV: [string, string, LucideIcon][] = [
 /** Menu "Mais": tudo o que não é uma das 5 áreas, agrupado por finalidade. */
 export const MAIS: { grupo: string; itens: [string, string, LucideIcon][] }[] = [
   { grupo: 'Dia a dia', itens: [['/lancamentos?aba=contas', 'Contas fixas', Receipt], ['/plano/atrasos?anotar=1', 'Anotar conta atrasada', CalendarClock], ['/plano/extras', 'Renda extra (13º, bônus, freela)', Gift], ['/plano/calendario', 'Calendário de contas', CalendarDays], ['/assistentes', 'Lembretes e assistentes', Bell]] },
-  { grupo: 'Planejar e crescer', itens: [['/plano/orcamento', 'Orçamento', ChartPie], ['/plano/dividas', 'Dívidas', Landmark], ['/investir', 'Investir', TrendingUp]] },
+  { grupo: 'Planejar e crescer', itens: [['/recuperacao', 'Modo recuperação', LifeBuoy], ['/plano/orcamento', 'Orçamento', ChartPie], ['/plano/dividas', 'Dívidas', Landmark], ['/investir', 'Investir', TrendingUp]] },
   { grupo: 'Aprender e ajustar', itens: [['/guias', 'Guias', BookOpen], ['/dados', 'Meus dados', UserRound], ['/dados#limpar', 'Limpar meus dados', Trash2], ['/sobre', 'Sobre e avisos', Info]] },
 ];
 
@@ -33,7 +34,7 @@ export const MAIS: { grupo: string; itens: [string, string, LucideIcon][] }[] = 
 const IGUAIS: Record<string, string[]> = {
   '/': ['/', '/inicio'],
   '/lancamentos': ['/lancamentos', '/mes', '/meu-mes'],
-  '/plano': ['/plano', '/planejamento', '/missoes', '/investir'],
+  '/plano': ['/plano', '/planejamento', '/missoes', '/investir', '/recuperacao'],
   '/relatorios': ['/relatorios', '/evolucao'],
   '/coach': ['/coach', '/assistentes', '/agentes', '/conselheiros'],
 };
@@ -52,6 +53,7 @@ function Casca({ children }: { children: ReactNode }) {
   const e = useEstado();
   const hoje = useHoje();
   const [mais, setMais] = useState(false);
+  const tema = useTema();
   const { pathname } = useLocation();
   const nome = e.config.nome || getName() || '';
   const avisos = useMemo(() => recomendacoes(e, hoje).filter((r) => r.tom === 'perigo' || r.tom === 'aviso').length, [e, hoje]);
@@ -86,6 +88,9 @@ function Casca({ children }: { children: ReactNode }) {
             <Bell size={20} strokeWidth={1.75} aria-hidden="true" />
             {avisos > 0 && <i className="gs-sino-badge" aria-hidden="true">{avisos > 9 ? '9+' : avisos}</i>}
           </Link>
+          <button type="button" className="gs-icone-btn" aria-label={tema === 'escuro' ? 'Usar tema claro' : 'Usar tema escuro'} title={tema === 'escuro' ? 'Tema claro' : 'Tema escuro'} onClick={() => definirTema(tema === 'escuro' ? 'claro' : 'escuro')}>
+            {tema === 'escuro' ? <Sun size={20} strokeWidth={1.75} aria-hidden="true" /> : <Moon size={20} strokeWidth={1.75} aria-hidden="true" />}
+          </button>
           <button type="button" className="gs-icone-btn gs-so-mobile" aria-label="Mais opções" aria-expanded={mais} onClick={() => setMais(true)}><Menu size={20} strokeWidth={1.75} aria-hidden="true" /></button>
           <Link to="/dados" className="gs-avatar" aria-label="Meus dados">{inicialDo(nome)}</Link>
         </header>
