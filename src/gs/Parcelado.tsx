@@ -6,6 +6,7 @@ import { useHoje } from './useHoje';
 import { analisarParcelado, duelo } from './parcelado';
 import { comprarNoCartao, esperar72h } from './acoes';
 import { Campo, CampoDinheiro, CampoNumero, MaisAjuda, Titulo } from './ui';
+import { ImpactoNoCaminho } from './Impacto';
 import { brl0, mesCurto, mesDe, pct, somaMes } from './datas';
 import { livreParaGastar } from './selectores';
 import { lerCdiMensal } from './mercadoCache';
@@ -108,6 +109,13 @@ export function ParceladoTela() {
             {!e.cartao && <p className="gs-nota">Vai parcelar no cartão? Cadastre o cartão em <Link to="/plano/cartao">Cartão de crédito</Link> pra ver as parcelas nas próximas faturas.</p>}
           </section>
         </>
+      )}
+
+      {pronto && r && (
+        <ImpactoNoCaminho
+          mudanca={{ tipo: 'parcela', valor: parcela, meses: parcelas }}
+          passo={{ titulo: `Decidir${item.trim() ? ` ${item.trim()}` : ' a compra'}: à vista ou em ${parcelas}x`, detalhe: `À vista ${brl0(precoAvista)}; parcelado ${brl0(r.total)} (${parcelas}x de ${brl0(parcela)}).`, rota: '/plano/parcelado', origem: 'parcelado' }}
+        />
       )}
 
       <MaisAjuda titulo="Por que a parcela engana">

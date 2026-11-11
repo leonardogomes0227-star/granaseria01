@@ -1,7 +1,7 @@
 // Viver de renda: quanto o seu patrimônio já rende, o que isso já paga e quanto falta. Pura, com teste.
 
-import { arred } from './datas';
-import type { GastoFixo } from './tipos';
+import { arred } from './datas.js';
+import type { GastoFixo } from './tipos.js';
 
 /** Quanto o patrimônio rende por mês, a uma taxa % ao mês. */
 export const rendimentoMensal = (patrimonio: number, taxaPct: number) => arred(Math.max(0, patrimonio) * (taxaPct / 100));

@@ -1,7 +1,7 @@
 // Empréstimos: qual cabe no bolso, quanto compensa contra as suas dívidas e o que virar dívida ao contratar. Pura, com teste.
 
-import { arred } from './datas';
-import { custoDaOferta, type CustoOferta } from './ferramentas';
+import { arred } from './datas.js';
+import { custoDaOferta, type CustoOferta } from './ferramentas.js';
 
 export interface AvaliacaoOferta {
   pesoRenda: number | null; // % da renda que a parcela ocupa

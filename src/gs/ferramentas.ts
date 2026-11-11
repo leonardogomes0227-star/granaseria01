@@ -1,6 +1,6 @@
 // Contas das ferramentas do app (sem tela): compra, espera de 72h, assinaturas, empréstimo, extras, renda, metas e métodos.
 
-import { arred, diasEntre, somaDias } from './datas';
+import { arred, diasEntre, somaDias } from './datas.js';
 
 /* ---------- Posso comprar isso? ---------- */
 export type Veredito = 'cabe' | 'aperta' | 'nao-cabe';

@@ -31,7 +31,6 @@ import { startSync } from './sync';
 import { AccountPage } from './components/Account';
 import { AdminPage } from './components/AdminPage';
 import { MeuMes } from './gs/MeuMes';
-import { Plano } from './gs/Plano';
 const Dividas = lazy(() => importarComRetry(() => import('./gs/Dividas')).then((m) => ({ default: m.Dividas })));
 const Atrasos = lazy(() => importarComRetry(() => import('./gs/Atrasos')).then((m) => ({ default: m.Atrasos })));
 const PossoComprar = lazy(() => importarComRetry(() => import('./gs/PossoComprar')).then((m) => ({ default: m.PossoComprar })));
@@ -51,6 +50,8 @@ const Recuperacao = lazy(() => importarComRetry(() => import('./gs/Recuperacao')
 const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m) => ({ default: m.Cortar })));
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
+import { AreaGastos, AreaGuardar, AreaPagar, Perfil, TodasFerramentas } from './gs/Areas';
+const DevUI = lazy(() => importarComRetry(() => import('./gs/DevUI')).then((m) => ({ default: m.DevUI })));
 import { Sobre } from './gs/Sobre';
 import { Planos } from './gs/Planos';
 import { Porteiro } from './gs/Porteiro';
@@ -185,7 +186,7 @@ function App() {
     setSavedProgress(loadSavedProgress());
     // volta pra quem abriu (o agente); se a pessoa chegou direto no link, vai pros agentes
     if (window.history.length > 1) navigate(-1);
-    else navigate('/conselheiros');
+    else navigate('/ferramentas');
   };
 
   useEffect(() => {
@@ -257,14 +258,20 @@ function App() {
             </Titled>
           }
         />
+        <Route path="/pagar" element={<Pagina titulo="Pagar" o="as suas contas"><AreaPagar /></Pagina>} />
+        <Route path="/gastos" element={<Pagina titulo="Gastos" o="os seus gastos"><AreaGastos /></Pagina>} />
+        <Route path="/guardar" element={<Pagina titulo="Guardar" o="o que você guarda"><AreaGuardar /></Pagina>} />
+        <Route path="/perfil" element={<Pagina titulo="Perfil" o="o seu perfil"><Perfil /></Pagina>} />
+        <Route path="/ferramentas" element={<Pagina titulo="Todas as ferramentas" o="as ferramentas"><TodasFerramentas /></Pagina>} />
+        <Route path="/dev/ui" element={<Pagina titulo="Componentes" o="" aberto><DevUI /></Pagina>} />
         <Route path="/lancamentos" element={<Pagina titulo="Lançamentos" o="os seus lançamentos"><MeuMes padrao="historico" /></Pagina>} />
         <Route path="/plano/cortar" element={<Pagina titulo="Onde cortar" o="a ferramenta"><Cortar /></Pagina>} />
         <Route path="/recuperacao" element={<Pagina titulo="Modo recuperação" o="o modo recuperação"><Recuperacao /></Pagina>} />
         <Route path="/relatorios" element={<Pagina titulo="Relatórios" o="os seus relatórios"><Evolucao /></Pagina>} />
-        <Route path="/planejamento" element={<Navigate to="/plano" replace />} />
+        <Route path="/planejamento" element={<PlanoRedirect />} />
         <Route path="/mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
         <Route path="/meu-mes" element={<Pagina titulo="Meu mês" o="o seu mês"><MeuMes /></Pagina>} />
-        <Route path="/plano" element={<Pagina titulo="Plano" o="o seu plano"><Plano /></Pagina>} />
+        <Route path="/plano" element={<PlanoRedirect />} />
         <Route path="/plano/dividas" element={<Pagina titulo="Quitar dívidas" o="as suas dívidas"><Dividas /></Pagina>} />
         <Route path="/plano/atrasos" element={<Pagina titulo="Sair do atraso" o="as contas atrasadas"><Atrasos /></Pagina>} />
         <Route path="/plano/comprar" element={<Pagina titulo="Posso comprar isso?" o="a ferramenta"><PossoComprar /></Pagina>} />
@@ -285,10 +292,9 @@ function App() {
         <Route path="/sobre" element={<Pagina titulo="Sobre e avisos" o="" aberto><Sobre /></Pagina>} />
         <Route path="/planos" element={<Pagina titulo="Planos" o="" aberto><Planos /></Pagina>} />
         <Route path="/painel" element={<PainelRedirect />} />
-        {['/missoes', '/conselheiros', '/agentes', '/perfil', '/selos', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
-          <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/plano' : de === '/perfil' ? '/dados' : de === '/selos' ? '/' : '/coach'} replace />} />
+        {['/missoes', '/conselheiros', '/agentes', '/selos', '/coach/chat', '/coach/plano', '/conselheiros/:id', '/agentes/:id/chat'].map((de) => (
+          <Route key={de} path={de} element={<Navigate to={de === '/missoes' ? '/ferramentas' : de === '/selos' ? '/' : '/coach'} replace />} />
         ))}
-        <Route path="/ferramentas" element={<Navigate to="/conselheiros" replace />} />
         <Route
           path="/ferramentas/:slug"
           element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
@@ -415,10 +421,28 @@ function GuideRoute({ onStart }: { onStart: () => void }) {
   return <AppShell>{guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}</AppShell>;
 }
 
+/** "Planejamento" virou as áreas: /plano#metas abre as metas em Guardar; o resto abre a lista de todas as ferramentas. */
+function PlanoRedirect() {
+  const { hash, search } = useLocation();
+  return <Navigate to={hash === '#metas' ? '/guardar#metas' : `/ferramentas${search}`} replace />;
+}
+
+/** As ferramentas antigas que a ferramenta nova cobre por inteiro: o endereço antigo continua abrindo, na tela nova.
+ *  Para desfazer uma fusão, apague a linha dela aqui (o componente antigo continua no repositório). */
+export const ALIAS_FERRAMENTAS: Record<string, string> = {
+  'minhas-contas': '/lancamentos?aba=contas',
+  'quitar-dividas': '/plano/dividas',
+  'comparador-de-emprestimo': '/plano/emprestimos',
+  'vale-a-pena-comprar': '/plano/comprar',
+  'decimo-terceiro': '/plano/extras',
+  'caca-vazamentos': '/plano/assinaturas',
+  'calculadora-de-meta': '/guardar#metas',
+};
+
 /** Os links antigos do painel (/painel#mes, #plano…) levam pra página nova de cada coisa. */
 function PainelRedirect() {
   const { hash, search } = useLocation();
-  const to: Record<string, string> = { '#mes': '/mes', '#plano': '/plano', '#pairico': '/plano', '#ferramentas': '/ferramentas' };
+  const to: Record<string, string> = { '#mes': '/mes', '#plano': '/ferramentas', '#pairico': '/ferramentas', '#ferramentas': '/ferramentas' };
   return <Navigate to={`${to[hash] ?? '/'}${search}`} replace />;
 }
 
@@ -436,6 +460,7 @@ function ToolRoute({
   const { slug } = useParams();
   const tool = getToolBySlug(slug);
   useTitle(tool ? tool.title : 'Página não encontrada');
+  if (slug && ALIAS_FERRAMENTAS[slug]) return <Navigate to={ALIAS_FERRAMENTAS[slug]} replace />;
   if (!tool) {
     return (
       <AppShell>

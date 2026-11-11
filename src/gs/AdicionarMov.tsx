@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRightLeft, Check, Copy } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Camera, Check, Copy } from 'lucide-react';
+import { painelToken } from '../painel';
 import { useEstado } from './store';
 import { atalhosFrequentes, sugerirCategoria, sugerirForma } from './sugestoes';
 import { comprarNoCartao, criarConta, removerLancamento, removerReceita, removerTransferencia, restaurarLancamento, restaurarReceita, restaurarTransferencia, salvarLancamento, salvarReceita, salvarTransferencia } from './acoes';
@@ -88,6 +89,32 @@ export function AdicionarMov() {
   }, []);
 
   const fechar = () => setAberta(false);
+  const [lendo, setLendo] = useState(false);
+  /** Anotar por foto: a mesma leitura do WhatsApp. O que vier preenche o formulário, e a pessoa confere antes de salvar. */
+  const lerFoto = async (f: File | undefined) => {
+    if (!f) return;
+    if (f.size > 3_000_000) return setErro('Foto grande demais (máximo 3 MB).');
+    setLendo(true);
+    setErro('');
+    try {
+      const data = await new Promise<string>((ok, falha) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] ?? ''); r.onerror = falha; r.readAsDataURL(f); });
+      const res = await fetch('/api/comprovante', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${painelToken() ?? ''}` }, body: JSON.stringify({ mediaType: f.type, data }) });
+      const j = (await res.json().catch(() => ({}))) as { comprovante?: { tipo: string; valor: number; descricao: string; forma_pagamento: string; data: string }; error?: string };
+      if (!j.comprovante) return setErro(j.error ?? 'Não consegui ler a foto agora. Anote o valor à mão.');
+      const c = j.comprovante;
+      setTipo(c.tipo === 'recebimento' ? 'receita' : 'despesa');
+      setValor(c.valor);
+      setDesc(c.descricao);
+      if (c.tipo !== 'recebimento') { setCat(sugerirCategoria(c.descricao, CATEGORIAS_MOV) ?? 'Outros'); setForma(FORMAS.includes(c.forma_pagamento) ? c.forma_pagamento : ''); }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(c.data) && c.data <= hojeSP()) { setData(c.data); setOutraData(c.data !== hojeSP() && c.data !== somaDias(hojeSP(), -1)); }
+      setTudo(true);
+      toast('Li a foto. Confira e salve.');
+    } catch {
+      setErro('Sem conexão agora. Anote o valor à mão.');
+    } finally {
+      setLendo(false);
+    }
+  };
   const mudarDesc = (t: string) => {
     setDesc(t);
     if (tipo === 'despesa') {
@@ -187,6 +214,12 @@ export function AdicionarMov() {
                   <button key={a.descricao} type="button" className="gs-chip" onClick={() => { setDesc(a.descricao); setCat(a.categoria); setValor(a.valor); setPasso(3); }}>{a.descricao} · {brl(a.valor)}</button>
                 ))}
               </div>
+            )}
+            {!editId && tipo !== 'transferencia' && !tudo && (
+              <label className="gs-btn sec" style={{ width: '100%', marginBottom: 12, cursor: 'pointer' }} aria-busy={lendo}>
+                <Camera size={18} aria-hidden="true" />{lendo ? 'Lendo a foto…' : 'Anotar por foto (cupom ou pix)'}
+                <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" className="sr-only" disabled={lendo} onChange={(ev) => { void lerFoto(ev.target.files?.[0]); ev.target.value = ''; }} />
+              </label>
             )}
             <CampoDinheiro rotulo={tipo === 'receita' ? 'Quanto recebeu?' : tipo === 'transferencia' ? 'Quanto vai transferir?' : 'Quanto gastou?'} valor={valor} onChange={setValor} grande autoFocus erro={erro && !(valor > 0) ? erro : undefined} />
           </section>

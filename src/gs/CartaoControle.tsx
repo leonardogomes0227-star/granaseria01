@@ -21,7 +21,7 @@ export function CartaoControle({ c }: { c: Cartao }) {
   const hoje = useHoje();
   const renda = e.config.renda;
   const [simular, setSimular] = useState(false);
-  const [importar, setImportar] = useState(false);
+  const [importar, setImportar] = useState(() => typeof window !== 'undefined' && window.location.hash === '#importar');
   const [limite, setLimite] = useState(false);
   const [outro, setOutro] = useState<OutroCartao | 'novo' | null>(null);
   const meses = useMemo(() => proximasFaturas(c, 6), [c]);

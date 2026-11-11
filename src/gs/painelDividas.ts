@@ -1,10 +1,10 @@
 // Lógica do painel de dívidas: progresso, sequência, economia, a ação da semana e quanto o orçamento aguenta. Pura, com teste.
 
-import { arred, diasEntre, vencimentoNoMes } from './datas';
-import { ordenar, saldoAtual, simular, type DividaSim } from './dividas';
-import { taxaEfetiva } from './ferramentas';
-import { brl0 } from './datas';
-import type { Divida, Estrategia } from './tipos';
+import { arred, diasEntre, vencimentoNoMes } from './datas.js';
+import { ordenar, saldoAtual, simular, type DividaSim } from './dividas.js';
+import { taxaEfetiva } from './ferramentas.js';
+import { brl0 } from './datas.js';
+import type { Divida, Estrategia } from './tipos.js';
 
 export const pagoNoMes = (ds: Divida[], mes: string) => arred(ds.reduce((t, d) => t + d.pagamentos.filter((p) => p.data.slice(0, 7) === mes).reduce((s, p) => s + p.valor, 0), 0));
 export const pagoNaDivida = (d: Divida, mes: string) => arred(d.pagamentos.filter((p) => p.data.slice(0, 7) === mes).reduce((s, p) => s + p.valor, 0));

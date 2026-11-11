@@ -1,5 +1,5 @@
 import { painelToken } from '../painel';
-import { Inicio } from '../gs/Inicio';
+import { TelaCaminho } from '../gs/TelaCaminho';
 import { Landing } from '../gs/Landing';
 import { Porteiro } from '../gs/Porteiro';
 import { ErroGlobal } from '../gs/ErroGlobal';
@@ -23,7 +23,7 @@ export function HomePage({
   return (
     <ErroGlobal>
       <Porteiro>
-        <Inicio />
+        <TelaCaminho />
       </Porteiro>
     </ErroGlobal>
   );

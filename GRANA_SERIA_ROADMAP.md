@@ -308,3 +308,64 @@ Pedido: tudo do prompt dentro do site, sem gastar com API. Tudo abaixo roda **no
 - **Avisos do navegador voltaram:** ao tirar a faixa de avisos do topo eu havia desligado as notificações; `NotificadorAvisos` as religa, e o passo do dia do Modo Recuperação vira o aviso do dia.
 - **Open Finance (leitura direta do banco)** continua fora: exige parceiro regulamentado pago. Os quatro caminhos acima cobrem a mesma necessidade de graça. Lembretes por WhatsApp também ficam fora (exigem modelos pagos da Meta).
 - **Limites:** OCR e PDF podem errar (por isso a conferência); PDFs escaneados como imagem não têm texto (a tela sugere enviar a foto); outros cartões não têm parcelas próprias; o parser de texto não foi testado com faturas reais de todos os bancos.
+
+---
+
+## 12. O Caminho (remodelação v3, nov/2026)
+
+Ideia: o app mostra onde a pessoa está, onde quer chegar, em quanto tempo, e leva um passo por vez. Auditoria completa em `docs/o-caminho.md`.
+O dono autorizou seguir sem parar a cada etapa ("tudo permitido"); as decisões tomadas sem perguntar estão na seção 9 daquele documento.
+
+### Etapa 0 — auditoria (concluída)
+`docs/o-caminho.md`: inventário confirmado (com 14 achados fora da tabela), fusões das ferramentas antigas, origem de cada número da Início, as datas dos 7 marcos, o que estava escondido, teste de utilidade e plano de arquivos.
+**Causa do "R$ 0,00 × Economia R$ 10.000":** a "Economia" era calculada dentro de `Inicio.tsx` (receitas − despesas já pagas, usando a renda informada mesmo sem ter caído), enquanto o "pode gastar" desconta o que ainda vai sair. Duas réguas.
+
+### Etapa 1 — motores (concluída)
+- `src/gs/caminho.ts`: `calcularCaminho(estado, hoje)` devolve os 7 marcos com status, data prevista, quanto falta, valor por mês, progresso, premissas e a pendência quando não há data. `simularImpacto(estado, hoje, mudança)` compara a data do destino antes e depois de uma compra, parcela, corte ou dinheiro extra. Nenhuma conta nova: usa `planoDeRecuperacao`, `simular`, `mesesParaMeta`, `planoDaMeta`, `mesesAteMeta`.
+- `src/gs/passos.ts`: `passosDoMes` junta atrasos, contas a vencer, pagar-se primeiro (segurado com atraso), limite do dia, faturas, parcelas do plano, passos colocados à mão e a meta do mês, sem repetir.
+- `src/gs/registroFerramentas.ts`: 40 ferramentas com área, grupo, pergunta que resolve, status vivo e palavras de busca; as 14 perguntas de "O que você quer resolver?" e a busca sem acento.
+- Estado: campo aditivo `caminho` (passos, ocultos, última visita, último passo, marcos comemorados, etapas, método de quitação) com `migrar()` e teste. Nenhuma migration no Supabase.
+- Testes: 44 arquivos, 385 testes (25 novos).
+- **Limites honestos:** os marcos correm em sequência e a data do "viver de renda" usa uma taxa hipotética de 0,7% ao mês (dita nas premissas); "primeiro investimento" é reconhecido por aporte com origem `investimento`; uma parcela nova mais curta que o caminho é tratada pelo valor total.
+
+### Etapa 2 — visual "luxo areia e dourado" (concluída)
+- `src/gs/caminho.css`: as variáveis que o app inteiro já usava (`--bg`, `--surface`, `--gold`, `--ink`, `--line`, `--ds-*`…) passam a apontar para a paleta nova, então todas as telas antigas mudaram de roupa sem reescrita. Fontes Cormorant Garamond (títulos e números) e Manrope (interface), textura de papel, botão principal em ouro, folha de ouro só na data do destino e no "pode gastar".
+- `Moeda` em CSS 3D (9 discos, G na frente, S no verso, giro de 8s; parada com "reduzir movimento"; no logo fica parada em 3/4).
+- `src/gs/base.tsx`: Card, CartaoDestino, LinhaDoTempo/Passo, Marco/Selo, ToolTile, ToolHeader, Segmented, ListItem, StatusDot, BottomSheet, NumPad, ProgressRing, EmptyState, Skeleton, Citacao. Página interna `/dev/ui`.
+- **Direção (skill design-taste, pedida pelo dono):** o app é um livro-caixa. As ferramentas viraram linhas tipográficas (nome, a pergunta que resolvem, estado) em vez de grade de cartões com ícone; nada de degradê de enfeite nem etiqueta em caixa alta em todo título.
+- **Limite:** o MVP `docs/referencia/grana-seria-referencia.html` não estava no repositório; o visual seguiu a descrição da seção 8 do prompt.
+
+### Etapa 3 — navegação (concluída)
+Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (Perfil) no topo; lateral com as mesmas áreas no desktop. Menu "Mais", sino e botão de tema saíram do topo (o tema está no Perfil). Rotas novas: `/pagar`, `/gastos`, `/guardar`, `/perfil`, `/ferramentas`, `/dev/ui`. Todas as antigas continuam (verificado no navegador, 40 endereços sem erro): `/plano` e `/planejamento` abrem "Todas as ferramentas" (`/plano#metas` abre as metas em Guardar). A aba acesa de cada endereço sai do registro (`areaDaRota`).
+**Fusões aplicadas** (`ALIAS_FERRAMENTAS` em `App.tsx`; desfazer = apagar a linha): minhas-contas, quitar-dividas, comparador-de-emprestimo, vale-a-pena-comprar, decimo-terceiro, caca-vazamentos e calculadora-de-meta abrem a ferramenta nova. As outras 8 antigas seguem como eram e ganharam lugar no registro.
+
+### Etapa 4 — tela "Seu caminho" (concluída)
+`TelaCaminho.tsx`: Bem-vindo de volta (depois de 24h: o que mudou, onde parou, "Continuar de onde parei" com brilho), cartão do destino (marco atual, data, progresso, premissas em um toque, "Ver o caminho todo"), "Hoje você pode gastar" com "Como calculei", busca "O que você quer resolver?" (14 perguntas, busca sem acento, "Pergunte ao Coach" quando não acha), passos do mês em linha do tempo (ação direta com desfazer, esconder, recomeçar), entrada do Coach, todas as ferramentas e citação. Estados adaptativos reordenam os blocos. Festa de marco uma vez por marco, com imagem para compartilhar.
+**Correção do R$ 0 × R$ 10.000:** os indicadores Receitas/Despesas/Economia calculados na tela saíram; o que aparece é o "pode gastar" e a "sobra prevista", os dois de `detalheDisponivel`.
+
+### Etapa 5 — áreas (concluída)
+`Areas.tsx`: Pagar (quanto falta, próximo passo com botão, contas por urgência com faixa de dias), Gastos (limite do dia, para onde foi, últimos lançamentos com selo "via WhatsApp"), Guardar (anel da reserva com a moeda, data prevista, metas). Cada área termina na grade de ferramentas do registro, por objetivo, com o que está em vermelho no topo e "Continuar (passo N de M)" quando há etapa salva. Perfil com WhatsApp, dados, lembretes, planos, tema, instalar e limpar dados.
+
+### Etapa 6 — ferramentas que resolvem (parcial)
+`Impacto.tsx`: `ImpactoNoCaminho` (antes → depois na data do destino), `BotaoCaminho` ("Colocar no meu caminho") e `Resposta`. Ligado em Posso comprar, À vista ou parcelado, Empréstimo, Onde cortar, Gastos escondidos e Dinheiro extra. Verificado no navegador: compra de R$ 1.800 → "atrasa 1 mês" → passo aparece no Caminho.
+**Falta:** aplicar a peça `Resposta` (frase + "Como cheguei nisso" + 1 botão) nas demais ferramentas, uma a uma; salvar a etapa nas ferramentas de vários passos (o registro e o estado já suportam).
+
+### Etapa 7 — Coach que resolve (concluída)
+- `src/gs/coachFluxos.ts`: os 9 problemas prontos (o mês não fecha, conta atrasada, sair das dívidas, empréstimo/parcelamento, posso comprar, dinheiro extra, juntar para algo, onde estou errando, explica meu número), por regras e sem IA, com as funções testadas. Cada um diagnostica, dá **uma** direção, mostra o impacto no caminho e termina em cartão de ação.
+- `server/coachTools.ts`: 11 ferramentas de cálculo (ver_caminho, simular_impacto, analisar_compra, comparar_parcelado, comparar_emprestimos, plano_atrasos, simular_quitacao, dividir_extra, plano_meta, orcamento_atual, disponivel_hoje) e 8 de ação, rodando **no servidor sobre o estado salvo**. As de ação só propõem: voltam como cartões [Fazer] [Ajustar] [Agora não]. Rotas propostas pela IA são validadas (só telas do app).
+- `api/conselheiro.ts`: tool use em até 5 rodadas, system prompt com o método (entender, diagnosticar, direção, comprometer, acompanhar), 80 palavras, situação grave (Procon, consumidor.gov.br, Serasa Limpa Nome, CVV 188), sem nome de personagem.
+- `Coach.tsx`: abre no assunto da tela de origem (`?de=`), pergunta da busca vira a primeira mensagem (`?pergunta=`), mensagens do Coach em papel e as da pessoa em grafite, mini-cartão antes/depois, mensagem pronta para negociar, "Conversas anteriores" (no aparelho), "O que combinamos" (editar, apagar, recomeçar) e a volta combinada (lembrete) no topo.
+- Sem `ANTHROPIC_API_KEY`: a conversa livre diz que não está ativada e os 9 assuntos continuam funcionando (D3).
+- Exemplos com números das funções: `docs/coach-exemplos.md` (gerado por teste).
+- Testes: 45 arquivos, 395 testes.
+
+### Etapa 8 — mostrar o valor (concluída)
+- **Anotar por foto no botão +**: `api/comprovante.ts` usa a mesma leitura do bot (`server/receipt.ts`); o que vier preenche o formulário e a pessoa confere antes de salvar. Fatura com várias compras é desviada para "Importar fatura". Sem a chave de IA, o site diz que não está ativado e sugere o WhatsApp. Limite diário (`COMPROVANTE_DAILY_LIMIT`, padrão 20). O arquivo não é guardado.
+- **WhatsApp** no fim do onboarding e no Perfil (exemplos de `docs/whatsapp-assistente.md`), e selo "via WhatsApp" nos lançamentos vindos do bot.
+- **Importar fatura** em Pagar abre direto a folha de importação (`/plano/cartao#importar`).
+- **Sua semana no caminho** (`semanaNoCaminho` em `voltou.ts`, com teste): o que foi pago e guardado nos últimos 7 dias e quantos meses o destino chegou mais perto (comparando com o estado de 7 dias atrás).
+- `/planos` fala de resultado. Preços e links de pagamento (`src/config.ts`) não foram mexidos.
+
+### Etapa 9 — verificação final (concluída)
+Relatório e checklist em `docs/como-testar.md`. 40 capturas (360, 390, 1280 e fonte a 130%), axe, toque ≥ 44px, Lighthouse mobile (87 / 100 / 100 / 100) e fluxo ponta a ponta passando. Corrigidos na verificação: contraste da faixa "atenção", toque de logo e links de seção, lista de contas que espremia o nome com fonte grande, festa do marco "Em dia" ao pagar uma conta atrasada.
+Testes: 45 arquivos, 396 testes; `typecheck`, `typecheck:server`, `lint` (0 erros) e `build` verdes.
