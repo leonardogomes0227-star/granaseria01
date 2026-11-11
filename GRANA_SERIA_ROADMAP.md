@@ -385,3 +385,10 @@ Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informaçã
 - **Coach sem IA entende a pergunta escrita** (`entenderPergunta`, `valorNoTexto` em `coachFluxos.ts`, com teste): "posso comprar um tênis de 350?" roda o fluxo com o valor; se faltar dado, abre a folha só com o que falta; se não for um dos 9 assuntos, indica a ferramenta pela busca ou diz que não entendeu. Nada é apresentado como IA.
 - **Telas antigas** (`/ferramentas/:slug`) abrem com a resposta calculada dos dados do app no topo.
 - **"Anotar por foto"** só aparece com a leitura ligada no servidor.
+
+### Qualidade final (nov/2026)
+- **Tema escuro** verificado nas telas novas: legível e sem violação de contraste (axe).
+- **Código sem uso removido:** `Inicio.tsx`, `Plano.tsx`, `ProximasAcoes.tsx`, `Rosca.tsx`, `ResumoSemana.tsx` (substituídos pela tela Caminho e pelas áreas; nenhum arquivo os importava).
+- **Pacote principal de 929 KB para 662 KB** (−29%): tela Caminho, áreas, ferramentas antigas e passos do diagnóstico carregam sob demanda. Lighthouse mobile: desempenho 87 → 90, acessibilidade, boas práticas e SEO em 100.
+- **Acessibilidade das telas antigas** (diagnóstico e `/ferramentas/:slug`), que não tinham sido medidas: contraste AA (a legenda antiga `#877B69` virou `#6B6253`) e toque de 44px, no claro e no escuro. Varredura em 21 telas sem violação de axe.
+- Limite conhecido: os interruptores de aviso do Coach seguem 52×32 na tela, com a área de toque ampliada por CSS; o link "Definir limites" é um link dentro do texto (exceção da regra de toque).

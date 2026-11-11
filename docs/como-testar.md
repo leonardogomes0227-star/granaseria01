@@ -47,7 +47,7 @@ Abra o site no celular, entre pelo link do WhatsApp e siga a ordem abaixo. Cada 
 
 \* os interruptores de aviso do Coach medem 52×32 na tela, com área de toque ampliada por CSS.
 
-**Medições:** 40 capturas (10 telas × 360, 390 e 1280px e fonte a 130%) sem rolagem lateral e sem erro de página; axe (WCAG A e AA) sem violações depois da correção de contraste; Lighthouse mobile na página inicial pública: desempenho 87, acessibilidade 100, boas práticas 100, SEO 100. Fluxo ponta a ponta automatizado: onboarding → destino → anotar gasto → pagar atrasada → festa e marco avança → Coach "posso comprar" → impacto → colocar no caminho → voltar 2 dias depois → Bem-vindo de volta → brilho no passo.
+**Medições:** 40 capturas (10 telas × 360, 390 e 1280px e fonte a 130%) sem rolagem lateral e sem erro de página; axe (WCAG A e AA) sem violações depois da correção de contraste; Lighthouse mobile na página inicial pública: desempenho 90, acessibilidade 100, boas práticas 100, SEO 100. Tema escuro e telas antigas também passaram no axe. Fluxo ponta a ponta automatizado: onboarding → destino → anotar gasto → pagar atrasada → festa e marco avança → Coach "posso comprar" → impacto → colocar no caminho → voltar 2 dias depois → Bem-vindo de volta → brilho no passo.
 
 **Limites honestos:**
 - O MVP `docs/referencia/grana-seria-referencia.html` não estava no repositório; o visual seguiu a seção 8 do prompt e a skill de design pedida pelo dono.

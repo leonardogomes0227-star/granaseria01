@@ -1,22 +1,6 @@
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { importarComRetry } from './gs/importar';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
-import {
-  IncomeStep,
-  SavingsStep,
-  ExpensesStep,
-  DebtsStep,
-  EmergencyStep,
-  ReviewStep,
-  DiagnosisStep,
-} from './components/WizardSteps';
-import { ImpulseTool, DebtSimulator, LongTermSimulator, GoalCalculator, LoanComparator } from './components/Tools';
-import { SelosPanel } from './components/SelosAndShare';
-import { CheckInTool } from './components/CheckIn';
-import { QuoteTool } from './components/QuoteTool';
-import { ExtraMoneyTool, LeaksTool, RightsTool } from './components/SolutionTools';
-import { PlanTracker } from './components/PlanTracker';
-import { FaturaTool } from './components/FaturaTool';
 import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
 import { HomePage } from './components/HomePage';
 import { AppShell } from './components/AppShell';
@@ -24,7 +8,6 @@ import { Toaster } from './components/ui/Toast';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
-import { calculateDiagnosis } from './calculations';
 import { track, trackPageview } from './analytics';
 import { useSession } from './account';
 import { startSync } from './sync';
@@ -50,7 +33,13 @@ const Recuperacao = lazy(() => importarComRetry(() => import('./gs/Recuperacao')
 const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m) => ({ default: m.Cortar })));
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
-import { AreaGastos, AreaGuardar, AreaPagar, Perfil, TodasFerramentas } from './gs/Areas';
+const PassoDoDiagnostico = lazy(() => importarComRetry(() => import('./components/PassoDoDiagnostico')).then((m) => ({ default: m.PassoDoDiagnostico })));
+const FerramentaAntiga = lazy(() => importarComRetry(() => import('./components/FerramentaAntiga')).then((m) => ({ default: m.FerramentaAntiga })));
+const AreaPagar = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.AreaPagar })));
+const AreaGastos = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.AreaGastos })));
+const AreaGuardar = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.AreaGuardar })));
+const Perfil = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.Perfil })));
+const TodasFerramentas = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.TodasFerramentas })));
 import { RespostaFerramenta } from './gs/RespostaFerramenta';
 import { RESPOSTA_DO_SLUG } from './gs/respostas';
 const DevUI = lazy(() => importarComRetry(() => import('./gs/DevUI')).then((m) => ({ default: m.DevUI })));
@@ -60,8 +49,6 @@ import { Porteiro } from './gs/Porteiro';
 import { ErroGlobal } from './gs/ErroGlobal';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
-import { RichDadTool } from './components/RichDadTool';
-import { BillsTool } from './components/BillsTool';
 import { GuidesIndex, GuidePage } from './components/Guides';
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
@@ -381,15 +368,9 @@ function WizardRoute({
       <div className="wizard-wrap">
         {!blocked && (
           <div key={step} className="anim-step" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            {step === 1 && <IncomeStep {...stepProps} canNext={data.monthlyIncome > 0} />}
-            {step === 2 && <SavingsStep {...stepProps} />}
-            {step === 3 && <ExpensesStep {...stepProps} />}
-            {step === 4 && <DebtsStep {...stepProps} />}
-            {step === 5 && <EmergencyStep {...stepProps} />}
-            {step === 6 && <ReviewStep {...stepProps} goToStep={goToStep} />}
-            {step === 7 && (
-              <DiagnosisStep data={data} diagnosis={calculateDiagnosis(data)} onRestart={onRestart} onOpenTool={onOpenTool} />
-            )}
+            <Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}>
+              <PassoDoDiagnostico step={step} stepProps={stepProps} data={data} goToStep={goToStep} onRestart={onRestart} onOpenTool={onOpenTool} />
+            </Suspense>
           </div>
         )}
       </div>
@@ -470,7 +451,6 @@ function ToolRoute({
       </AppShell>
     );
   }
-  const toolProps = { onClose, onSwitch };
   return (
     <AppShell>
       <LoginGate what={tool.title.charAt(0).toLowerCase() + tool.title.slice(1)}>
@@ -478,23 +458,9 @@ function ToolRoute({
       {/* ferramenta antiga: no topo, a resposta com os números que a pessoa já cadastrou no app */}
       {slug && RESPOSTA_DO_SLUG[slug] && <div className="gs-principal" style={{ paddingBottom: 0 }}><RespostaFerramenta id={RESPOSTA_DO_SLUG[slug]} /></div>}
       {/* key: trocar de ferramenta zera os campos da anterior */}
-      <div key={tool.id} style={{ display: 'contents' }}>
-        {tool.id === 'quote' && <QuoteTool {...toolProps} />}
-        {tool.id === 'impulse' && <ImpulseTool monthlyIncome={data.monthlyIncome} {...toolProps} />}
-        {tool.id === 'debts' && <DebtSimulator debts={data.debts} data={data} onStart={onStart} {...toolProps} />}
-        {tool.id === 'selos' && <SelosPanel onStart={onStart} {...toolProps} />}
-        {tool.id === 'checkin' && <CheckInTool {...toolProps} />}
-        {tool.id === 'longterm' && <LongTermSimulator monthlyIncome={data.monthlyIncome} {...toolProps} />}
-        {tool.id === 'goal' && <GoalCalculator data={data} {...toolProps} />}
-        {tool.id === 'loan' && <LoanComparator {...toolProps} />}
-        {tool.id === 'extra' && <ExtraMoneyTool data={data} onStart={onStart} {...toolProps} />}
-        {tool.id === 'leaks' && <LeaksTool data={data} {...toolProps} />}
-        {tool.id === 'rights' && <RightsTool data={data} {...toolProps} />}
-        {tool.id === 'fatura' && <FaturaTool data={data} {...toolProps} />}
-        {tool.id === 'tracker' && <PlanTracker data={data} onStart={onStart} {...toolProps} />}
-        {tool.id === 'richdad' && <RichDadTool data={data} onStart={onStart} {...toolProps} />}
-        {tool.id === 'bills' && <BillsTool {...toolProps} />}
-      </div>
+      <Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}>
+        <FerramentaAntiga id={tool.id} data={data} onClose={onClose} onSwitch={onSwitch} onStart={onStart} />
+      </Suspense>
       </LoginGate>
     </AppShell>
   );
