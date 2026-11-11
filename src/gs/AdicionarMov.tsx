@@ -27,6 +27,10 @@ export interface PedidoAdicionar {
 }
 export const abrirAdicionar = (p: PedidoAdicionar = {}) => window.dispatchEvent(new CustomEvent<PedidoAdicionar>(EVENTO_ADICIONAR, { detail: p }));
 
+// "Anotar por foto" só aparece quando a leitura está ligada no servidor (ANTHROPIC_API_KEY na Vercel). Pergunta uma vez por visita.
+let fotoLigada: Promise<boolean> | null = null;
+const leituraDeFotoLigada = () => (fotoLigada ??= fetch('/api/fatura').then((r) => (r.ok ? r.json() : {})).then((j: { comprovante?: boolean }) => j.comprovante === true).catch(() => false));
+
 const FONTES_EXTRA = ['Freelance / bico', 'Venda', '13º salário', 'Bônus / comissão', 'Reembolso', 'Aluguel recebido'];
 const FORMAS = ['Pix', 'Débito', 'Crédito', 'Dinheiro'];
 const CHAVE_CONTA = 'gs-ultima-conta';
@@ -90,6 +94,8 @@ export function AdicionarMov() {
 
   const fechar = () => setAberta(false);
   const [lendo, setLendo] = useState(false);
+  const [fotoOk, setFotoOk] = useState(false);
+  useEffect(() => { void leituraDeFotoLigada().then(setFotoOk); }, []);
   /** Anotar por foto: a mesma leitura do WhatsApp. O que vier preenche o formulário, e a pessoa confere antes de salvar. */
   const lerFoto = async (f: File | undefined) => {
     if (!f) return;
@@ -215,7 +221,7 @@ export function AdicionarMov() {
                 ))}
               </div>
             )}
-            {!editId && tipo !== 'transferencia' && !tudo && (
+            {fotoOk && !editId && tipo !== 'transferencia' && !tudo && (
               <label className="gs-btn sec" style={{ width: '100%', marginBottom: 12, cursor: 'pointer' }} aria-busy={lendo}>
                 <Camera size={18} aria-hidden="true" />{lendo ? 'Lendo a foto…' : 'Anotar por foto (cupom ou pix)'}
                 <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" capture="environment" className="sr-only" disabled={lendo} onChange={(ev) => { void lerFoto(ev.target.files?.[0]); ev.target.value = ''; }} />
