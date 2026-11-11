@@ -363,3 +363,43 @@ html.gs-app[data-tema="escuro"] .cd-check:not(.feito)::after { background: #0E0D
 .cd-check.feito { width: 30px; height: 30px; margin: 7px; }
 .cd-check.feito::after { display: none; }
 .cd-titulo .cm-link { min-height: 44px; }
+
+/* Início enxuto: um número e três linhas */
+.ini-numero { text-align: center; padding: 28px 16px 30px; }
+.ini-toque { display: block; width: 100%; background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.ini-rotulo { display: block; font: 600 15px var(--cm-sans); color: var(--cm-tinta-2); }
+.ini-valor { display: block; margin: 6px 0 8px; font: 700 clamp(52px, 16vw, 72px)/1 var(--cm-serif); font-variant-numeric: tabular-nums; color: var(--cm-tinta); }
+.ini-valor.neg { color: var(--cm-atraso); }
+.ini-sub { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: center; font-size: 15px; color: var(--cm-tinta-2); }
+.ini-sub b { color: var(--cm-tinta); }
+.ini-linhas { background: var(--cm-papel); border: 1px solid var(--cm-linha); border-radius: 20px; overflow: hidden; box-shadow: var(--cm-sombra); }
+.ini-linha { display: flex; align-items: center; gap: 12px; min-height: 76px; padding: 12px 14px 12px 18px; border-bottom: 1px solid var(--cm-linha); color: inherit; text-decoration: none; }
+.ini-linha:last-child { border-bottom: 0; }
+.ini-linha:hover { background: var(--cm-suave); }
+.ini-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ini-nome b { font: 700 17px/1.3 var(--cm-sans); color: var(--cm-tinta); }
+.ini-nome small { font-size: 14px; color: var(--cm-tinta-2); }
+.ini-linha.perigo .ini-nome small { color: var(--cm-atraso); font-weight: 700; }
+.ini-quanto { font: 700 20px var(--cm-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ini-linha svg { flex: none; color: var(--cm-tinta-2); }
+/* opção B: cartão escuro + 4 atalhos (estilo app de banco) */
+.inb-cartao { display: flex; flex-direction: column; gap: 2px; padding: 22px 22px 24px; margin-bottom: 18px; border-radius: 24px; background: #1B1915; color: #F3EDE2; box-shadow: 0 18px 34px -22px rgba(27, 25, 21, .9); }
+.inb-cartao span { font-size: 14px; color: #B5AB99; margin-bottom: 14px; }
+.inb-cartao small { font-size: 15px; color: #D8CFBE; }
+.inb-cartao b { font: 700 clamp(46px, 14vw, 60px)/1.05 var(--cm-serif); color: #E9C877; font-variant-numeric: tabular-nums; }
+.inb-cartao em { font-style: normal; font-size: 15px; color: #D8CFBE; margin-top: 6px; }
+.inb-acoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+.inb-acoes > * { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 84px; padding: 0; border: 0; background: none; color: var(--cm-tinta); font: 700 13.5px var(--cm-sans); text-decoration: none; cursor: pointer; }
+.inb-acoes i { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--cm-papel); border: 1px solid var(--cm-linha); color: var(--cm-ouro); box-shadow: var(--cm-sombra); }
+.inb-acoes > :first-child i { background: var(--cm-grad-btn); color: #1B1915; border-color: transparent; }
+/* opção C: uma coisa para fazer agora + três números */
+.inc-agora { display: flex; flex-direction: column; gap: 4px; padding: 22px; margin-bottom: 14px; border-radius: 24px; background: var(--cm-papel); border: 1px solid rgba(169, 130, 46, .45); box-shadow: var(--cm-sombra); }
+.inc-agora small { font: 700 13px var(--cm-sans); color: var(--cm-ouro-texto); }
+.inc-agora b { font: 700 32px/1.1 var(--cm-serif); color: var(--cm-tinta); }
+.inc-agora span { font-size: 16px; color: var(--cm-tinta-2); margin-bottom: 14px; }
+.inc-agora .gs-btn { align-self: stretch; min-height: 54px; font-size: 17px; }
+.inc-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.inc-tres a { display: flex; flex-direction: column; gap: 4px; min-height: 84px; padding: 14px 10px; border-radius: 18px; background: var(--cm-papel); border: 1px solid var(--cm-linha); color: inherit; text-decoration: none; text-align: center; justify-content: center; }
+.inc-tres small { font-size: 12.5px; color: var(--cm-tinta-2); }
+.inc-tres b { font: 700 19px var(--cm-serif); font-variant-numeric: tabular-nums; }
+.inc-tres b.neg { color: var(--cm-atraso); }
