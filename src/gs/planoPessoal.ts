@@ -118,3 +118,38 @@ export function resumoDoPlano(pl: PlanoPessoal): string {
   const t = pl.focos.map((f) => foco(f)?.titulo.toLowerCase()).filter(Boolean) as string[];
   return t.length ? `Seu plano: ${t[0]}${t.length > 1 ? `, depois ${t.slice(1).join(' e ')}` : ''}.` : 'Seu plano ainda não tem foco.';
 }
+
+/* ---------- o plano evolui: foco concluído, o Coach propõe o próximo do caminho ---------- */
+const ORDEM_DO_CAMINHO = ['atrasos', 'dividas', 'mes-fecha', 'reserva', 'meta', 'investir'];
+/** O foco já está resolvido? (os que são hábito, como controlar e comprar bem, nunca "acabam") */
+export function focoConcluido(id: string, e: Estado, hoje: string): boolean {
+  const mes = mesDe(hoje);
+  switch (id) {
+    case 'atrasos': return atrasosAbertos(e, hoje).length === 0;
+    case 'dividas': return e.dividas.length > 0 && totalDividas(e.dividas) === 0;
+    case 'mes-fecha': { const d = detalheDisponivel(e, mes, hoje); return d.modo !== 'incompleto' && d.livre >= 0; }
+    case 'reserva': { const m = reservaMeta(e, mes); return m > 0 && patrimonioGuardado(e) >= m; }
+    case 'meta': return e.metas.length > 0 && e.metas.every((x) => x.guardados.reduce((t, g) => t + g.valor, 0) >= x.alvo - 0.005);
+    case 'investir': return e.aportes.some((a) => a.origem === 'investimento' && a.valor > 0);
+    default: return false;
+  }
+}
+export interface Evolucao { concluido: Foco; proximo: Foco | null; porque: string }
+/** Algum foco do plano foi concluído? Diz qual e propõe o próximo (o que os números pedem, senão o próximo do caminho). */
+export function evolucaoDoPlano(e: Estado, hoje: string): Evolucao | null {
+  const pl = e.caminho?.plano;
+  if (!pl) return null;
+  const feito = pl.focos.find((f) => focoConcluido(f, e, hoje));
+  if (!feito) return null;
+  const ja = new Set(pl.focos);
+  // primeiro o que os números pedem dentro da ordem do caminho; hábitos (controlar, comprar bem) só se não houver outro
+  const indicado = focosIndicados(e, hoje).find((x) => ORDEM_DO_CAMINHO.includes(x.foco.id) && !ja.has(x.foco.id) && !focoConcluido(x.foco.id, e, hoje));
+  const daOrdem = ORDEM_DO_CAMINHO.slice(ORDEM_DO_CAMINHO.indexOf(feito) + 1).map((id) => foco(id)!).find((f) => !ja.has(f.id) && !focoConcluido(f.id, e, hoje) && !pl.esconder.includes(f.id));
+  const proximo = indicado?.foco ?? daOrdem ?? null;
+  return { concluido: foco(feito)!, proximo, porque: indicado?.porque ?? (proximo ? 'É o próximo passo do seu caminho.' : 'Você chegou longe. Escolha um novo objetivo quando quiser.') };
+}
+/** Troca o foco concluído pelo próximo (ou só tira o concluído). As ferramentas liberadas pelo Coach continuam. */
+export function trocarFoco(pl: PlanoPessoal, concluido: string, proximo: string | null): PlanoPessoal {
+  const focos = pl.focos.filter((f) => f !== concluido);
+  return { ...pl, focos: proximo && !focos.includes(proximo) ? [...focos, proximo].slice(0, 3) : focos };
+}

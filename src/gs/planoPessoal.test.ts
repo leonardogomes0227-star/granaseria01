@@ -72,3 +72,20 @@ describe('plano pessoal', () => {
     expect(migrar({ caminho: { plano: { focos: [] } } }).caminho.plano).toBeUndefined();
   });
 });
+
+describe('o plano evolui', async () => {
+  const { evolucaoDoPlano, trocarFoco, focoConcluido } = await import('./planoPessoal');
+  it('foco concluído: parabeniza e propõe o próximo do caminho', () => {
+    const quitou = base({ dividas: [{ id: 'd', nome: 'Cartão', saldo: 500, jurosMensal: 12, parcelaMinima: 100, pagamentos: [{ data: HOJE, valor: 500 }] }], gastosFixos: [{ id: 'a', nome: 'Aluguel', valor: 1000, diaVencimento: 5, categoria: 'Aluguel', pagamentos: { '2026-11': { valorPago: 1000, pagoEm: '2026-11-05' } }, criadaEm: '2026-11-01' }] });
+    const e = comPlano(quitou, ['dividas']);
+    expect(focoConcluido('dividas', e, HOJE)).toBe(true);
+    const ev = evolucaoDoPlano(e, HOJE)!;
+    expect(ev.concluido.id).toBe('dividas');
+    expect(ev.proximo?.id).toBe('reserva');
+    expect(trocarFoco(e.caminho.plano!, 'dividas', 'reserva').focos).toEqual(['reserva']);
+  });
+  it('sem foco concluído, nada muda; hábito nunca "acaba"', () => {
+    expect(evolucaoDoPlano(comPlano(base(), ['controlar']), HOJE)).toBeNull();
+    expect(evolucaoDoPlano(base(), HOJE)).toBeNull();
+  });
+});

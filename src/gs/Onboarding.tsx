@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { MontarPlano } from './MontarPlano';
 import { waLink } from '../whatsapp';
 import { useNavigate } from 'react-router-dom';
 import { Moeda } from '../components/ui/Moeda';
@@ -194,9 +195,11 @@ function PrimeiraVisao({ temDivida, temCartao, onIr }: { temDivida: boolean | nu
           Pelo que você me contou, você pode gastar cerca de <b>{brl(d.porDia)}</b> por dia até o fim do mês. É uma <b>estimativa</b>: ela fica mais certeira quando você registra gastos e informa seu saldo.
         </p>
       )}
+      {/* o último passo: o Coach monta o plano, e a tela inicial já nasce só com o que a pessoa vai usar */}
+      <div style={{ marginTop: 16 }}><MontarPlano onPronto={() => onIr()} /></div>
       <div className="gs-acoes">
         {proximos.map(([t, r]) => <button key={r} type="button" className="gs-btn sec" onClick={() => onIr(r)}>{t}</button>)}
-        <button type="button" className="gs-btn cheio" onClick={() => onIr()}>Ver meu caminho</button>
+        <button type="button" className="gs-btn link" onClick={() => onIr()}>Pular e ver meu caminho</button>
       </div>
       <section className="cm-card" style={{ marginTop: 20 }} aria-label="WhatsApp">
         <span className="cm-eyebrow">Mais fácil ainda</span>

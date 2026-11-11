@@ -5,7 +5,8 @@
 
 import { sendTemplate } from '../server/whatsapp/meta.js';
 import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
-import { bumpUsage, listFlagged } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getProfile, listFlagged } from '../server/whatsapp/hubdb.js';
+import { linhaDoCaminho } from '../server/lembretesCoach.js';
 import { monthlySummary, weeklySummary } from '../server/whatsapp/summary.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { runCoach } from '../server/coach.js';
@@ -71,7 +72,10 @@ export async function GET(request: Request): Promise<Response> {
         ]);
         const summary = weeklySummary({ recent, monthExpenses, monthIncomes, now });
         if (summary) {
-          await sendTemplate(phone, weeklyTemplate, language, summary.params);
+          // o último campo do modelo é a dica da semana: quem usa o site recebe ali o progresso no caminho
+          const caminho = linhaDoCaminho(await getProfile(phone).catch(() => ({})), todayIso);
+          const params = caminho ? [...summary.params.slice(0, 3), caminho] : summary.params;
+          await sendTemplate(phone, weeklyTemplate, language, params);
           sent++;
         } else skipped++;
       }
