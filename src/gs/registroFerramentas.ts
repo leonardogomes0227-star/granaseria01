@@ -11,6 +11,7 @@ import { serieMensal } from './evolucaoLogica.js';
 import { rumoDoExtra } from './extrasLogica.js';
 import { valorFuturo } from './ferramentas.js';
 import { passosDoMes } from './passos.js';
+import { saudeFinanceira } from './saude.js';
 import { caminhoInvestir } from './investir/calculos.js';
 import { situacaoAtrasos as _sa } from './atrasosLogica.js';
 import type { Estado } from './tipos.js';
@@ -109,6 +110,8 @@ export const FERRAMENTAS: Ferramenta[] = [
 
   /* ---------- Perfil ---------- */
   { id: 'dados', area: 'perfil', grupo: 'Sua conta', icone: 'pessoa', titulo: 'Meus dados', resolve: 'Mudar renda, salário ou nome', rota: '/dados', palavrasBusca: 'meus dados renda salario nome saldo conta apagar limpar', alimentaCaminho: false, status: (e) => s(e.config.renda > 0 ? `renda de ${brl0(e.config.renda)}` : 'Informe sua renda', e.config.renda > 0 ? '' : 'aviso') },
+  { id: 'saude', area: 'perfil', grupo: 'Sua conta', icone: 'escudo', titulo: 'Saúde financeira', resolve: 'Como estou, de 0 a 100?', rota: '/perfil#saude', palavrasBusca: 'saude financeira nota pontuacao como estou situacao avaliacao', alimentaCaminho: false,
+    status: (e, hoje) => { const r = saudeFinanceira(e, mesDe(hoje), hoje); return e.config.renda > 0 ? s(`nota ${r.nota} de 100 · o que mais pesa: ${r.pior.nome.toLowerCase()}`, r.nota < 40 ? 'aviso' : r.nota >= 75 ? 'ok' : '') : s('Informe a renda para ver a sua nota'); } },
   { id: 'planos', area: 'perfil', grupo: 'Sua conta', icone: 'coroa', titulo: 'Planos', resolve: 'O que tem no plano pago?', rota: '/planos', palavrasBusca: 'planos assinatura preco pagar premium', alimentaCaminho: false, status: fixo('Grátis, mensal e anual') },
   { id: 'assistentes', area: 'perfil', grupo: 'Avisos e WhatsApp', icone: 'sino', titulo: 'Lembretes e assistentes', resolve: 'Quero ser avisado antes de vencer', rota: '/assistentes', palavrasBusca: 'lembretes assistentes avisos notificacao lembrar', alimentaCaminho: false, status: (e) => { const n = e.agentesCustom.filter((a) => a.ativo).length; return s(n ? `${n} lembrete${n > 1 ? 's' : ''} ligado${n > 1 ? 's' : ''}` : 'Avise antes de vencer'); } },
   { id: 'whatsapp', area: 'perfil', grupo: 'Avisos e WhatsApp', icone: 'conversa', titulo: 'WhatsApp', resolve: 'Anotar gasto por mensagem ou foto', rota: '/perfil#whatsapp', palavrasBusca: 'whatsapp zap mensagem foto cupom audio anotar pelo celular', alimentaCaminho: true, status: fixo('"gastei 35 no mercado" ou a foto do cupom') },

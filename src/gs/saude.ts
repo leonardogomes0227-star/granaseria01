@@ -1,9 +1,9 @@
 // Nota de saúde financeira (0 a 100): 4 critérios com o mesmo peso. Pura, com teste.
 
-import { brl0 } from './datas';
-import { saldoAtual, totalDividas } from './dividas';
-import { contasDoMes, gastoMensalMedio, guardadoNoMes, patrimonioGuardado, totalFixos, totalVariaveis } from './selectores';
-import type { Estado } from './tipos';
+import { brl0 } from './datas.js';
+import { saldoAtual, totalDividas } from './dividas.js';
+import { contasDoMes, gastoMensalMedio, guardadoNoMes, patrimonioGuardado, totalFixos, totalVariaveis } from './selectores.js';
+import type { Estado } from './tipos.js';
 
 export interface Criterio {
   id: 'reserva' | 'dividas' | 'poupanca' | 'contas';

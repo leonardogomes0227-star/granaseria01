@@ -392,3 +392,6 @@ Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informaçã
 - **Pacote principal de 929 KB para 662 KB** (−29%): tela Caminho, áreas, ferramentas antigas e passos do diagnóstico carregam sob demanda. Lighthouse mobile: desempenho 87 → 90, acessibilidade, boas práticas e SEO em 100.
 - **Acessibilidade das telas antigas** (diagnóstico e `/ferramentas/:slug`), que não tinham sido medidas: contraste AA (a legenda antiga `#877B69` virou `#6B6253`) e toque de 44px, no claro e no escuro. Varredura em 21 telas sem violação de axe.
 - Limite conhecido: os interruptores de aviso do Coach seguem 52×32 na tela, com a área de toque ampliada por CSS; o link "Definir limites" é um link dentro do texto (exceção da regra de toque).
+- **Volta combinada com o Coach também pelo WhatsApp** (`server/lembretesCoach.ts`, com teste; `api/lembretes.ts`): no dia combinado, quem ligou os lembretes recebe "Combinamos de conversar hoje: …" pelo mesmo modelo aprovado do lembrete do plano. Os assuntos prontos do Coach agora oferecem "Daqui a 7 dias eu te pergunto como foi".
+- **Saúde financeira (0 a 100)** voltou a aparecer, no Perfil, com cada critério, o que mais pesa e um botão para melhorar. Entra no registro e no básico do plano.
+- **Interruptores de aviso** do Coach com 44px de área de toque.

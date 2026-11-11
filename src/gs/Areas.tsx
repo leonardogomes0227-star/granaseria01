@@ -22,6 +22,7 @@ import { abrirAdicionar } from './AdicionarMov';
 import { abrirResolver } from './Resolver';
 import { Card, Eyebrow, Lista, ListItem, Moeda, ProgressRing, Segmented, ToolGrid, ToolTile } from './base';
 import { corDe } from './categorias';
+import { saudeFinanceira } from './saude';
 import { definirTema, useTema } from './tema';
 import { mascarar, useOculto } from './privacidade';
 import { getName } from '../painel';
@@ -269,6 +270,31 @@ export function TodasFerramentas() {
   );
 }
 
+/** A nota de saúde financeira (0 a 100), com o porquê de cada parte e uma ação para a que mais pesa. Fica no Perfil: é um retrato, não um passo. */
+function SaudeFinanceira() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const r = useMemo(() => saudeFinanceira(e, mesDe(hoje), hoje), [e, hoje]);
+  if (e.config.renda <= 0) return null;
+  const frase = r.nota >= 75 ? 'Suas finanças estão saudáveis. Agora é manter.' : r.nota >= 40 ? 'No caminho. Um ponto por vez, e a nota sobe.' : 'Hora de cuidar com carinho, e tem saída.';
+  return (
+    <section className="cm-card" id="saude" aria-label="Saúde financeira" style={{ scrollMarginTop: 80 }}>
+      <div style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+        <ProgressRing pct={r.nota} tamanho={112} rotulo="Saúde financeira"><b className="cm-num" style={{ fontSize: 34 }}>{r.nota}</b></ProgressRing>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <Eyebrow>Saúde financeira · de 0 a 100</Eyebrow>
+          <b style={{ display: 'block', font: '600 22px/1.25 var(--cm-serif)', margin: '6px 0' }}>{frase}</b>
+          <p className="cm-mudo" style={{ margin: 0 }}>O que mais pesa agora: <b>{r.pior.nome.toLowerCase()}</b> ({r.pior.detalhe}). {r.pior.dica}</p>
+        </div>
+      </div>
+      <Lista rotulo="Como a nota é calculada">
+        {r.criterios.map((c) => <ListItem key={c.id} faixa={`${Math.round(c.pontos)}`} tomFaixa={c.pontos >= 75 ? 'ok' : c.pontos < 40 ? 'aviso' : ''} titulo={c.nome} sub={c.detalhe} rota={c.rota} />)}
+      </Lista>
+      <Link to={r.pior.rota} className="gs-btn">Melhorar {r.pior.nome.toLowerCase()}</Link>
+    </section>
+  );
+}
+
 /* ---------- Perfil: seus dados, avisos, WhatsApp, planos, instalar, guias, sobre ---------- */
 export function Perfil() {
   const e = useEstado();
@@ -291,6 +317,8 @@ export function Perfil() {
         </ul>
         <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Abrir o WhatsApp</a>
       </section>
+
+      <SaudeFinanceira />
 
       <GradeFerramentas area="perfil" />
 

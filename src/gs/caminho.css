@@ -279,8 +279,8 @@ html.gs-app[data-tema="escuro"] .cm-campo-busca { background: #0E0D0B; }
 html.gs-app[data-tema="escuro"] .cm-faixa.aviso { color: #E0B050; }
 .cm-marca { min-height: 44px; }
 .cm-h2 a, .cm-h2 button { min-height: 44px; display: inline-flex; align-items: center; }
-html.gs-app .gs-switch { position: relative; }
-html.gs-app .gs-switch::before { content: ''; position: absolute; inset: -6px -4px; }
+/* interruptor: a pílula continua do mesmo tamanho, mas a área de toque tem 44px de altura */
+html.gs-app .gs-switch { position: relative; height: 44px; padding: 9px 3px; background-clip: content-box; box-sizing: border-box; }
 /* fonte grande (130%): o nome nunca é espremido; valor e botão descem para a linha de baixo */
 .cm-item-lista { flex-wrap: wrap; row-gap: 8px; }
 .cm-item-lista .corpo { flex: 1 1 150px; min-width: 130px; }

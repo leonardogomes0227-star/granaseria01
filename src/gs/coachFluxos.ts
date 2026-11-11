@@ -120,7 +120,18 @@ const destinoFrase = (e: Estado, hoje: string) => {
   return f.data ? `Seu destino agora: ${f.antes.toLowerCase()} ${f.data}.` : `Seu destino agora: ${d.titulo.toLowerCase()}. ${d.pendencia ?? ''}`;
 };
 
+/** Um fluxo que termina numa decisão combina uma volta: "daqui a 7 dias eu te pergunto como foi". */
+const COMBINAM_VOLTA: FluxoId[] = ['mes-nao-fecha', 'conta-atrasada', 'sair-das-dividas', 'emprestimo', 'posso-comprar', 'onde-errando', 'dinheiro-extra'];
 export function rodarFluxo(id: FluxoId, e: Estado, hoje: string, ent: Entrada = {}): RespostaFluxo {
+  const r = rodarFluxoBase(id, e, hoje, ent);
+  const decidiu = r.acoes.some((a) => a.tipo !== 'abrir_ferramenta');
+  if (!COMBINAM_VOLTA.includes(id) || !decidiu || r.acoes.length >= 3) return r;
+  const f = FLUXOS.find((x) => x.id === id)!;
+  const volta = normalizarAcao('criar_lembrete', { texto: `Como foi: ${f.titulo.toLowerCase().replace(/\?$/, '')}`, data: somaDiasISO(hoje, 7) });
+  return volta ? { ...r, acoes: [...r.acoes, { ...volta, titulo: 'Daqui a 7 dias eu te pergunto como foi', detalhe: `Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também.` }] } : r;
+}
+
+function rodarFluxoBase(id: FluxoId, e: Estado, hoje: string, ent: Entrada = {}): RespostaFluxo {
   const mes = mesDe(hoje);
   const disp = detalheDisponivel(e, mes, hoje);
   const semRenda = disp.modo === 'incompleto';
