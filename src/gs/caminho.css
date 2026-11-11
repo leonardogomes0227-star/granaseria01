@@ -635,3 +635,14 @@ html.gs-app[data-tema="escuro"] .dv-hero { background: linear-gradient(155deg, r
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .ini-destaque, .ini-config, .ini-linha, .ini-cards > *, .ini-resumo a, .ms-lista, .ms-perfil, .ad-acao, .cm-lista, .cm-card, html.gs-app .gs-card { background: var(--cm-papel); }
 }
+
+/* Dívidas: cada dívida é um card de vidro, com saldo grande e barra de quanto já foi pago */
+.dv-lista { display: grid; gap: 14px; margin-bottom: 20px; }
+.dv-card { display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 8px; border-radius: 26px; background: var(--gl-vidro); -webkit-backdrop-filter: var(--gl-desfoque); backdrop-filter: var(--gl-desfoque); border: 1px solid var(--gl-borda); box-shadow: var(--gl-sombra); }
+.dv-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.dv-topo .gs-corpo { display: flex; flex-direction: column; min-width: 0; }
+.dv-topo b { font: 700 17px/1.3 var(--cm-sans); color: var(--cm-tinta); overflow-wrap: anywhere; }
+.dv-pos { align-self: flex-start; margin-bottom: 4px; padding: 3px 10px; border-radius: 999px; background: rgba(217, 180, 94, .25); color: var(--cm-ouro-texto); font: 700 11.5px var(--cm-sans); letter-spacing: .04em; text-transform: uppercase; }
+.dv-saldo { font: 800 24px var(--cm-sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.dv-card > small { font: 500 13.5px var(--cm-sans); color: var(--cm-tinta-2); }
+.dv-pe { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 600 13px var(--cm-sans); color: var(--cm-tinta-2); }

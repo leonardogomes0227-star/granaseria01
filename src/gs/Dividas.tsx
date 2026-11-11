@@ -168,27 +168,33 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
             <p className="gs-mudo" style={{ margin: '6px 0 0', fontSize: 13 }}>{brl0(pagoMes)} de {brl0(plano.pagamentoMensal)} neste mês</p>
           </section>
 
-          <details className="gs-card" open={abertas.length <= 3} style={{ padding: '4px 20px' }}>
-            <summary style={{ minHeight: 52, display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 700 }}>{abertas.length > 1 ? `Suas ${abertas.length} dívidas` : 'Sua dívida'}</summary>
-            <div style={{ paddingBottom: 8 }}>
-              {[...abertas].sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id)).map((d) => {
-                const q = resultado.quitaEm[d.id];
-                const pos = ordem.indexOf(d.id);
-                const pago = d.saldo - saldoAtual(d);
-                return (
-                  <div key={d.id} className="gs-linha" style={{ flexWrap: 'wrap' }}>
+          <h2 className="cm-h2">{abertas.length > 1 ? `Suas ${abertas.length} dívidas` : 'Sua dívida'}</h2>
+          <div className="dv-lista">
+            {[...abertas].sort((a, b) => ordem.indexOf(a.id) - ordem.indexOf(b.id)).map((d) => {
+              const q = resultado.quitaEm[d.id];
+              const pos = ordem.indexOf(d.id);
+              const pago = d.saldo - saldoAtual(d);
+              const pctPago = d.saldo > 0 ? (pago / d.saldo) * 100 : 0;
+              return (
+                <article key={d.id} className="dv-card">
+                  <div className="dv-topo">
                     <div className="gs-corpo">
-                      <b>{abertas.length > 1 && pos >= 0 ? `${pos + 1}ª · ` : ''}{d.nome}</b>
-                      <small>{brl0(saldoAtual(d))}{d.jurosMensal > 0 ? ` · ${pct(d.jurosMensal, 1)} ao mês` : ' · sem juros'}{q ? ` · quita ${mesCurto(somaMes(mesAtual(), q))}` : ''}</small>
+                      {abertas.length > 1 && pos >= 0 && <span className="dv-pos">{pos + 1}ª a pagar</span>}
+                      <b>{d.nome}</b>
                       {anual(d.jurosMensal) >= 100 && <span className="gs-etiqueta perigo" style={{ marginTop: 4 }}>juro muito alto</span>}
                     </div>
-                    <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>{d.parcelaMinima <= 0 ? 'Informar a parcela' : 'Editar'}</button>
-                    {pago > 0 && <div style={{ flexBasis: '100%' }}><Barra pct={(pago / d.saldo) * 100} tom="ok" rotulo={`Quanto já pagou de ${d.nome}`} /></div>}
+                    <strong className="dv-saldo">{brl0(saldoAtual(d))}</strong>
                   </div>
-                );
-              })}
-            </div>
-          </details>
+                  <small>{d.jurosMensal > 0 ? `${pct(d.jurosMensal, 1)} ao mês` : 'sem juros'}{q ? ` · quita ${mesCurto(somaMes(mesAtual(), q))}` : ''}{d.venceDia ? ` · vence dia ${d.venceDia}` : ''}</small>
+                  <Barra pct={pctPago} tom="ok" rotulo={`Quanto já pagou de ${d.nome}`} />
+                  <div className="dv-pe">
+                    <span>{pago > 0 ? `${Math.round(pctPago)}% pago` : 'Nenhum pagamento ainda'}</span>
+                    <button type="button" className="gs-btn link" onClick={() => onEditar(d)}>{d.parcelaMinima <= 0 ? 'Informar a parcela' : 'Editar'}</button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
 
           <Quitadas />
         </>
