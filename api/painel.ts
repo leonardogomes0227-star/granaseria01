@@ -8,6 +8,7 @@ import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
+import { protegerEstado } from '../server/protegerEstado.js';
 
 const MAX_BYTES = 500_000; // o estado do app novo cresce com lançamentos e conversa de investimentos
 
@@ -78,7 +79,9 @@ export async function PUT(request: Request): Promise<Response> {
     if (typeof v === 'string') next[k] = v;
     else if (v === null) delete next[k];
   }
-  await (userId ? saveState(userId, next) : saveProfile(phone, next));
+  // proteção: um estado em branco não apaga um com dados, e o anterior fica guardado como cópia de segurança
+  const protegido = protegerEstado(state, next);
+  await (userId ? saveState(userId, protegido) : saveProfile(phone, protegido));
   return Response.json({ updatedAt: new Date().toISOString() });
 }
 
