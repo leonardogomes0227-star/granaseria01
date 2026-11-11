@@ -98,7 +98,7 @@ export function AdicionarMov() {
     setErro('');
     try {
       const data = await new Promise<string>((ok, falha) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] ?? ''); r.onerror = falha; r.readAsDataURL(f); });
-      const res = await fetch('/api/comprovante', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${painelToken() ?? ''}` }, body: JSON.stringify({ mediaType: f.type, data }) });
+      const res = await fetch('/api/fatura', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${painelToken() ?? ''}` }, body: JSON.stringify({ tipo: 'comprovante', mediaType: f.type, data }) });
       const j = (await res.json().catch(() => ({}))) as { comprovante?: { tipo: string; valor: number; descricao: string; forma_pagamento: string; data: string }; error?: string };
       if (!j.comprovante) return setErro(j.error ?? 'Não consegui ler a foto agora. Anote o valor à mão.');
       const c = j.comprovante;
