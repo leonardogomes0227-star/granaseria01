@@ -5,7 +5,7 @@ import { abrirAdicionar } from './AdicionarMov';
 import { getName } from '../painel';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { brl, brl0, diaCurto, mesDe, nomeMes } from './datas';
+import { brl, brl0, diaCurto, mesDe, nomeMes, somaDias } from './datas';
 import { contasDoMes, detalheDisponivel, fixosPagos, guardadoNoMes, totalFixos, type ContaDoMes } from './selectores';
 import { paraSim, saldoAtual, simular } from './dividas';
 import { planoDeQuitacao } from './caminho';
@@ -14,6 +14,8 @@ import { ComoCalculei } from './ComoCalculei';
 import { BaixaSheet } from './BaixaSheet';
 import { Folha } from './ui';
 import { definirOculto, mascarar, useOculto } from './privacidade';
+import { BarraPerguntar, PerguntarSobre } from './Assistente';
+import { LinhaArea, Medidor, MiniBarras } from './graficosMini';
 
 /* ---------- Início: o centro do app ---------- */
 // De cima para baixo: quem é você e que mês é; quanto falta pagar; o que vence esta semana; o que dá para fazer agora;
@@ -54,6 +56,17 @@ export function Caderno() {
   }, [e, mes]);
   const gastoMes = e.lancamentos.filter((l) => mesDe(l.data) === mes).reduce((t, l) => t + l.valor, 0);
   const guardado = guardadoNoMes(e, mes);
+  // gráficos: gasto de cada um dos últimos 7 dias e o acumulado do mês, dia a dia
+  const { seteDias, acumulado, diaHoje } = useMemo(() => {
+    const porDia = new Map<string, number>();
+    for (const l of e.lancamentos) porDia.set(l.data, (porDia.get(l.data) ?? 0) + l.valor);
+    const sete = Array.from({ length: 7 }, (_, i) => porDia.get(somaDias(hoje, i - 6)) ?? 0);
+    const diasNoMes = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).getUTCDate();
+    let soma = 0;
+    const acc = Array.from({ length: diasNoMes }, (_, i) => (soma += porDia.get(`${mes}-${String(i + 1).padStart(2, '0')}`) ?? 0));
+    return { seteDias: sete, acumulado: acc, diaHoje: Number(hoje.slice(8, 10)) };
+  }, [e.lancamentos, hoje, mes]);
+  const dividaPaga = e.dividas.reduce((t, d) => t + d.saldo, 0) > 0 ? (1 - e.dividas.reduce((t, d) => t + saldoAtual(d), 0) / e.dividas.reduce((t, d) => t + d.saldo, 0)) * 100 : 0;
   const sobra = disp.modo === 'incompleto' ? null : disp.livre;
   const semContas = e.gastosFixos.length === 0;
   const mesNome = nomeMes(mes);
@@ -77,11 +90,13 @@ export function Caderno() {
         </div>
         <button type="button" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}</button>
       </header>
+      <BarraPerguntar />
 
       <div className="ini-grade">
       <div className="ini-a">
       <section className="ini-destaque" aria-label="Falta pagar este mês">
         <span className="cm-eyebrow">Falta pagar este mês</span>
+        {!semContas && total > 0 && <Medidor pct={(pago / total) * 100} rotulo="Contas do mês pagas" legenda="pago" />}
         {semContas ? (
           <>
             <b className="ini-valor">{m(brl0(0))}</b>
@@ -111,6 +126,7 @@ export function Caderno() {
             </>
           )}
         </div>
+        <PerguntarSobre pergunta="O que eu pago primeiro?" />
       </section>
 
       {configurando && proximoPasso >= 0 && (
@@ -168,12 +184,14 @@ export function Caderno() {
           <Wallet size={20} aria-hidden="true" />
           <small>Gastos</small>
           <b>{m(brl0(gastoMes))}</b>
-          <em>{gastoMes > 0 ? 'Ver o que anotou' : 'Nada anotado'}</em>
+          <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
+          <em>{gastoMes > 0 ? 'Últimos 7 dias' : 'Nada anotado'}</em>
         </Link>
         <Link to="/plano/dividas">
           <Landmark size={20} aria-hidden="true" />
           <small>Dívidas</small>
           <b>{dividas ? m(brl0(dividas.total)) : e.dividas.length ? 'Quitadas' : 'Nenhuma'}</b>
+          {dividas && <span className="gm-fio" aria-hidden="true"><i style={{ width: `${Math.max(4, dividaPaga)}%` }} /></span>}
           <em>{dividas ? (dividas.fim ? `Livre em ${nomeMes(dividas.fim).split(' ')[0]}` : 'Veja como sair') : 'Toque para anotar'}</em>
         </Link>
         <Link to="/guardar">
@@ -183,6 +201,15 @@ export function Caderno() {
           <em>{guardado > 0 ? 'Neste mês' : 'Comece pequeno'}</em>
         </Link>
       </div>
+      <section className="ini-grafico" aria-label="Gastos do mês, dia a dia">
+        <header>
+          <div><small>Gastos em {mesNome.split(' ')[0]}</small><b>{m(brl0(gastoMes))}</b></div>
+          <Link to="/relatorios" className="gs-btn sec pequeno">Relatórios</Link>
+        </header>
+        <LinhaArea valores={acumulado} ate={diaHoje} rotulo="Gasto acumulado no mês, dia a dia" />
+        <footer><span>dia 1</span><span>{gastoMes > 0 ? 'acumulado até hoje' : 'anote gastos para ver a linha subir'}</span><span>dia {acumulado.length}</span></footer>
+        <PerguntarSobre pergunta="Para onde foi meu dinheiro?" />
+      </section>
       </div>
       </div>
 
