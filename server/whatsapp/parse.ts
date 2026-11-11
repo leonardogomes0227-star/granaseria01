@@ -20,6 +20,7 @@ export type Command =
   | { kind: 'week' }
   | { kind: 'month' }
   | { kind: 'undo' }
+  | { kind: 'correct'; amount: number | null } // "era 30, não 35": troca o valor do último gasto (null: a pessoa só disse "corrigir")
   | { kind: 'help' }
   | { kind: 'unknown' };
 
@@ -30,6 +31,7 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
     keywords: [
       'mercado', 'supermercado', 'ifood', 'almoço', 'almoco', 'janta', 'jantar', 'lanche', 'padaria', 'restaurante',
       'comida', 'pizza', 'café', 'cafe', 'hamburguer', 'açougue', 'acougue', 'feira', 'hortifruti', 'marmita', 'delivery', 'sorvete', 'doce',
+      'almocei', 'jantei', 'lanchei', 'comi', 'pão', 'pao', 'açaí', 'acai', 'bebida', 'refrigerante', 'salgado', 'lanchonete', 'churrasco', 'atacadão', 'atacadao', 'quitanda', 'rappi',
     ],
   },
   {
@@ -38,7 +40,7 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
     keywords: [
       'uber', 'gasolina', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
       'estacionamento', 'pedágio', 'pedagio', 'taxi', 'táxi', 'passagem', 'oficina', 'mecânico', 'mecanico', 'ipva', 'posto',
-      'carro', 'moto', 'pneu', 'revisão', 'revisao', 'lava jato', 'lavagem', '99', 'bilhete único', 'cartão de transporte',
+      'abasteci', 'carro', 'moto', 'pneu', 'revisão', 'revisao', 'lava jato', 'lavagem', '99', 'bilhete único', 'cartão de transporte',
     ],
   },
   {
@@ -228,24 +230,47 @@ function parseIncome(rawText: string): Command | null {
   return { kind: 'income', amount, source, description: rest || (source === 'Outros' ? 'Entrada' : source), ...(method ? { method } : {}) };
 }
 
+// "cinquenta reais no mercado": o valor escrito por extenso (só os redondos, e só quando vem com reais/conto/pila)
+const POR_EXTENSO: Record<string, number> = { dez: 10, quinze: 15, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60, setenta: 70, oitenta: 80, noventa: 90, cem: 100, duzentos: 200, trezentos: 300, quatrocentos: 400, quinhentos: 500 };
+export function expandWords(text: string): string {
+  return text.replace(/\b([a-zà-ú]+)(\s+(?:reais|real|conto|contos|pila)\b)/gi, (tudo, palavra: string, resto: string) => {
+    const n = POR_EXTENSO[normalize(palavra)];
+    return n ? `${n}${resto}` : tudo;
+  });
+}
+
+const NUM = String.raw`(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*(?:reais|real|conto|contos|pila))?`;
+// "era 30 não 35", "na verdade foi 30", "corrige pra 30", "errei, era 30" → o primeiro número é o certo
+const CORRIGE_1 = new RegExp(`^(?:errei[, ]+)?(?:nao[, ]+)?(?:na verdade[, ]+)?(?:o valor (?:certo )?)?(?:era|eram|corrige|corrigir|corrija|muda|mudar|altera|alterar|troca|trocar)(?: o valor)?(?: (?:pra|para))? ${NUM}(?:[, ]+(?:e )?nao ${NUM})?$`);
+// "foi 30" sozinho pode ser a resposta de "quanto foi?", então só vale como correção com "na verdade", "errei" ou "não 35"
+const CORRIGE_FOI = new RegExp(`^(?:(?:errei|na verdade)[, ]+(?:na verdade[, ]+)?foi ${NUM}|foi ${NUM}[, ]+(?:e )?nao ${NUM})$`);
+// "não era 35, era 30" → o segundo número é o certo
+const CORRIGE_2 = new RegExp(`^(?:errei[, ]+)?nao (?:era|foi|eram) ${NUM}[, ]+(?:e sim |mas |era |foi |e )+${NUM}$`);
+
 export function parseMessage(input: string): Command {
-  const text = input.trim();
+  const text = expandWords(input.trim());
   const t = normalize(text).replace(/[!?.]+$/, '');
 
   if (/^(oi|ola|menu|ajuda|help|comandos|inicio|comecar|como funciona|como usar|\?)$/.test(t)) return { kind: 'help' };
   if (/^(obrigad[oa]|muito obrigad[oa]|brigad[oa]|valeu|vlw|show|top|massa|beleza|blz|ok|okay|certo|perfeito|otimo|tmj|👍|🙏|❤️|😊|🙂|👏)+$/u.test(t)) return { kind: 'thanks' };
+  if (/^(k{2,}|(ha){2,}h?|(rs){1,}|(he){2,}|tchau|ate mais|ate logo|ate amanha|falou|fui|boa|show de bola|legal|entendi|combinado|ta bom|tudo bem|de nada|😂|🤣|😅)+$/u.test(t)) return { kind: 'thanks' };
+  if (/^(corrigir|corrige|corrija|quero corrigir|como corrijo|como corrigir|editar|alterar|mudar( o)? valor)$/.test(t)) return { kind: 'correct', amount: null };
+  const c2 = t.match(CORRIGE_2);
+  const c1 = c2 ? null : (t.match(CORRIGE_1) ?? t.match(CORRIGE_FOI));
+  const certo = c2 ? parseAmount(c2[2]) : c1 ? parseAmount(c1[1] ?? c1[2]) : null;
+  if (certo !== null) return { kind: 'correct', amount: certo };
   if (/^(hoje|gastos de hoje|quanto gastei hoje)$/.test(t)) return { kind: 'today' };
   if (/^(ontem|gastos de ontem|quanto gastei ontem)$/.test(t)) return { kind: 'yesterday' };
   if (/^(ultimos|ultimos gastos|meus ultimos gastos|lista|listar)$/.test(t)) return { kind: 'recent' };
-  if (/^(quanto (ainda )?(posso|da pra|sobra pra) gastar|quanto (ainda )?(sobra|falta)|orcamento|meu orcamento|quanto ainda posso gastar neste mes)$/.test(t)) return { kind: 'budget' };
+  if (/^((quanto )?(eu )?(ainda )?posso gastar( quanto)?( hoje| por dia| esse mes| este mes| nesse mes)?|quanto (ainda )?(posso|da pra|sobra pra) gastar (hoje|por dia|esse mes|este mes|nesse mes)|quanto da pra gastar|quanto (ainda )?(sobra|falta)|orcamento|meu orcamento|quanto ainda posso gastar neste mes)$/.test(t)) return { kind: 'budget' };
   if (/^(semana|essa semana|esta semana|gastos da semana|quanto (eu )?gastei (na|nesta|nessa|essa|esta) semana)$/.test(t)) return { kind: 'week' };
-  if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total|quanto (eu )?gastei( no| neste| nesse| esse| este)? mes|quanto (eu )?gastei no total|quanto (eu )?gastei ate agora)$/.test(t)) return { kind: 'month' };
+  if (/^(mes|esse mes|este mes|resumo|extrato|gastos do mes|total|quanto (eu )?gastei( no| neste| nesse| esse| este)? mes|quanto (eu )?gastei no total|quanto (eu )?gastei ate agora|quanto (eu )?(ja )?gastei|como (ta|esta|anda|vai) (o )?meu mes|meus gastos|ver (meus )?gastos)$/.test(t)) return { kind: 'month' };
   const cq = t.match(/^quanto (?:eu )?(?:ja )?gastei (?:com|de|em|no|na|nos|nas) (.+?)( (neste|nesse|esse|este|no) mes)?$/);
   if (cq) return { kind: 'categoryQuery', term: cq[1] };
-  if (/^(apagar|apaga|desfazer|desfaz|cancelar|apagar ultimo|apaga o ultimo|errei)$/.test(t)) return { kind: 'undo' };
+  if (/^(apagar|apaga|desfazer|desfaz|cancelar|cancela|apagar (o )?ultimo|apaga o ultimo|apaga (isso|esse|esse ultimo)|remove|remover|excluir|exclui|tira (isso|esse)|errei|foi errado|mandei errado|anotei errado)$/.test(t)) return { kind: 'undo' };
   if (/^(apagar|apaga|desfazer|desfaz) (a )?(ultima )?(entrada|receita)( anotada)?$/.test(t)) return { kind: 'undoIncome' };
   if (/^(entradas|minhas entradas|entradas do mes|receitas|minhas receitas|receitas do mes|ganhos|quanto recebi|quanto entrou|dinheiro que entrou)$/.test(t)) return { kind: 'incomes' };
-  if (/^(saldo|meu saldo|saldo do mes|balanco|balanco do mes|entrou e saiu|quanto sobrou)$/.test(t)) return { kind: 'balance' };
+  if (/^(saldo|meu saldo|saldo do mes|balanco|balanco do mes|entrou e saiu|quanto (me )?sobrou|quanto (eu )?tenho|quanto (eu )?tenho de saldo|quanto tem|quanto sobra)$/.test(t)) return { kind: 'balance' };
   if (/^(resumo semanal|resumo da semana|minha semana|ligar resumo|ligar o resumo|receber resumo|quero o resumo|quero resumo)$/.test(t)) return { kind: 'weekly' };
   if (/^(parar resumo|parar o resumo|desligar resumo|desligar o resumo|sem resumo|nao quero resumo|cancelar resumo)$/.test(t)) return { kind: 'weeklyOff' };
   if (/^(formas de pagamento|forma de pagamento|gastos por forma de pagamento|gastos por pagamento|como paguei|pagamentos|por pagamento)$/.test(t)) return { kind: 'methods' };

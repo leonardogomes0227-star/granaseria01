@@ -28,8 +28,8 @@ function achaValor(t: string): { valor: number; resto: string } | null {
 
 export function comandoApp(texto: string): ComandoApp | null {
   const t = sem(texto);
-  if (/^(contas|minhas contas|contas fixas|contas do mes|o que vence|o que vence essa semana|o que vence hoje|o que falta pagar|calendario|calendario de contas)$/.test(t)) return { kind: 'contas' };
-  if (/^(dividas|minhas dividas|quanto devo|quanto eu devo|o que eu devo|situacao das dividas)$/.test(t)) return { kind: 'dividas' };
+  if (/^(contas|minhas contas|contas fixas|contas do mes|o que vence|o que vence essa semana|o que vence hoje|o que falta pagar|calendario|calendario de contas|o que (eu )?pago primeiro|o que pagar primeiro|quais contas faltam|que contas faltam|o que (eu )?tenho (que|pra) pagar|contas a pagar|contas atrasadas|o que ta atrasado|o que esta atrasado|proximas contas|proximos vencimentos)$/.test(t)) return { kind: 'contas' };
+  if (/^(dividas|minhas dividas|quanto devo|quanto eu devo|o que eu devo|situacao das dividas|quando (eu )?fico livre|quando (eu )?saio das dividas|quando (eu )?quito)$/.test(t)) return { kind: 'dividas' };
   const m = t.match(/^(?:paguei|pago|quitei|pagamos)\s+(.+)$/);
   if (!m) return null;
   const v = achaValor(m[1]);

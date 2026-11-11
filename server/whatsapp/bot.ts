@@ -177,6 +177,7 @@ export const HELP_TEXT = [
   '• *saldo* — o que entrou menos o que saiu',
   '• *formas de pagamento* — como você pagou (pix, cartão…)',
   '• *quanto ainda posso gastar* — o que sobra do que você planejou',
+  '• *era 30* — corrige o valor do último gasto',
   '• *apagar* — desfaz o último gasto (*apagar entrada* desfaz a última entrada)',
   '• *resumo semanal* — um resumo da semana todo domingo',
   '• *painel* — seu painel no site (seu mês, seu plano e as ferramentas)',
@@ -478,6 +479,15 @@ export async function handleText(
         console.error('WhatsApp: entradas indisponíveis', err);
         return INCOMES_OFF;
       }
+    }
+
+    case 'correct': {
+      if (cmd.amount === null || !deps.updateLastExpense) {
+        return 'Pra corrigir o último gasto, mande o valor certo assim: *era 30*. 🙂\nPra apagar o último, mande *apagar*.';
+      }
+      const feito = await deps.updateLastExpense(msg.phone, { amount: cmd.amount });
+      if (!feito) return 'Não encontrei nenhum gasto pra corrigir. Mande o gasto de novo, por exemplo: *mercado 30*.';
+      return `✏️ Corrigi: ${feito.after.description} era ${brl(feito.before.amount)}, agora é *${brl(feito.after.amount)}*.`;
     }
 
     case 'undo': {
