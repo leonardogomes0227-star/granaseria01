@@ -398,3 +398,10 @@ Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informaçã
 - **Onboarding termina no plano:** o último passo é o Coach montando o plano, então a tela inicial já nasce só com o que a pessoa vai usar ("Pular" continua possível).
 - **O plano evolui** (`evolucaoDoPlano`, `trocarFoco`, com teste): quando um foco é concluído (contas em dia, dívidas quitadas, mês fechando, reserva completa, metas batidas, primeiro investimento), a tela inicial mostra "Etapa vencida" e propõe o próximo foco, na ordem do caminho. Hábitos (controlar gastos, comprar bem) nunca "acabam".
 - **Resumo semanal do WhatsApp com o caminho** (`linhaDoCaminho`): o último campo do modelo `resumo_semanal` traz "Seu destino: … em …. Nesta semana você pagou R$ X e ficou N meses mais perto." para quem usa o site.
+
+### Início refeito como caderno (nov/2026)
+Feedback do dono: "confuso, amador, sem clareza nas ferramentas; prefiro um caderno". E: "procurei cartão e não achei; o coach só confunde".
+- **Início = caderno** (`Caderno.tsx`): folhas simples, uma por assunto: *A conta do mês* (entra, sai linha a linha e quanto sobra, das linhas de `detalheDisponivel`), *Contas do mês* (caixinha para marcar paga, atrasada em vermelho, pagas riscadas), *Dívidas* (quanto falta, parcela e quando acaba cada uma; "livre de todas em…"), *Gastos do dia a dia* (últimos 5, selo via WhatsApp) e *Ferramentas* (12 atalhos com nome simples).
+- **Barra de baixo:** Início · Contas · (+) · Dívidas · Ferramentas. O Coach saiu do topo e virou a ferramenta "Tirar uma dúvida".
+- **Nenhuma ferramenta escondida:** o plano pessoal só muda a ordem; áreas e Ferramentas mostram tudo.
+- A tela do caminho (destino, passos, marcos) continua em `/caminho`, como a ferramenta "Meu caminho". O onboarding termina direto no Início.

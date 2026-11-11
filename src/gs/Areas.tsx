@@ -39,11 +39,12 @@ export function GradeFerramentas({ area, todas = false }: { area: Area; todas?: 
     const c = f.continuar?.(e, hoje);
     return <ToolTile key={f.id} icone={f.icone} titulo={f.titulo} resolve={f.resolve} status={f.st.texto} tom={f.st.tom} rota={f.rota} continuar={c ? `Continuar (passo ${c.passo} de ${c.total}): ${c.o}` : undefined} />;
   };
-  const minhas = grade.flatMap((g) => g.itens).filter((f) => todas || lib.has(f.id));
-  const outras = todas ? [] : grade.flatMap((g) => g.itens).filter((f) => !lib.has(f.id));
+  // nenhuma ferramenta fica escondida: o dono achou que tinham sumido (ex.: cartão). O plano só muda a ordem.
+  const minhas = grade.flatMap((g) => g.itens).sort((a, b) => Number(lib.has(b.id)) - Number(lib.has(a.id)));
+  const outras: typeof minhas = [];
   return (
     <div id="ferramentas" style={{ scrollMarginTop: 80 }}>
-      {area !== 'perfil' && <h2 className="cm-h2">{todas ? NOME_AREA[area] : `Suas ferramentas de ${NOME_AREA[area]}`}</h2>}
+      {area !== 'perfil' && <h2 className="cm-h2">{todas ? TITULO_AREA[area] : `Ferramentas de ${TITULO_AREA[area]}`}</h2>}
       {minhas.length ? <ToolGrid>{minhas.map(tile)}</ToolGrid> : (
         <div className="cm-card suave">
           <p style={{ margin: 0, fontSize: 15.5, lineHeight: 1.5 }}>{e.caminho.plano ? `${resumoDoPlano(e.caminho.plano)} ${NOME_AREA[area]} entra depois: quando chegar a hora, o Coach libera as ferramentas daqui.` : `Ainda não há ferramentas de ${NOME_AREA[area]} no seu plano.`}</p>
@@ -59,6 +60,8 @@ export function GradeFerramentas({ area, todas = false }: { area: Area; todas?: 
     </div>
   );
 }
+
+const TITULO_AREA: Record<Area, string> = { pagar: 'Contas, dívidas e cartão', gastos: 'Gastos do dia a dia', guardar: 'Guardar e investir', caminho: 'Ajuda e seu caminho', perfil: 'Sua conta' };
 
 /** "Ver as 10 ferramentas": leva até a grade da área, para ninguém achar que elas sumiram. */
 export function AtalhoFerramentas({ area }: { area: Area }) {
@@ -257,10 +260,9 @@ export function AreaGuardar() {
 export function TodasFerramentas() {
   return (
     <>
-      <h1 className="gs-titulo">Todas as ferramentas</h1>
-      <p className="gs-sub">Todas as {FERRAMENTAS.length}. Cada uma responde uma pergunta.</p>
+      <h1 className="gs-titulo">Ferramentas</h1>
+      <p className="gs-sub">Tudo o que o app faz. Toque na que resolve o que você precisa.</p>
       <button type="button" className="cm-busca" onClick={abrirResolver}><Search size={20} aria-hidden="true" />O que você quer resolver?</button>
-      <p className="cm-mudo">As do seu plano aparecem nas suas telas. As outras ficam aqui: abra qualquer uma, ou coloque no seu plano.</p>
       {(Object.keys(GRUPOS) as Area[]).map((a) => (
         <section key={a} aria-label={NOME_AREA[a]}>
           <GradeFerramentas area={a} todas />
