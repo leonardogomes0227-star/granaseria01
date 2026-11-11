@@ -23,3 +23,18 @@ export function pesoDoEstado(bruto: string | null | undefined): number {
     (e.cartao ? 1 : 0) + (typeof cfg.renda === 'number' && cfg.renda > 0 ? 1 : 0) + (cfg.saldoInformado ? 1 : 0) + (cfg.onboardingFeito ? 1 : 0)
   );
 }
+
+/** Queda brusca: o estado novo tem menos da metade dos registros do anterior (e o anterior não era quase vazio).
+ *  É o sinal de um aparelho com poucos dados tentando passar por cima do completo. Apagar item por item nunca cai aqui. */
+export const reducaoBrusca = (antes: number, depois: number) => antes >= 6 && depois < antes * 0.5;
+
+export type QuemFica = 'remoto' | 'local' | 'perguntar' | 'pelaData';
+/** Quem ganha quando o aparelho e a conta têm estados diferentes. Dados nunca são trocados por (quase) nada:
+ *  em branco perde sempre; o que tem menos da metade perde sem perguntar; só entre tamanhos parecidos vale a data ou a escolha da pessoa. */
+export function quemFica(pesoLocal: number, pesoRemoto: number, primeiraVez: boolean): QuemFica {
+  if (pesoLocal === 0 && pesoRemoto > 0) return 'remoto';
+  if (pesoRemoto === 0 && pesoLocal > 0) return 'local';
+  if (reducaoBrusca(pesoLocal, pesoRemoto)) return 'local';
+  if (reducaoBrusca(pesoRemoto, pesoLocal)) return 'remoto';
+  return primeiraVez && pesoLocal > 0 && pesoRemoto > 0 ? 'perguntar' : 'pelaData';
+}

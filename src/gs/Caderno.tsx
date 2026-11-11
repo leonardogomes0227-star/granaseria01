@@ -14,6 +14,7 @@ import { ComoCalculei } from './ComoCalculei';
 import { BaixaSheet } from './BaixaSheet';
 import { Folha } from './ui';
 import { definirOculto, mascarar, useOculto } from './privacidade';
+import { AvisoCopiaMaior } from './RecuperarDados';
 import { BarraPerguntar, PerguntarSobre } from './Assistente';
 import { LinhaArea, Medidor, MiniBarras } from './graficosMini';
 
@@ -91,6 +92,7 @@ export function Caderno() {
         <button type="button" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}</button>
       </header>
       <BarraPerguntar />
+      <AvisoCopiaMaior />
 
       <div className="ini-grade">
       <div className="ini-a">

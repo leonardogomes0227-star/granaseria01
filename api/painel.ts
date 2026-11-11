@@ -8,7 +8,7 @@ import { startOfMonthBRT } from '../server/whatsapp/bot.js';
 import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
-import { protegerEstado } from '../server/protegerEstado.js';
+import { foiMantido, listarCopias, protegerEstado } from '../server/protegerEstado.js';
 import { pesoDoEstado } from '../src/gs/pesoEstado.js';
 
 const MAX_BYTES = 500_000; // o estado do app novo cresce com lançamentos e conversa de investimentos
@@ -38,6 +38,8 @@ const masked = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phon
 export async function GET(request: Request): Promise<Response> {
   const phone = await auth(request);
   if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  // ?copias=1: as cópias de segurança guardadas, para a tela "Recuperar dados" (Meus dados)
+  if (new URL(request.url).searchParams.get('copias') === '1') return Response.json({ copias: listarCopias((await loadState(phone)).state) });
   const now = new Date();
   const since = startOfMonthBRT(now);
   const [{ state, updatedAt }, expenses, incomes] = await Promise.all([
@@ -66,7 +68,7 @@ export async function PUT(request: Request): Promise<Response> {
   if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
   const raw = await request.text();
   if (raw.length > MAX_BYTES) return Response.json({ error: 'grande demais' }, { status: 413 });
-  let body: { state?: Record<string, unknown> };
+  let body: { state?: Record<string, unknown>; permitirReducao?: unknown };
   try {
     body = JSON.parse(raw);
   } catch {
@@ -84,9 +86,10 @@ export async function PUT(request: Request): Promise<Response> {
     else if (v === null) delete next[k];
   }
   // proteção: um estado em branco não apaga um com dados, e o anterior fica guardado como cópia de segurança
-  const protegido = protegerEstado(state, next);
+  const protegido = protegerEstado(state, next, new Date(), body.permitirReducao === true);
   await (userId ? saveState(userId, protegido) : saveProfile(phone, protegido));
-  return Response.json({ updatedAt: new Date().toISOString() });
+  // mantido: o servidor não aceitou trocar os dados por um estado bem menor; o aparelho busca o da conta em vez de insistir
+  return Response.json({ updatedAt: new Date().toISOString(), mantido: foiMantido(state, next, protegido) });
 }
 
 /**

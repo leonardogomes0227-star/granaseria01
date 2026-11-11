@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { protegerEstado, BACKUPS } from './protegerEstado';
-import { pesoDoEstado } from '../src/gs/pesoEstado';
+import { protegerEstado, BACKUPS, foiMantido, listarCopias } from './protegerEstado';
+import { pesoDoEstado, quemFica, reducaoBrusca } from '../src/gs/pesoEstado';
 
 const cheio = JSON.stringify({ config: { renda: 3000, onboardingFeito: true }, lancamentos: [{ id: 'a' }, { id: 'b' }], gastosFixos: [{ id: 'g' }] });
 const vazio = JSON.stringify({ config: { renda: 0, onboardingFeito: false }, lancamentos: [], gastosFixos: [] });
@@ -28,5 +28,46 @@ describe('proteção do estado no servidor', () => {
     const r = protegerEstado({ 'grana-seria:v1': vazio }, { 'grana-seria:v1': cheio });
     expect(r['grana-seria:v1']).toBe(cheio);
     expect(r[BACKUPS[0]]).toBeUndefined();
+  });
+
+  // o caso que fez gente perder dados: computador com tudo, celular só com o cadastro inicial
+  const computador = JSON.stringify({ config: { renda: 5000, onboardingFeito: true }, gastosFixos: Array.from({ length: 8 }, (_, i) => ({ id: `g${i}` })), lancamentos: Array.from({ length: 20 }, (_, i) => ({ id: `l${i}` })), dividas: [{ id: 'd' }] });
+  const celular = JSON.stringify({ config: { renda: 5000, onboardingFeito: true }, lancamentos: [{ id: 'x' }] });
+  it('aparelho com poucos dados não passa por cima da conta completa', () => {
+    const antes = { 'grana-seria:v1': computador };
+    const pedido = { 'grana-seria:v1': celular, 'gs-nome': 'Leo' };
+    const r = protegerEstado(antes, pedido);
+    expect(r['grana-seria:v1']).toBe(computador);
+    expect(r['gs-nome']).toBe('Leo');
+    expect(foiMantido(antes, pedido, r)).toBe(true);
+  });
+  it('apagar aos poucos passa, e a mesma coisa de novo não conta como mantido', () => {
+    const umAMenos = JSON.stringify({ ...JSON.parse(computador), lancamentos: Array.from({ length: 19 }, (_, i) => ({ id: `l${i}` })) });
+    const antes = { 'grana-seria:v1': computador };
+    const r = protegerEstado(antes, { 'grana-seria:v1': umAMenos });
+    expect(r['grana-seria:v1']).toBe(umAMenos);
+    expect(foiMantido(antes, { 'grana-seria:v1': umAMenos }, r)).toBe(false);
+    expect(foiMantido(antes, antes, protegerEstado(antes, antes))).toBe(false);
+  });
+  it('importar ou restaurar de propósito passa, e o anterior fica como cópia', () => {
+    const r = protegerEstado({ 'grana-seria:v1': computador }, { 'grana-seria:v1': celular }, new Date('2026-11-11T12:00:00Z'), true);
+    expect(r['grana-seria:v1']).toBe(celular);
+    const copias = listarCopias(r);
+    expect(copias).toHaveLength(1);
+    expect(copias[0].estado).toBe(computador);
+    expect(copias[0].peso).toBe(pesoDoEstado(computador));
+    expect(copias[0].salvoEm).toBe('2026-11-11T12:00:00.000Z');
+  });
+  it('quem fica: em branco e "bem menor" perdem sem perguntar, dos dois lados', () => {
+    const pc = pesoDoEstado(computador), cel = pesoDoEstado(celular);
+    expect(reducaoBrusca(pc, cel)).toBe(true);
+    expect(quemFica(cel, pc, true)).toBe('remoto'); // celular abrindo pela primeira vez: pega a conta
+    expect(quemFica(cel, pc, false)).toBe('remoto');
+    expect(quemFica(pc, cel, false)).toBe('local'); // computador não aceita o estado pequeno, mesmo "mais novo"
+    expect(quemFica(pc, cel, true)).toBe('local');
+    expect(quemFica(0, pc, false)).toBe('remoto');
+    expect(quemFica(pc, 0, false)).toBe('local');
+    expect(quemFica(pc, pc - 1, false)).toBe('pelaData');
+    expect(quemFica(pc, pc - 1, true)).toBe('perguntar');
   });
 });
