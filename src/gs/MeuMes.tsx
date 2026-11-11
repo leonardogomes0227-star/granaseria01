@@ -134,7 +134,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
   );
 }
 
-function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' | null; onFechar: () => void; onExcluir: (g: GastoFixo) => void }) {
+export function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' | null; onFechar: () => void; onExcluir: (g: GastoFixo) => void }) {
   const edit = valor && valor !== 'novo' ? valor : null;
   const [nome, setNome] = useState('');
   const [v, setV] = useState(0);
@@ -154,6 +154,7 @@ function FormConta({ valor, onFechar, onExcluir }: { valor: GastoFixo | 'novo' |
   const erroNome = tentou && !nome.trim() ? 'Dê um nome.' : undefined;
   return (
     <Folha aberta={Boolean(valor)} onFechar={onFechar} titulo={edit ? 'Editar conta' : 'Nova conta fixa'}>
+      {!edit && <p className="gs-sub" style={{ marginTop: 0 }}>Cadastre suas contas para eu te mostrar o que pagar primeiro e te avisar antes de vencer. Comece pela maior.</p>}
       <div className="gs-chips" role="group" aria-label="Atalhos">
         {CATEGORIAS_FIXAS.map((c) => (
           <button key={c} type="button" className={`gs-chip ${cat === c ? 'on' : ''}`} onClick={() => { setCat(c); /* trocar de tipo troca o nome sugerido, mas nunca um nome que a pessoa digitou */ if (!nome.trim() || nome === nomeAuto.current) { const novo = c === 'Outros' ? '' : c; setNome(novo); nomeAuto.current = novo; } }}>{c}</button>
