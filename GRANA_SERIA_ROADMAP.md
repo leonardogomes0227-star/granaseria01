@@ -360,7 +360,7 @@ Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (
 - Testes: 45 arquivos, 395 testes.
 
 ### Etapa 8 — mostrar o valor (concluída)
-- **Anotar por foto no botão +**: `api/comprovante.ts` usa a mesma leitura do bot (`server/receipt.ts`); o que vier preenche o formulário e a pessoa confere antes de salvar. Fatura com várias compras é desviada para "Importar fatura". Sem a chave de IA, o site diz que não está ativado e sugere o WhatsApp. Limite diário (`COMPROVANTE_DAILY_LIMIT`, padrão 20). O arquivo não é guardado.
+- **Anotar por foto no botão +**: `api/fatura.ts` (pedido com `tipo: "comprovante"`) usa a mesma leitura do bot (`server/receipt.ts`); o que vier preenche o formulário e a pessoa confere antes de salvar. Fatura com várias compras é desviada para "Importar fatura". Sem a chave de IA, o site diz que não está ativado e sugere o WhatsApp. Limite diário (`COMPROVANTE_DAILY_LIMIT`, padrão 20). O arquivo não é guardado.
 - **WhatsApp** no fim do onboarding e no Perfil (exemplos de `docs/whatsapp-assistente.md`), e selo "via WhatsApp" nos lançamentos vindos do bot.
 - **Importar fatura** em Pagar abre direto a folha de importação (`/plano/cartao#importar`).
 - **Sua semana no caminho** (`semanaNoCaminho` em `voltou.ts`, com teste): o que foi pago e guardado nos últimos 7 dias e quantos meses o destino chegou mais perto (comparando com o estado de 7 dias atrás).
@@ -369,3 +369,5 @@ Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (
 ### Etapa 9 — verificação final (concluída)
 Relatório e checklist em `docs/como-testar.md`. 40 capturas (360, 390, 1280 e fonte a 130%), axe, toque ≥ 44px, Lighthouse mobile (87 / 100 / 100 / 100) e fluxo ponta a ponta passando. Corrigidos na verificação: contraste da faixa "atenção", toque de logo e links de seção, lista de contas que espremia o nome com fonte grande, festa do marco "Em dia" ao pagar uma conta atrasada.
 Testes: 45 arquivos, 396 testes; `typecheck`, `typecheck:server`, `lint` (0 erros) e `build` verdes.
+
+**Correção pós-publicação:** a Etapa 8 criou `api/comprovante.ts` e o deploy falhou: o plano da Vercel aceita no máximo **12 funções** (o app já tinha 12). A leitura do comprovante foi para dentro de `api/fatura.ts` (`POST` com `tipo: "comprovante"`). **Regra para o futuro: não criar arquivo novo em `api/`**; juntar em uma função existente. Há um teste que trava isso (`server/limiteFuncoes.test.ts`).
