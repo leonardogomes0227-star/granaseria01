@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, LayoutGrid, Search, UserRound } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Search, ShieldCheck, UserRound } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { FERRAMENTAS, type Ferramenta } from './registroFerramentas';
@@ -41,6 +41,8 @@ export function Mais() {
     () => GRUPOS_MAIS.map((g) => ({ ...g, itens: ordenar(g.id, FERRAMENTAS.filter((f) => grupoDaFerramenta(f.id) === g.id)).map((f) => ({ f, st: f.status(e, hoje) })) })),
     [e, hoje],
   );
+  // só no aparelho em que o dono já entrou no painel (a senha continua sendo pedida lá)
+  const dono = (() => { try { return localStorage.getItem('gs-dono') === '1'; } catch { return false; } })();
   return (
     <>
       <h1 className="gs-titulo">Mais</h1>
@@ -74,6 +76,13 @@ export function Mais() {
             })}
             {g.id === 'configurar' && (
               <>
+                {dono && (
+                  <a href="/admin" role="listitem" className="ms-linha">
+                    <i aria-hidden="true"><ShieldCheck size={20} strokeWidth={1.9} /></i>
+                    <span><b>Painel do dono</b><small>Uso do app e dados das pessoas</small></span>
+                    <ChevronRight size={18} aria-hidden="true" />
+                  </a>
+                )}
                 <Link to="/perfil" role="listitem" className="ms-linha">
                   <i aria-hidden="true"><UserRound size={20} strokeWidth={1.9} /></i>
                   <span><b>Aparência, instalar e conta</b><small>Tema claro ou escuro, ícone na tela e login</small></span>

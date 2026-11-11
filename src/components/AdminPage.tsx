@@ -83,6 +83,8 @@ export function AdminPage() {
       setSecret(key);
       try {
         sessionStorage.setItem(KEY, key);
+        // este aparelho é do dono: o atalho "Painel do dono" passa a aparecer na aba Mais
+        localStorage.setItem('gs-dono', '1');
       } catch {
         // sem storage, segue
       }
