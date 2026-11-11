@@ -382,24 +382,33 @@ html.gs-app[data-tema="escuro"] .cd-check:not(.feito)::after { background: #0E0D
 .ini-linha.perigo .ini-nome small { color: var(--cm-atraso); font-weight: 700; }
 .ini-quanto { font: 700 20px var(--cm-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ini-linha svg { flex: none; color: var(--cm-tinta-2); }
-/* opção B: cartão escuro + 4 atalhos (estilo app de banco) */
-.inb-cartao { display: flex; flex-direction: column; gap: 2px; padding: 22px 22px 24px; margin-bottom: 18px; border-radius: 24px; background: #1B1915; color: #F3EDE2; box-shadow: 0 18px 34px -22px rgba(27, 25, 21, .9); }
-.inb-cartao span { font-size: 14px; color: #B5AB99; margin-bottom: 14px; }
-.inb-cartao small { font-size: 15px; color: #D8CFBE; }
-.inb-cartao b { font: 700 clamp(46px, 14vw, 60px)/1.05 var(--cm-serif); color: #E9C877; font-variant-numeric: tabular-nums; }
-.inb-cartao em { font-style: normal; font-size: 15px; color: #D8CFBE; margin-top: 6px; }
-.inb-acoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
-.inb-acoes > * { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 84px; padding: 0; border: 0; background: none; color: var(--cm-tinta); font: 700 13.5px var(--cm-sans); text-decoration: none; cursor: pointer; }
-.inb-acoes i { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--cm-papel); border: 1px solid var(--cm-linha); color: var(--cm-ouro); box-shadow: var(--cm-sombra); }
-.inb-acoes > :first-child i { background: var(--cm-grad-btn); color: #1B1915; border-color: transparent; }
-/* opção C: uma coisa para fazer agora + três números */
-.inc-agora { display: flex; flex-direction: column; gap: 4px; padding: 22px; margin-bottom: 14px; border-radius: 24px; background: var(--cm-papel); border: 1px solid rgba(169, 130, 46, .45); box-shadow: var(--cm-sombra); }
-.inc-agora small { font: 700 13px var(--cm-sans); color: var(--cm-ouro-texto); }
-.inc-agora b { font: 700 32px/1.1 var(--cm-serif); color: var(--cm-tinta); }
-.inc-agora span { font-size: 16px; color: var(--cm-tinta-2); margin-bottom: 14px; }
-.inc-agora .gs-btn { align-self: stretch; min-height: 54px; font-size: 17px; }
-.inc-tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.inc-tres a { display: flex; flex-direction: column; gap: 4px; min-height: 84px; padding: 14px 10px; border-radius: 18px; background: var(--cm-papel); border: 1px solid var(--cm-linha); color: inherit; text-decoration: none; text-align: center; justify-content: center; }
-.inc-tres small { font-size: 12.5px; color: var(--cm-tinta-2); }
-.inc-tres b { font: 700 19px var(--cm-serif); font-variant-numeric: tabular-nums; }
-.inc-tres b.neg { color: var(--cm-atraso); }
+/* Início (opção B, escolhida pelo dono): cara de app de banco. Plano, sem sombra, sem caixa dentro de caixa.
+   O topo escuro cola no cabeçalho; números em fonte reta; a lista é só linha; dourado só no "Anotar". */
+.cm-casca:has(.inb-hero) .cm-topo { background: #16140F; border-bottom-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.cm-casca:has(.inb-hero) .cm-topo .cm-marca { color: #F3EDE2; }
+.cm-casca:has(.inb-hero) .cm-avatar { background: #2A2620; border-color: #4A4335; color: #F3EDE2; }
+.cm-casca:has(.inb-hero) .gs-principal { animation: none; }
+.inb-hero { display: flex; flex-direction: column; margin: -18px -16px 0; padding: 6px 20px 26px; background: #16140F; color: #F3EDE2; }
+@media (min-width: 900px) { .inb-hero { margin: -24px -32px 0; padding: 10px 32px 34px; } }
+.inb-topo { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; font: 600 15px var(--cm-sans); color: #B5AB99; }
+.inb-topo button { width: 44px; height: 44px; margin-right: -10px; display: grid; place-items: center; background: none; border: 0; color: #B5AB99; cursor: pointer; }
+.inb-hero small { font: 600 15px var(--cm-sans); color: #B5AB99; }
+.inb-hero > b { margin: 4px 0 6px; font: 800 clamp(44px, 13.5vw, 60px)/1.05 var(--cm-sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums lining-nums; color: #FFFFFF; }
+.inb-hero > b.neg { color: #FF9C8C; }
+.inb-hero em { font: 500 16px var(--cm-sans); font-style: normal; color: #E4DCCB; }
+.inb-conta { align-self: flex-start; display: inline-flex; align-items: center; gap: 2px; min-height: 44px; margin: 6px 0 -10px; padding: 0; background: none; border: 0; color: #D9B45E; font: 700 14.5px var(--cm-sans); cursor: pointer; }
+.inb-acoes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 20px 0 8px; }
+.inb-acoes > * { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 86px; padding: 0; border: 0; background: none; color: var(--cm-tinta); font: 600 13px var(--cm-sans); text-decoration: none; cursor: pointer; }
+.inb-acoes i { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #E7DFCE; color: #1B1915; }
+html.gs-app[data-tema="escuro"] .inb-acoes i { background: #26221B; color: #F3EDE2; }
+.inb-acoes > :first-child i { background: #C9A24C; color: #16140F; }
+.inb-linhas { margin: 6px -16px 0; border-top: 1px solid var(--cm-linha); }
+@media (min-width: 900px) { .inb-linhas { margin: 6px 0 0; } }
+.inb-linhas a { display: flex; align-items: center; gap: 10px; min-height: 78px; padding: 12px 16px 12px 20px; border-bottom: 1px solid var(--cm-linha); color: inherit; text-decoration: none; }
+.inb-linhas a:active { background: var(--cm-suave); }
+.inb-linhas span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.inb-linhas b { font: 700 17px/1.25 var(--cm-sans); color: var(--cm-tinta); }
+.inb-linhas small { font: 500 14px var(--cm-sans); color: var(--cm-tinta-2); }
+.inb-linhas .perigo small { color: var(--cm-atraso); font-weight: 700; }
+.inb-linhas strong { font: 800 18px var(--cm-sans); letter-spacing: -0.01em; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.inb-linhas svg { flex: none; color: #A39A88; }
