@@ -270,3 +270,16 @@ html.gs-app[data-tema="escuro"] .cm-campo-busca { background: #0E0D0B; }
   .cm-prog > i, .cm-anel circle.valor { transition: none; }
 }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+/* verificação final: contraste AA e toque de 44px */
+.cm-faixa.aviso { color: #6E4C0C; }
+html.gs-app[data-tema="escuro"] .cm-faixa.aviso { color: #E0B050; }
+.cm-marca { min-height: 44px; }
+.cm-h2 a, .cm-h2 button { min-height: 44px; display: inline-flex; align-items: center; }
+html.gs-app .gs-switch { position: relative; }
+html.gs-app .gs-switch::before { content: ''; position: absolute; inset: -6px -4px; }
+/* fonte grande (130%): o nome nunca é espremido; valor e botão descem para a linha de baixo */
+.cm-item-lista { flex-wrap: wrap; row-gap: 8px; }
+.cm-item-lista .corpo { flex: 1 1 150px; min-width: 130px; }
+.cm-item-lista .corpo small { display: block; }
+.cm-marca span { white-space: nowrap; }
+@media (max-width: 380px) { .cm-topo .cm-marca span { font-size: 20px; } }

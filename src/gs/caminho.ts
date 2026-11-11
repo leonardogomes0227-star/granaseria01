@@ -2,7 +2,7 @@
 // Puro e testado. Nenhuma conta nova: cada data sai das lógicas que já existem (atrasos, dívidas, reserva, metas, renda).
 // Os marcos correm em sequência, na mesma ordem do "Dinheiro extra" e do caminho de Investir.
 
-import { arred, brl0, mesDe, nomeMes, somaMes } from './datas.js';
+import { arred, brl0, mesDe, nomeMes, somaMes, vencimentoNoMes } from './datas.js';
 import { cfgAtrasos, atrasosAbertos } from './atrasosBase.js';
 import { planoDeRecuperacao } from './atrasosLogica.js';
 import { paraSim, simular, totalDividas, type DividaSim } from './dividas.js';
@@ -320,6 +320,8 @@ export function simularImpacto(e: Estado, hoje: string, mud: Mudanca): Impacto |
 /** Marcos que ficaram prontos e ainda não foram comemorados (a festa acontece uma vez). Quem nunca teve o problema não ganha festa por ele. */
 export function marcosAComemorar(e: Estado, ms: Marco[]): Marco[] {
   const ja = new Set(e.caminho?.marcosFeitos ?? []);
-  const teveAtraso = Object.keys(e.atrasos?.saidas ?? {}).length > 0 || (e.atrasos?.manuais?.length ?? 0) > 0;
+  // pôs em dia uma conta que tinha atrasado: pagou depois do vencimento
+  const pagouAtrasada = e.gastosFixos.some((g) => Object.entries(g.pagamentos).some(([m, p]) => p.pagoEm > vencimentoNoMes(m, g.diaVencimento)));
+  const teveAtraso = pagouAtrasada || Object.keys(e.atrasos?.saidas ?? {}).length > 0 || (e.atrasos?.manuais?.length ?? 0) > 0;
   return ms.filter((m) => m.status === 'feito' && !ja.has(m.id) && (m.id !== 'em-dia' || teveAtraso));
 }

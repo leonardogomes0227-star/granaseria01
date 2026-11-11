@@ -365,3 +365,7 @@ Caminho · Pagar · (+) · Gastos · Guardar na barra de baixo; Coach e avatar (
 - **Importar fatura** em Pagar abre direto a folha de importação (`/plano/cartao#importar`).
 - **Sua semana no caminho** (`semanaNoCaminho` em `voltou.ts`, com teste): o que foi pago e guardado nos últimos 7 dias e quantos meses o destino chegou mais perto (comparando com o estado de 7 dias atrás).
 - `/planos` fala de resultado. Preços e links de pagamento (`src/config.ts`) não foram mexidos.
+
+### Etapa 9 — verificação final (concluída)
+Relatório e checklist em `docs/como-testar.md`. 40 capturas (360, 390, 1280 e fonte a 130%), axe, toque ≥ 44px, Lighthouse mobile (87 / 100 / 100 / 100) e fluxo ponta a ponta passando. Corrigidos na verificação: contraste da faixa "atenção", toque de logo e links de seção, lista de contas que espremia o nome com fonte grande, festa do marco "Em dia" ao pagar uma conta atrasada.
+Testes: 45 arquivos, 396 testes; `typecheck`, `typecheck:server`, `lint` (0 erros) e `build` verdes.

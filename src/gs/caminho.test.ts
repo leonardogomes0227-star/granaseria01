@@ -225,3 +225,12 @@ describe('semana no caminho', () => {
     expect(semanaNoCaminho(base(), HOJE)).toBeNull();
   });
 });
+
+describe('festa do marco em dia', () => {
+  it('quem pagou uma conta depois do vencimento ganha a festa; quem sempre pagou em dia, não', () => {
+    const atrasou = base({ gastosFixos: [conta('i', 'Internet', 100, 5, { criadaEm: '2026-11-01', pagamentos: { [MES]: { valorPago: 100, pagoEm: '2026-11-09' } } })] });
+    expect(marcosAComemorar(atrasou, calcularCaminho(atrasou, HOJE)).map((m) => m.id)).toContain('em-dia');
+    const emDia = base({ gastosFixos: [conta('i', 'Internet', 100, 5, { criadaEm: '2026-11-01', pagamentos: { [MES]: { valorPago: 100, pagoEm: '2026-11-04' } } })] });
+    expect(marcosAComemorar(emDia, calcularCaminho(emDia, HOJE)).map((m) => m.id)).not.toContain('em-dia');
+  });
+});
