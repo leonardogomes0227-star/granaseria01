@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { HandCoins, PiggyBank, Plus, Route, Sparkles, UserRound, Wallet, type LucideIcon } from 'lucide-react';
+import { House, LayoutGrid, Landmark, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov, abrirAdicionar } from '../gs/AdicionarMov';
 import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
@@ -8,7 +8,6 @@ import { useVisualDoApp } from '../gs/visual';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 import { useHoje } from '../gs/useHoje';
-import { recomendacoes } from '../gs/coachRegras';
 import { FERRAMENTAS, urgentesDaArea, type Area } from '../gs/registroFerramentas';
 
 /* ---------- A casca do app: 4 áreas e o "+" no centro (celular), lateral com as mesmas áreas (PC) ---------- */
@@ -16,11 +15,19 @@ import { FERRAMENTAS, urgentesDaArea, type Area } from '../gs/registroFerramenta
 // O menu "Mais" acabou: cada ferramenta mora na sua área e todas aparecem em /ferramentas.
 
 export const NAV: [string, string, LucideIcon, Area][] = [
-  ['/', 'Caminho', Route, 'caminho'],
-  ['/pagar', 'Pagar', HandCoins, 'pagar'],
-  ['/gastos', 'Gastos', Wallet, 'gastos'],
-  ['/guardar', 'Guardar', PiggyBank, 'guardar'],
+  ['/', 'Início', House, 'caminho'],
+  ['/pagar', 'Contas', Receipt, 'pagar'],
+  ['/plano/dividas', 'Dívidas', Landmark, 'pagar'],
+  ['/ferramentas', 'Ferramentas', LayoutGrid, 'gastos'],
 ];
+/** Qual aba fica acesa: Início, Contas, Dívidas ou, para todo o resto, Ferramentas. */
+function abaDaRota(pathname: string, search: string): string {
+  if (pathname === '/' || pathname === '/inicio') return '/';
+  if (pathname.startsWith('/plano/dividas')) return '/plano/dividas';
+  if (pathname === '/perfil' || pathname === '/dados') return '';
+  if (pathname === '/pagar' || ((pathname === '/lancamentos' || pathname === '/mes' || pathname === '/meu-mes') && new URLSearchParams(search).get('aba') === 'contas')) return '/pagar';
+  return '/ferramentas';
+}
 
 /** A área (aba acesa) de qualquer endereço do app: vem do registro de ferramentas, para as rotas antigas continuarem no lugar certo. */
 export function areaDaRota(pathname: string, search = ''): Area {
@@ -43,46 +50,37 @@ function Casca({ children }: { children: ReactNode }) {
   const e = useEstado();
   const hoje = useHoje();
   const { pathname, search } = useLocation();
-  const area = areaDaRota(pathname, search);
-  const noCoach = pathname === '/coach';
+  const aba = abaDaRota(pathname, search);
   const nome = e.config.nome || getName() || '';
-  const avisos = useMemo(() => recomendacoes(e, hoje).filter((r) => r.tom === 'perigo' || r.tom === 'aviso').length, [e, hoje]);
-  const vermelho = useMemo(() => ({ pagar: urgentesDaArea('pagar', e, hoje).length > 0, gastos: urgentesDaArea('gastos', e, hoje).length > 0 }) as Partial<Record<Area, boolean>>, [e, hoje]);
-  const coach = `/coach?de=${encodeURIComponent(pathname)}`;
+  const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
   const pronto = e.config.onboardingFeito;
-  const aba = ([to, label, Icon, a]: (typeof NAV)[number]) => (
-    <NavLink key={to} to={to} end={to === '/'} className={() => (area === a && !noCoach ? 'on' : '')} aria-current={area === a && !noCoach ? 'page' : undefined} aria-label={vermelho[a] ? `${label}, tem algo atrasado` : label}>
-      <em><Icon size={23} strokeWidth={1.75} aria-hidden="true" />{vermelho[a] && <i aria-hidden="true" />}</em><span>{label}</span>
+  const item = ([to, label, Icon]: (typeof NAV)[number]) => (
+    <NavLink key={to} to={to} end={to === '/'} className={() => (aba === to ? 'on' : '')} aria-current={aba === to ? 'page' : undefined} aria-label={to === '/pagar' && atrasada ? `${label}, tem conta atrasada` : label}>
+      <em><Icon size={23} strokeWidth={1.75} aria-hidden="true" />{to === '/pagar' && atrasada && <i aria-hidden="true" />}</em><span>{label}</span>
     </NavLink>
   );
   return (
     <div className={`gs-casca gs-app2 cm-casca${pronto ? '' : ' cm-sem-menu'}`}>
       <aside className="cm-lateral" aria-label="Menu principal">
         <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span>Grana Séria</span></Link>
-        {NAV.map(([to, label, Icon, a]) => (
-          <Link key={to} to={to} className={`cm-item${area === a && !noCoach ? ' on' : ''}`} aria-current={area === a && !noCoach ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{label}</Link>
+        {NAV.map(([to, label, Icon]) => (
+          <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{label}</Link>
         ))}
-        {pronto && <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}><Plus size={18} aria-hidden="true" /> Adicionar</button>}
+        {pronto && <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}><Plus size={18} aria-hidden="true" /> Anotar</button>}
         <hr />
-        <Link to={coach} className={`cm-item${noCoach ? ' on' : ''}`}><Sparkles size={20} strokeWidth={1.75} aria-hidden="true" />Coach</Link>
-        <Link to="/perfil" className={`cm-item${area === 'perfil' ? ' on' : ''}`}><UserRound size={20} strokeWidth={1.75} aria-hidden="true" />Perfil</Link>
+        <Link to="/perfil" className={`cm-item${pathname === '/perfil' ? ' on' : ''}`}><UserRound size={20} strokeWidth={1.75} aria-hidden="true" />Perfil</Link>
       </aside>
       <div className="gs-coluna">
         <header className="cm-topo">
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
-          {pronto && (
-            <Link to={coach} className="cm-coach-btn" aria-label={avisos ? `Coach: ${avisos} ${avisos === 1 ? 'orientação nova' : 'orientações novas'}` : 'Coach'}>
-              <Sparkles size={18} aria-hidden="true" />Coach{avisos > 0 && <i aria-hidden="true" />}
-            </Link>
-          )}
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
         <main className="gs-principal">{children}</main>
       </div>
       <nav className="cm-abas" aria-label="Seções">
-        {NAV.slice(0, 2).map(aba)}
-        <button type="button" className="cm-mais" onClick={() => abrirAdicionar()} aria-label="Adicionar movimentação"><Plus size={30} strokeWidth={2.25} aria-hidden="true" /></button>
-        {NAV.slice(2).map(aba)}
+        {NAV.slice(0, 2).map(item)}
+        <button type="button" className="cm-mais" onClick={() => abrirAdicionar()} aria-label="Anotar gasto ou entrada"><Plus size={30} strokeWidth={2.25} aria-hidden="true" /></button>
+        {NAV.slice(2).map(item)}
       </nav>
       <AdicionarMov />
       <Resolver />

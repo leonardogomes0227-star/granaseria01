@@ -34,6 +34,7 @@ const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m)
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
 const PassoDoDiagnostico = lazy(() => importarComRetry(() => import('./components/PassoDoDiagnostico')).then((m) => ({ default: m.PassoDoDiagnostico })));
+const TelaCaminho = lazy(() => importarComRetry(() => import('./gs/TelaCaminho')).then((m) => ({ default: m.TelaCaminho })));
 const FerramentaAntiga = lazy(() => importarComRetry(() => import('./components/FerramentaAntiga')).then((m) => ({ default: m.FerramentaAntiga })));
 const AreaPagar = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.AreaPagar })));
 const AreaGastos = lazy(() => importarComRetry(() => import('./gs/Areas')).then((m) => ({ default: m.AreaGastos })));
@@ -247,6 +248,7 @@ function App() {
             </Titled>
           }
         />
+        <Route path="/caminho" element={<Pagina titulo="Meu caminho" o="o seu caminho"><TelaCaminho /></Pagina>} />
         <Route path="/pagar" element={<Pagina titulo="Pagar" o="as suas contas"><AreaPagar /></Pagina>} />
         <Route path="/gastos" element={<Pagina titulo="Gastos" o="os seus gastos"><AreaGastos /></Pagina>} />
         <Route path="/guardar" element={<Pagina titulo="Guardar" o="o que você guarda"><AreaGuardar /></Pagina>} />
