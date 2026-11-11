@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { House, Landmark, Menu, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
+import { Assistente } from '../gs/Assistente';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
@@ -84,6 +85,7 @@ function Casca({ children }: { children: ReactNode }) {
       </nav>
       <AdicionarMov />
       <MenuAdicionar />
+      {pronto && <Assistente />}
       <Resolver />
     </div>
   );
