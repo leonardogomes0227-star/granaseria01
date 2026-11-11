@@ -92,31 +92,44 @@ export function toSite(t: string): Outgoing[] | null {
  * todo o resto (o webhook põe o login no link, então é só tocar). Sem diagnóstico, o link leva à página inicial
  * (lá a pessoa escolhe o que quer fazer); com, ao painel.
  */
-export function welcomeOut(name: string | null, hasDiagnosis: boolean): Outgoing[] {
+export function welcomeOut(name: string | null, hasDiagnosis: boolean, gastosNoMes = 0): Outgoing[] {
   const hi = name ? `Oi, ${name}! 👋` : 'Oi! 👋';
   const link = hasDiagnosis ? `${SITE_URL}/painel` : `${SITE_URL}/`;
+  // quem já anota não precisa ler o manual de novo: um oi curto e os atalhos
+  if (gastosNoMes > 0) {
+    return [
+      buttons(
+        `${hi} Bom te ver. Você já anotou *${gastosNoMes} ${gastosNoMes === 1 ? 'gasto' : 'gastos'}* este mês.\n\nMande o próximo (ex.: *mercado 35*) ou escolha:`,
+        [
+          ['gastos:saldo', '⚖️ Ver meu mês'],
+          ['gastos:sobra', '💸 Posso gastar?'],
+          ['site:painel', '📲 Abrir o app'],
+        ]
+      ),
+    ];
+  }
+  // primeira vez (ou mês ainda vazio): uma coisa só para fazer agora, e o resto em uma linha
   return [
     txt(
       [
         `${hi} Eu sou o assistente da *Grana Séria*. 🪙`,
+        'Eu anoto o seu dinheiro por aqui, do jeito que você fala.',
         '',
-        '*Aqui no WhatsApp eu anoto o seu dinheiro:*',
-        '💸 o que saiu: *mercado 80 no pix*',
-        '💰 o que entrou: *recebi 3000 salário*',
-        '📸 ou a foto do cupom',
-        'E te mostro o saldo do mês e quanto ainda dá pra gastar por dia.',
+        '👉 *Mande seu primeiro gasto agora*, por exemplo:',
+        '*mercado 35*',
         '',
-        hasDiagnosis
-          ? '📲 *Seu painel* (seu mês e seu plano de ação) e todas as ferramentas ficam no site:'
-          : '📲 *Todo o resto fica no site*: o diagnóstico com seu plano de ação, dívidas, metas, 13º e seu painel. Lá você escolhe o que quer fazer:',
+        'Depois é só ir mandando: *recebi 3000 salário*, a foto do cupom, *saldo*, *quanto posso gastar*.',
+        'Errou? Mande *era 30* pra corrigir ou *apagar* pra desfazer.',
+        '',
+        hasDiagnosis ? '📲 Seu painel e o seu plano ficam no app:' : '📲 Contas, dívidas e metas ficam no app:',
         link,
-        '(o link já abre com a sua conta, sem senha)',
+        '(o link já abre na sua conta, sem senha)',
       ].join('\n')
     ),
-    buttons('Quer ver como está o seu mês?', [
-      ['gastos:saldo', '⚖️ Ver meu mês'],
+    buttons('Ou escolha por onde começar:', [
       ['job:anotar', '✍️ Como anotar'],
-      ['site:painel', '📲 Meu painel'],
+      ['gastos:saldo', '⚖️ Ver meu mês'],
+      ['site:painel', '📲 Abrir o app'],
     ]),
   ];
 }

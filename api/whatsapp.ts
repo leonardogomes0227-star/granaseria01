@@ -238,7 +238,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   if (hub) {
     const now = new Date();
     // quantos gastos já anotou no mês: só custa uma consulta quando a pessoa pediu o "próximo passo" ou disse oi
-    const expensesThisMonth = wantsNextStep(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
+    const expensesThisMonth = wantsNextStep(incoming) || isGreeting(incoming) ? (await listExpensesSince(phone, startOfMonthBRT(now)).catch(() => [])).length : undefined;
     const shortcuts = wantsNextStep(incoming) && !hub.session ? await loadShortcuts(phone, smartConfigured()).catch(() => []) : undefined;
     // "posso comprar 300?" usa o saldo real do mês (entradas e gastos que a pessoa já anotou)
     const balance = wantsBalance(incoming) ? await loadBalance(phone, now) : undefined;

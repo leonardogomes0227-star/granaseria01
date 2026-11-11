@@ -991,7 +991,7 @@ function route(input: HubInput): HubResult | null {
   if (MENU_WORDS.test(t)) return { out: simpleMenu(name), session: null };
   if (t === 'menu:tudo' || /^(ferramentas|mais ferramentas|todas as opcoes|todas as ferramentas)$/.test(t)) return { out: menu(input.faturaEnabled, name), session: null };
   if (t === 'goal:gastos') return { out: [gastosMenu()], session: null, event: 'tool:gastos' };
-  if (GREETING.test(t)) return { out: welcomeOut(name, Boolean(diagnosisFrom(profile))), session: null, event: 'greeting' };
+  if (GREETING.test(t)) return { out: welcomeOut(name, Boolean(diagnosisFrom(profile)), input.expensesThisMonth ?? 0), session: null, event: 'greeting' };
   if (NEXT_STEP_WORDS.test(t)) return { out: nextStep({ profile, now, name, expensesThisMonth: input.expensesThisMonth }), session: null };
   if (t === 'plan:start') {
     const data = diagnosisFrom(profile);
