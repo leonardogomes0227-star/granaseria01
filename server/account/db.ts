@@ -81,6 +81,13 @@ export async function saveState(userId: string, state: StateSnapshot): Promise<v
   await updateUser(userId, { state, updated_at: new Date().toISOString() });
 }
 
+/** Todas as contas de e-mail, com o estado (painel do dono: conferir se alguém perdeu dados). */
+export async function listUsers(): Promise<UserRow[]> {
+  const res = await rest(`user_state?${new URLSearchParams({ select: COLS, limit: '10000' })}`);
+  await ok(res, 'select');
+  return (await res.json()) as UserRow[];
+}
+
 export async function listReminderCandidates(): Promise<UserRow[]> {
   const q = new URLSearchParams({ phone: 'not.is.null', reminders: 'is.true', reminder_day: 'not.is.null', select: COLS });
   const res = await rest(`user_state?${q}`);
