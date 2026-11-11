@@ -73,10 +73,13 @@ export function Caderno() {
         <div>
           <small>{mesNome.charAt(0).toLocaleUpperCase('pt-BR') + mesNome.slice(1)}</small>
           <h1>{nome ? `Olá, ${nome}` : 'Olá'}</h1>
+          <p>Acompanhe suas contas e o seu mês em um só lugar.</p>
         </div>
         <button type="button" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}</button>
       </header>
 
+      <div className="ini-grade">
+      <div className="ini-a">
       <section className="ini-destaque" aria-label="Falta pagar este mês">
         <span className="cm-eyebrow">Falta pagar este mês</span>
         {semContas ? (
@@ -91,6 +94,10 @@ export function Caderno() {
             <p>
               {abertas.length === 0 ? 'Tudo pago por aqui. Pode respirar.' : atrasadas ? `${atrasadas} ${atrasadas === 1 ? 'conta atrasada' : 'contas atrasadas'}. Comece por ${atrasadas === 1 ? 'ela' : 'elas'}.` : `${abertas.length} ${abertas.length === 1 ? 'conta' : 'contas'} ainda em aberto, de ${m(brl0(total))} no mês.`}
             </p>
+            <div className="ini-btns">
+              <Link to="/pagar" className="gs-btn">Ver contas</Link>
+              <Link to="/pagar?nova=1" className="gs-btn sec">Nova conta</Link>
+            </div>
             {total > 0 && <div className="cm-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((pago / total) * 100)} aria-label="Quanto das contas do mês já foi pago"><i style={{ width: `${Math.min(100, (pago / total) * 100)}%` }} /></div>}
           </>
         )}
@@ -124,6 +131,8 @@ export function Caderno() {
         </section>
       )}
 
+      </div>
+      <div className="ini-b">
       <h2 className="cm-h2">Próximos vencimentos<Link to="/pagar">Ver contas</Link></h2>
       {semContas ? (
         <p className="ini-vazio">Quando você cadastrar suas contas, o que vence nos próximos 7 dias aparece aqui.</p>
@@ -142,6 +151,8 @@ export function Caderno() {
         </div>
       )}
 
+      </div>
+      <div className="ini-c">
       <h2 className="cm-h2">O que você quer fazer?</h2>
       <div className="ini-cards">
         <button type="button" onClick={() => abrirAdicionar()}><i><Wallet size={24} aria-hidden="true" /></i><b>Anotar gasto</b><small>Veja para onde vai o dinheiro</small></button>
@@ -149,6 +160,8 @@ export function Caderno() {
         <Link to="/plano/dividas?nova=1"><i><Landmark size={24} aria-hidden="true" /></i><b>Cadastrar dívida</b><small>Descubra quando fica livre</small></Link>
       </div>
 
+      </div>
+      <div className="ini-d">
       <h2 className="cm-h2">Resumo de {mesNome.split(' ')[0]}</h2>
       <div className="ini-resumo">
         <Link to="/lancamentos">
@@ -169,6 +182,8 @@ export function Caderno() {
           <b>{m(brl0(guardado))}</b>
           <em>{guardado > 0 ? 'Neste mês' : 'Comece pequeno'}</em>
         </Link>
+      </div>
+      </div>
       </div>
 
       <BaixaSheet gasto={e.gastosFixos.find((g) => g.id === baixa) ?? null} mes={mes} onFechar={() => setBaixa(null)} />

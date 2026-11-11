@@ -635,3 +635,132 @@ html.gs-app[data-tema="escuro"] .dv-hero { background: linear-gradient(155deg, r
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .ini-destaque, .ini-config, .ini-linha, .ini-cards > *, .ini-resumo a, .ms-lista, .ms-perfil, .ad-acao, .cm-lista, .cm-card, html.gs-app .gs-card { background: var(--cm-papel); }
 }
+
+/* Dívidas: cada dívida é um card de vidro, com saldo grande e barra de quanto já foi pago */
+.dv-lista { display: grid; gap: 14px; margin-bottom: 20px; }
+.dv-card { display: flex; flex-direction: column; gap: 8px; padding: 18px 18px 8px; border-radius: 26px; background: var(--gl-vidro); -webkit-backdrop-filter: var(--gl-desfoque); backdrop-filter: var(--gl-desfoque); border: 1px solid var(--gl-borda); box-shadow: var(--gl-sombra); }
+.dv-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.dv-topo .gs-corpo { display: flex; flex-direction: column; min-width: 0; }
+.dv-topo b { font: 700 17px/1.3 var(--cm-sans); color: var(--cm-tinta); overflow-wrap: anywhere; }
+.dv-pos { align-self: flex-start; margin-bottom: 4px; padding: 3px 10px; border-radius: 999px; background: rgba(217, 180, 94, .25); color: var(--cm-ouro-texto); font: 700 11.5px var(--cm-sans); letter-spacing: .04em; text-transform: uppercase; }
+.dv-saldo { font: 800 24px var(--cm-sans); letter-spacing: -0.03em; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.dv-card > small { font: 500 13.5px var(--cm-sans); color: var(--cm-tinta-2); }
+.dv-pe { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 600 13px var(--cm-sans); color: var(--cm-tinta-2); }
+
+/* ==========================================================================
+   Referência (vídeo): dashboard clara e neutra, cards brancos translúcidos, botões pretos em pílula,
+   um tile de destaque colorido (aqui, o dourado), saudação grande, números grandes, ícones em pastilha redonda.
+   ========================================================================== */
+html.gs-app:not([data-tema="escuro"]) {
+  --cm-fundo: #EFEFED; --cm-papel: #FBFBFA; --cm-suave: #E9E9E6; --cm-linha: #E3E2DE;
+  --cm-tinta: #141414; --cm-tinta-2: #62625E;
+  --cm-sombra: 0 1px 2px rgba(20, 20, 20, .04), 0 14px 34px -22px rgba(20, 20, 20, .22);
+  --gl-vidro: rgba(255, 255, 255, .72); --gl-vidro-forte: rgba(255, 255, 255, .88); --gl-borda: rgba(255, 255, 255, .95);
+  --gl-sombra: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 16px 36px -24px rgba(20, 20, 20, .25), 0 1px 3px rgba(20, 20, 20, .04);
+  --gl-raio: 28px;
+}
+/* a fonte dos títulos e números passa a ser a moderna (a marca mantém o serifado) */
+html.gs-app { --cm-serif: 'Manrope', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.cm-marca, .gs-marca { font-family: 'Cormorant Garamond', Georgia, serif !important; }
+html.gs-app .gs-titulo, html.gs-app h1 { font-weight: 800 !important; letter-spacing: -0.03em !important; }
+.cm-h2, .ms-grupo h2, html.gs-app .gs-h2 { font-weight: 800 !important; letter-spacing: -0.02em !important; font-size: 22px !important; }
+html:not([data-tema="escuro"]).gs-app body {
+  background:
+    radial-gradient(600px 460px at 0% -6%, rgba(255, 255, 255, .95), transparent 70%),
+    radial-gradient(520px 420px at 100% 30%, rgba(217, 180, 94, .16), transparent 70%),
+    linear-gradient(180deg, #F3F3F1, #EAEAE7) fixed !important;
+}
+/* botões: pílula preta; o secundário é branco */
+html.gs-app:not([data-tema="escuro"]) .gs-btn:not(.sec):not(.link):not(.perigo) { background: #141414; color: #fff; border-color: #141414; border-radius: 999px; box-shadow: 0 10px 20px -12px rgba(20, 20, 20, .7); }
+html.gs-app:not([data-tema="escuro"]) .gs-btn.sec { background: rgba(255, 255, 255, .85); border-color: var(--cm-linha); color: var(--cm-tinta); border-radius: 999px; }
+html.gs-app .gs-btn { border-radius: 999px; }
+/* [+]: o único toque dourado forte da barra */
+.cm-mais { color: #1B1915; }
+
+/* barra inferior flutuante, em pílula de vidro; aba ativa em preto */
+.cm-abas { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .72); box-shadow: 0 18px 40px -16px rgba(20, 20, 20, .35); }
+.cm-abas a { min-height: 52px; border-radius: 22px; }
+.cm-abas a.on { background: #141414; color: #fff; }
+.cm-abas a.on svg { color: #E6C77A; }
+.cm-mais { margin-bottom: 2px; transform: translateY(-16px); }
+html.gs-app .gs-principal { padding-bottom: 140px; }
+.gs-app2.cm-casca .gs-principal { padding-bottom: 148px; }
+.cm-topo { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom: 0; }
+.cm-avatar { background: #fff; border: 1px solid var(--cm-linha); box-shadow: var(--cm-sombra); }
+
+/* cabeçalho do Início */
+.ini-cab { align-items: flex-start; }
+.ini-cab small { color: var(--cm-tinta-2); letter-spacing: .08em; }
+.ini-cab h1 { font-size: clamp(34px, 9vw, 44px) !important; line-height: 1.05 !important; }
+.ini-cab p { margin: 6px 0 0; font-size: 15px; color: var(--cm-tinta-2); }
+.ini-cab button { background: #fff; border: 1px solid var(--cm-linha); border-radius: 50%; box-shadow: var(--cm-sombra); margin-right: 0; }
+
+/* herói: card branco de vidro, número gigante e dois botões */
+.ini-destaque { background: var(--gl-vidro-forte); border-color: var(--gl-borda); border-radius: 32px; }
+.ini-destaque::before { display: none; }
+.ini-destaque::after { background: radial-gradient(circle, rgba(217, 180, 94, .28), transparent 68%); }
+.ini-destaque .cm-eyebrow { color: var(--cm-tinta-2); letter-spacing: .1em; }
+.ini-destaque .ini-valor { font-size: clamp(54px, 17vw, 72px); font-weight: 800; letter-spacing: -0.05em; }
+.ini-btns { display: flex; flex-wrap: wrap; gap: 10px; margin: 2px 0 18px; }
+.ini-btns .gs-btn { min-height: 48px; padding: 0 22px; }
+.cm-prog > i { background: linear-gradient(90deg, #E6C77A, #B98A2D); box-shadow: none; }
+.ini-sobra { border-top-color: var(--cm-linha); }
+
+/* cards em geral */
+.ini-linha, .ini-cards > *, .ini-resumo a, .ms-lista, .ms-perfil, .cm-lista, .cm-card, html.gs-app .gs-card, .dv-card, .ad-acao { border-color: var(--gl-borda); }
+.ini-linha .dia { background: #F1F1EE; box-shadow: none; }
+.ini-linha.aviso .dia { background: #F6ECD2; }
+.ini-cards i, .ini-cards > :first-child i { background: #141414; color: #E6C77A; box-shadow: none; border-radius: 50%; }
+.ms-linha i, .ms-perfil i, .ad-acao i { background: #F1F1EE; color: #141414; border-radius: 50%; }
+.ad-acao.forte i { background: #141414; color: #E6C77A; }
+
+/* estatísticas: rótulo no topo, ícone em bolinha à direita, número grande, pílula de contexto; o 3º é o tile dourado */
+.ini-resumo a { padding: 16px 14px 14px; min-height: 148px; border-radius: 26px; gap: 2px; }
+.ini-resumo a::after { display: none; }
+.ini-resumo small { order: 1; font-size: 13px; font-weight: 700; color: var(--cm-tinta-2); padding-right: 36px; }
+.ini-resumo svg { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; padding: 8px; margin: 0; border-radius: 50%; background: #F1F1EE; color: #141414; }
+.ini-resumo b { order: 2; margin-top: 14px; font-size: clamp(22px, 6.4vw, 28px); letter-spacing: -0.035em; }
+.ini-resumo em { order: 3; align-self: flex-start; margin-top: auto; padding: 4px 10px; border-radius: 999px; background: #F1F1EE; font: 700 12px var(--cm-sans); color: var(--cm-tinta-2); }
+.ini-resumo a:nth-child(3) { background: linear-gradient(150deg, #E9CB80, #C79A3A 70%, #A9822E); border-color: transparent; box-shadow: 0 18px 30px -18px rgba(150, 105, 25, .8); }
+.ini-resumo a:nth-child(3) small, .ini-resumo a:nth-child(3) b { color: #2A1F08; }
+.ini-resumo a:nth-child(3) svg { background: rgba(255, 255, 255, .45); color: #2A1F08; }
+.ini-resumo a:nth-child(3) em { background: rgba(255, 255, 255, .45); color: #2A1F08; }
+
+/* filtros e abas: pílula branca com a ativa em preto */
+.cm-seg, .gs-seg { border-radius: 999px; background: rgba(255, 255, 255, .75); border: 1px solid var(--gl-borda); box-shadow: var(--cm-sombra); }
+.cm-seg button, .gs-seg button { border-radius: 999px; }
+.cm-seg button[aria-pressed="true"], .gs-seg button.on { background: #141414; color: #fff; box-shadow: none; }
+.cm-faixa { border-radius: 999px; }
+
+/* dívidas: herói branco com número enorme */
+.dv-hero { background: var(--gl-vidro-forte) !important; }
+.dv-hero .gs-grande { letter-spacing: -0.045em; }
+
+/* desktop: grade como na referência (herói e estatísticas no topo, vencimentos e ações embaixo) */
+@media (min-width: 1000px) {
+  .gs-app2.cm-casca .gs-principal { max-width: 1140px; }
+  .ini-grade { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0 28px; align-items: start; grid-template-areas: "a d" "b c"; }
+  .ini-a { grid-area: a; } .ini-b { grid-area: b; } .ini-c { grid-area: c; } .ini-d { grid-area: d; }
+  .ini-d .cm-h2 { margin-top: 0; }
+  .ini-d .ini-resumo { grid-template-columns: 1fr 1fr; }
+  .ini-d .ini-resumo a:nth-child(3) { grid-column: 1 / -1; min-height: 120px; }
+  .ini-c .ini-cards { grid-template-columns: 1fr 1fr 1fr; }
+  .cm-abas { display: none; }
+  .cm-lateral { margin: 14px 0 14px 14px; height: calc(100dvh - 28px); border-radius: 30px; border: 1px solid var(--gl-borda); background: rgba(255, 255, 255, .72); box-shadow: var(--cm-sombra); }
+  .cm-lateral a.cm-item { border-radius: 999px; }
+  .cm-lateral a.cm-item.on { background: #141414; color: #fff; }
+  .cm-lateral a.cm-item.on svg { color: #E6C77A; }
+  .gs-app2.cm-casca .gs-principal { padding-bottom: 72px; }
+}
+.ini-resumo small { padding-right: 46px; display: block; }
+.ini-resumo b { font-size: clamp(19px, 5.4vw, 26px); white-space: nowrap; }
+/* listas de contas: faixa, nome, valor e botão na mesma linha */
+.cm-item-lista { flex-wrap: nowrap; gap: 10px; padding: 12px 14px; }
+.cm-item-lista .cm-faixa { min-width: 50px; padding: 6px 4px; }
+.cm-item-lista .valor { font: 800 15px var(--cm-sans); letter-spacing: -0.02em; }
+.cm-item-lista .gs-btn { flex: none; min-height: 38px; padding: 0 14px; }
+.cm-item-lista { gap: 8px; padding: 12px; }
+.cm-item-lista .cm-faixa { min-width: 44px; font-size: 11px; }
+.cm-item-lista .corpo { flex: 1 1 0; min-width: 0; }
+.cm-item-lista .valor { font-size: 14px; }
+.cm-item-lista .gs-btn { padding: 0 12px; font-size: 13.5px; }

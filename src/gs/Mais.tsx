@@ -11,7 +11,7 @@ import { brl0 } from './datas';
 
 /* ---------- Mais: todas as ferramentas do app, agrupadas por o que a pessoa quer fazer ---------- */
 // Nada sai do app: cada ferramenta do registro cai em um dos três grupos. O que não estiver na lista de
-// "Planejar" ou "Acompanhar" cai em "Configurar e outros", então uma ferramenta nova nunca fica sem lugar.
+// "Planejar" ou "Acompanhar" cai em "Configurar", então uma ferramenta nova nunca fica sem lugar.
 
 export type GrupoMais = 'planejar' | 'acompanhar' | 'configurar';
 
@@ -23,7 +23,7 @@ export const grupoDaFerramenta = (id: string): GrupoMais => (PLANEJAR.includes(i
 const GRUPOS_MAIS: { id: GrupoMais; titulo: string; sub: string }[] = [
   { id: 'planejar', titulo: 'Planejar', sub: 'Metas, reserva, investimentos e como sair do aperto' },
   { id: 'acompanhar', titulo: 'Acompanhar', sub: 'Veja como você está indo e como fechou o mês' },
-  { id: 'configurar', titulo: 'Configurar e outros', sub: 'Seus dados, lembretes, WhatsApp, planos e ajuda' },
+  { id: 'configurar', titulo: 'Configurar', sub: 'Seus dados, lembretes, WhatsApp, planos e ajuda' },
 ];
 
 /** A ordem de cada grupo é a da lista acima (o que mais se usa primeiro); o que não está nela vem depois, na ordem do registro. */
