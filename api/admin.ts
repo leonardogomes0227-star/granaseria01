@@ -7,6 +7,9 @@ import { createWebLink, getFlag, getLastInbound, getProfile, listKnownPhones, li
 import { sendTemplate, sendText } from '../server/whatsapp/meta.js';
 import { siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
+import { saveProfile } from '../server/whatsapp/hubdb.js';
+import { accountsConfigured, listUsers, saveState } from '../server/account/db.js';
+import { auditarDados, restaurarMaiorCopia, type ContaGuardada } from '../server/admin/dados.js';
 
 const PAGE = 1000;
 const MAX_ROWS = 100_000;
@@ -72,9 +75,30 @@ async function loadPeople(events: EventRow[]): Promise<Person[]> {
     .sort((a, b) => (b.lastSeen ?? '').localeCompare(a.lastSeen ?? ''));
 }
 
+const mascara = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phone.slice(-4)}`;
+
+/** Todos os estados guardados: os do número (wa_profiles) e os das contas de e-mail (user_state). O id não carrega o telefone. */
+async function contasGuardadas(): Promise<(ContaGuardada & { gravar: (state: Record<string, string>) => Promise<void> })[]> {
+  const perfis = await listProfiles();
+  const usuarios = accountsConfigured() ? await listUsers().catch(() => []) : [];
+  return [
+    ...perfis.map((p) => ({ id: `w:${personHash(p.phone)}`, onde: 'whatsapp' as const, nome: p.state?.['gs-nome'] ?? null, rotulo: mascara(p.phone), state: p.state ?? {}, atualizadoEm: p.updated_at, gravar: (st: Record<string, string>) => saveProfile(p.phone, st) })),
+    ...usuarios.map((u) => ({ id: `c:${u.user_id}`, onde: 'conta' as const, nome: u.state?.['gs-nome'] ?? null, rotulo: u.phone ? `conta · ${mascara(u.phone)}` : 'conta de e-mail', state: u.state ?? {}, atualizadoEm: u.updated_at, gravar: (st: Record<string, string>) => saveState(u.user_id, st) })),
+  ];
+}
+
 export async function GET(request: Request): Promise<Response> {
   if (!authorized(request)) {
     return new Response('Unauthorized', { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  }
+  // ?acao=dados: alguém perdeu dados? (compara o estado de cada conta com a maior cópia de segurança guardada)
+  if (new URL(request.url).searchParams.get('acao') === 'dados') {
+    try {
+      return Response.json(auditarDados(await contasGuardadas()), { headers: { 'Cache-Control': 'no-store' } });
+    } catch (err) {
+      console.error('Painel: erro ao conferir os dados', err);
+      return new Response('Erro ao conferir os dados', { status: 500, headers: { 'Cache-Control': 'no-store' } });
+    }
   }
   try {
     const events = await loadEvents();
@@ -93,6 +117,20 @@ export async function GET(request: Request): Promise<Response> {
  */
 export async function POST(request: Request): Promise<Response> {
   if (!authorized(request)) return new Response('Unauthorized', { status: 401 });
+  // ?acao=restaurar: devolve a maior cópia para quem perdeu dados (todas, ou só os ids do corpo). O estado de agora vira cópia.
+  if (new URL(request.url).searchParams.get('acao') === 'restaurar') {
+    const corpo = (await request.json().catch(() => ({}))) as { ids?: unknown };
+    const so = Array.isArray(corpo.ids) ? new Set(corpo.ids.filter((x): x is string => typeof x === 'string')) : null;
+    let restauradas = 0;
+    const erros: string[] = [];
+    for (const c of await contasGuardadas()) {
+      if (so && !so.has(c.id)) continue;
+      const novo = restaurarMaiorCopia(c.state);
+      if (!novo) continue;
+      try { await c.gravar(novo); restauradas++; } catch (err) { if (erros.length < 3) erros.push(String(err).slice(0, 200)); }
+    }
+    return Response.json({ restauradas, erros });
+  }
   if (new URL(request.url).searchParams.get('acao') !== 'avisar') return Response.json({ error: 'ação desconhecida' }, { status: 400 });
   const template = process.env.WHATSAPP_NEWS_TEMPLATE || 'novidade_site';
   const language = process.env.WHATSAPP_REMINDER_LANGUAGE || 'pt_BR';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { RefreshCw, LogOut, Megaphone } from 'lucide-react';
+import { RefreshCw, LogOut, Megaphone, ShieldCheck } from 'lucide-react';
 import { TOOLS } from '../tools';
 
 /* ---------- Painel do dono: uso do assistente do WhatsApp (só com a senha ADMIN_SECRET) ---------- */
@@ -166,6 +166,7 @@ export function AdminPage() {
         <Card label="Voltaram em outro dia" value={`${stats.usage.returnedPct}%`} sub={`${num(stats.usage.returned)} pessoas`} />
       </div>
 
+      <DadosDasPessoas secret={secret} />
       <h2 className="admin-h2">Últimos 14 dias</h2>
       <div className="admin-chart" role="img" aria-label="Pessoas ativas por dia">
         {stats.daily.map((d) => (
@@ -307,6 +308,72 @@ function Broadcast({ secret }: { secret: string }) {
         {state === 'sending' ? 'Enviando…' : 'Avisar todo mundo'}
       </button>
       {result && <p className={state === 'error' ? 'field-error' : 'field-hint'}>{result}</p>}
+    </div>
+  );
+}
+
+interface Auditoria { total: number; comDados: number; emBranco: number; comCopia: number; perderam: { id: string; onde: string; nome: string | null; rotulo: string; atual: number; copia: number; copiaEm: string }[] }
+
+/** Alguém perdeu dados? Compara o que cada conta tem agora com a maior cópia de segurança guardada, e devolve com um toque. */
+function DadosDasPessoas({ secret }: { secret: string }) {
+  const [a, setA] = useState<Auditoria | null>(null);
+  const [estado, setEstado] = useState<'carregando' | 'ok' | 'erro' | 'restaurando'>('carregando');
+  const [msg, setMsg] = useState('');
+  const conferir = async () => {
+    setEstado('carregando');
+    try {
+      const res = await fetch('/api/admin?acao=dados', { headers: { Authorization: `Bearer ${secret}` }, cache: 'no-store' });
+      if (!res.ok) throw new Error(String(res.status));
+      setA((await res.json()) as Auditoria);
+      setEstado('ok');
+    } catch {
+      setEstado('erro');
+    }
+  };
+  useEffect(() => { void conferir(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [secret]);
+  const restaurar = async (ids?: string[]) => {
+    const n = ids ? ids.length : a?.perderam.length ?? 0;
+    if (!window.confirm(`Devolver a cópia maior para ${n} conta(s)? O que elas têm agora fica guardado como cópia, então dá para desfazer.`)) return;
+    setEstado('restaurando');
+    try {
+      const res = await fetch('/api/admin?acao=restaurar', { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify(ids ? { ids } : {}) });
+      const r = (await res.json()) as { restauradas: number; erros: string[] };
+      setMsg(`${r.restauradas} conta(s) restaurada(s).${r.erros.length ? ` Erros: ${r.erros.join(' | ')}` : ''} A pessoa vê os dados de volta na próxima vez que abrir o app.`);
+    } catch {
+      setMsg('Não consegui restaurar agora.');
+    }
+    await conferir();
+  };
+  const quando = (iso: string) => { const d = new Date(iso); return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); };
+  return (
+    <div className="admin-card" style={{ marginBottom: 16 }}>
+      <div className="admin-label"><ShieldCheck size={14} style={{ verticalAlign: '-2px' }} /> Dados das pessoas</div>
+      {estado === 'carregando' && <p className="admin-note">Conferindo as contas…</p>}
+      {estado === 'erro' && <p className="field-error">Não consegui conferir agora. <button type="button" className="btn-ghost" onClick={() => void conferir()}>Tentar de novo</button></p>}
+      {a && estado !== 'carregando' && estado !== 'erro' && (
+        <>
+          <div className="admin-value" style={{ color: a.perderam.length ? '#A8473A' : undefined }}>{a.perderam.length === 0 ? 'Ninguém com perda detectada' : `${a.perderam.length} conta(s) com perda de dados`}</div>
+          <p className="admin-note">
+            {a.total} contas guardadas: {a.comDados} com dados, {a.emBranco} em branco, {a.comCopia} com cópia de segurança. Conta com perda = existe uma cópia guardada com mais que o dobro dos registros de agora.
+            Só enxerga perdas depois de 10/11 às 23:54 (quando as cópias começaram); antes disso não ficou rastro.
+          </p>
+          {a.perderam.length > 0 && (
+            <>
+              <div className="admin-table-wrap"><table className="admin-table">
+                <thead><tr><th>Pessoa</th><th>Agora</th><th>Cópia</th><th>Guardada em</th><th /></tr></thead>
+                <tbody>
+                  {a.perderam.map((p) => (
+                    <tr key={p.id}><td>{p.nome ?? 'sem nome'} · {p.rotulo}</td><td>{p.atual}</td><td><b>{p.copia}</b></td><td>{quando(p.copiaEm)}</td>
+                      <td><button type="button" className="btn-ghost" disabled={estado === 'restaurando'} onClick={() => void restaurar([p.id])}>Restaurar</button></td></tr>
+                  ))}
+                </tbody>
+              </table></div>
+              <button className="btn-primary" type="button" disabled={estado === 'restaurando'} onClick={() => void restaurar()}>{estado === 'restaurando' ? 'Restaurando…' : `Restaurar as ${a.perderam.length}`}</button>
+            </>
+          )}
+          {msg && <p className="field-hint">{msg}</p>}
+        </>
+      )}
     </div>
   );
 }
