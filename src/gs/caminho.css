@@ -507,3 +507,131 @@ html.gs-app[data-tema="escuro"] .ini-destaque { background: linear-gradient(160d
 .ms-linha small.ok { color: var(--cm-ok); font-weight: 700; }
 .ms-mais { margin: 20px 0 0; }
 .ms-mais > summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font: 700 14.5px var(--cm-sans); color: var(--cm-ouro-texto); }
+
+/* ==========================================================================
+   Visual glass (dashboard moderna): fundo com brilhos suaves, cards de vidro fosco, muito respiro, números grandes.
+   Fica por último de propósito: só troca a roupa dos blocos da nova navegação e dos cards já existentes.
+   ========================================================================== */
+html.gs-app {
+  --gl-vidro: rgba(255, 255, 255, .58);
+  --gl-vidro-forte: rgba(255, 255, 255, .78);
+  --gl-borda: rgba(255, 255, 255, .85);
+  --gl-sombra: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 18px 40px -22px rgba(92, 66, 18, .32), 0 2px 6px rgba(27, 25, 21, .04);
+  --gl-desfoque: blur(18px) saturate(1.4);
+  --gl-raio: 28px;
+}
+html.gs-app[data-tema="escuro"] {
+  --gl-vidro: rgba(255, 255, 255, .05);
+  --gl-vidro-forte: rgba(255, 255, 255, .09);
+  --gl-borda: rgba(255, 255, 255, .1);
+  --gl-sombra: 0 1px 0 rgba(255, 255, 255, .06) inset, 0 18px 40px -22px rgba(0, 0, 0, .7);
+}
+/* o fundo: claro e limpo, com dois brilhos dourados bem leves atrás dos cards (é o que o vidro "desfoca") */
+html.gs-app body {
+  background:
+    radial-gradient(520px 420px at 12% -4%, rgba(217, 180, 94, .38), transparent 70%),
+    radial-gradient(560px 460px at 105% 22%, rgba(201, 162, 76, .22), transparent 70%),
+    radial-gradient(480px 420px at 20% 108%, rgba(217, 180, 94, .2), transparent 70%),
+    linear-gradient(180deg, #F8F4EC, #F1EADC) fixed !important;
+}
+html.gs-app[data-tema="escuro"] body {
+  background:
+    radial-gradient(520px 420px at 12% -4%, rgba(201, 162, 76, .16), transparent 70%),
+    radial-gradient(560px 460px at 105% 30%, rgba(201, 162, 76, .08), transparent 70%),
+    #0E0D0B fixed !important;
+}
+.gs-app2.cm-casca .gs-principal { padding-top: 22px; }
+.gs-app2.cm-casca .gs-principal > * + * { margin-top: 0; }
+
+/* vidro */
+.ini-destaque, .ini-config, .ini-linha, .ini-cards > *, .ini-resumo a, .ms-lista, .ms-perfil, .ad-acao, .cm-lista, .cm-card, .cm-topo-area, html.gs-app .gs-card, .ini-vazio {
+  background: var(--gl-vidro); -webkit-backdrop-filter: var(--gl-desfoque); backdrop-filter: var(--gl-desfoque);
+  border: 1px solid var(--gl-borda); box-shadow: var(--gl-sombra);
+}
+.ini-destaque, .cm-lista, .ms-lista, .cm-card, html.gs-app .gs-card { border-radius: var(--gl-raio); }
+.cm-card.suave, .ini-vazio { background: var(--gl-vidro); box-shadow: none; }
+
+/* card principal: maior, mais ar, com um fio dourado no topo */
+.ini-destaque {
+  padding: 28px 24px 22px; margin-bottom: 32px; border-radius: 32px;
+  background: linear-gradient(155deg, rgba(255, 255, 255, .86), rgba(250, 238, 207, .55) 60%, rgba(217, 180, 94, .32));
+  border-color: rgba(255, 255, 255, .9); overflow: hidden;
+}
+.ini-destaque::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, transparent, #D9B45E 30%, #B98A2D 70%, transparent); opacity: .9; }
+.ini-destaque::after { content: ''; position: absolute; right: -60px; top: -70px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle, rgba(217, 180, 94, .38), transparent 68%); pointer-events: none; }
+.ini-destaque > * { position: relative; z-index: 1; }
+.ini-destaque .cm-eyebrow { font-size: 12.5px; letter-spacing: .14em; }
+.ini-destaque .ini-valor { margin: 10px 0 8px; font-size: clamp(52px, 16vw, 68px); font-weight: 800; letter-spacing: -0.045em; }
+.ini-destaque p { font-size: 16px; margin-bottom: 18px; }
+html.gs-app[data-tema="escuro"] .ini-destaque { background: linear-gradient(155deg, rgba(255, 255, 255, .09), rgba(201, 162, 76, .12)); border-color: rgba(255, 255, 255, .12); }
+.ini-sobra { border-top-color: rgba(122, 90, 20, .14); }
+.cm-prog { height: 10px; border-radius: 999px; background: rgba(122, 90, 20, .12); }
+.cm-prog > i { border-radius: 999px; background: linear-gradient(90deg, #D9B45E, #A9822E); box-shadow: 0 0 12px rgba(217, 180, 94, .6); }
+
+/* seções com mais respiro */
+.cm-h2 { margin: 40px 0 16px; font-size: 26px; }
+.ini-cab { margin-bottom: 22px; }
+.ini-cab h1 { font-size: clamp(32px, 8vw, 40px) !important; }
+
+/* próximos vencimentos: cada um é um card solto */
+.ini-linhas { background: none; border: 0; box-shadow: none; border-radius: 0; overflow: visible; display: grid; gap: 12px; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.ini-linha { border-radius: 24px; min-height: 84px; padding: 14px 16px; border-bottom: 1px solid var(--gl-borda); }
+.ini-linha:last-child { border-bottom: 1px solid var(--gl-borda); }
+.ini-linha.perigo { border-color: rgba(168, 71, 58, .35); background: linear-gradient(90deg, rgba(168, 71, 58, .12), var(--gl-vidro) 55%); }
+.ini-linha .dia { width: 50px; height: 54px; border-radius: 16px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(122, 90, 20, .1); }
+
+/* ações rápidas: 3 cards grandes e iguais */
+.ini-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ini-cards > *, .ini-cards > :first-child { min-height: 148px; padding: 16px 14px; border-radius: 26px; background: var(--gl-vidro); border: 1px solid var(--gl-borda); color: var(--cm-tinta); align-items: flex-start; }
+.ini-cards > :first-child small { color: var(--cm-tinta-2); }
+.ini-cards i, .ini-cards > :first-child i { width: 48px; height: 48px; border-radius: 16px; margin-bottom: auto; background: linear-gradient(145deg, #E6C77A, #B98A2D); color: #2A1F08; box-shadow: 0 8px 16px -8px rgba(122, 87, 24, .8), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.ini-cards b { font-size: 15px; }
+.ini-cards small { font-size: 12.5px; }
+.ini-cards.compacto { grid-template-columns: 1fr 1fr; }
+.ini-cards.compacto > *, .ini-cards.compacto > :first-child { min-height: 120px; }
+@media (min-width: 900px) { .ini-cards { grid-template-columns: repeat(3, 1fr); } .ini-cards.compacto { grid-template-columns: repeat(4, 1fr); } }
+
+/* estatísticas: números grandes, ícone em pastilha dourada */
+.ini-resumo { gap: 12px; }
+.ini-resumo a { padding: 18px 14px 16px; border-radius: 26px; gap: 4px; position: relative; overflow: hidden; }
+.ini-resumo a::after { content: ''; position: absolute; right: -26px; top: -26px; width: 86px; height: 86px; border-radius: 50%; background: radial-gradient(circle, rgba(217, 180, 94, .3), transparent 70%); }
+.ini-resumo svg { width: 34px; height: 34px; padding: 8px; margin-bottom: 8px; border-radius: 12px; background: rgba(217, 180, 94, .22); color: #8A6317; }
+.ini-resumo small { font-size: 12.5px; letter-spacing: .02em; }
+.ini-resumo b { font-size: clamp(19px, 5.4vw, 24px); font-weight: 800; }
+
+/* primeiros passos e listas */
+.ini-config { border-radius: 28px; border-style: solid; border-color: rgba(217, 180, 94, .55); margin-bottom: 8px; }
+.ini-config li { border-top-color: rgba(122, 90, 20, .12); }
+.cm-item-lista, .ms-linha { border-bottom-color: rgba(122, 90, 20, .1); }
+.cm-item-lista { min-height: 72px; padding: 12px 18px; }
+.cm-item-lista:has(.cm-faixa.perigo) { background: linear-gradient(90deg, rgba(168, 71, 58, .1), transparent 60%); box-shadow: inset 3px 0 0 var(--cm-atraso); }
+.cm-item-lista:has(.cm-faixa.perigo) .corpo small { color: var(--cm-atraso); font-weight: 700; }
+.cm-faixa { border-radius: 14px; }
+.ms-lista { border-radius: 26px; }
+.ms-linha { min-height: 70px; }
+.ms-linha i, .ms-perfil i { background: linear-gradient(145deg, rgba(230, 199, 122, .5), rgba(217, 180, 94, .2)); }
+.ms-grupo { margin-top: 36px; }
+.ms-perfil { border-radius: 26px; min-height: 76px; }
+.ad-acao { border-radius: 22px; min-height: 72px; background: var(--gl-vidro-forte); }
+.ad-acao i { background: linear-gradient(145deg, rgba(230, 199, 122, .55), rgba(217, 180, 94, .25)); }
+.ad-acao.forte i { background: linear-gradient(145deg, #E6C77A, #B98A2D); }
+html.gs-app .gs-folha { background: rgba(251, 248, 242, .88); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+html.gs-app[data-tema="escuro"] .gs-folha { background: rgba(23, 21, 18, .9); }
+
+/* barras: vidro com desfoque forte */
+.cm-abas { background: rgba(255, 255, 255, .62); -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5); border-top: 1px solid rgba(255, 255, 255, .8); box-shadow: 0 -10px 30px -18px rgba(92, 66, 18, .3); }
+html.gs-app[data-tema="escuro"] .cm-abas { background: rgba(23, 21, 18, .7); border-top-color: rgba(255, 255, 255, .08); }
+.cm-topo { background: rgba(255, 255, 255, .45); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); border-bottom-color: rgba(255, 255, 255, .6); }
+html.gs-app[data-tema="escuro"] .cm-topo { background: rgba(14, 13, 11, .55); border-bottom-color: rgba(255, 255, 255, .06); }
+.cm-lateral { background: rgba(255, 255, 255, .5); -webkit-backdrop-filter: blur(22px); backdrop-filter: blur(22px); }
+
+/* Dívidas: o "Você fica livre em" é o herói */
+.dv-hero { padding: 26px 22px 20px !important; border-radius: 32px !important; background: linear-gradient(155deg, rgba(255, 255, 255, .86), rgba(250, 238, 207, .55) 60%, rgba(217, 180, 94, .32)) !important; position: relative; overflow: hidden; margin-bottom: 20px; }
+.dv-hero .gs-grande { font-size: clamp(44px, 13vw, 58px) !important; font-weight: 700; line-height: 1.02; }
+.dv-hero .gs-rotulo { letter-spacing: .14em; text-transform: uppercase; font-size: 12.5px; }
+.dv-prog { margin-top: 6px; }
+.dv-prog small { display: block; margin-top: 8px; font: 600 13.5px var(--cm-sans); color: var(--cm-tinta-2); }
+html.gs-app[data-tema="escuro"] .dv-hero { background: linear-gradient(155deg, rgba(255, 255, 255, .09), rgba(201, 162, 76, .12)) !important; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .ini-destaque, .ini-config, .ini-linha, .ini-cards > *, .ini-resumo a, .ms-lista, .ms-perfil, .ad-acao, .cm-lista, .cm-card, html.gs-app .gs-card { background: var(--cm-papel); }
+}

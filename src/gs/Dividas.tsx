@@ -117,7 +117,7 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
 
       {aba === 'hoje' && (
         <>
-          <section className="gs-card destaque" style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+          <section className="gs-card destaque dv-hero" style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             {progresso >= 1 && <div style={{ flex: 'none', width: 104 }}><Anel pct={progresso} grande={`${Math.round(progresso)}%`} sub="já pago" tamanho={104} cor="var(--success)" /></div>}
             <div>
               {dias !== null ? (
@@ -139,6 +139,10 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
               ) : (
                 <p style={{ margin: 0 }}>Aumente o pagamento mensal pra ver a data.</p>
               )}
+            </div>
+            <div className="dv-prog" style={{ flexBasis: '100%' }}>
+              <Barra pct={progresso} tom="ok" rotulo="Quanto da dívida já foi paga" />
+              <small>{Math.round(progresso)}% pago · faltam {brl0(totalAtual)} de {brl0(totalOriginal)}</small>
             </div>
           </section>
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ChevronRight, Eye, EyeOff, FileText, Landmark, PiggyBank, Receipt, Wallet } from 'lucide-react';
+import { Check, ChevronRight, Eye, EyeOff, Landmark, PiggyBank, Receipt, Wallet } from 'lucide-react';
 import { abrirAdicionar } from './AdicionarMov';
 import { getName } from '../painel';
 import { useEstado } from './store';
@@ -147,7 +147,6 @@ export function Caderno() {
         <button type="button" onClick={() => abrirAdicionar()}><i><Wallet size={24} aria-hidden="true" /></i><b>Anotar gasto</b><small>Veja para onde vai o dinheiro</small></button>
         <Link to="/pagar?nova=1"><i><Receipt size={24} aria-hidden="true" /></i><b>Cadastrar conta</b><small>Eu aviso antes de vencer</small></Link>
         <Link to="/plano/dividas?nova=1"><i><Landmark size={24} aria-hidden="true" /></i><b>Cadastrar dívida</b><small>Descubra quando fica livre</small></Link>
-        <Link to="/plano/cartao#importar"><i><FileText size={24} aria-hidden="true" /></i><b>Importar fatura</b><small>PDF, foto ou texto do banco</small></Link>
       </div>
 
       <h2 className="cm-h2">Resumo de {mesNome.split(' ')[0]}</h2>
