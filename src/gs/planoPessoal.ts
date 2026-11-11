@@ -39,7 +39,7 @@ export const FOCOS: Foco[] = [
 export const foco = (id: string) => FOCOS.find((f) => f.id === id);
 
 /** O que toda pessoa usa, com ou sem plano: anotar, pagar as contas, o Coach e o Perfil. */
-export const BASE = ['contas', 'lancamentos', 'coach', 'dados', 'planos', 'assistentes', 'whatsapp', 'instalar', 'sobre', 'guias'];
+export const BASE = ['contas', 'lancamentos', 'coach', 'saude', 'dados', 'planos', 'assistentes', 'whatsapp', 'instalar', 'sobre', 'guias'];
 
 /** Assuntos que dá para esconder ("não quero ver isso agora"). */
 export const ESCONDIVEIS: { id: string; titulo: string; ferramentas: string[] }[] = [

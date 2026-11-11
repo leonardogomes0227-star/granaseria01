@@ -30,6 +30,7 @@ Gerado por `GERAR=1 npx vitest run src/gs/coachFluxos.test.ts`. Todos os número
 
 - **Cartão de ação:** Colocar no seu caminho: Negociar Internet — Pedir para tirar a multa de R$ 2 e pagar R$ 100. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Ver o plano mês a mês [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 3. Quero sair das dívidas
 
@@ -45,6 +46,7 @@ Gerado por `GERAR=1 npx vitest run src/gs/coachFluxos.test.ts`. Todos os número
 
 - **Cartão de ação:** Pagar primeiro a menor dívida (bola de neve) — Muda a ordem do seu plano de quitação. Dá para trocar depois. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Abrir meu plano de quitação [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 4. Me ofereceram um empréstimo ou parcelamento
 
@@ -60,6 +62,7 @@ Gerado por `GERAR=1 npx vitest run src/gs/coachFluxos.test.ts`. Todos os número
 
 - **Cartão de ação:** Colocar no seu caminho: Comparar outra oferta antes de pegar R$ 5.000 — Esta custa R$ 1.240 de juros em 12x de R$ 520. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Comparar ofertas [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 5. Posso comprar isso?
 
@@ -75,6 +78,7 @@ Gerado por `GERAR=1 npx vitest run src/gs/coachFluxos.test.ts`. Todos os número
 
 - **Cartão de ação:** Esperar 72 horas antes de comprar: tênis — R$ 350. Se a vontade continuar depois de 3 dias, você decide de cabeça fria. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Ver a análise completa [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 6. Recebi um dinheiro extra
 
@@ -92,6 +96,7 @@ Gerado por `GERAR=1 npx vitest run src/gs/coachFluxos.test.ts`. Todos os número
 
 - **Cartão de ação:** Colocar no seu caminho: Dar destino aos R$ 1.500 que entraram — Com esse dinheiro você põe Internet em dia e abate Cartão. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Fazer isso agora, com 1 toque [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 7. Quero juntar para uma coisa
 
@@ -122,6 +127,7 @@ Transporte: R$ 140
 
 - **Cartão de ação:** Limite de R$ 120 por mês em Lazer — Eu aviso quando você chegar perto. [Fazer] [Ajustar] [Agora não]
 - **Cartão de ação:** Ver onde cortar [Abrir]
+- **Cartão de ação:** Daqui a 7 dias eu te pergunto como foi — Fica nos seus passos e, se você usa o WhatsApp com lembretes ligados, eu mando lá também. [Fazer] [Ajustar] [Agora não]
 
 ## 9. Explica meu número de hoje
 

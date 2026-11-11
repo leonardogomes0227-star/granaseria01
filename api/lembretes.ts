@@ -1,9 +1,11 @@
 // Lembrete do plano pelo WhatsApp. A Vercel chama esta rota todo dia às 9h (horário de Brasília) —
 // ver "crons" no vercel.json. Manda pra quem vinculou o WhatsApp e escolheu o dia de hoje.
+// Também manda a volta combinada com o Coach no dia combinado (server/lembretesCoach.ts), pelo mesmo modelo.
 
 import { sendTemplate } from '../server/whatsapp/meta.js';
 import { readPlanState, tasksInline } from '../server/whatsapp/planbot.js';
 import { accountsConfigured, listReminderCandidates, updateUser } from '../server/account/db.js';
+import { combinadoParaHoje } from '../server/lembretesCoach.js';
 
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
 
@@ -26,6 +28,18 @@ export async function GET(request: Request): Promise<Response> {
   let sent = 0;
   let skipped = 0;
   for (const user of await listReminderCandidates()) {
+    // a volta combinada com o Coach vem primeiro: chega no dia combinado, mesmo fora do dia do lembrete do plano
+    const combinado = user.phone && user.last_reminder !== todayIso ? combinadoParaHoje(user.state ?? {}, todayIso) : null;
+    if (combinado) {
+      try {
+        await sendTemplate(user.phone!, template, language, [combinado]);
+        await updateUser(user.user_id, { last_reminder: todayIso });
+        sent++;
+      } catch (err) {
+        console.error('Volta do Coach não enviada', user.user_id, err);
+      }
+      continue;
+    }
     const day = user.reminder_day ?? 0;
     // dia 31 em mês de 30 dias: lembra no último dia do mês
     const isToday = day === today || (day > lastDay && today === lastDay);
