@@ -236,3 +236,46 @@ export function rodarFluxo(id: FluxoId, e: Estado, hoje: string, ent: Entrada = 
     }
   }
 }
+
+/* ---------- sem IA: entender a pergunta escrita e levar ao assunto pronto certo (por palavras, sem fingir que é IA) ---------- */
+const semAcento = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const PALAVRAS: [FluxoId, RegExp][] = [
+  ['conta-atrasada', /atras|venceu|vencid|nao paguei|esqueci de pagar|multa/],
+  ['emprestimo', /empresti|financi|consignad|parcelar|parcelad|parcela em|vezes|\d+ ?x\b/],
+  ['dinheiro-extra', /recebi|13|decimo|bonus|extra|restitui|ganhei|sobrou um dinheiro|freela/],
+  ['posso-comprar', /comprar|compra |posso gastar com|vale a pena (comprar|pegar)|quero um|quero uma|celular novo|tenis|viagem agora/],
+  ['juntar', /juntar|guardar para|guardar pra|economizar para|economizar pra|meta|objetivo|sonho/],
+  ['sair-das-dividas', /divida|devendo|quitar|cartao|rotativo|cheque especial|nome sujo|serasa|negativad/],
+  ['mes-nao-fecha', /nao fecha|nao sobra|nao da|apertad|sem dinheiro|falta dinheiro|no vermelho|acaba antes/],
+  ['onde-errando', /errando|gastando demais|gasto muito|onde vai|para onde vai|pra onde vai|cortar|economizar/],
+  ['meu-numero', /posso gastar hoje|quanto posso gastar|meu numero|limite do dia|como calcul|por dia/],
+];
+/** Lê um valor em reais no texto: "350", "R$ 1.500", "1,5 mil", "2 mil". */
+export function valorNoTexto(t: string): number {
+  const s = semAcento(t).replace(/r\$\s*/g, '');
+  const mil = s.match(/(\d+(?:[.,]\d+)?)\s*mil\b/);
+  if (mil) return Math.round(Number(mil[1].replace(',', '.')) * 1000);
+  const n = s.replace(/(\d)\.(\d{3})\b/g, '$1$2').match(/\d+(?:,\d{1,2})?/g)?.map((x) => Number(x.replace(',', '.'))).filter((x) => x >= 5);
+  return n?.length ? Math.max(...n) : 0;
+}
+export interface Entendido { fluxo: FluxoId; entrada: Entrada }
+/** O assunto que a pergunta escrita parece pedir, e o que já dá para tirar dela (o valor). Nulo = não entendi. */
+export function entenderPergunta(texto: string): Entendido | null {
+  const t = semAcento(texto);
+  const achado = PALAVRAS.find(([, re]) => re.test(t));
+  if (!achado) return null;
+  const fluxo = achado[0];
+  const valor = valorNoTexto(texto);
+  const entrada: Entrada = {};
+  if (valor && ['posso-comprar', 'dinheiro-extra', 'juntar', 'emprestimo'].includes(fluxo)) entrada.valor = valor;
+  const vezes = t.match(/(\d{1,3})\s*(x|vezes|parcelas|meses)\b/);
+  if (vezes && fluxo === 'emprestimo') entrada.parcelas = Number(vezes[1]);
+  const parc = t.replace(/(\d)\.(\d{3})\b/g, '$1$2').match(/\d{1,3}\s*(?:x|vezes|parcelas)\s*de\s*(?:r\$\s*)?(\d+(?:,\d{1,2})?)/);
+  if (parc && fluxo === 'emprestimo') entrada.parcela = Number(parc[1].replace(',', '.'));
+  if (vezes && fluxo === 'juntar') entrada.meses = Number(vezes[1]);
+  const obj = t.match(/(?:comprar|juntar para|juntar pra|guardar para|guardar pra)\s+(?:um |uma |o |a )?([a-z ]{3,20}?)(?:\s+de\s+|\s+por\s+|\s+em\s+|\s*\d|$)/);
+  if (obj && (fluxo === 'posso-comprar' || fluxo === 'juntar')) entrada.nome = obj[1].trim();
+  return { fluxo, entrada };
+}
+/** Faltou algum dado para o fluxo? (o Coach pergunta só o que falta) */
+export const faltaNoFluxo = (id: FluxoId, ent: Entrada) => FLUXOS.find((f) => f.id === id)!.campos.filter((c) => c.id !== 'nome' && !(Number(ent[c.id]) > 0));

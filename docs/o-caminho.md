@@ -180,6 +180,7 @@ Nenhuma ferramenta tinha o item (d). É exatamente o que o dono descreveu.
 | Investir | sim | sim | sim | sim | sim | depois da reserva (marco 6); passo N de M |
 | Viver de renda | sim | sim | sim | sim | sim | ano previsto = marco 7 |
 | Coach | sim | sim | sim | sim | sim | 9 fluxos + monta o plano e libera ferramentas |
-| Antigas mantidas (direitos, check-in, placar, simulador, plano do diagnóstico, selos, frase) | sim | parcial | sim | parcial | parcial | entram pelo registro com status de número; as telas antigas seguem como eram |
+| Antigas mantidas (direitos, check-in, placar, simulador, plano do diagnóstico, selos, leitor de fatura) | sim | sim | sim | sim | sim | abrem com a resposta calculada dos dados do app no topo (`RESPOSTA_DO_SLUG`), com botão e Colocar no caminho; a tela antiga segue embaixo |
+| Frase do dia | sim | não se aplica | sim | não | não | é conteúdo (citação), não cálculo |
 
 **Mudança pedida pelo dono depois da Etapa 9:** "tem coisa que a pessoa não vai usar". O site continua com todas as ferramentas, mas **cada pessoa só vê as do plano dela**. O Coach monta o plano com 3 perguntas (o que resolver primeiro, o que não quer ver agora, um passo por vez ou o mês todo), a tela inicial mostra só os próximos 3 passos e as ferramentas do plano, e o Coach **indica e libera** outras quando a vida pede (entrou dinheiro extra → Dinheiro extra; reserva completa → Investir). As não liberadas ficam em "Todas as ferramentas" e recolhidas em cada área, com "Colocar no meu plano". Lógica em `src/gs/planoPessoal.ts` (testada).
