@@ -395,3 +395,6 @@ Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informaçã
 - **Volta combinada com o Coach também pelo WhatsApp** (`server/lembretesCoach.ts`, com teste; `api/lembretes.ts`): no dia combinado, quem ligou os lembretes recebe "Combinamos de conversar hoje: …" pelo mesmo modelo aprovado do lembrete do plano. Os assuntos prontos do Coach agora oferecem "Daqui a 7 dias eu te pergunto como foi".
 - **Saúde financeira (0 a 100)** voltou a aparecer, no Perfil, com cada critério, o que mais pesa e um botão para melhorar. Entra no registro e no básico do plano.
 - **Interruptores de aviso** do Coach com 44px de área de toque.
+- **Onboarding termina no plano:** o último passo é o Coach montando o plano, então a tela inicial já nasce só com o que a pessoa vai usar ("Pular" continua possível).
+- **O plano evolui** (`evolucaoDoPlano`, `trocarFoco`, com teste): quando um foco é concluído (contas em dia, dívidas quitadas, mês fechando, reserva completa, metas batidas, primeiro investimento), a tela inicial mostra "Etapa vencida" e propõe o próximo foco, na ordem do caminho. Hábitos (controlar gastos, comprar bem) nunca "acabam".
+- **Resumo semanal do WhatsApp com o caminho** (`linhaDoCaminho`): o último campo do modelo `resumo_semanal` traz "Seu destino: … em …. Nesta semana você pagou R$ X e ficou N meses mais perto." para quem usa o site.

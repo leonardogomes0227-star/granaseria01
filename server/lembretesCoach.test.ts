@@ -21,3 +21,15 @@ describe('volta combinada com o Coach pelo WhatsApp', () => {
     expect(combinadoParaHoje({ 'grana-seria:v1': '{quebrado' }, '2026-11-10')).toBeNull();
   });
 });
+
+describe('linha do caminho no resumo semanal', async () => {
+  const { linhaDoCaminho } = await import('./lembretesCoach');
+  it('diz o destino e o que a semana mudou, sem quebra de linha', () => {
+    const s = { 'grana-seria:v1': JSON.stringify({ config: { renda: 4000 }, dividas: [{ id: 'c', nome: 'Cartão', saldo: 6000, jurosMensal: 8, parcelaMinima: 300, cadastradaEm: '2026-10-01', pagamentos: [{ data: '2026-11-08', valor: 2000 }] }], planoDividas: { estrategia: 'bola-de-neve', pagamentoMensal: 900, criadoEm: '2026-10-01' } }) };
+    const t = linhaDoCaminho(s, '2026-11-10')!;
+    expect(t).toMatch(/^Seu destino: livre das dívidas caras em \w+ de 20\d\d\./);
+    expect(t).toContain('pagou R$ 2.000');
+    expect(t).not.toMatch(/\n/);
+    expect(linhaDoCaminho({}, '2026-11-10')).toBeNull();
+  });
+});

@@ -9,9 +9,9 @@ import { detalheDisponivel } from './selectores';
 import { situacaoFinanceira } from './coachRegras';
 import { calcularCaminho, destino, fraseDoMarco, marcosAComemorar, marcosVisiveis, type Marco as TMarco } from './caminho';
 import { passoAtual, passosDoMes, resumoDosPassos } from './passos';
-import { passosDoPlano, resumoDoPlano } from './planoPessoal';
+import { evolucaoDoPlano, passosDoPlano, resumoDoPlano, trocarFoco } from './planoPessoal';
 import { resumoDaVolta, semanaNoCaminho } from './voltou';
-import { comemorarMarcos, dispensarVolta, recomecarPassos, registrarVisita, informarSaldo } from './acoes';
+import { comemorarMarcos, dispensarVolta, recomecarPassos, registrarVisita, informarSaldo, salvarPlano } from './acoes';
 import { CampoDinheiro, Folha } from './ui';
 import { FormRenda } from './Onboarding';
 import { ComoCalculei } from './ComoCalculei';
@@ -58,6 +58,7 @@ export function TelaCaminho() {
   const resumo = resumoDosPassos(passos);
   const sit = useMemo(() => situacaoFinanceira(e, hoje), [e, hoje]);
   const semana = useMemo(() => semanaNoCaminho(e, hoje), [e, hoje]);
+  const evolucao = useMemo(() => evolucaoDoPlano(e, hoje), [e, hoje]);
   const volta = useMemo(() => (e.caminho.voltaDispensada ? null : resumoDaVolta(e, new Date())), [e]);
   const festa = useMemo(() => marcosAComemorar(e, marcos), [e, marcos]);
   const { executar, folhas } = useExecutarPasso(hoje);
@@ -140,6 +141,17 @@ export function TelaCaminho() {
         </Link>
       )}
       {e.caminho.plano && !verResto && <p className="cm-mudo" style={{ margin: '-4px 0 12px' }}>{resumoDoPlano(e.caminho.plano)}</p>}
+      {evolucao && e.caminho.plano && (
+        <section className="cm-acao-card" style={{ marginBottom: 14 }} aria-label="Seu plano avançou">
+          <span className="cm-eyebrow">Etapa vencida</span>
+          <b style={{ marginTop: 4 }}>Você concluiu: {evolucao.concluido.titulo.toLowerCase()}.</b>
+          <small>{evolucao.proximo ? `Próximo: ${evolucao.proximo.titulo.toLowerCase()}. ${evolucao.porque}` : evolucao.porque}</small>
+          <div className="gs-acoes" style={{ marginTop: 10 }}>
+            <button type="button" className="gs-btn pequeno" onClick={() => { const antes = e.caminho.plano!; salvarPlano(trocarFoco(antes, evolucao.concluido.id, evolucao.proximo?.id ?? null)); toast(evolucao.proximo ? `Plano atualizado: agora é ${evolucao.proximo.titulo.toLowerCase()}.` : 'Plano atualizado.', { acao: { rotulo: 'Desfazer', onClick: () => salvarPlano(antes) } }); }}>{evolucao.proximo ? 'Seguir para o próximo' : 'Tirar do plano'}</button>
+            <Link to="/coach?plano=1" className="gs-btn link">Escolher outro</Link>
+          </div>
+        </section>
+      )}
       {passos.length === 0 ? <p className="cm-mudo">Nada pendente no seu plano agora. Bom sinal.</p> : <ListaDePassos passos={passos} executar={executar} brilhar={brilhar} hoje={hoje} />}
       {recorte.outros > 0 && <button type="button" className="cm-link" onClick={() => setVerResto(!verResto)}>{verResto ? 'Ver só o meu plano' : `Ver o resto do mês (${recorte.outros} ${recorte.outros === 1 ? 'passo' : 'passos'})`}</button>}
       {(temOcultos || verOcultos) && (
