@@ -1,10 +1,10 @@
 // Contas da aba Investir (puras, com teste): juros compostos, perfil de risco, prioridade e a mesa de simulação.
 
-import { arred, brl0 } from '../datas';
-import { atrasosAbertos } from '../atrasosBase';
-import { patrimonioGuardado, reservaMeta } from '../selectores';
-import { saldoAtual, totalDividas } from '../dividas';
-import type { Estado, OperacaoFechada, PerfilRisco, Posicao } from '../tipos';
+import { arred, brl0 } from '../datas.js';
+import { atrasosAbertos } from '../atrasosBase.js';
+import { patrimonioGuardado, reservaMeta } from '../selectores.js';
+import { saldoAtual, totalDividas } from '../dividas.js';
+import type { Estado, OperacaoFechada, PerfilRisco, Posicao } from '../tipos.js';
 
 /* ---------- juros compostos ---------- */
 export interface Composto {

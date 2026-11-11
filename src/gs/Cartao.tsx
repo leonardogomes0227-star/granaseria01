@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { useNavigate } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
@@ -41,6 +42,7 @@ export function CartaoTela() {
     return (
       <>
         <Titulo titulo="Cartão de crédito" sub="Fatura, limite e parcelas." />
+        <RespostaFerramenta id="cartao" />
         <section className="gs-card destaque">
           <span className="gs-rotulo">{c ? 'Atualizar dados' : 'Comece por aqui'}</span>
           {!c && <p style={{ margin: '6px 0 10px' }}>Quatro dados do seu cartão, que estão no app do banco. Pode chutar o que não souber.</p>}

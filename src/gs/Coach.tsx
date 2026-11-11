@@ -5,7 +5,7 @@ import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { nomeMes } from './datas';
 import { recomendacoes, type Recomendacao } from './coachRegras';
-import { anotarAtraso, colocarNoCaminho, concluirPasso, criarMeta, definirLimite, desligarAviso, editarPasso, escolherMetodoQuitacao, esperar72h, removerPasso } from './acoes';
+import { liberarFerramenta, anotarAtraso, colocarNoCaminho, concluirPasso, criarMeta, definirLimite, desligarAviso, editarPasso, escolherMetodoQuitacao, esperar72h, removerPasso } from './acoes';
 import { abrirAdicionar } from './AdicionarMov';
 import { FLUXOS, fluxoDaRota, rodarFluxo, type AcaoCoach, type Entrada, type Fluxo, type FluxoId } from './coachFluxos';
 import type { Impacto } from './caminho';
@@ -13,6 +13,9 @@ import { painelToken } from '../painel';
 import { supabase } from '../supabase';
 import { Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
 import { Eyebrow, Moeda } from './base';
+import { MontarPlano } from './MontarPlano';
+import { indicacoes, resumoDoPlano } from './planoPessoal';
+import { ferramenta } from './registroFerramentas';
 import { toast } from '../components/ui/Toast';
 
 /* ---------- Coach: resolve um problema por vez, com os números da pessoa, e termina num passo no caminho ---------- */
@@ -152,11 +155,14 @@ export function Coach() {
       case 'criar_lembrete': return Boolean(colocarNoCaminho({ titulo: s('texto'), detalhe: 'Combinado com o Coach: eu volto a perguntar nesse dia.', rota: '/coach', origem: 'coach', lembrarEm: s('data') }));
       case 'colocar_compra_em_espera_72h': return Boolean(esperar72h(s('item'), n('valor')));
       case 'abrir_ferramenta': navigate(s('rota')); return true;
+      case 'liberar_ferramenta': liberarFerramenta(s('id')); return true;
     }
+    return false;
   };
   const decidir = (iMsg: number, iAcao: number, a: AcaoCoach | null) => {
     if (a && !fazer(a)) { toast('Não consegui fazer isso. Tente pela tela da ferramenta.'); return; }
-    if (a && a.tipo !== 'abrir_ferramenta') toast('Feito. Está no seu caminho.');
+    if (a && a.tipo === 'liberar_ferramenta') toast('Liberada. Ela já aparece nas suas ferramentas.');
+    else if (a && a.tipo !== 'abrir_ferramenta') toast('Feito. Está no seu caminho.');
     setMsgs(msgs.map((m, i) => (i === iMsg ? { ...m, resolvidas: [...(m.resolvidas ?? []), iAcao] } : m)));
   };
 
@@ -176,6 +182,28 @@ export function Coach() {
           <div className="gs-acoes"><button type="button" className="gs-btn" onClick={() => { concluirPasso(p.id); toast('Boa. Marquei como resolvido.'); }}>Resolvido</button></div>
         </section>
       ))}
+
+      {(!e.caminho.plano || params.get('plano')) ? (
+        <MontarPlano onPronto={() => { setParams({}, { replace: true }); navigate('/'); }} />
+      ) : (
+        <section className="cm-card suave" aria-label="Seu plano">
+          <Eyebrow>Seu plano</Eyebrow>
+          <p style={{ margin: '6px 0 4px', font: '600 21px/1.25 var(--cm-serif)' }}>{resumoDoPlano(e.caminho.plano)}</p>
+          <button type="button" className="cm-link" onClick={() => setParams({ plano: '1' })}>Refazer meu plano</button>
+        </section>
+      )}
+
+      {indicacoes(e, hoje).slice(0, 2).map((i) => { const f = ferramenta(i.ferramentaId); return f ? (
+        <div key={i.ferramentaId} className="cm-acao-card" style={{ marginBottom: 12 }}>
+          <Eyebrow>O Coach indica</Eyebrow>
+          <b style={{ marginTop: 4 }}>{f.titulo}</b>
+          <small>{i.motivo}</small>
+          <div className="gs-acoes" style={{ marginTop: 10 }}>
+            <button type="button" className="gs-btn pequeno" onClick={() => { liberarFerramenta(f.id); toast(`${f.titulo} liberada.`); }}>Liberar</button>
+            <Link to={f.rota} className="gs-btn link">Só dar uma olhada</Link>
+          </div>
+        </div>
+      ) : null; })}
 
       {msgs.length === 0 && recs.filter((r) => r.id !== 'tudo-certo').slice(0, 2).map((r) => <Rec key={r.id} r={r} />)}
 

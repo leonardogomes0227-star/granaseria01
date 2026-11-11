@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { Check, ChevronRight } from 'lucide-react';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, hoje as hojeSP, mesCurto, mesDe, nomeMes } from './datas';
-import { definirRecuperacao, registrarMarco, removerAnotados, removerDivida, restaurarDivida, salvarCartao } from './acoes';
+import { definirRecuperacao, registrarMarco, removerAnotados, removerDivida, restaurarDivida, salvarCartao, salvarEtapa } from './acoes';
 import { marcosConquistados, ondeCortar, passoDoDia, planoDeSaida, sobrevivencia, triagem, vitorias, type ItemTriagem } from './recuperacaoLogica';
 import { detalheDisponivel } from './selectores';
 import { resumoDaSemana } from './insights';
@@ -50,8 +51,11 @@ function Acolhimento() {
 const PASSOS = ['Renda', 'Contas fixas', 'Atrasadas', 'Dívidas', 'Cartão', 'Pronto'];
 
 function RaioX() {
-  const [passo, setPasso] = useState(0);
-  const proximo = () => setPasso((p) => Math.min(PASSOS.length - 1, p + 1));
+  const e = useEstado();
+  // começa de onde a pessoa parou (a etapa fica salva no estado: aparece "Continuar" no cartão da ferramenta)
+  const [passo, setPassoRaw] = useState(() => Math.min(PASSOS.length - 1, Math.max(0, (e.caminho.etapas.recuperacao ?? 1) - 1)));
+  const setPasso = (p: number) => { setPassoRaw(p); salvarEtapa('recuperacao', p + 1); };
+  const proximo = () => setPasso(Math.min(PASSOS.length - 1, passo + 1));
   return (
     <>
       <Titulo titulo="Raio-X" sub={`Passo ${passo + 1} de ${PASSOS.length}: ${PASSOS[passo]}`} />
@@ -152,6 +156,7 @@ function PassoCartao({ onFeito }: { onFeito: () => void }) {
 
 function PassoPronto() {
   const e = useEstado();
+  useEffect(() => { salvarEtapa('recuperacao', 0); }, []);
   const hoje = useHoje();
   const plano = useMemo(() => planoDeSaida(e, hoje), [e, hoje]);
   return (
@@ -192,6 +197,7 @@ function Painel() {
   return (
     <>
       <Titulo titulo="Meu plano de saída" />
+      <RespostaFerramenta id="recuperacao" />
 
       {novoMarco && (
         <section className="gs-card gs-marco" role="status" aria-label="Conquista">

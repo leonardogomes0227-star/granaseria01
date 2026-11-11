@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, ChevronRight, Delete } from 'lucide-react';
+import { ArrowLeft, Award, Banknote, BookOpen, CalendarClock, CalendarDays, ChartColumn, ChartLine, ChartPie, Check, CheckCheck, ChevronRight, Compass, CreditCard, Crown, Delete, FileText, Flag, Gift, Info, Landmark, LifeBuoy, Map, MessageCircle, PiggyBank, Plus, Quote, Receipt, ArrowRightLeft, Scale, Scissors, Search, Shield, Smartphone, Sparkles, Sprout, Sun, Target, Timer, UserRound, Bell, Swords, Wallet, type LucideIcon } from 'lucide-react';
 import { Moeda } from '../components/ui/Moeda';
 import { Folha } from './ui';
 import type { TomStatus } from './registroFerramentas';
@@ -80,14 +80,26 @@ export function Marco({ n, estado, titulo, data, selo, children }: { n: number; 
   );
 }
 
-/** Uma ferramenta na lista: nome, a pergunta que ela resolve e o estado de agora. Linha de livro-caixa, sem enfeite. */
-export function ToolTile({ titulo, resolve, status, tom = '', rota, continuar }: { titulo: string; resolve: string; status: string; tom?: TomStatus; rota: string; continuar?: string }) {
+export const ICONES: Record<string, LucideIcon> = {
+  alvo: Target, arquivo: FileText, aspas: Quote, balanca: Scale, banco: Landmark, bandeira: Flag, boia: LifeBuoy, brilho: Sparkles, broto: Sprout, bussola: Compass,
+  calendario: CalendarDays, cartao: CreditCard, carteira: Wallet, celular: Smartphone, check: CheckCheck, cofre: PiggyBank, conversa: MessageCircle, coroa: Crown,
+  cronometro: Timer, duelo: Swords, escudo: Shield, grafico: ChartColumn, info: Info, linha: ChartLine, livro: BookOpen, lupa: Search, mais: Plus, mapa: Map,
+  medalha: Award, pessoa: UserRound, pizza: ChartPie, presente: Gift, recibo: Receipt, relogio: CalendarClock, sino: Bell, sol: Sun, tesoura: Scissors, troca: ArrowRightLeft, dinheiro: Banknote,
+};
+
+/** Uma ferramenta: cartão clicável com ícone, nome, a pergunta que ela resolve e o seu número de agora. */
+export function ToolTile({ titulo, resolve, status, tom = '', rota, continuar, icone }: { titulo: string; resolve: string; status: string; tom?: TomStatus; rota: string; continuar?: string; icone?: string }) {
+  const I = (icone && ICONES[icone]) || ChevronRight;
   return (
     <Link to={rota} className={`cm-tile ${tom}`}>
-      <b>{titulo}</b>
-      <em>{resolve}</em>
-      <StatusDot tom={tom}>{status}</StatusDot>
-      {continuar && <span className="cm-continuar">{continuar}</span>}
+      <span className="ic" aria-hidden="true"><I size={22} strokeWidth={1.9} /></span>
+      <span className="cm-tile-corpo">
+        <b>{titulo}</b>
+        <em>{resolve}</em>
+        <StatusDot tom={tom}>{status}</StatusDot>
+        {continuar && <span className="cm-continuar">{continuar}</span>}
+      </span>
+      <ChevronRight size={20} aria-hidden="true" className="cm-tile-seta" />
     </Link>
   );
 }

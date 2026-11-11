@@ -9,6 +9,7 @@ import { detalheDisponivel } from './selectores';
 import { situacaoFinanceira } from './coachRegras';
 import { calcularCaminho, destino, fraseDoMarco, marcosAComemorar, marcosVisiveis, type Marco as TMarco } from './caminho';
 import { passoAtual, passosDoMes, resumoDosPassos } from './passos';
+import { passosDoPlano, resumoDoPlano } from './planoPessoal';
 import { resumoDaVolta, semanaNoCaminho } from './voltou';
 import { comemorarMarcos, dispensarVolta, recomecarPassos, registrarVisita, informarSaldo } from './acoes';
 import { CampoDinheiro, Folha } from './ui';
@@ -16,6 +17,7 @@ import { FormRenda } from './Onboarding';
 import { ComoCalculei } from './ComoCalculei';
 import { Checklist } from './Checklist';
 import { CaixaResolver } from './Resolver';
+import { AtalhosDasAreas } from './Areas';
 import { ListaDePassos, useExecutarPasso } from './PassosUI';
 import { CartaoDestino, Citacao, citacaoDoDia, Eyebrow, LinhaDoTempo, Marco, Moeda, useContagem } from './base';
 import { definirOculto, mascarar, useOculto } from './privacidade';
@@ -48,7 +50,10 @@ export function TelaCaminho() {
   const marcos = useMemo(() => calcularCaminho(e, hoje), [e, hoje]);
   const alvo = destino(marcos);
   const disp = useMemo(() => detalheDisponivel(e, mes, hoje), [e, mes, hoje]);
-  const passos = useMemo(() => passosDoMes(e, hoje, { comOcultos: verOcultos }), [e, hoje, verOcultos]);
+  const todosPassos = useMemo(() => passosDoMes(e, hoje, { comOcultos: verOcultos }), [e, hoje, verOcultos]);
+  const [verResto, setVerResto] = useState(false);
+  const recorte = useMemo(() => passosDoPlano(todosPassos, e, hoje), [todosPassos, e, hoje]);
+  const passos = verResto ? todosPassos : recorte.visiveis;
   const atual = passoAtual(passos);
   const resumo = resumoDosPassos(passos);
   const sit = useMemo(() => situacaoFinanceira(e, hoje), [e, hoje]);
@@ -126,8 +131,17 @@ export function TelaCaminho() {
 
   const blocoPassos = (
     <>
-      <h2 className="cm-h2">Seus passos deste mês<small>{resumo.total > 0 ? `${resumo.feitos} de ${resumo.total} feitos` : ''}</small></h2>
-      {passos.length === 0 ? <p className="cm-mudo">Nada pendente por agora. Bom sinal.</p> : <ListaDePassos passos={passos} executar={executar} brilhar={brilhar} hoje={hoje} />}
+      <h2 className="cm-h2">{verResto ? 'Todos os passos do mês' : 'Seus próximos passos'}<small>{resumo.total > 0 ? `${resumo.feitos} de ${resumo.total} feitos` : ''}</small></h2>
+      {!e.caminho.plano && (
+        <Link to="/coach?plano=1" className="cm-acao-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', marginBottom: 14 }}>
+          <span className="cm-eyebrow">1 minuto com o Coach</span>
+          <b style={{ marginTop: 4 }}>Monte o seu plano</b>
+          <small>3 perguntas e eu deixo na sua tela só o que você vai usar. Agora estou mostrando o que os seus números pedem.</small>
+        </Link>
+      )}
+      {e.caminho.plano && !verResto && <p className="cm-mudo" style={{ margin: '-4px 0 12px' }}>{resumoDoPlano(e.caminho.plano)}</p>}
+      {passos.length === 0 ? <p className="cm-mudo">Nada pendente no seu plano agora. Bom sinal.</p> : <ListaDePassos passos={passos} executar={executar} brilhar={brilhar} hoje={hoje} />}
+      {recorte.outros > 0 && <button type="button" className="cm-link" onClick={() => setVerResto(!verResto)}>{verResto ? 'Ver só o meu plano' : `Ver o resto do mês (${recorte.outros} ${recorte.outros === 1 ? 'passo' : 'passos'})`}</button>}
       {(temOcultos || verOcultos) && (
         <div className="gs-acoes">
           <button type="button" className="cm-link" onClick={() => setVerOcultos(!verOcultos)}>{verOcultos ? 'Esconder os que eu tirei' : 'Ver os passos que escondi'}</button>
@@ -167,12 +181,13 @@ export function TelaCaminho() {
         </section>
       )}
 
+      <AtalhosDasAreas />
+
       <Link to="/coach" className="cm-card" style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit', marginTop: 24 }}>
         <Sparkles size={26} aria-hidden="true" style={{ color: 'var(--cm-ouro)', flex: 'none' }} />
         <span style={{ flex: 1 }}><b style={{ display: 'block', font: '600 22px var(--cm-serif)' }}>Travou em alguma coisa?</b><span className="cm-mudo">O Coach resolve com você, com os seus números.</span></span>
         <ChevronRight size={20} aria-hidden="true" className="cm-mudo" />
       </Link>
-      <Link to="/ferramentas" className="cm-link">Todas as ferramentas <ChevronRight size={16} aria-hidden="true" /></Link>
       <Citacao texto={citacaoDoDia(hoje)} />
 
       <ComoCalculei aberta={calc} onFechar={() => setCalc(false)} d={disp} />

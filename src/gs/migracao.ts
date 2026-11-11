@@ -166,6 +166,11 @@ export function migrar(bruto: unknown, legado?: Record<string, string | null>): 
         voltaDispensada: iso(c.voltaDispensada),
         marcosFeitos: arr<string>(c.marcosFeitos).filter((x) => typeof x === 'string').slice(0, 20),
         etapas: Object.fromEntries(Object.entries(obj(c.etapas)).filter(([, v]) => typeof v === 'number' && Number.isFinite(v) && v >= 0).slice(0, 30)) as Record<string, number>,
+        plano: (() => {
+          const pl = obj(c.plano);
+          const ids = (v: unknown) => arr<string>(v).filter((x) => typeof x === 'string' && /^[a-z-]{2,30}$/.test(x)).slice(0, 40);
+          return Array.isArray(pl.focos) && ids(pl.focos).length ? { focos: ids(pl.focos), esconder: ids(pl.esconder), ritmo: pl.ritmo === 'tudo' ? ('tudo' as const) : ('um-passo' as const), extras: ids(pl.extras), criadoEm: dia(pl.criadoEm) ?? '2026-01-01' } : undefined;
+        })(),
         metodoQuitacao: c.metodoQuitacao === 'bola-de-neve' || c.metodoQuitacao === 'maior-juro' ? (c.metodoQuitacao as 'bola-de-neve' | 'maior-juro') : undefined,
       };
     })(),

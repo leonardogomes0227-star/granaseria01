@@ -371,3 +371,14 @@ Relatório e checklist em `docs/como-testar.md`. 40 capturas (360, 390, 1280 e f
 Testes: 45 arquivos, 396 testes; `typecheck`, `typecheck:server`, `lint` (0 erros) e `build` verdes.
 
 **Correção pós-publicação:** a Etapa 8 criou `api/comprovante.ts` e o deploy falhou: o plano da Vercel aceita no máximo **12 funções** (o app já tinha 12). A leitura do comprovante foi para dentro de `api/fatura.ts` (`POST` com `tipo: "comprovante"`). **Regra para o futuro: não criar arquivo novo em `api/`**; juntar em uma função existente. Há um teste que trava isso (`server/limiteFuncoes.test.ts`).
+
+### Depois da publicação: o plano de cada pessoa (nov/2026)
+Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informação vaga e coisa que a pessoa não vai usar".
+- **Plano pessoal** (`planoPessoal.ts`, `MontarPlano.tsx`, campo aditivo `caminho.plano`): o Coach pergunta o que resolver primeiro (já marca com ★ o que os números pedem, com o porquê), o que esconder e o ritmo. A pessoa passa a ver só as ferramentas do plano. Sem plano: o básico + o que os dados indicam, e um convite "Monte o seu plano".
+- **O Coach indica e libera** (`indicacoes`, ação `liberar_ferramenta`, também para a IA): dinheiro extra, mês no vermelho, cartão a 70%, compra em espera, reserva completa…
+- **Tela inicial:** no máximo 3 passos (o urgente sempre entra; "Ver o resto do mês"), "Suas ferramentas" com até 6 cartões do plano e a indicação do Coach.
+- **Ferramentas voltaram a ser cartões** com ícone, nome, a pergunta e **um número seu** (os status genéricos viraram números: "R$ 100 por mês viram R$ X em 10 anos", "sua dívida mais cara: 12% ao mês").
+- **Resposta em uma frase no topo** de 13 ferramentas (`respostas.ts`, `RespostaFerramenta.tsx`): frase com número e data, "Como cheguei nisso", 1 botão e "Colocar no meu caminho".
+- **Continuar (passo N de M)** em Sair do atraso, Quitar dívidas, Modo recuperação (etapa do raio-X salva), Investir e Metas.
+- **Correção:** "Guardar" fica em espera quando o mês fecha no vermelho (antes aparecia "Guardar R$ 5.800" junto de "Cortar R$ 3.600").
+- Teste de utilidade refeito: `docs/o-caminho.md`, seção 10.

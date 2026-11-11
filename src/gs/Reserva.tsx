@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Check, Flame, Lock, Medal, Trophy } from 'lucide-react';
 import { useEstado } from './store';
@@ -62,6 +63,7 @@ export function Reserva() {
   return (
     <>
       <Titulo titulo="Reserva de emergência" sub="O que segura você se a renda parar." />
+      <RespostaFerramenta id="reserva" />
 
       {meta <= 0 ? (
         <section className="gs-card destaque">

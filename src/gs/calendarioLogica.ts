@@ -1,11 +1,11 @@
 // Calendário: contas fixas, parcelas de dívidas e fatura do cartão num lugar só. Pura, com teste.
 
-import { diasEntre, somaMes, vencimentoNoMes } from './datas';
-import { contasDoMes, estaPaga } from './selectores';
-import { pagoNaDivida } from './painelDividas';
-import { saldoAtual } from './dividas';
-import { proximaData } from './cartaoLogica';
-import type { Estado } from './tipos';
+import { diasEntre, somaMes, vencimentoNoMes } from './datas.js';
+import { contasDoMes, estaPaga } from './selectores.js';
+import { pagoNaDivida } from './painelDividas.js';
+import { saldoAtual } from './dividas.js';
+import { proximaData } from './cartaoLogica.js';
+import type { Estado } from './tipos.js';
 
 export interface Evento {
   id: string;

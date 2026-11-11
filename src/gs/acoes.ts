@@ -464,3 +464,14 @@ export const comemorarMarcos = (ids: string[]) => atualizar((e) => comCaminho(e,
 /** Ferramenta de várias etapas: guarda onde a pessoa parou (0 = terminou ou não começou). */
 export const salvarEtapa = (ferramentaId: string, etapa: number) => atualizar((e) => (e.caminho.etapas[ferramentaId] === etapa || (!etapa && !(ferramentaId in e.caminho.etapas)) ? e : comCaminho(e, (c) => ({ ...c, etapas: etapa > 0 ? { ...c.etapas, [ferramentaId]: etapa } : Object.fromEntries(Object.entries(c.etapas).filter(([k]) => k !== ferramentaId)) }))));
 export const escolherMetodoQuitacao = (m: 'bola-de-neve' | 'maior-juro') => atualizar((e) => (e.planoDividas ? { ...e, planoDividas: { ...e.planoDividas, estrategia: m } } : comCaminho(e, (c) => ({ ...c, metodoQuitacao: m }))));
+
+/* ---------- o plano de cada pessoa: o Coach monta e libera ferramentas ---------- */
+export const salvarPlano = (p: import('./tipos').PlanoPessoal | undefined) => atualizar((e) => comCaminho(e, (c) => ({ ...c, plano: p })));
+/** Libera uma ferramenta no plano (o Coach indicou, ou a própria pessoa pediu). Sem plano ainda, cria um com o que os dados indicam. */
+export function liberarFerramenta(id: string) {
+  atualizar((e) => comCaminho(e, (c) => {
+    const pl = c.plano ?? { focos: [], esconder: [], ritmo: 'um-passo' as const, extras: [], criadoEm: hojeSP() };
+    return { ...c, plano: { ...pl, extras: [...new Set([...pl.extras, id])].slice(0, 40) } };
+  }));
+}
+export const esconderFerramenta = (id: string) => atualizar((e) => comCaminho(e, (c) => (c.plano ? { ...c, plano: { ...c.plano, extras: c.plano.extras.filter((x) => x !== id) } } : c)));
