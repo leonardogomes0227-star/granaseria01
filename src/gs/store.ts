@@ -8,6 +8,10 @@ import { migrar } from './migracao';
 export const STORE_KEY = 'grana-seria:v1';
 
 let estado: Estado | null = null;
+/** O texto exato que este app gravou por último. Se o que está guardado for outro, alguém de fora gravou (a sincronização
+ *  trazendo os dados da conta, ou "restaurar cópia"): a memória está velha e NÃO pode ser gravada por cima. */
+let ultimoGravado: string | null = null;
+const lerBruto = (): string | null => { try { return localStorage.getItem(STORE_KEY); } catch { return null; } };
 const ouvintes = new Set<() => void>();
 
 function ler(): Estado {
@@ -42,7 +46,9 @@ export function getEstado(): Estado {
 
 function persistir(e: Estado, avisar = true) {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(e));
+    const bruto = JSON.stringify(e);
+    localStorage.setItem(STORE_KEY, bruto);
+    ultimoGravado = bruto;
     espelharParaOBot(e);
   } catch {
     // sem espaço ou sem localStorage: o app segue com o estado em memória
@@ -68,6 +74,9 @@ function espelharParaOBot(e: Estado) {
 
 /** Muda o estado com uma função pura e salva. */
 export function atualizar(fn: (e: Estado) => Estado): Estado {
+  // os dados guardados mudaram por fora desde a última gravação: parte deles, nunca da memória velha.
+  // (Era assim que um aparelho devolvia o estado antigo por cima do que tinha acabado de chegar da conta.)
+  if (estado && ultimoGravado !== null && lerBruto() !== ultimoGravado) estado = null;
   const prox = fn(getEstado());
   estado = { ...prox, schemaVersion: SCHEMA_VERSION };
   persistir(estado);

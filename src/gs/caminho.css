@@ -892,3 +892,7 @@ html.gs-app .gs-principal { animation: none; }
 @media (min-width: 1000px) {
   .ini-grade { grid-template-areas: "a d" "b d" "b c"; grid-template-rows: auto auto 1fr; }
 }
+/* aviso de cópia maior que os dados atuais (algo foi perdido): destaque sóbrio, no topo do Início */
+.ini-recuperar { margin: 0 0 22px; padding: 18px; border-radius: 26px; border: 1px solid rgba(169, 130, 46, .5); background: linear-gradient(150deg, rgba(255, 255, 255, .9), rgba(246, 236, 210, .9)); box-shadow: var(--gl-sombra); }
+.ini-recuperar b { display: block; font: 800 17px/1.3 var(--cm-sans); color: var(--cm-tinta); }
+.ini-recuperar p { margin: 6px 0 4px; font: 500 14.5px/1.45 var(--cm-sans); color: var(--cm-tinta-2); }

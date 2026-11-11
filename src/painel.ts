@@ -1,5 +1,5 @@
-import { SYNC_KEYS, applySnapshot, snapshot } from './sync';
-import { pesoDoEstado } from './gs/pesoEstado';
+import { CHAVE_PERMITIR, SYNC_KEYS, applySnapshot, guardarCopiaLocal, snapshot, type CopiaDeDados } from './sync';
+import { pesoDoEstado, quemFica } from './gs/pesoEstado';
 import { resetIfOld } from './reset';
 
 // Painel ligado ao WhatsApp. O link pessoal que o bot manda (/painel?t=…) deixa o token neste navegador;
@@ -143,6 +143,7 @@ const diagOf = (s: Snapshot) => {
 
 let timer: number | undefined;
 let lastPushed = '';
+let buscandoPorMantido = false;
 
 async function push(force = false) {
   const token = painelToken();
@@ -154,11 +155,23 @@ async function push(force = false) {
   if (!read(SEEN_KEY) && pesoDoEstado(local['grana-seria:v1']) === 0) return;
   // chave que sumiu daqui (ex.: refez o diagnóstico do zero) também some lá
   const state: Record<string, string | null> = Object.fromEntries(SYNC_KEYS.map((k) => [k, local[k] ?? null]));
-  const res = await fetch('/api/painel', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ state }) });
+  const permitirReducao = read(CHAVE_PERMITIR) === '1';
+  const res = await fetch('/api/painel', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ state, permitirReducao }) });
   if (res.status === 401) return clearPainelToken();
   if (!res.ok) return;
+  const j = (await res.json()) as { updatedAt: string; mantido?: boolean };
+  if (j.mantido) {
+    // a conta tem bem mais dados que este aparelho e o servidor ficou com os dela: busca em vez de insistir
+    lastPushed = body;
+    if (!buscandoPorMantido) {
+      buscandoPorMantido = true;
+      try { await pullPainel(); } finally { buscandoPorMantido = false; }
+    }
+    return;
+  }
+  if (permitirReducao) write(CHAVE_PERMITIR, null);
   lastPushed = body;
-  write(SEEN_KEY, ((await res.json()) as { updatedAt: string }).updatedAt);
+  write(SEEN_KEY, j.updatedAt);
 }
 
 /** Puxa a versão do WhatsApp; se ela ganhar, aplica e recarrega a página. Devolve os dados do painel. */
@@ -179,9 +192,11 @@ export async function pullPainel(): Promise<PainelData | null> {
   let useRemote: boolean;
   const pesoLocal = pesoDoEstado(local['grana-seria:v1']);
   const pesoRemoto = pesoDoEstado(remote['grana-seria:v1']);
-  // regra de ouro: um estado em branco nunca apaga um que tem dados (aparelho novo cria um em branco antes de buscar este)
-  if (Object.keys(local).length === 0 || (pesoLocal === 0 && pesoRemoto > 0)) useRemote = true;
-  else if (pesoRemoto === 0 && pesoLocal > 0) useRemote = false;
+  // regra de ouro: dados nunca são trocados por (quase) nada. Em branco perde sempre; quem tem menos da metade perde sem
+  // perguntar (o celular com meia dúzia de registros não passa por cima do computador completo, nem o contrário).
+  const regra = read(CHAVE_PERMITIR) === '1' ? 'local' : quemFica(pesoLocal, pesoRemoto, !seen);
+  if (regra === 'local') useRemote = false;
+  else if (regra === 'remoto' || Object.keys(local).length === 0) useRemote = true;
   else if (!seen) {
     // primeira conexão neste navegador, com dados dos dois lados: a pessoa escolhe, vendo quanto tem em cada um
     if (pesoLocal > 0 && pesoRemoto > 0 && json(remote) !== json(local)) {
@@ -195,7 +210,7 @@ export async function pullPainel(): Promise<PainelData | null> {
     useRemote = !unsent && !!data.updatedAt && data.updatedAt > seen;
   }
   if (useRemote) {
-    applySnapshot(remote);
+    applySnapshot(remote); // guarda antes uma cópia do que estava neste aparelho (src/sync.ts)
     if (data.updatedAt) write(SEEN_KEY, data.updatedAt);
     lastPushed = json(snapshot());
     window.location.reload();
@@ -230,4 +245,22 @@ export function stopPainelSync() {
   timer = undefined;
   document.removeEventListener('visibilitychange', onVisible);
   lastPushed = '';
+}
+
+/** As cópias de segurança guardadas na conta (o servidor guarda o estado anterior sempre que os dados diminuem). */
+export async function buscarCopias(): Promise<CopiaDeDados[]> {
+  const token = painelToken();
+  if (!token) return [];
+  const res = await fetch('/api/painel?copias=1', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null);
+  if (!res?.ok) return [];
+  const j = (await res.json().catch(() => ({}))) as { copias?: CopiaDeDados[] };
+  return Array.isArray(j.copias) ? j.copias : [];
+}
+
+/** Volta para uma cópia: o que está agora neste aparelho fica guardado como cópia local, e a escolhida sobe para a conta. */
+export async function restaurarCopia(estado: string): Promise<void> {
+  guardarCopiaLocal(read('grana-seria:v1'));
+  write('grana-seria:v1', estado);
+  write(CHAVE_PERMITIR, '1');
+  await pushNow();
 }

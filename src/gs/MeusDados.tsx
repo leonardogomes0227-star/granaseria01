@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apagarCopiaDoNumero, limparCopiaDoNumero, clearPainelToken, painelToken, startPainelSync, stopPainelSync } from '../painel';
+import { CHAVE_PERMITIR, guardarCopiaLocal } from '../sync';
+import { SecaoRecuperar } from './RecuperarDados';
 import { apagarCopiaDaConta, clearLocalData, limparCopiaDaConta, stopSync } from '../sync';
 import { apagarTudo, getEstado, STORE_KEY, substituir } from './store';
 import { salvarConfig } from './acoes';
@@ -54,6 +56,9 @@ export function MeusDados() {
     try {
       const novo = JSON.parse(await f.text());
       if (!novo || typeof novo !== 'object' || !('config' in novo)) throw new Error('formato');
+      // importar é de propósito: vale mesmo que o arquivo tenha menos dados que a conta (src/sync.ts)
+      guardarCopiaLocal(JSON.stringify(getEstado()));
+      try { localStorage.setItem(CHAVE_PERMITIR, '1'); } catch { /* sem armazenamento */ }
       substituir(novo);
       toast('Dados importados');
       navigate(0);
@@ -95,6 +100,7 @@ export function MeusDados() {
         </div>
         <p className="gs-nota">O backup tem tudo: contas, gastos, dívidas, assistentes. Importar substitui o que está no app agora.</p>
       </section>
+      <SecaoRecuperar />
 
       <section className="gs-card">
         <div className="gs-linha"><div className="gs-corpo"><b>Conta</b><small>{painelToken() ? 'Ligada ao seu WhatsApp' : 'Sem WhatsApp ligado'}</small></div>

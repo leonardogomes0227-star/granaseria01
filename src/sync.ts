@@ -1,5 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
+import { pesoDoEstado, quemFica } from './gs/pesoEstado';
 
 // Sincroniza o que fica no navegador (diagnóstico, plano, vazamentos, check-ins) com a conta.
 // Simples de propósito: o estado inteiro vai como um JSON só. Ganha a versão mais nova.
@@ -36,6 +37,14 @@ const SYNCED_AT_KEY = 'selos-sync-at'; // updated_at da última versão que este
 
 type Snapshot = Record<string, string>;
 
+const CHAVE_APP = 'grana-seria:v1';
+/** A pessoa pediu de propósito para trocar os dados por outros (importar ou restaurar um backup): vale uma vez. */
+export const CHAVE_PERMITIR = 'gs-permitir-reducao';
+/** Cópias guardadas NESTE aparelho logo antes de a sincronização trocar os dados daqui pelos da conta (até 3). */
+export const CHAVE_COPIAS_LOCAIS = 'gs-copias-locais';
+export interface CopiaDeDados { salvoEm: string; peso: number; estado: string }
+
+
 function read(key: string): string | null {
   try {
     return localStorage.getItem(key);
@@ -62,7 +71,28 @@ export function snapshot(): Snapshot {
   return s;
 }
 
+export function lerCopiasLocais(): CopiaDeDados[] {
+  try {
+    const l = JSON.parse(read(CHAVE_COPIAS_LOCAIS) ?? '[]') as CopiaDeDados[];
+    return Array.isArray(l) ? l.filter((c) => c && typeof c.estado === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+/** Guarda o estado deste aparelho antes de ele ser trocado. Sem dados, ou igual à última cópia, não guarda. */
+export function guardarCopiaLocal(estado: string | null | undefined, agora = new Date()) {
+  const peso = pesoDoEstado(estado);
+  if (!estado || peso === 0) return;
+  const antes = lerCopiasLocais();
+  if (antes[0]?.estado === estado) return;
+  const novas = [{ salvoEm: agora.toISOString(), peso, estado }, ...antes].slice(0, 3);
+  write(CHAVE_COPIAS_LOCAIS, JSON.stringify(novas));
+  // sem espaço para 3: fica pelo menos a mais nova
+  if (read(CHAVE_COPIAS_LOCAIS) === null) write(CHAVE_COPIAS_LOCAIS, JSON.stringify(novas.slice(0, 1)));
+}
+
 export function applySnapshot(s: Snapshot) {
+  guardarCopiaLocal(read(CHAVE_APP));
   for (const k of SYNC_KEYS) write(k, s[k] ?? null);
 }
 
@@ -82,6 +112,7 @@ async function push(force = false) {
   if (!error) {
     lastPushed = json;
     write(SYNCED_AT_KEY, updated_at);
+    write(CHAVE_PERMITIR, null);
   }
 }
 
@@ -104,12 +135,18 @@ async function pull(): Promise<void> {
   const seenAt = read(SYNCED_AT_KEY);
   const localEmpty = Object.keys(local).length === 0;
   const unsent = JSON.stringify(local) !== lastPushed && lastPushed !== '';
-  // primeiro login neste aparelho, com dados aqui e na conta: a pessoa escolhe qual fica
+  // dados nunca são trocados por (quase) nada: em branco ou com menos da metade perde sem perguntar (src/gs/pesoEstado.ts)
+  const pl = pesoDoEstado(local[CHAVE_APP]);
+  const pr = pesoDoEstado(remote[CHAVE_APP]);
+  const regra = read(CHAVE_PERMITIR) === '1' ? 'local' : quemFica(pl, pr, !seenAt);
   const useRemote =
-    localEmpty ||
-    (!seenAt
-      ? window.confirm('Sua conta já tem dados salvos de outro aparelho. OK = usar os da conta · Cancelar = manter os deste aparelho')
-      : !unsent && data.updated_at > seenAt);
+    regra === 'remoto' ? true
+    : regra === 'local' ? false
+    : regra === 'perguntar' ? window.confirm(`Achei dados seus em dois lugares.\n\nNa sua conta: ${pr} registros.\nNeste aparelho: ${pl} registros.\n\nOK = usar os da sua conta · Cancelar = usar os deste aparelho`)
+    : localEmpty ||
+      (!seenAt
+        ? window.confirm('Sua conta já tem dados salvos de outro aparelho. OK = usar os da conta · Cancelar = manter os deste aparelho')
+        : !unsent && data.updated_at > seenAt);
   if (useRemote) {
     applySnapshot(remote);
     write(SYNCED_AT_KEY, data.updated_at);
@@ -167,5 +204,6 @@ export async function limparCopiaDaConta(): Promise<boolean> {
 
 /** Ao sair da conta, os dados continuam neste aparelho — quem quiser limpar usa "apagar meus dados". */
 export function clearLocalData() {
-  for (const k of [...SYNC_KEYS, SYNCED_AT_KEY]) write(k, null);
+  // as cópias locais saem junto: quem limpa ou apaga tudo não deixa nada para trás neste aparelho
+  for (const k of [...SYNC_KEYS, SYNCED_AT_KEY, CHAVE_COPIAS_LOCAIS, CHAVE_PERMITIR]) write(k, null);
 }
