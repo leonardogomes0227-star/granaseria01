@@ -38,7 +38,10 @@ export function Dividas() {
   const tem = e.dividas.length > 0;
   return (
     <>
-      <Titulo titulo="Quitar dívidas" sub="Descubra quando você fica livre delas." />
+      <div className="dv-cab">
+        <Titulo titulo="Dívidas" sub={tem ? 'Seu caminho até ficar livre, com o que pagar este mês.' : 'Descubra quando você fica livre delas.'} />
+        {tem && <button type="button" className="gs-btn pequeno" onClick={() => setSimples(true)}>+ Nova dívida</button>}
+      </div>
       <RespostaFerramenta id="dividas" />
       {tem ? (
         <Painel onNova={() => setSimples(true)} onEditar={setEditando} onQuitou={setFesta} />
@@ -183,9 +186,6 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
             </div>
           </details>
 
-          <div className="gs-acoes" style={{ marginTop: 0 }}>
-            <button type="button" className="gs-btn sec" onClick={onNova}>+ Nova dívida</button>
-          </div>
           <Quitadas />
         </>
       )}

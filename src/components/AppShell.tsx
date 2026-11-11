@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { House, LayoutGrid, Landmark, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
-import { AdicionarMov, abrirAdicionar } from '../gs/AdicionarMov';
+import { House, Landmark, Menu, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
+import { AdicionarMov } from '../gs/AdicionarMov';
+import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
 import { useVisualDoApp } from '../gs/visual';
@@ -11,22 +12,21 @@ import { useHoje } from '../gs/useHoje';
 import { FERRAMENTAS, urgentesDaArea, type Area } from '../gs/registroFerramentas';
 
 /* ---------- A casca do app: 4 áreas e o "+" no centro (celular), lateral com as mesmas áreas (PC) ---------- */
-// Caminho · Pagar · (+) · Gastos · Guardar. No topo: a marca, o Coach e o avatar (Perfil).
-// O menu "Mais" acabou: cada ferramenta mora na sua área e todas aparecem em /ferramentas.
+// Início · Contas · (+) · Dívidas · Mais. O (+) abre as ações mais comuns; "Mais" guarda todas as outras ferramentas, em grupos.
 
 export const NAV: [string, string, LucideIcon, Area][] = [
   ['/', 'Início', House, 'caminho'],
   ['/pagar', 'Contas', Receipt, 'pagar'],
   ['/plano/dividas', 'Dívidas', Landmark, 'pagar'],
-  ['/ferramentas', 'Ferramentas', LayoutGrid, 'gastos'],
+  ['/mais', 'Mais', Menu, 'gastos'],
 ];
-/** Qual aba fica acesa: Início, Contas, Dívidas ou, para todo o resto, Ferramentas. */
+/** Qual aba fica acesa: Início, Contas, Dívidas ou, para todo o resto, Mais. */
 function abaDaRota(pathname: string, search: string): string {
   if (pathname === '/' || pathname === '/inicio') return '/';
   if (pathname.startsWith('/plano/dividas')) return '/plano/dividas';
-  if (pathname === '/perfil' || pathname === '/dados') return '';
+  if (['/plano/calendario', '/plano/atrasos', '/plano/cartao'].some((r) => pathname.startsWith(r))) return '/pagar';
   if (pathname === '/pagar' || ((pathname === '/lancamentos' || pathname === '/mes' || pathname === '/meu-mes') && new URLSearchParams(search).get('aba') === 'contas')) return '/pagar';
-  return '/ferramentas';
+  return '/mais';
 }
 
 /** A área (aba acesa) de qualquer endereço do app: vem do registro de ferramentas, para as rotas antigas continuarem no lugar certo. */
@@ -66,7 +66,7 @@ function Casca({ children }: { children: ReactNode }) {
         {NAV.map(([to, label, Icon]) => (
           <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{label}</Link>
         ))}
-        {pronto && <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}><Plus size={18} aria-hidden="true" /> Anotar</button>}
+        {pronto && <button type="button" className="gs-btn" onClick={() => abrirMenuAdicionar()}><Plus size={18} aria-hidden="true" /> Adicionar</button>}
         <hr />
         <Link to="/perfil" className={`cm-item${pathname === '/perfil' ? ' on' : ''}`}><UserRound size={20} strokeWidth={1.75} aria-hidden="true" />Perfil</Link>
       </aside>
@@ -79,10 +79,11 @@ function Casca({ children }: { children: ReactNode }) {
       </div>
       <nav className="cm-abas" aria-label="Seções">
         {NAV.slice(0, 2).map(item)}
-        <button type="button" className="cm-mais" onClick={() => abrirAdicionar()} aria-label="Anotar gasto ou entrada"><Plus size={30} strokeWidth={2.25} aria-hidden="true" /></button>
+        <button type="button" className="cm-mais" onClick={() => abrirMenuAdicionar()} aria-label="Adicionar: gasto, conta, dívida, fatura"><Plus size={30} strokeWidth={2.25} aria-hidden="true" /></button>
         {NAV.slice(2).map(item)}
       </nav>
       <AdicionarMov />
+      <MenuAdicionar />
       <Resolver />
     </div>
   );

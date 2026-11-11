@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronRight, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { CalendarClock, CalendarDays, ChevronRight, FileText, LifeBuoy, Plus, Search } from 'lucide-react';
+import { atrasosAbertos } from './atrasosBase';
+import { FormConta } from './MeuMes';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, diaCurto, mesDe, nomeMes } from './datas';
-import { detalheDisponivel, faltaPagar, guardadoNoMes, patrimonioGuardado, reservaMeta, totalVariaveis } from './selectores';
-import { prioridades, type Prioridade } from './prioridades';
+import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, totalVariaveis } from './selectores';
+import { prioridades } from './prioridades';
 import { gastosPorCategoria } from './evolucaoLogica';
 import { passosDoMes, type OrigemPasso, type Passo } from './passos';
 import { calcularCaminho, fraseDoMarco } from './caminho';
@@ -109,57 +111,91 @@ function proximoDaArea(passos: Passo[], origens: OrigemPasso[]): Passo | null {
   return passos.find((p) => origens.includes(p.origem) && (p.status === 'atual' || p.status === 'pendente')) ?? null;
 }
 
-const faixaDe = (p: Prioridade, hoje: string): string => {
-  const d = Math.round((Date.parse(`${p.data}T12:00:00Z`) - Date.parse(`${hoje}T12:00:00Z`)) / 86400000);
-  return p.detalhe === 'paga' ? 'paga' : d < 0 ? `há ${-d} ${-d === 1 ? 'dia' : 'dias'}` : d === 0 ? 'hoje' : d === 1 ? 'amanhã' : d <= 7 ? `em ${d} dias` : diaCurto(p.data);
-};
-const TOM = { vermelho: 'perigo', amarelo: 'aviso', verde: '' } as const;
+/* ---------- Contas: o mês em ordem de vencimento ---------- */
+type FiltroContas = 'mes' | 'atrasadas' | 'todas';
+interface LinhaConta { chave: string; titulo: string; sub: string; valor: number; data: string; estado: 'paga' | 'atrasada' | 'vence-logo' | 'em-dia'; contaId?: string; rota: string }
 
-/* ---------- Pagar: tudo que é conta, atraso, dívida e cartão ---------- */
 export function AreaPagar() {
   const e = useEstado();
   const hoje = useHoje();
   const mes = mesDe(hoje);
   const oculto = useOculto();
   const m = (t: string) => mascarar(t, oculto);
-  const [filtro, setFiltro] = useState<'abertas' | 'pagas'>('abertas');
+  const [params, setParams] = useSearchParams();
+  const [filtro, setFiltro] = useState<FiltroContas>('mes');
   const [baixa, setBaixa] = useState<string | null>(null);
-  const lista = useMemo(() => prioridades(e, hoje), [e, hoje]);
-  const passos = useMemo(() => passosDoMes(e, hoje), [e, hoje]);
-  const { executar, folhas } = useExecutarPasso(hoje);
-  const prox = proximoDaArea(passos, ['atraso', 'conta', 'fatura', 'divida']);
-  const abertas = lista.filter((p) => p.detalhe !== 'paga');
-  const pagas = lista.filter((p) => p.detalhe === 'paga');
-  const falta = abertas.reduce((t, p) => t + p.valor, 0);
-  const mostra = filtro === 'abertas' ? abertas : pagas;
+  const [nova, setNova] = useState(false);
+  // "?nova=1" (do botão + e do Início) abre o cadastro de conta
+  useEffect(() => {
+    if (params.get('nova')) { setNova(true); setParams({}, { replace: true }); }
+  }, [params, setParams]);
+  const contas = useMemo(() => contasDoMes(e, mes, hoje), [e, mes, hoje]);
+  const outras = useMemo(() => prioridades(e, hoje).filter((p) => !p.chave.startsWith('c-')), [e, hoje]);
+  const antigos = useMemo(() => atrasosAbertos(e, hoje).filter((a) => a.mes < mes), [e, hoje, mes]);
+  const linhas = useMemo<LinhaConta[]>(() => {
+    const doMes: LinhaConta[] = contas.map((c) => ({ chave: `c-${c.gasto.id}`, titulo: c.gasto.nome, sub: c.estado === 'paga' ? `paga em ${diaCurto(c.gasto.pagamentos[mes].pagoEm)}` : c.estado === 'atrasada' ? `atrasada há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}` : c.dias === 0 ? 'vence hoje' : c.dias === 1 ? 'vence amanhã' : `vence em ${c.dias} dias`, valor: c.valor, data: c.vencimento, estado: c.estado, contaId: c.gasto.id, rota: '/lancamentos?aba=contas' }));
+    const fora: LinhaConta[] = outras.map((p) => ({ chave: p.chave, titulo: p.titulo, sub: p.detalhe, valor: p.valor, data: p.data, estado: p.detalhe === 'paga' ? 'paga' : p.semaforo === 'vermelho' ? 'atrasada' : p.semaforo === 'amarelo' ? 'vence-logo' : 'em-dia', rota: p.rota }));
+    return [...doMes, ...fora].sort((a, b) => a.data.localeCompare(b.data));
+  }, [contas, outras, mes]);
+  const antigas: LinhaConta[] = antigos.map((a) => ({ chave: a.chave, titulo: a.nome, sub: `de ${nomeMes(a.mes).split(' ')[0]}, atrasada há ${a.dias} ${a.dias === 1 ? 'dia' : 'dias'}`, valor: a.valor, data: a.vencimento, estado: 'atrasada', rota: '/plano/atrasos' }));
+  const atrasadas = [...antigas, ...linhas.filter((l) => l.estado === 'atrasada')].sort((a, b) => a.data.localeCompare(b.data));
+  const todas = [...antigas, ...linhas].sort((a, b) => a.data.localeCompare(b.data));
+  const mostra = filtro === 'mes' ? linhas : filtro === 'atrasadas' ? atrasadas : todas;
+  const abertasMes = linhas.filter((l) => l.estado !== 'paga');
+  const falta = abertasMes.reduce((t, l) => t + l.valor, 0);
+  const total = linhas.reduce((t, l) => t + l.valor, 0);
+  const pagoPct = total > 0 ? ((total - falta) / total) * 100 : 0;
+  const vazio = linhas.length === 0 && antigas.length === 0;
+  const TOM_LINHA = { paga: 'ok', atrasada: 'perigo', 'vence-logo': 'aviso', 'em-dia': '' } as const;
   return (
     <>
-      <h1 className="gs-titulo">Pagar</h1>
-      <section className="cm-topo-area" aria-label="O que falta pagar">
-        <Eyebrow>Falta pagar em {nomeMes(mes).split(' ')[0]}</Eyebrow>
-        <span className="cm-num">{m(brl(falta))}</span>
-        <p>{lista.length === 0 ? 'Cadastre suas contas e eu digo o que pagar primeiro.' : prox ? `${prox.titulo}. ${prox.detalhe}` : falta > 0 ? `Nada vence nos próximos dias. Contas fixas ainda em aberto: ${m(brl0(faltaPagar(e, mes)))}.` : 'Tudo pago por aqui. Pode respirar.'}</p>
-        {lista.length === 0 ? <Link to="/lancamentos?aba=contas" className="gs-btn">Cadastrar contas</Link> : prox && <BotaoDoPasso p={prox} executar={executar} principal />}
-        <div><AtalhoFerramentas area="pagar" /></div>
+      <h1 className="gs-titulo">Contas</h1>
+      <section className="ini-destaque" aria-label="O que falta pagar">
+        <span className="cm-eyebrow">Falta pagar em {nomeMes(mes).split(' ')[0]}</span>
+        <b className="ini-valor">{m(brl0(falta))}</b>
+        <p>{vazio ? 'Cadastre suas contas para eu te mostrar o que pagar primeiro.' : atrasadas.length ? `${atrasadas.length} ${atrasadas.length === 1 ? 'conta atrasada' : 'contas atrasadas'}. Comece por ${atrasadas.length === 1 ? 'ela' : 'elas'}.` : abertasMes.length ? `${abertasMes.length} ${abertasMes.length === 1 ? 'conta em aberto' : 'contas em aberto'} neste mês.` : 'Tudo pago por aqui. Pode respirar.'}</p>
+        {total > 0 && <div className="cm-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pagoPct)} aria-label="Quanto já foi pago"><i style={{ width: `${pagoPct}%` }} /></div>}
+        <div className="gs-acoes" style={{ marginTop: 14 }}>
+          <button type="button" className="gs-btn" onClick={() => setNova(true)}><Plus size={18} aria-hidden="true" /> Nova conta</button>
+        </div>
       </section>
 
-      {lista.length > 0 && (
+      {vazio ? (
+        <section className="cm-card" aria-label="Como começar">
+          <h2 className="cm-h2" style={{ margin: '0 0 8px' }}>Comece pela conta maior</h2>
+          <p className="cm-mudo" style={{ marginTop: 0 }}>Aluguel, luz, internet, escola… Para cada uma eu só preciso de dois dados: quanto custa e que dia vence.</p>
+          {['Eu mostro o que pagar primeiro', 'Aviso antes de cada conta vencer', 'Você vê quanto sobra depois delas'].map((t) => <div key={t} style={{ display: 'flex', gap: 10, padding: '4px 0' }}><span className="gs-check" style={{ flex: 'none' }}>✓</span><span>{t}</span></div>)}
+          <button type="button" className="gs-btn cheio" style={{ marginTop: 14 }} onClick={() => setNova(true)}>Cadastrar minha primeira conta</button>
+        </section>
+      ) : (
         <>
-          <Segmented rotulo="Quais contas mostrar" valor={filtro} onChange={setFiltro} opcoes={[{ id: 'abertas', nome: `A pagar (${abertas.length})` }, { id: 'pagas', nome: `Pagas (${pagas.length})` }]} />
-          {mostra.length === 0 ? <p className="cm-mudo">{filtro === 'abertas' ? 'Nada em aberto este mês.' : 'Nenhuma conta paga ainda neste mês.'}</p> : (
-            <Lista rotulo="Contas por urgência">
-              {mostra.map((p) => (
-                <ListItem key={p.chave} faixa={faixaDe(p, hoje)} tomFaixa={p.detalhe === 'paga' ? 'ok' : TOM[p.semaforo]} titulo={p.titulo} sub={p.semaforo === 'vermelho' && p.chave.startsWith('c-') ? undefined : p.detalhe} valor={m(brl(p.valor))}
-                  acao={p.detalhe === 'paga' ? undefined : p.chave.startsWith('c-') ? <button type="button" className="gs-btn sec pequeno" onClick={() => setBaixa(p.chave.slice(2))}>Pagar</button> : <Link to={p.rota} className="gs-btn sec pequeno">Abrir</Link>} />
+          <Segmented rotulo="Quais contas mostrar" valor={filtro} onChange={setFiltro} opcoes={[{ id: 'mes', nome: 'Este mês' }, { id: 'atrasadas', nome: `Atrasadas${atrasadas.length ? ` (${atrasadas.length})` : ''}` }, { id: 'todas', nome: 'Todas' }]} />
+          {mostra.length === 0 ? <p className="ini-vazio">{filtro === 'atrasadas' ? 'Nenhuma conta atrasada. Continue assim.' : 'Nada por aqui.'}</p> : (
+            <Lista rotulo="Contas por data de vencimento">
+              {mostra.map((l) => (
+                <ListItem key={l.chave} faixa={diaCurto(l.data)} tomFaixa={TOM_LINHA[l.estado]} titulo={l.titulo} sub={l.sub} valor={m(brl(l.valor))}
+                  acao={l.estado === 'paga' ? <span className="gs-check" aria-label="Paga" style={{ flex: 'none' }}>✓</span> : l.contaId ? <button type="button" className={`gs-btn pequeno${l.estado === 'em-dia' ? ' sec' : ''}`} onClick={() => setBaixa(l.contaId!)}>Pagar</button> : <Link to={l.rota} className="gs-btn sec pequeno">Abrir</Link>} />
               ))}
             </Lista>
           )}
-          <Link to="/lancamentos?aba=contas" className="cm-link">Editar ou cadastrar contas <ChevronRight size={16} aria-hidden="true" /></Link>
+          <Link to="/lancamentos?aba=contas" className="cm-link">Editar ou excluir contas <ChevronRight size={16} aria-hidden="true" /></Link>
         </>
       )}
-      <GradeFerramentas area="pagar" />
+
+      <h2 className="cm-h2">Atalhos de contas</h2>
+      <div className="ini-cards compacto">
+        <Link to="/plano/calendario"><i><CalendarDays size={22} aria-hidden="true" /></i><b>Calendário</b><small>O que vence antes do salário</small></Link>
+        <Link to="/plano/cartao#importar"><i><FileText size={22} aria-hidden="true" /></i><b>Importar fatura</b><small>PDF, foto ou texto</small></Link>
+        <Link to="/plano/atrasos?anotar=1"><i><CalendarClock size={22} aria-hidden="true" /></i><b>Anotar atraso</b><small>Conta de meses passados</small></Link>
+        <Link to="/plano/atrasos"><i><LifeBuoy size={22} aria-hidden="true" /></i><b>Sair do atraso</b><small>O que pagar primeiro</small></Link>
+      </div>
+
+      <details className="ms-mais">
+        <summary>Todas as ferramentas de contas, dívidas e cartão</summary>
+        <GradeFerramentas area="pagar" />
+      </details>
       <BaixaSheet gasto={e.gastosFixos.find((g) => g.id === baixa) ?? null} mes={mes} onFechar={() => setBaixa(null)} />
-      {folhas}
+      <FormConta valor={nova ? 'novo' : null} onFechar={() => setNova(false)} onExcluir={() => setNova(false)} />
     </>
   );
 }
