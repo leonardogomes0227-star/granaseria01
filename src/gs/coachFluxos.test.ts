@@ -124,3 +124,33 @@ describe.runIf(process.env.GERAR)('exemplos', () => {
     writeFileSync('docs/coach-exemplos.md', md);
   });
 });
+
+describe('coach sem IA: entender a pergunta escrita', async () => {
+  const { entenderPergunta, valorNoTexto, faltaNoFluxo } = await import('./coachFluxos');
+  it('leva cada pergunta ao assunto certo', () => {
+    const casos: [string, string][] = [
+      ['posso comprar um tênis de 350?', 'posso-comprar'],
+      ['Esqueci de pagar a luz, venceu ontem', 'conta-atrasada'],
+      ['quero quitar o cartão', 'sair-das-dividas'],
+      ['recebi o 13º de 2.500', 'dinheiro-extra'],
+      ['me ofereceram um empréstimo de 5 mil em 12x de 520', 'emprestimo'],
+      ['quero juntar para uma viagem de 3000 em 10 meses', 'juntar'],
+      ['o salário acaba antes do mês', 'mes-nao-fecha'],
+      ['onde estou gastando demais?', 'onde-errando'],
+      ['quanto posso gastar hoje?', 'meu-numero'],
+    ];
+    for (const [t, f] of casos) expect(entenderPergunta(t)?.fluxo, t).toBe(f);
+    expect(entenderPergunta('qual a capital da França?')).toBeNull();
+  });
+  it('tira o valor, as parcelas e o nome do texto', () => {
+    expect(valorNoTexto('R$ 1.500')).toBe(1500);
+    expect(valorNoTexto('5 mil')).toBe(5000);
+    expect(valorNoTexto('uns 89,90')).toBe(89.9);
+    expect(entenderPergunta('posso comprar um tênis de 350?')!.entrada).toEqual({ valor: 350, nome: 'tenis' });
+    const emp = entenderPergunta('me ofereceram um empréstimo de 5 mil em 12x de 520')!;
+    expect(emp.entrada).toEqual({ valor: 5000, parcelas: 12, parcela: 520 });
+    expect(faltaNoFluxo('emprestimo', emp.entrada)).toEqual([]);
+    expect(faltaNoFluxo('emprestimo', entenderPergunta('me ofereceram um empréstimo')!.entrada).length).toBe(3);
+    expect(entenderPergunta('quero juntar para uma viagem de 3000 em 10 meses')!.entrada).toEqual({ valor: 3000, meses: 10, nome: 'viagem' });
+  });
+});

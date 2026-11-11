@@ -382,3 +382,6 @@ Feedback do dono: "ficou confuso, parece que as ferramentas sumiram, informaçã
 - **Continuar (passo N de M)** em Sair do atraso, Quitar dívidas, Modo recuperação (etapa do raio-X salva), Investir e Metas.
 - **Correção:** "Guardar" fica em espera quando o mês fecha no vermelho (antes aparecia "Guardar R$ 5.800" junto de "Cortar R$ 3.600").
 - Teste de utilidade refeito: `docs/o-caminho.md`, seção 10.
+- **Coach sem IA entende a pergunta escrita** (`entenderPergunta`, `valorNoTexto` em `coachFluxos.ts`, com teste): "posso comprar um tênis de 350?" roda o fluxo com o valor; se faltar dado, abre a folha só com o que falta; se não for um dos 9 assuntos, indica a ferramenta pela busca ou diz que não entendeu. Nada é apresentado como IA.
+- **Telas antigas** (`/ferramentas/:slug`) abrem com a resposta calculada dos dados do app no topo.
+- **"Anotar por foto"** só aparece com a leitura ligada no servidor.

@@ -51,6 +51,8 @@ const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m)
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
 import { AreaGastos, AreaGuardar, AreaPagar, Perfil, TodasFerramentas } from './gs/Areas';
+import { RespostaFerramenta } from './gs/RespostaFerramenta';
+import { RESPOSTA_DO_SLUG } from './gs/respostas';
 const DevUI = lazy(() => importarComRetry(() => import('./gs/DevUI')).then((m) => ({ default: m.DevUI })));
 import { Sobre } from './gs/Sobre';
 import { Planos } from './gs/Planos';
@@ -473,6 +475,8 @@ function ToolRoute({
     <AppShell>
       <LoginGate what={tool.title.charAt(0).toLowerCase() + tool.title.slice(1)}>
       <ToolOpened id={tool.id} />
+      {/* ferramenta antiga: no topo, a resposta com os números que a pessoa já cadastrou no app */}
+      {slug && RESPOSTA_DO_SLUG[slug] && <div className="gs-principal" style={{ paddingBottom: 0 }}><RespostaFerramenta id={RESPOSTA_DO_SLUG[slug]} /></div>}
       {/* key: trocar de ferramenta zera os campos da anterior */}
       <div key={tool.id} style={{ display: 'contents' }}>
         {tool.id === 'quote' && <QuoteTool {...toolProps} />}

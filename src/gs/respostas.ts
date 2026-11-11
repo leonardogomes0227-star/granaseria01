@@ -163,4 +163,4 @@ export function respostaDe(id: string, e: Estado, hoje: string): RespostaFerrame
 }
 
 /** Ferramentas antigas (/ferramentas/:slug) que mostram a resposta do registro no topo. */
-export const RESPOSTA_DO_SLUG: Record<string, string> = { 'placar-pai-rico': 'investir', 'simulador-longo-prazo': 'renda', 'check-in-mensal': 'relatorios', 'meu-plano': 'atrasos', 'leitor-de-fatura': 'cartao', 'seus-direitos': 'atrasos', 'meus-selos': 'reserva', 'frase-do-dia': 'reserva' };
+export const RESPOSTA_DO_SLUG: Record<string, string> = { 'placar-pai-rico': 'investir', 'simulador-longo-prazo': 'renda', 'check-in-mensal': 'relatorios', 'meu-plano': 'dividas', 'leitor-de-fatura': 'cartao', 'seus-direitos': 'atrasos', 'meus-selos': 'reserva' };

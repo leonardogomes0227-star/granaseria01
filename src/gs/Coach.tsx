@@ -7,7 +7,7 @@ import { nomeMes } from './datas';
 import { recomendacoes, type Recomendacao } from './coachRegras';
 import { liberarFerramenta, anotarAtraso, colocarNoCaminho, concluirPasso, criarMeta, definirLimite, desligarAviso, editarPasso, escolherMetodoQuitacao, esperar72h, removerPasso } from './acoes';
 import { abrirAdicionar } from './AdicionarMov';
-import { FLUXOS, fluxoDaRota, rodarFluxo, type AcaoCoach, type Entrada, type Fluxo, type FluxoId } from './coachFluxos';
+import { FLUXOS, entenderPergunta, faltaNoFluxo, fluxoDaRota, rodarFluxo, type AcaoCoach, type Entrada, type Fluxo, type FluxoId } from './coachFluxos';
 import type { Impacto } from './caminho';
 import { painelToken } from '../painel';
 import { supabase } from '../supabase';
@@ -15,7 +15,7 @@ import { Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
 import { Eyebrow, Moeda } from './base';
 import { MontarPlano } from './MontarPlano';
 import { indicacoes, resumoDoPlano } from './planoPessoal';
-import { ferramenta } from './registroFerramentas';
+import { buscar, ferramenta } from './registroFerramentas';
 import { toast } from '../components/ui/Toast';
 
 /* ---------- Coach: resolve um problema por vez, com os números da pessoa, e termina num passo no caminho ---------- */
@@ -70,6 +70,7 @@ export function Coach() {
   const [conversas, setConversasRaw] = useState<Conversa[]>(lerConversas);
   const [atualId, setAtualId] = useState<string>(() => `c-${Date.now()}`);
   const [form, setForm] = useState<Fluxo | null>(null);
+  const [preForm, setPreForm] = useState<Entrada>({});
   const [ativo, setAtivo] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState('');
@@ -111,7 +112,19 @@ export function Coach() {
     const hist: Msg[] = [...msgs, { de: 'eu', texto: t }];
     setQ('');
     if (!ativo) {
-      setMsgs([...hist, { de: 'coach', texto: 'A conversa livre ainda não está ativada neste app, então não vou fingir uma resposta. Os assuntos abaixo eu resolvo agora, com os seus números. Escolha o que mais parece com a sua dúvida.' }]);
+      // sem IA: entendo pelas palavras e levo ao assunto pronto, com os números da pessoa (sem fingir conversa)
+      const ent = entenderPergunta(t);
+      if (ent) {
+        const f = FLUXOS.find((x) => x.id === ent.fluxo)!;
+        if (faltaNoFluxo(ent.fluxo, ent.entrada).length) { setMsgs([...hist, { de: 'coach', texto: `Entendi: "${f.titulo}". Me passa só o que falta e eu faço a conta.` }]); setForm({ ...f }); setPreForm(ent.entrada); return; }
+        const r = rodarFluxo(ent.fluxo, e, hoje, ent.entrada);
+        setMsgs([...hist, { de: 'coach', texto: `Entendi: "${f.titulo}".` }, ...r.textos.map((x, i): Msg => (i === r.textos.length - 1 ? { de: 'coach', texto: x, acoes: r.acoes, impacto: r.impacto, copiar: r.copiar } : { de: 'coach', texto: x }))]);
+        return;
+      }
+      const achou = buscar(t)[0];
+      setMsgs([...hist, achou
+        ? { de: 'coach', texto: `Não tenho uma resposta pronta para isso, mas a ferramenta "${ferramenta(achou.ferramentaId)?.titulo}" resolve: ${achou.sub.toLowerCase()}`, acoes: [{ tipo: 'abrir_ferramenta', titulo: `Abrir ${ferramenta(achou.ferramentaId)?.titulo}`, detalhe: '', dados: { rota: achou.rota } }] }
+        : { de: 'coach', texto: 'Não entendi essa ainda. Escolha um dos assuntos acima: eu resolvo cada um deles com os seus números.' }]);
       return;
     }
     const tk = await token();
@@ -242,10 +255,10 @@ export function Coach() {
       {msgs.length > 0 && <button type="button" className="cm-link" onClick={() => setAtualId(`c-${Date.now()}`)}>Nova conversa</button>}
 
       <form className="gs-envio" onSubmit={(ev) => { ev.preventDefault(); void enviar(q); }}>
-        <input value={q} onChange={(ev) => setQ(ev.target.value)} maxLength={500} placeholder={ativo ? 'Escreva com as suas palavras' : 'Escreva sua dúvida'} aria-label="Pergunta ao coach" />
+        <input value={q} onChange={(ev) => setQ(ev.target.value)} maxLength={500} placeholder={ativo ? 'Escreva com as suas palavras' : 'Ex.: posso comprar um tênis de 350?'} aria-label="Pergunta ao coach" />
         <button type="submit" className="gs-btn" disabled={busy || !q.trim()} aria-label="Enviar"><Send size={18} aria-hidden="true" /></button>
       </form>
-      {ativo === false && <p className="gs-nota">A conversa livre com inteligência artificial ainda não está ativada. Os assuntos acima funcionam normalmente, com os seus dados.</p>}
+      {ativo === false && <p className="gs-nota">Escreva com as suas palavras: eu entendo o assunto e respondo com os seus números. A conversa com inteligência artificial ainda não está ligada.</p>}
 
       {planos.length > 0 && (
         <>
@@ -276,7 +289,7 @@ export function Coach() {
       </details>
       <p className="gs-nota">Educação financeira. Não substitui um profissional. Não indico banco nem produto, e não prometo retorno.</p>
 
-      <FormFluxo key={form?.id ?? 'nada'} fluxo={form} onFechar={() => setForm(null)} onEnviar={(ent, resumo) => { const f = form!; setForm(null); responderFluxo(f.id, ent, resumo); }} />
+      <FormFluxo key={form?.id ?? 'nada'} fluxo={form} inicial={preForm} onFechar={() => { setForm(null); setPreForm({}); }} onEnviar={(ent, resumo) => { const f = form!; setForm(null); setPreForm({}); responderFluxo(f.id, ent, resumo); }} />
       <Folha aberta={anteriores} onFechar={() => setAnteriores(false)} titulo="Conversas anteriores">
         <p className="cm-mudo" style={{ marginTop: 0 }}>Ficam só neste aparelho.</p>
         <div className="cm-lista">
@@ -308,8 +321,8 @@ function EditarPasso({ titulo, detalhe, onSalvar }: { titulo: string; detalhe: s
 }
 
 /** As perguntas de um assunto, uma folha curta: o Coach só pede o que precisa para calcular. */
-function FormFluxo({ fluxo, onFechar, onEnviar }: { fluxo: Fluxo | null; onFechar: () => void; onEnviar: (e: Entrada, resumo: string) => void }) {
-  const [v, setV] = useState<Entrada>({});
+function FormFluxo({ fluxo, inicial, onFechar, onEnviar }: { fluxo: Fluxo | null; inicial?: Entrada; onFechar: () => void; onEnviar: (e: Entrada, resumo: string) => void }) {
+  const [v, setV] = useState<Entrada>(inicial ?? {});
   if (!fluxo) return null;
   const falta = fluxo.campos.some((c) => c.id !== 'nome' && !(Number(v[c.id]) > 0));
   const resumo = `${fluxo.titulo.replace(/\?$/, "")}: ${fluxo.campos.map((c) => (v[c.id] ? (c.id === 'nome' ? String(v[c.id]) : c.id === 'parcelas' ? `${v[c.id]}x` : c.id === 'meses' ? `${v[c.id]} meses` : Number(v[c.id]).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })) : '')).filter(Boolean).join(', ')}`;
