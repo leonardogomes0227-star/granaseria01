@@ -65,11 +65,11 @@ function Casca({ children }: { children: ReactNode }) {
       <aside className="cm-lateral" aria-label="Menu principal">
         <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span>Grana Séria</span></Link>
         {NAV.map(([to, label, Icon]) => (
-          <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" />{label}</Link>
+          <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span></Link>
         ))}
-        {pronto && <button type="button" className="gs-btn" onClick={() => abrirMenuAdicionar()}><Plus size={18} aria-hidden="true" /> Adicionar</button>}
+        {pronto && <button type="button" className="gs-btn" onClick={() => abrirMenuAdicionar()}><Plus size={18} aria-hidden="true" /><span>Adicionar</span></button>}
         <hr />
-        <Link to="/perfil" className={`cm-item${pathname === '/perfil' ? ' on' : ''}`}><UserRound size={20} strokeWidth={1.75} aria-hidden="true" />Perfil</Link>
+        <Link to="/perfil" className={`cm-item${pathname === '/perfil' ? ' on' : ''}`}><UserRound size={20} strokeWidth={1.75} aria-hidden="true" /><span>Perfil</span></Link>
       </aside>
       <div className="gs-coluna">
         <header className="cm-topo">

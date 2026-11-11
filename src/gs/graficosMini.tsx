@@ -46,3 +46,32 @@ export function LinhaArea({ valores, ate, rotulo }: { valores: number[]; ate: nu
     </svg>
   );
 }
+
+/** Linha fina (ex.: dentro do card colorido). */
+export function MiniLinha({ valores, rotulo }: { valores: number[]; rotulo: string }) {
+  const W = 80, H = 32, n = Math.max(2, valores.length);
+  const max = Math.max(1, ...valores), min = Math.min(...valores, 0);
+  const d = valores.map((v, i) => `${i ? 'L' : 'M'}${((i / (n - 1)) * W).toFixed(1)} ${(H - 3 - ((v - min) / (max - min || 1)) * (H - 6)).toFixed(1)}`).join(' ');
+  return <svg className="gm-minilinha" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={rotulo}><path d={d} /></svg>;
+}
+
+/** Degraus: quanto das contas do mês já venceu até cada dia, com a marca de hoje. */
+export function LinhaDegraus({ valores, hoje, rotulo }: { valores: number[]; hoje: number; rotulo: string }) {
+  const W = 300, H = 120, n = Math.max(2, valores.length);
+  const max = Math.max(1, ...valores);
+  const x = (i: number) => (i / (n - 1)) * W;
+  const y = (v: number) => H - 10 - (v / max) * (H - 26);
+  let d = `M0 ${y(valores[0] ?? 0).toFixed(1)}`;
+  for (let i = 1; i < valores.length; i++) d += ` H${x(i).toFixed(1)} V${y(valores[i]).toFixed(1)}`;
+  const hi = Math.max(0, Math.min(valores.length - 1, hoje - 1));
+  return (
+    <svg className="gm-linha gm-degraus" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={rotulo} preserveAspectRatio="none">
+      <defs><linearGradient id="gm-area2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#D9B45E" stopOpacity=".3" /><stop offset="1" stopColor="#D9B45E" stopOpacity="0" /></linearGradient></defs>
+      {[0.3, 0.55, 0.8].map((k) => <line key={k} x1={0} x2={W} y1={H * k} y2={H * k} className="grade" />)}
+      <path d={`${d} V${H} H0 Z`} fill="url(#gm-area2)" />
+      <path d={d} className="traco" vectorEffect="non-scaling-stroke" />
+      <line x1={x(hi)} x2={x(hi)} y1={6} y2={H} className="hoje" vectorEffect="non-scaling-stroke" />
+      <circle cx={x(hi)} cy={y(valores[hi] ?? 0)} r={4.5} className="ponto" />
+    </svg>
+  );
+}
