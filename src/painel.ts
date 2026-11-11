@@ -1,4 +1,5 @@
 import { SYNC_KEYS, applySnapshot, snapshot } from './sync';
+import { pesoDoEstado } from './gs/pesoEstado';
 import { resetIfOld } from './reset';
 
 // Painel ligado ao WhatsApp. O link pessoal que o bot manda (/painel?t=…) deixa o token neste navegador;
@@ -149,6 +150,8 @@ async function push(force = false) {
   const local = snapshot();
   const body = json(local);
   if (!force && body === lastPushed) return;
+  // nunca manda um estado em branco antes de ter falado com o servidor (o aparelho novo ainda não buscou os dados)
+  if (!read(SEEN_KEY) && pesoDoEstado(local['grana-seria:v1']) === 0) return;
   // chave que sumiu daqui (ex.: refez o diagnóstico do zero) também some lá
   const state: Record<string, string | null> = Object.fromEntries(SYNC_KEYS.map((k) => [k, local[k] ?? null]));
   const res = await fetch('/api/painel', { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ state }) });
@@ -174,10 +177,17 @@ export async function pullPainel(): Promise<PainelData | null> {
   const localDiag = diagOf(local);
   const remoteDiag = diagOf(remote);
   let useRemote: boolean;
-  if (Object.keys(local).length === 0) useRemote = true;
+  const pesoLocal = pesoDoEstado(local['grana-seria:v1']);
+  const pesoRemoto = pesoDoEstado(remote['grana-seria:v1']);
+  // regra de ouro: um estado em branco nunca apaga um que tem dados (aparelho novo cria um em branco antes de buscar este)
+  if (Object.keys(local).length === 0 || (pesoLocal === 0 && pesoRemoto > 0)) useRemote = true;
+  else if (pesoRemoto === 0 && pesoLocal > 0) useRemote = false;
   else if (!seen) {
+    // primeira conexão neste navegador, com dados dos dois lados: a pessoa escolhe, vendo quanto tem em cada um
+    if (pesoLocal > 0 && pesoRemoto > 0 && json(remote) !== json(local)) {
+      useRemote = window.confirm(`Achei dados seus em dois lugares.\n\nNa sua conta: ${pesoRemoto} registros.\nNeste aparelho: ${pesoLocal} registros.\n\nOK = usar os da sua conta · Cancelar = usar os deste aparelho`);
+    } else if (!remoteDiag) useRemote = false;
     // primeira conexão neste navegador
-    if (!remoteDiag) useRemote = false;
     else if (!localDiag) useRemote = true;
     else useRemote = window.confirm('Seu WhatsApp e este navegador têm diagnósticos diferentes. OK = usar o do WhatsApp · Cancelar = usar o deste navegador');
   } else {
