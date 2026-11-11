@@ -289,3 +289,24 @@ html.gs-app .gs-switch::before { content: ''; position: absolute; inset: -6px -4
 @media (max-width: 380px) { .cm-topo .cm-marca span { font-size: 20px; } }
 html.gs-app .gs-sequencia { color: #8A3F12; }
 html.gs-app .gs-btn.link.pequeno { min-width: 44px; }
+/* telas antigas (diagnóstico e /ferramentas/:slug): contraste AA e toque de 44px */
+html.gs-app .wizard-progress-meta span { color: var(--cm-tinta-2); }
+html.gs-app .plan-more { color: var(--cm-ouro-texto); min-height: 44px; }
+html.gs-app .btn-ghost, html.gs-app .tool-back { min-height: 44px; display: inline-flex; align-items: center; }
+html.gs-app .btn-ghost, html.gs-app .icon-btn { min-height: 44px !important; min-width: 44px !important; }
+html.gs-app .kicker, html.gs-app .now > em, html.gs-app .quote-badge, html.gs-app button[role="radio"] small { color: var(--cm-tinta-2) !important; }
+html.gs-app .btn-primary { background: var(--cm-grad-btn) !important; color: #1B1915 !important; }
+html.gs-app .tool-agent { display: inline-flex; align-items: center; min-height: 44px; }
+/* diagnóstico (roda fora da casca do app) e detalhes das ferramentas antigas */
+.btn-ghost { min-height: 44px !important; }
+.wizard-wrap .kicker, .wizard-progress-meta span { color: #5A5246 !important; }
+html.gs-app .now > em { color: #1B1915 !important; }
+html.gs-app button[role="radio"] small { color: #4E473C !important; }
+html.gs-app button[role="radio"] { min-height: 44px; }
+:root { --tinta-400: #6B6253; } /* legenda antiga: era #877B69 (4,1:1 no branco), agora 5,3:1 */
+html.gs-app button[role="radio"] small { opacity: 1 !important; }
+html.gs-app button[role="radio"] { min-width: 44px; }
+html.gs-app .gs-btn.pequeno { min-height: 44px; }
+html.gs-app[data-tema="escuro"] button[role="radio"] small, html.gs-app[data-tema="escuro"] .quote-badge, html.gs-app[data-tema="escuro"] .kicker, html.gs-app[data-tema="escuro"] .now > em { color: #CFC6B5 !important; }
+html.gs-app[data-tema="escuro"] .bloqueada small { color: #B5AB99 !important; opacity: 1 !important; }
+html.gs-app[data-tema="escuro"] .quote-badge.today { color: #3A2E14 !important; }

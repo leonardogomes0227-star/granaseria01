@@ -1,5 +1,8 @@
 import { painelToken } from '../painel';
-import { TelaCaminho } from '../gs/TelaCaminho';
+import { lazy, Suspense } from 'react';
+import { importarComRetry } from '../gs/importar';
+// a tela de quem está logado vem num pacote separado: a página de entrada abre mais rápido
+const TelaCaminho = lazy(() => importarComRetry(() => import('../gs/TelaCaminho')).then((m) => ({ default: m.TelaCaminho })));
 import { Landing } from '../gs/Landing';
 import { Porteiro } from '../gs/Porteiro';
 import { ErroGlobal } from '../gs/ErroGlobal';
@@ -23,7 +26,7 @@ export function HomePage({
   return (
     <ErroGlobal>
       <Porteiro>
-        <TelaCaminho />
+        <Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}><TelaCaminho /></Suspense>
       </Porteiro>
     </ErroGlobal>
   );
