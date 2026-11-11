@@ -405,3 +405,6 @@ Feedback do dono: "confuso, amador, sem clareza nas ferramentas; prefiro um cade
 - **Barra de baixo:** Início · Contas · (+) · Dívidas · Ferramentas. O Coach saiu do topo e virou a ferramenta "Tirar uma dúvida".
 - **Nenhuma ferramenta escondida:** o plano pessoal só muda a ordem; áreas e Ferramentas mostram tudo.
 - A tela do caminho (destino, passos, marcos) continua em `/caminho`, como a ferramenta "Meu caminho". O onboarding termina direto no Início.
+
+### Início: opção B, escolhida pelo dono (nov/2026)
+O caderno ainda ficou "bagunçado". Foram desenhadas 3 opções e o dono escolheu a B (estilo app de banco), pedindo menos "cara de IA": topo escuro colado no cabeçalho com "Sobra em <mês>" em número grande e reto, 4 atalhos redondos (Anotar, Contas, Dívidas, Ferramentas) e 3 linhas sem caixa (Contas do mês, Dívidas, Gastos do mês). Cabe em uma tela. **Combinado: parar de redesenhar; usar uma semana e corrigir só o que incomodar no uso.**
