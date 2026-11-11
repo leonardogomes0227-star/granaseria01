@@ -9,6 +9,7 @@ import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } fr
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { protegerEstado } from '../server/protegerEstado.js';
+import { pesoDoEstado } from '../src/gs/pesoEstado.js';
 
 const MAX_BYTES = 500_000; // o estado do app novo cresce com lançamentos e conversa de investimentos
 
@@ -46,10 +47,13 @@ export async function GET(request: Request): Promise<Response> {
   ]);
   // o id vai junto pra o site poder editar e apagar (api/lancamentos.ts)
   const pick = (r: { id: number; amount: number; created_at: string; description: string }) => ({ id: r.id, amount: r.amount, created_at: r.created_at, description: r.description });
+  // estado do app em branco no servidor: não se apresenta como "mais novo", para nenhum aparelho com dados (nem
+  // uma aba aberta com uma versão antiga do site) trocar os seus dados por ele; o aparelho então manda os dados de volta
+  const vazio = pesoDoEstado(state['grana-seria:v1']) === 0;
   return Response.json({
     phone: masked(phone),
-    state,
-    updatedAt,
+    state: vazio ? Object.fromEntries(Object.entries(state).filter(([k]) => k !== 'grana-seria:v1' && !k.startsWith('grana-seria:v1:backup'))) : Object.fromEntries(Object.entries(state).filter(([k]) => !k.startsWith('grana-seria:v1:backup'))),
+    updatedAt: vazio ? null : updatedAt,
     month: {
       expenses: expenses.map((e) => ({ ...pick(e), category: e.category, method: e.payment_method ?? null })),
       incomes: incomes.map((i) => ({ ...pick(i), source: i.source, method: i.method ?? null })),
