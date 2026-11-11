@@ -11,6 +11,9 @@ import { passosDoMes, type OrigemPasso, type Passo } from './passos';
 import { calcularCaminho, fraseDoMarco } from './caminho';
 import { FERRAMENTAS, GRUPOS, NOME_AREA, gradeDaArea, type Area } from './registroFerramentas';
 import { BotaoDoPasso, useExecutarPasso } from './PassosUI';
+import { ferramentasLiberadas, indicacoes, resumoDoPlano } from './planoPessoal';
+import { liberarFerramenta } from './acoes';
+import { toast } from '../components/ui/Toast';
 import { BaixaSheet } from './BaixaSheet';
 import { Metas } from './Metas';
 import { ComoCalculei } from './ComoCalculei';
@@ -24,25 +27,76 @@ import { mascarar, useOculto } from './privacidade';
 import { getName } from '../painel';
 import { waLink } from '../whatsapp';
 
-/** A grade de ferramentas de uma área: subgrupos com nome de objetivo; o que está em vermelho sobe. */
-export function GradeFerramentas({ area }: { area: Area }) {
+/** A grade de ferramentas de uma área: só as que o plano liberou; as outras ficam recolhidas, com "Liberar". */
+export function GradeFerramentas({ area, todas = false }: { area: Area; todas?: boolean }) {
   const e = useEstado();
   const hoje = useHoje();
   const grade = useMemo(() => gradeDaArea(area, e, hoje), [area, e, hoje]);
+  const lib = useMemo(() => ferramentasLiberadas(e, hoje), [e, hoje]);
+  const [ver, setVer] = useState(false);
+  const tile = (f: (typeof grade)[number]['itens'][number]) => {
+    const c = f.continuar?.(e, hoje);
+    return <ToolTile key={f.id} icone={f.icone} titulo={f.titulo} resolve={f.resolve} status={f.st.texto} tom={f.st.tom} rota={f.rota} continuar={c ? `Continuar (passo ${c.passo} de ${c.total}): ${c.o}` : undefined} />;
+  };
+  const minhas = grade.flatMap((g) => g.itens).filter((f) => todas || lib.has(f.id));
+  const outras = todas ? [] : grade.flatMap((g) => g.itens).filter((f) => !lib.has(f.id));
   return (
-    <>
-      {grade.map((g) => (
-        <section key={g.grupo} aria-label={g.grupo}>
-          <h2 className="cm-h2">{g.grupo}</h2>
-          <ToolGrid>
-            {g.itens.map((f) => {
-              const etapa = f.etapas ? e.caminho.etapas[f.id] : 0;
-              return <ToolTile key={f.id} titulo={f.titulo} resolve={f.resolve} status={f.st.texto} tom={f.st.tom} rota={f.rota} continuar={etapa ? `Continuar (passo ${etapa} de ${f.etapas})` : undefined} />;
-            })}
-          </ToolGrid>
-        </section>
-      ))}
-    </>
+    <div id="ferramentas" style={{ scrollMarginTop: 80 }}>
+      {area !== 'perfil' && <h2 className="cm-h2">{todas ? NOME_AREA[area] : `Suas ferramentas de ${NOME_AREA[area]}`}</h2>}
+      {minhas.length ? <ToolGrid>{minhas.map(tile)}</ToolGrid> : (
+        <div className="cm-card suave">
+          <p style={{ margin: 0, fontSize: 15.5, lineHeight: 1.5 }}>{e.caminho.plano ? `${resumoDoPlano(e.caminho.plano)} ${NOME_AREA[area]} entra depois: quando chegar a hora, o Coach libera as ferramentas daqui.` : `Ainda não há ferramentas de ${NOME_AREA[area]} no seu plano.`}</p>
+          <div className="gs-acoes"><Link to="/coach?plano=1" className="gs-btn sec pequeno">Mudar meu plano</Link></div>
+        </div>
+      )}
+      {outras.length > 0 && (
+        <>
+          <button type="button" className="cm-link" aria-expanded={ver} onClick={() => setVer(!ver)}>{ver ? 'Esconder as outras' : `Outras ${outras.length} ferramentas de ${NOME_AREA[area]} (fora do seu plano)`}</button>
+          {ver && <ToolGrid>{outras.map((f) => <div key={f.id} style={{ display: 'grid', gap: 6 }}>{tile(f)}<button type="button" className="gs-btn sec pequeno" onClick={() => { liberarFerramenta(f.id); toast(`${f.titulo} entrou no seu plano.`); }}>Colocar no meu plano</button></div>)}</ToolGrid>}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** "Ver as 10 ferramentas": leva até a grade da área, para ninguém achar que elas sumiram. */
+export function AtalhoFerramentas({ area }: { area: Area }) {
+  const e = useEstado();
+  const hoje = useHoje();
+  const lib = ferramentasLiberadas(e, hoje);
+  const n = FERRAMENTAS.filter((f) => f.area === area && lib.has(f.id)).length;
+  return n ? <a href="#ferramentas" className="cm-link" onClick={(ev) => { ev.preventDefault(); document.getElementById('ferramentas')?.scrollIntoView({ behavior: 'smooth' }); }}>Suas {n} ferramentas de {NOME_AREA[area]} <ChevronRight size={16} aria-hidden="true" /></a> : null;
+}
+
+/** Na tela inicial: só as ferramentas do plano da pessoa, e a indicação do Coach quando a vida pede uma nova. */
+export function AtalhosDasAreas() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const lib = useMemo(() => ferramentasLiberadas(e, hoje), [e, hoje]);
+  const ind = useMemo(() => indicacoes(e, hoje)[0], [e, hoje]);
+  const minhas = FERRAMENTAS.filter((f) => lib.has(f.id) && f.area !== 'perfil' && f.id !== 'coach' && f.area !== 'caminho').map((f) => ({ ...f, st: f.status(e, hoje) })).sort((a, b) => (a.st.tom === 'perigo' ? -1 : 0) - (b.st.tom === 'perigo' ? -1 : 0));
+  const fi = ind ? FERRAMENTAS.find((f) => f.id === ind.ferramentaId) : null;
+  const [todas, setTodas] = useState(false);
+  return (
+    <section aria-label="Suas ferramentas">
+      <h2 className="cm-h2">Suas ferramentas<Link to="/coach?plano=1">Mudar meu plano</Link></h2>
+      {fi && ind && (
+        <div className="cm-acao-card" style={{ marginBottom: 12 }}>
+          <span className="cm-eyebrow">O Coach indica</span>
+          <b style={{ marginTop: 4 }}>{fi.titulo}</b>
+          <small>{ind.motivo}</small>
+          <div className="gs-acoes" style={{ marginTop: 10 }}>
+            <button type="button" className="gs-btn pequeno" onClick={() => { liberarFerramenta(fi.id); toast(`${fi.titulo} liberada.`); }}>Liberar</button>
+            <Link to={fi.rota} className="gs-btn link">Só dar uma olhada</Link>
+          </div>
+        </div>
+      )}
+      <ToolGrid>{(todas ? minhas : minhas.slice(0, 6)).map((f) => <ToolTile key={f.id} icone={f.icone} titulo={f.titulo} resolve={f.resolve} status={f.st.texto} tom={f.st.tom} rota={f.rota} />)}</ToolGrid>
+      <div className="gs-acoes">
+        {minhas.length > 6 && <button type="button" className="cm-link" onClick={() => setTodas(!todas)}>{todas ? 'Mostrar menos' : `Ver as ${minhas.length} do seu plano`}</button>}
+        <Link to="/ferramentas" className="cm-link">Todas as {FERRAMENTAS.length} do app <ChevronRight size={16} aria-hidden="true" /></Link>
+      </div>
+    </section>
   );
 }
 
@@ -82,6 +136,7 @@ export function AreaPagar() {
         <span className="cm-num">{m(brl(falta))}</span>
         <p>{lista.length === 0 ? 'Cadastre suas contas e eu digo o que pagar primeiro.' : prox ? `${prox.titulo}. ${prox.detalhe}` : falta > 0 ? `Nada vence nos próximos dias. Contas fixas ainda em aberto: ${m(brl0(faltaPagar(e, mes)))}.` : 'Tudo pago por aqui. Pode respirar.'}</p>
         {lista.length === 0 ? <Link to="/lancamentos?aba=contas" className="gs-btn">Cadastrar contas</Link> : prox && <BotaoDoPasso p={prox} executar={executar} principal />}
+        <div><AtalhoFerramentas area="pagar" /></div>
       </section>
 
       {lista.length > 0 && (
@@ -128,6 +183,7 @@ export function AreaGastos() {
           {disp.modo !== 'incompleto' && disp.livre < 0 ? <Link to="/plano/cortar" className="gs-btn">Ver onde cortar</Link> : <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}>Anotar gasto</button>}
           {disp.modo !== 'incompleto' && <button type="button" className="gs-btn link" onClick={() => setCalc(true)}>Como calculei</button>}
         </div>
+        <AtalhoFerramentas area="gastos" />
       </section>
 
       <h2 className="cm-h2">Para onde foi<Link to="/relatorios">Ver relatórios</Link></h2>
@@ -185,6 +241,7 @@ export function AreaGuardar() {
             {segurado ? ' Guardar está em espera até as contas ficarem em dia.' : guardadoNoMes(e, mes) > 0 ? ` Neste mês você já guardou ${m(brl0(guardadoNoMes(e, mes)))}.` : ''}
           </p>
           {prox ? <BotaoDoPasso p={prox} executar={executar} principal /> : <Link to="/plano/reserva" className="gs-btn">Abrir a reserva</Link>}
+          <div><AtalhoFerramentas area="guardar" /></div>
         </div>
       </section>
       <h2 className="cm-h2" id="metas">Suas metas</h2>
@@ -200,12 +257,12 @@ export function TodasFerramentas() {
   return (
     <>
       <h1 className="gs-titulo">Todas as ferramentas</h1>
-      <p className="gs-sub">{FERRAMENTAS.length} ferramentas. Cada uma responde uma pergunta.</p>
+      <p className="gs-sub">Todas as {FERRAMENTAS.length}. Cada uma responde uma pergunta.</p>
       <button type="button" className="cm-busca" onClick={abrirResolver}><Search size={20} aria-hidden="true" />O que você quer resolver?</button>
+      <p className="cm-mudo">As do seu plano aparecem nas suas telas. As outras ficam aqui: abra qualquer uma, ou coloque no seu plano.</p>
       {(Object.keys(GRUPOS) as Area[]).map((a) => (
         <section key={a} aria-label={NOME_AREA[a]}>
-          <h2 className="gs-titulo" style={{ marginTop: 36 }}>{NOME_AREA[a]}</h2>
-          <GradeFerramentas area={a} />
+          <GradeFerramentas area={a} todas />
         </section>
       ))}
     </>

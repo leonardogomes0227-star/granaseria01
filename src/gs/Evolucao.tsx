@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
@@ -29,6 +30,7 @@ export function Evolucao() {
     return (
       <>
         <Titulo titulo="Relatórios" sub="Como seu dinheiro está mudando." />
+        <RespostaFerramenta id="relatorios" />
         <Vazio titulo="Ainda não há dados para mostrar" texto="Registre receitas e despesas e os relatórios aparecem aqui." acao="Adicionar movimentação" onAcao={() => abrirAdicionar()} avatar="gastos" />
       </>
     );

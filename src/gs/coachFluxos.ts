@@ -14,7 +14,7 @@ import { calcularCaminho, destino, fraseDoMarco, planoDeQuitacao, simularImpacto
 import type { Estado } from './tipos.js';
 
 /* ---------- ações: sempre um cartão que a pessoa confirma ([Fazer] [Ajustar] [Agora não]) ---------- */
-export type TipoAcao = 'colocar_no_caminho' | 'criar_meta' | 'anotar_atraso' | 'definir_limite_categoria' | 'escolher_metodo_quitacao' | 'criar_lembrete' | 'colocar_compra_em_espera_72h' | 'abrir_ferramenta';
+export type TipoAcao = 'liberar_ferramenta' | 'colocar_no_caminho' | 'criar_meta' | 'anotar_atraso' | 'definir_limite_categoria' | 'escolher_metodo_quitacao' | 'criar_lembrete' | 'colocar_compra_em_espera_72h' | 'abrir_ferramenta';
 export interface AcaoCoach {
   tipo: TipoAcao;
   titulo: string; // o que vai acontecer, em uma linha
@@ -64,6 +64,10 @@ export function normalizarAcao(tipo: string, d: Record<string, unknown>): AcaoCo
       const item = txt(d.item, 60) || 'Compra';
       const valor = num(d.valor);
       return valor ? { tipo, titulo: `Esperar 72 horas antes de comprar: ${item}`, detalhe: `${brl0(valor)}. Se a vontade continuar depois de 3 dias, você decide de cabeça fria.`, dados: { item, valor }, ajustar: '/plano/comprar' } : null;
+    }
+    case 'liberar_ferramenta': {
+      const id = txt(d.id, 30);
+      return /^[a-z-]{2,30}$/.test(id) ? { tipo, titulo: `Liberar a ferramenta: ${txt(d.titulo, 60) || id}`, detalhe: txt(d.motivo, 200), dados: { id } } : null;
     }
     case 'abrir_ferramenta': {
       const rota = txt(d.rota);

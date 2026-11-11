@@ -151,3 +151,35 @@ Nenhuma ferramenta tinha o item (d). É exatamente o que o dono descreveu.
 3. O Coach continua **sem nome de personagem**.
 4. O indicador "Economia" sai da tela inicial (seção 1).
 5. Tema escuro continua existindo, no Perfil.
+
+## 10. Teste de utilidade (depois, Etapa 9)
+
+(a) pergunta real · (b) resposta em frase com número e data · (c) 1 botão · (d) liga ao Caminho ou ao plano do mês · (e) usa os dados já cadastrados
+
+| Ferramenta | a | b | c | d | e | Como ficou |
+|---|---|---|---|---|---|---|
+| Contas fixas | sim | sim | sim | sim | sim | resposta no topo ("Falta pagar R$ X… a primeira é…") com Pagar e Colocar no caminho; alimenta o marco 1 e os passos |
+| Calendário | sim | sim | sim | sim | sim | "Ainda vencem R$ X; o próximo é…, e sobram R$ Y" |
+| Sair do atraso | sim | sim | sim | sim | sim | data de ficar em dia = marco 1; "Continuar (passo N de 3)" |
+| Anotar atrasada | sim | sim | sim | sim | sim | entra no plano de atrasos |
+| Quitar dívidas | sim | sim | sim | sim | sim | "Você fica livre em…" = marcos 2 e 3; Continuar passo 2/3 e 3/3 |
+| Empréstimo | sim | sim | sim | sim | sim | custo real + impacto na data + Colocar no caminho |
+| Cartão | sim | sim | sim | sim | sim | "Pague R$ X inteiros até dia Y" + passo |
+| Importar fatura | sim | sim | sim | sim | sim | abre direto; atualiza fatura e parcelas |
+| Modo recuperação | sim | sim | sim | sim | sim | "Você deve R$ X e fica em dia em…"; etapa do raio-X salva |
+| Lançamentos | sim | sim | sim | sim | sim | "Você gastou R$ X, mais em…; ainda dá R$ Y por dia" |
+| Orçamento | sim | sim | sim | sim | sim | categoria que passou + passo |
+| Onde cortar | sim | sim | sim | sim | sim | "Cortando R$ X você chega N meses antes" |
+| Gastos escondidos | sim | sim | sim | sim | sim | total por ano + impacto de cancelar |
+| Posso comprar? | sim | sim | sim | sim | sim | horas de trabalho + impacto na data |
+| À vista ou parcelado | sim | sim | sim | sim | sim | duelo + impacto da parcela |
+| Relatórios | sim | sim | sim | sim | sim | "Em out sobraram R$ X, mais/menos que a sua média" |
+| Reserva | sim | sim | sim | sim | sim | "Completa em…" = marco 4 |
+| Metas | sim | sim | sim | sim | sim | "Você chega em… guardando R$ X" = marco 5 |
+| Dinheiro extra | sim | sim | sim | sim | sim | cascata + "N meses antes" |
+| Investir | sim | sim | sim | sim | sim | depois da reserva (marco 6); passo N de M |
+| Viver de renda | sim | sim | sim | sim | sim | ano previsto = marco 7 |
+| Coach | sim | sim | sim | sim | sim | 9 fluxos + monta o plano e libera ferramentas |
+| Antigas mantidas (direitos, check-in, placar, simulador, plano do diagnóstico, selos, frase) | sim | parcial | sim | parcial | parcial | entram pelo registro com status de número; as telas antigas seguem como eram |
+
+**Mudança pedida pelo dono depois da Etapa 9:** "tem coisa que a pessoa não vai usar". O site continua com todas as ferramentas, mas **cada pessoa só vê as do plano dela**. O Coach monta o plano com 3 perguntas (o que resolver primeiro, o que não quer ver agora, um passo por vez ou o mês todo), a tela inicial mostra só os próximos 3 passos e as ferramentas do plano, e o Coach **indica e libera** outras quando a vida pede (entrou dinheiro extra → Dinheiro extra; reserva completa → Investir). As não liberadas ficam em "Todas as ferramentas" e recolhidas em cada área, com "Colocar no meu plano". Lógica em `src/gs/planoPessoal.ts` (testada).

@@ -257,6 +257,15 @@ export interface CaminhoEstado {
   marcosFeitos: string[]; // marcos já comemorados (a festa acontece uma vez)
   etapas: Record<string, number>; // ferramenta de várias etapas → etapa em que parou
   metodoQuitacao?: Estrategia; // escolhido pelo Coach antes de existir um plano
+  plano?: PlanoPessoal; // o plano que o Coach montou com a pessoa: o que aparece na tela inicial
+}
+/** O plano de cada pessoa: o que ela quer resolver, e só as ferramentas e os passos disso. */
+export interface PlanoPessoal {
+  focos: string[]; // ids de foco (ver planoPessoal.ts), na ordem de prioridade
+  esconder: string[]; // assuntos que a pessoa disse que não quer ver agora
+  ritmo: 'um-passo' | 'tudo'; // um passo de cada vez, ou o mês inteiro
+  extras: string[]; // ferramentas que o Coach liberou depois (ou a própria pessoa)
+  criadoEm: string; // 'AAAA-MM-DD'
 }
 
 export interface Estado {

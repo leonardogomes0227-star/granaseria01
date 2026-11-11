@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { CalendarClock, Gift, PiggyBank, Sprout, Target } from 'lucide-react';
 import { useEstado } from './store';
@@ -59,6 +60,7 @@ export function Extras() {
   return (
     <>
       <Titulo titulo="Dinheiro extra" sub="13º, bônus ou dinheiro que caiu: o melhor destino." />
+      <RespostaFerramenta id="extras" />
       {hist.length > 0 && <Heroi pct={Math.min(100, (hist.length / 3) * 100)} anel={`${hist.length}`} anelSub={hist.length === 1 ? 'extra' : 'extras'} rotulo="Você já deu destino a" grande={brl0(totalComDestino(hist))} sub="em dinheiro extra, sem deixar sumir" cor="var(--success)" />}
       <Conquistas lista={conquistasExtras(hist)} />
 

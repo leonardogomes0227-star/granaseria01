@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { Banknote, Check } from 'lucide-react';
 import { useEstado } from './store';
@@ -26,6 +27,7 @@ export function Calendario() {
     return (
       <>
         <Titulo titulo="Calendário de contas" sub="O que vence e quanto sobra até o próximo salário." />
+        <RespostaFerramenta id="calendario" />
         <Vazio titulo="Cadastre suas contas fixas" texto="Aluguel, luz, internet… Eu ponho cada uma na ordem em que vence, depois do seu salário, e mostro quanto sobra depois de cada uma." acao="Cadastrar contas" rota="/lancamentos?aba=contas" avatar="contas" />
       </>
     );

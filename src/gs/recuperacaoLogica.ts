@@ -1,11 +1,11 @@
 // Modo Recuperação: a lógica do plano de saída. Pura e testada. Reaproveita o que já existe (atrasos, dívidas, disponível)
 // e só junta numa trilha: tudo que devo → o que pagar primeiro → quanto cabe → quando fico em dia → o passo de hoje.
 
-import { diasEntre, mesDe, somaDias } from './datas';
-import { situacaoAtrasos } from './atrasosLogica';
-import { paraSim, saldoAtual, simular } from './dividas';
-import { contasDoMes, detalheDisponivel, folgaMensal, valorDoMes } from './selectores';
-import type { Estado } from './tipos';
+import { diasEntre, mesDe, somaDias } from './datas.js';
+import { situacaoAtrasos } from './atrasosLogica.js';
+import { paraSim, saldoAtual, simular } from './dividas.js';
+import { contasDoMes, detalheDisponivel, folgaMensal, valorDoMes } from './selectores.js';
+import type { Estado } from './tipos.js';
 
 /** Contas fixas que não dá para cortar: moradia e básicas. */
 export const FIXAS_ESSENCIAIS = ['Aluguel', 'Luz', 'Água', 'Internet', 'Financiamento'];

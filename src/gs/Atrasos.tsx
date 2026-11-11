@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { getEstado, useEstado } from './store';
@@ -53,6 +54,7 @@ export function Atrasos() {
   return (
     <>
       <Titulo titulo="Sair do atraso" sub="Ponha as contas em dia, um passo de cada vez." />
+      <RespostaFerramenta id="atrasos" />
 
       <section className={`gs-card ${tom === 'perigo' ? 'perigo' : 'destaque'}`}>
         <span className="gs-rotulo">Atrasado hoje</span>

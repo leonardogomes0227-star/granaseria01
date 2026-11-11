@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { useEstado } from './store';
@@ -40,6 +41,7 @@ export function Orcamento() {
     return (
       <>
         <Titulo titulo="Orçamento" sub="Quanto ainda dá em cada categoria." />
+        <RespostaFerramenta id="orcamento" />
         <Vazio titulo="Informe sua renda" texto="Com ela eu calculo quanto sobra pro dia a dia e divido em envelopes: mercado, transporte, lazer…" acao="Informar renda" rota="/dados" avatar="gastos" />
       </>
     );

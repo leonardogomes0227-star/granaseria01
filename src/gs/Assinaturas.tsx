@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { projecaoAnos, SUGESTOES_ASSINATURAS, TAXA_PADRAO_ASSINATURAS } from './ferramentas';
@@ -29,6 +30,7 @@ export function Assinaturas() {
   return (
     <>
       <Titulo titulo="Gastos escondidos" sub="O que você paga todo mês sem ver." />
+      <RespostaFerramenta id="assinaturas" />
       <Heroi pct={r.pctRevisado} anel={`${Math.round(r.pctRevisado)}%`} anelSub="revisado" rotulo="Você paga por mês" grande={brl0(r.total)} sub={`${brl0(r.anual)} por ano${r.cortado > 0 ? ` · já cortou ${brl0(r.cortado)}/mês` : ''}`} cor="var(--success)" />
       <Agora tom={acao.tom} texto={acao.texto}>
         {acao.alvo && acao.tipo === 'revisar' && (

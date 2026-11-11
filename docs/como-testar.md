@@ -7,6 +7,11 @@ Abra o site no celular, entre pelo link do WhatsApp e siga a ordem abaixo. Cada 
 2. Onboarding: informe a renda, pule o resto. No fim aparece o cartão do WhatsApp e o botão **Ver meu caminho**.
 3. Na tela **Seu caminho**: o cartão do destino com a moeda, o marco em letras grandes e a data, "Ver o caminho todo" e "Como cheguei nessa data" (as premissas).
 
+## 1b. O seu plano (o Coach escolhe o que aparece)
+- Na tela inicial, toque em **Monte o seu plano**. Três perguntas: o que resolver primeiro (os marcados com ★ são o que os seus números pedem), o que não quer ver agora e o ritmo.
+- Depois de **Usar este plano**: só 3 passos na tela e só as ferramentas do plano. As outras ficam em "Todas as ferramentas" e recolhidas em cada área, com "Colocar no meu plano".
+- Registre uma receita extra (13º): aparece "O Coach indica: Dinheiro extra", com **Liberar**.
+
 ## 2. O dia a dia
 4. Toque no **+** no centro da barra: anote um gasto (valor → categoria → Salvar). O "Hoje você pode gastar" muda na hora.
 5. No **+**, "Anotar por foto (cupom ou pix)": só funciona com a `ANTHROPIC_API_KEY` na Vercel. Sem ela, o site avisa e sugere o WhatsApp.

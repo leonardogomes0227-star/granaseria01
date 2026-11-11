@@ -46,3 +46,18 @@ describe('registro de ferramentas', () => {
     for (const a of Object.keys(GRUPOS) as Area[]) expect(gradeDaArea(a, e, HOJE).length).toBeGreaterThan(0);
   });
 });
+
+describe('continuar de onde parou', () => {
+  it('cada ferramenta de vários passos diz em que passo a pessoa está, e some quando terminou', () => {
+    const e = e0();
+    const c = (id: string, est = e) => ferramenta(id)!.continuar!(est, HOJE);
+    expect(c('dividas')).toBeNull();
+    const comDivida = { ...e, dividas: [{ id: 'd', nome: 'Cartão', saldo: 900, jurosMensal: 10, parcelaMinima: 90, pagamentos: [] }] };
+    expect(c('dividas', comDivida)).toMatchObject({ passo: 2, total: 3 });
+    expect(c('dividas', { ...comDivida, planoDividas: { estrategia: 'bola-de-neve' as const, pagamentoMensal: 300, criadoEm: HOJE } })).toMatchObject({ passo: 3 });
+    expect(c('recuperacao', { ...e, recuperacao: { ativo: true, raioXFeito: false }, caminho: { ...e.caminho, etapas: { recuperacao: 4 } } })).toMatchObject({ passo: 4, total: 6 });
+    expect(c('recuperacao', { ...e, recuperacao: { ativo: true, raioXFeito: true } })).toBeNull();
+    expect(c('metas', { ...e, metas: [{ id: 'm', nome: 'Viagem', alvo: 1000, criadaEm: HOJE, guardados: [] }] })).toMatchObject({ passo: 2, total: 2 });
+    expect(c('atrasos')).toBeNull();
+  });
+});

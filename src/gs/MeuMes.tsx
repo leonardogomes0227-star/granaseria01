@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEstado } from './store';
@@ -34,6 +35,7 @@ export function MeuMes({ padrao = 'contas' }: { padrao?: 'contas' | 'historico' 
   return (
     <>
       <Titulo titulo={padrao === 'historico' ? 'Lançamentos' : 'Contas fixas'} />
+      <RespostaFerramenta id={aba === 'contas' ? 'contas' : 'lancamentos'} />
       <div className="gs-seg" role="tablist" aria-label="Lançamentos">
         <button type="button" role="tab" aria-selected={aba === 'historico'} className={aba === 'historico' ? 'on' : ''} onClick={() => setParams({ aba: 'historico' })}>Histórico</button>
         <button type="button" role="tab" aria-selected={aba === 'contas'} className={aba === 'contas' ? 'on' : ''} onClick={() => setParams({ aba: 'contas' })}>Contas fixas</button>

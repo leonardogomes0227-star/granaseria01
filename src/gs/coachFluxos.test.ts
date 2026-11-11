@@ -78,9 +78,9 @@ describe('fluxos do coach (sem IA)', () => {
 
 describe('ferramentas do coach no servidor', () => {
   const nova = (): Coleta => ({ acoes: [], impactos: [] });
-  it('11 de cálculo e 8 de ação, todas com esquema', () => {
+  it('11 de cálculo e 9 de ação, todas com esquema', () => {
     expect(TOOLS_CALCULO.map((t) => t.name)).toEqual(['ver_caminho', 'simular_impacto', 'analisar_compra', 'comparar_parcelado', 'comparar_emprestimos', 'plano_atrasos', 'simular_quitacao', 'dividir_extra', 'plano_meta', 'orcamento_atual', 'disponivel_hoje']);
-    expect(TOOLS_ACAO).toHaveLength(8);
+    expect(TOOLS_ACAO).toHaveLength(9);
     for (const t of TOOLS) expect(t.input_schema.type).toBe('object');
   });
 

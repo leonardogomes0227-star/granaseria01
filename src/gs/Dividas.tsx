@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEstado } from './store';
 import { brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntre, vencimentoNoMes } from './datas';
@@ -38,6 +39,7 @@ export function Dividas() {
   return (
     <>
       <Titulo titulo="Quitar dívidas" sub="Descubra quando você fica livre delas." />
+      <RespostaFerramenta id="dividas" />
       {tem ? (
         <Painel onNova={() => setSimples(true)} onEditar={setEditando} onQuitou={setFesta} />
       ) : (
