@@ -3,24 +3,18 @@
 
 import { rest } from '../server/whatsapp/db.js';
 import { buildStats, type EventRow } from '../server/admin/stats.js';
-import { createWebLink, getFlag, getLastInbound, getProfile, listKnownPhones, listProfiles, personHash, setFlag, NOTICE_FLAG } from '../server/whatsapp/hubdb.js';
+import { createEntryLink, getFlag, getLastInbound, getProfile, listKnownPhones, listProfiles, personHash, setFlag, NOTICE_FLAG } from '../server/whatsapp/hubdb.js';
 import { sendTemplate, sendText } from '../server/whatsapp/meta.js';
 import { siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { diagnosisFrom } from '../server/whatsapp/hubcore.js';
 import { saveProfile } from '../server/whatsapp/hubdb.js';
 import { accountsConfigured, listUsers, saveState } from '../server/account/db.js';
 import { auditarDados, restaurarMaiorCopia, type ContaGuardada } from '../server/admin/dados.js';
+import { mesmoSegredo } from '../server/segredo.js';
+import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
 
 const PAGE = 1000;
 const MAX_ROWS = 100_000;
-
-/** Comparação em tempo constante, pra senha errada não vazar por diferença de tempo. */
-function sameSecret(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
 
 async function loadEvents(): Promise<EventRow[]> {
   const rows: EventRow[] = [];
@@ -36,10 +30,15 @@ async function loadEvents(): Promise<EventRow[]> {
   return rows;
 }
 
-function authorized(request: Request): boolean {
-  const secret = process.env.ADMIN_SECRET;
+function acesso(request: Request): number {
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`admin:${ip}`, 20, 60 * 60 * 1000)) return 429;
   const sent = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
-  return Boolean(secret && sameSecret(sent, secret));
+  if (!mesmoSegredo(sent, process.env.ADMIN_SECRET)) {
+    contarLimite(`admin:${ip}`, 60 * 60 * 1000);
+    return 401;
+  }
+  return 200;
 }
 
 export interface Person {
@@ -88,8 +87,9 @@ async function contasGuardadas(): Promise<(ContaGuardada & { gravar: (state: Rec
 }
 
 export async function GET(request: Request): Promise<Response> {
-  if (!authorized(request)) {
-    return new Response('Unauthorized', { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  const status = acesso(request);
+  if (status !== 200) {
+    return new Response(status === 429 ? 'Muitas tentativas' : 'Unauthorized', { status, headers: { 'Cache-Control': 'no-store' } });
   }
   // ?acao=dados: alguém perdeu dados? (compara o estado de cada conta com a maior cópia de segurança guardada)
   if (new URL(request.url).searchParams.get('acao') === 'dados') {
@@ -116,7 +116,8 @@ export async function GET(request: Request): Promise<Response> {
  * Cada pessoa recebe uma vez só; quem recebe não vê o aviso de novo no chat.
  */
 export async function POST(request: Request): Promise<Response> {
-  if (!authorized(request)) return new Response('Unauthorized', { status: 401 });
+  const status = acesso(request);
+  if (status !== 200) return new Response(status === 429 ? 'Muitas tentativas' : 'Unauthorized', { status });
   // ?acao=restaurar: devolve a maior cópia para quem perdeu dados (todas, ou só os ids do corpo). O estado de agora vira cópia.
   if (new URL(request.url).searchParams.get('acao') === 'restaurar') {
     const corpo = (await request.json().catch(() => ({}))) as { ids?: unknown };
@@ -145,7 +146,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     try {
       const profile = await getProfile(phone).catch(() => ({}) as Record<string, string>);
-      const link = `${SITE_URL}/${diagnosisFrom(profile) ? 'painel' : ''}?t=${await createWebLink(phone)}`;
+      const link = `${SITE_URL}/${diagnosisFrom(profile) ? 'painel' : ''}?t=${await createEntryLink(phone)}&entrada=1`;
       const last = await getLastInbound(phone).catch(() => null);
       if (last && Date.now() - last.getTime() < 23 * 60 * 60 * 1000) {
         await sendText(phone, siteNoticeText(link, profile['gs-nome'] ?? null));

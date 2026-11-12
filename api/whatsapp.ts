@@ -16,7 +16,9 @@ import { PLAN_BUTTON_TEXT } from '../server/whatsapp/coach.js';
 import { GASTOS_BUTTON_TEXT } from '../server/whatsapp/hubcore.js';
 import { loadShortcuts } from '../server/whatsapp/shortcuts.js';
 import { FEEDBACK_ASK, loadFeedbackEvents, shouldAskFeedback } from '../server/whatsapp/feedback.js';
-import { bumpUsage, getFlag, setFlag, setLastInbound, takeHandoff, createWebLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { bumpUsage, getFlag, setFlag, setLastInbound, takeHandoff, createEntryLink, deleteWebLinks, NOTICE_FLAG, clearSession, eraseWhatsAppData, getProfile, getSession, refundUsage, saveProfile, saveSession, trackEvent } from '../server/whatsapp/hubdb.js';
+import { ErroCripto } from '../server/cripto.js';
+import { mesmoSegredo } from '../server/segredo.js';
 import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type FaturaResult, type MediaType } from '../server/fatura.js';
 import { siteLink, siteNoticeText, SITE_URL } from '../server/whatsapp/site.js';
 import { parsePlanCommand, runPlanCommand, PLAN_HELP } from '../server/whatsapp/planbot.js';
@@ -44,6 +46,7 @@ async function loadHub(user: UserRow | null, phone: string): Promise<{ session: 
     const profile = clean.state;
     return { session, profile };
   } catch (err) {
+    if (err instanceof ErroCripto) throw err;
     console.error('WhatsApp: ferramentas indisponíveis (rodou o SQL supabase/whatsapp-hub.sql?)', err);
     return null;
   }
@@ -53,7 +56,7 @@ async function loadHub(user: UserRow | null, phone: string): Promise<{ session: 
 function limitedSmart(phone: string): typeof askClaude {
   return async (msgText, ctx) => {
     const day = new Date().toISOString().slice(0, 10);
-    const allowed = await bumpUsage(phone, `ai:${day}`, AI_DAILY_LIMIT).catch(() => true);
+    const allowed = await bumpUsage(phone, `ai:${day}`, AI_DAILY_LIMIT).catch(() => false);
     return allowed ? askClaude(msgText, ctx) : null;
   };
 }
@@ -105,11 +108,11 @@ async function withLoginLinks(out: Outgoing[], phone: string): Promise<Outgoing[
   LINK_RE.lastIndex = 0;
   let token: string;
   try {
-    token = await createWebLink(phone);
+    token = await createEntryLink(phone);
   } catch {
     return out; // sem token, o link continua funcionando (o site pede o login)
   }
-  const fix = (t: string) => t.replace(LINK_RE, (_, path?: string) => `${SITE_URL}${path || '/'}?t=${token}`);
+  const fix = (t: string) => t.replace(LINK_RE, (_, path?: string) => `${SITE_URL}${path || '/'}?t=${token}&entrada=1`);
   return out.map((o) => ('text' in o ? { ...o, text: fix(o.text) } : o));
 }
 
@@ -131,7 +134,7 @@ async function siteNotice(phone: string): Promise<Outgoing[]> {
 function painelText(token: string): string {
   return [
     '📲 *Seu painel no site:*',
-    `${SITE_URL}/painel?t=${token}`,
+    `${SITE_URL}/painel?t=${token}&entrada=1`,
     '',
     'Lá ficam salvos seu plano de ação, seus gastos e entradas do mês e as ferramentas, tudo junto com o que você anota aqui.',
     '',
@@ -169,6 +172,14 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   if (cmd?.kind === 'link') {
     if (!accounts) return null;
     if (!(await markProcessed(msg.id))) return null;
+    const hora = new Date().toISOString().slice(0, 13);
+    let pode = false;
+    try {
+      pode = await bumpUsage(phone, `vinculo:${hora}`, 8);
+    } catch {
+      pode = false;
+    }
+    if (!pode) return text('Muitas tentativas de vínculo. Espere cerca de uma hora e gere um código novo no site.');
     const ok = await linkPhoneByCode(cmd.code, phone);
     return text(
       ok
@@ -192,7 +203,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     if (!(await markProcessed(msg.id))) return null;
     await trackEvent(phone, 'painel_link');
     await rememberName(user, phone, msg.profileName);
-    return text(painelText(await createWebLink(phone)));
+    return text(painelText(await createEntryLink(phone)));
   }
   if (/^(sair do painel|desconectar painel|desconectar o painel|desconectar site)$/.test(t)) {
     if (!(await markProcessed(msg.id))) return null;
@@ -212,7 +223,7 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
     if (hub?.session) await clearSession(phone);
     await trackEvent(phone, 'site_handoff');
     // já manda o link do painel: o site fica ligado a este número e tudo passa a ser salvo nos dois lados
-    const link = await createWebLink(phone).catch(() => null);
+    const link = await createEntryLink(phone).catch(() => null);
     return [...welcomeFromSite(merged, new Date(), msg.profileName), ...(link ? text(painelText(link)) : [])];
   }
 
@@ -363,7 +374,7 @@ async function readFatura(m: IncomingMedia, phone: string, say: (t: string) => P
   if (!smartConfigured()) return sayLinked(FATURA_ON_SITE());
   if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande a fatura em *PDF* ou em *foto* (JPG ou PNG). 📄');
   const period = `fatura:${new Date().toISOString().slice(0, 7)}`;
-  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => true))) {
+  if (!(await bumpUsage(phone, period, FATURA_MONTHLY_LIMIT).catch(() => false))) {
     return say(`Você já mandou ${FATURA_MONTHLY_LIMIT} faturas neste mês. 🙏 Mês que vem eu leio de novo.`);
   }
   await say('📄 Recebi a fatura! Lendo… (leva uns segundos)');
@@ -400,7 +411,7 @@ async function handleMedia(m: IncomingMedia): Promise<void> {
   if (!MEDIA_TYPES.includes(m.mime as MediaType)) return say('Mande em *foto* (JPG ou PNG) ou em *PDF*. 📸');
 
   const period = `cupom:${new Date().toISOString().slice(0, 7)}`;
-  if (!(await bumpUsage(phone, period, RECEIPT_MONTHLY_LIMIT).catch(() => true))) {
+  if (!(await bumpUsage(phone, period, RECEIPT_MONTHLY_LIMIT).catch(() => false))) {
     return say(`Você já mandou ${RECEIPT_MONTHLY_LIMIT} fotos neste mês. Me manda por escrito, ex.: *mercado 45,90 no pix*. 🙂`);
   }
   await say('📸 Recebi! Lendo…');
@@ -428,14 +439,16 @@ export async function GET(request: Request): Promise<Response> {
   const mode = url.searchParams.get('hub.mode');
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
-  if (mode === 'subscribe' && token && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-    return new Response(challenge ?? '', { status: 200 });
+  if (mode === 'subscribe' && token && mesmoSegredo(token, process.env.WHATSAPP_VERIFY_TOKEN)) {
+    if (!challenge || !/^[A-Za-z0-9._-]{1,128}$/.test(challenge)) return new Response('Forbidden', { status: 403 });
+    return new Response(challenge, { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }
   return new Response('Forbidden', { status: 403 });
 }
 
 export async function POST(request: Request): Promise<Response> {
   const raw = await request.text();
+  if (raw.length > 1_000_000) return new Response('Payload grande demais', { status: 413 });
 
   const appSecret = process.env.WHATSAPP_APP_SECRET;
   if (!appSecret || !(await verifySignature(raw, request.headers.get('x-hub-signature-256'), appSecret))) {

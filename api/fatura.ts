@@ -17,7 +17,7 @@ const MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
 const COMPROVANTE_DAILY_LIMIT = Number(process.env.COMPROVANTE_DAILY_LIMIT || 20);
 
 function json(body: unknown, status = 200) {
-  return Response.json(body, { status });
+  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 }
 
 /** O site pergunta se o leitor está ligado: sem a chave da IA, a ferramenta nem aparece na lista. */
@@ -44,7 +44,7 @@ async function comprovante(request: Request, body: { mediaType?: string; data?: 
   const mediaType = body.mediaType as MediaType;
   if (!MEDIA_TYPES.includes(mediaType) || typeof body.data !== 'string' || !body.data) return json({ error: 'Mande uma foto (JPG, PNG) ou um PDF.' }, 400);
   if (body.data.length > MAX_BASE64) return json({ error: 'Foto grande demais (máximo 3 MB).' }, 413);
-  if (!(await bumpUsage(chave, `comprovante:${todaySP()}`, COMPROVANTE_DAILY_LIMIT).catch(() => true))) return json({ error: 'Por hoje chega de fotos. Amanhã tem mais; por enquanto, anote o valor.' }, 429);
+  if (!(await bumpUsage(chave, `comprovante:${todaySP()}`, COMPROVANTE_DAILY_LIMIT).catch(() => false))) return json({ error: 'Por hoje chega de fotos. Amanhã tem mais; por enquanto, anote o valor.' }, 429);
   const r = await analyzeReceipt(mediaType, body.data);
   if (!r.ok) return json({ error: r.error }, 422);
   if (r.receipt.tipo === 'fatura_extrato') return json({ error: 'Isso parece uma fatura com várias compras. Use "Importar fatura" no cartão.', fatura: true }, 422);

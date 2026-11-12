@@ -8,7 +8,7 @@ import { currentMonth, isMonth } from '../src/coachChat/months.js';
 const MAX_BYTES = 40_000;
 const COACHES = ['arkad', 'nomasir', 'sharru'];
 
-const json = (body: unknown, status = 200) => Response.json(body, { status });
+const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 async function auth(request: Request): Promise<string | null> {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';

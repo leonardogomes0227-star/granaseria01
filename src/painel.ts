@@ -8,6 +8,7 @@ import { resetIfOld } from './reset';
 // diagnósticos diferentes, a pessoa escolhe; depois disso, ganha a versão mais nova.
 
 const TOKEN_KEY = 'gs-painel-token';
+const ENTRADA_KEY = 'gs-entrada'; // o ?t= da URL é de uso curto; a primeira leitura troca pelo token longo
 const NAME_KEY = 'gs-nome';
 const AFTER_LOGIN_KEY = 'gs-depois-do-login'; // a ferramenta que a pessoa queria abrir antes de entrar
 const SEEN_KEY = 'gs-painel-seen'; // updatedAt da última versão do WhatsApp que este navegador viu/mandou
@@ -59,6 +60,15 @@ export const getName = () => read(NAME_KEY);
 export const setName = (name: string) => write(NAME_KEY, name.trim().slice(0, 40));
 export const rememberAfterLogin = (path: string) => write(AFTER_LOGIN_KEY, path);
 
+const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
+
+/** O token do link, na query (?t=) ou no fragmento (#t=). O fragmento não vai pro log do servidor. */
+export function tokenNaUrl(url: URL): string | null {
+  const candidatos = [url.searchParams.get('t'), new URLSearchParams(url.hash.replace(/^#/, '')).get('t')];
+  for (const c of candidatos) if (c && TOKEN_RE.test(c)) return c;
+  return null;
+}
+
 /**
  * Chamado uma vez ao abrir o site, antes do roteador: o ?t= do link do WhatsApp vira login, some da barra de
  * endereço, e quem tinha tentado abrir uma ferramenta volta direto pra ela.
@@ -66,10 +76,20 @@ export const rememberAfterLogin = (path: string) => write(AFTER_LOGIN_KEY, path)
 export function captureLoginFromUrl(): void {
   try {
     const url = new URL(window.location.href);
-    const t = url.searchParams.get('t');
-    if (!t || !/^[A-Za-z0-9_-]{20,64}$/.test(t)) return;
+    const t = tokenNaUrl(url);
+    if (!t) return;
+    if (url.searchParams.get('entrada') === '1') {
+      try { sessionStorage.setItem(ENTRADA_KEY, '1'); } catch { /* sem storage: o token curto ainda vale alguns minutos */ }
+    }
     if (t !== painelToken()) setPainelToken(t);
     url.searchParams.delete('t');
+    url.searchParams.delete('entrada');
+    const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+    if (hash.has('t')) {
+      hash.delete('t');
+      const rest = hash.toString();
+      url.hash = rest ? `#${rest}` : '';
+    }
     let path = url.pathname + url.search + url.hash;
     const after = read(AFTER_LOGIN_KEY);
     if (after && (url.pathname === '/painel' || url.pathname === '/')) {
@@ -122,13 +142,22 @@ export async function apagarCopiaDoNumero(): Promise<boolean> {
 export async function fetchPainel(): Promise<PainelData | null> {
   const token = painelToken();
   if (!token) return null;
-  const res = await fetch('/api/painel', { headers: { Authorization: `Bearer ${token}` } });
+  let entrada = false;
+  try { entrada = sessionStorage.getItem(ENTRADA_KEY) === '1'; } catch { /* segue com o token que já está salvo */ }
+  const res = await fetch(entrada ? '/api/painel?entrada=1' : '/api/painel', { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
+    try { sessionStorage.removeItem(ENTRADA_KEY); } catch { /* sem storage */ }
     clearPainelToken();
     return null;
   }
   if (!res.ok) throw new Error(String(res.status));
-  return (await res.json()) as PainelData;
+  const body = (await res.json()) as PainelData & { token?: string };
+  if (entrada) {
+    try { sessionStorage.removeItem(ENTRADA_KEY); } catch { /* sem storage */ }
+    if (body.token && TOKEN_RE.test(body.token)) write(TOKEN_KEY, body.token);
+  }
+  delete body.token;
+  return body;
 }
 
 const onlySynced = (s: Snapshot) => Object.fromEntries(SYNC_KEYS.filter((k) => typeof s[k] === 'string').map((k) => [k, s[k]]));

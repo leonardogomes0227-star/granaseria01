@@ -4,6 +4,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { rest } from './db.js';
 import type { Session } from './hub.js';
 import type { StateSnapshot } from '../account/db.js';
+import { ErroCripto, revelarJson, selarJson } from '../cripto.js';
+import { entradaAindaVale } from '../linkEntrada.js';
 
 const SESSION_TTL_MS = 30 * 60 * 1000; // conversa parada há mais de 30 min recomeça do zero
 
@@ -24,11 +26,11 @@ export async function getSession(phone: string): Promise<Session | null> {
   const [row] = (await res.json()) as { flow: Session['flow']; step: string; data: Session['data']; updated_at: string }[];
   if (!row) return null;
   if (Date.now() - new Date(row.updated_at).getTime() > SESSION_TTL_MS) return null;
-  return { flow: row.flow, step: row.step, data: row.data ?? {} };
+  return { flow: row.flow, step: row.step, data: revelarJson(row.data ?? {}) };
 }
 
 export async function saveSession(phone: string, s: Session): Promise<void> {
-  await check(await upsert('wa_sessions', 'phone', { phone, flow: s.flow, step: s.step, data: s.data, updated_at: new Date().toISOString() }), 'upsert');
+  await check(await upsert('wa_sessions', 'phone', { phone, flow: s.flow, step: s.step, data: selarJson(s.data), updated_at: new Date().toISOString() }), 'upsert');
 }
 
 export async function clearSession(phone: string): Promise<void> {
@@ -39,11 +41,11 @@ export async function getProfile(phone: string): Promise<StateSnapshot> {
   const res = await rest(`wa_profiles?${new URLSearchParams({ phone: `eq.${phone}`, select: 'state', limit: '1' })}`);
   await check(res, 'select');
   const [row] = (await res.json()) as { state: StateSnapshot }[];
-  return row?.state ?? {};
+  return revelarJson(row?.state ?? {});
 }
 
 export async function saveProfile(phone: string, state: StateSnapshot): Promise<void> {
-  await check(await upsert('wa_profiles', 'phone', { phone, state, updated_at: new Date().toISOString() }), 'upsert');
+  await check(await upsert('wa_profiles', 'phone', { phone, state: selarJson(state), updated_at: new Date().toISOString() }), 'upsert');
 }
 
 /** Conta um uso. Devolve false se o limite do período já foi atingido (nesse caso não conta). */
@@ -74,7 +76,7 @@ export const HANDOFF_KEYS = ['grana-seria:v1', 'selos-wizard-progress', 'selos-t
 
 export async function saveHandoff(code: string, state: StateSnapshot): Promise<void> {
   await check(
-    await upsert('wa_sessions', 'phone', { phone: `handoff:${code}`, flow: 'handoff', step: 'pending', data: { state }, updated_at: new Date().toISOString() }),
+    await upsert('wa_sessions', 'phone', { phone: `handoff:${code}`, flow: 'handoff', step: 'pending', data: selarJson({ state }), updated_at: new Date().toISOString() }),
     'upsert'
   );
 }
@@ -86,11 +88,13 @@ export async function takeHandoff(code: string): Promise<StateSnapshot | null> {
   await check(res, 'select');
   const [row] = (await res.json()) as { data: { state?: StateSnapshot }; updated_at: string }[];
   if (!row) return null;
+  // se o pacote estiver cifrado e a chave não abrir, não apaga: apagar aqui perderia o diagnóstico
+  const data = revelarJson(row.data);
   await check(await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}` })}`, { method: 'DELETE' }), 'delete');
   if (Date.now() - new Date(row.updated_at).getTime() > HANDOFF_TTL_MS) return null;
   const state: StateSnapshot = {};
   for (const k of HANDOFF_KEYS) {
-    const v = row.data?.state?.[k];
+    const v = data?.state?.[k];
     if (typeof v === 'string') state[k] = v;
   }
   return state;
@@ -112,6 +116,20 @@ export async function createWebLink(phone: string): Promise<string> {
   return token;
 }
 
+/**
+ * Token curto que vai na URL do WhatsApp. Não é o token que fica no navegador:
+ * o site troca por um token longo na primeira abertura (sessaoDuravel). Vale 30 minutos,
+ * e 2 minutos depois do primeiro uso. Assim um log de acesso não guarda um login de 180 dias.
+ */
+export async function createEntryLink(phone: string): Promise<string> {
+  const token = randomBytes(24).toString('base64url');
+  await check(
+    await upsert('wa_sessions', 'phone', { phone: `webonce:${tokenHash(token)}`, flow: 'webonce', step: 'active', data: { phone }, updated_at: new Date().toISOString() }),
+    'upsert'
+  );
+  return token;
+}
+
 /** O número dono do token, ou null se não existe ou expirou. Renova o prazo uma vez por dia. */
 export async function phoneFromWebLink(token: string): Promise<string | null> {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return null;
@@ -120,7 +138,7 @@ export async function phoneFromWebLink(token: string): Promise<string | null> {
   await check(res, 'select');
   const [row] = (await res.json()) as { data: { phone?: string }; updated_at: string }[];
   const phone = row?.data?.phone;
-  if (!row || !phone) return null;
+  if (!row || !phone) return phoneFromEntryLink(token);
   const age = Date.now() - new Date(row.updated_at).getTime();
   if (age > WEBLINK_TTL_MS) return null;
   if (age > 24 * 60 * 60 * 1000) {
@@ -129,9 +147,51 @@ export async function phoneFromWebLink(token: string): Promise<string | null> {
   return phone;
 }
 
-/** Desconecta todos os navegadores ligados a este número. */
+type Entrada = { data: { phone?: string; redeemedAt?: string }; updated_at: string };
+
+async function lerEntrada(token: string): Promise<{ key: string; row: Entrada } | null> {
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(token)) return null;
+  const key = `webonce:${tokenHash(token)}`;
+  const res = await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}`, select: 'data,updated_at', limit: '1' })}`);
+  await check(res, 'select');
+  const [row] = (await res.json()) as Entrada[];
+  if (!row?.data?.phone) return null;
+  if (!entradaAindaVale(row.updated_at, row.data.redeemedAt)) {
+    await rest(`wa_sessions?${new URLSearchParams({ phone: `eq.${key}` })}`, { method: 'DELETE' }).catch(() => undefined);
+    return null;
+  }
+  return { key, row };
+}
+
+/** O número de um link de entrada ainda válido, ou null. Marca o primeiro uso sem renovar os 30 minutos. */
+export async function phoneFromEntryLink(token: string): Promise<string | null> {
+  const achado = await lerEntrada(token);
+  if (!achado) return null;
+  const phone = achado.row.data.phone as string;
+  if (!achado.row.data.redeemedAt) {
+    await upsert('wa_sessions', 'phone', {
+      phone: achado.key,
+      flow: 'webonce',
+      step: 'active',
+      data: { phone, redeemedAt: new Date().toISOString() },
+      updated_at: achado.row.updated_at,
+    }).catch(() => undefined);
+  }
+  return phone;
+}
+
+/** Se o token da URL for de entrada, devolve um token longo (só hash fica guardado) pra o navegador trocar. */
+export async function sessaoDuravel(token: string): Promise<string | null> {
+  const achado = await lerEntrada(token);
+  if (!achado?.row.data.phone) return null;
+  return createWebLink(achado.row.data.phone);
+}
+
+/** Desconecta todos os navegadores ligados a este número, e os links de entrada que ainda não venceram. */
 export async function deleteWebLinks(phone: string): Promise<void> {
-  await check(await rest(`wa_sessions?${new URLSearchParams({ flow: 'eq.weblink', 'data->>phone': `eq.${phone}` })}`, { method: 'DELETE' }), 'delete');
+  for (const flow of ['weblink', 'webonce']) {
+    await check(await rest(`wa_sessions?${new URLSearchParams({ flow: `eq.${flow}`, 'data->>phone': `eq.${phone}` })}`, { method: 'DELETE' }), 'delete');
+  }
 }
 
 /** Quando o perfil deste número foi gravado pela última vez (pra o site saber se a versão de lá é mais nova). */
@@ -139,7 +199,7 @@ export async function getProfileWithDate(phone: string): Promise<{ state: StateS
   const res = await rest(`wa_profiles?${new URLSearchParams({ phone: `eq.${phone}`, select: 'state,updated_at', limit: '1' })}`);
   await check(res, 'select');
   const [row] = (await res.json()) as { state: StateSnapshot; updated_at: string }[];
-  return { state: row?.state ?? {}, updated_at: row?.updated_at ?? null };
+  return { state: revelarJson(row?.state ?? {}), updated_at: row?.updated_at ?? null };
 }
 
 /** Última mensagem que a pessoa mandou (em minutos desde 1970), pra saber se a janela de 24h da Meta está aberta. */
@@ -171,7 +231,21 @@ export async function listKnownPhones(): Promise<string[]> {
 export async function listProfiles(): Promise<{ phone: string; state: StateSnapshot; updated_at: string }[]> {
   const res = await rest(`wa_profiles?${new URLSearchParams({ select: 'phone,state,updated_at', limit: '10000' })}`);
   await check(res, 'select');
-  return (await res.json()) as { phone: string; state: StateSnapshot; updated_at: string }[];
+  const rows = (await res.json()) as { phone: string; state: StateSnapshot; updated_at: string }[];
+  const out: { phone: string; state: StateSnapshot; updated_at: string }[] = [];
+  for (const row of rows) {
+    try {
+      out.push({ ...row, state: revelarJson(row.state ?? {}) });
+    } catch (err) {
+      // cifrado sem a chave: pula este perfil. Não devolve estado vazio, senão uma gravação apagaria os dados.
+      if (err instanceof ErroCripto) {
+        console.error('perfil cifrado ilegível, final', String(row.phone).slice(-4));
+        continue;
+      }
+      throw err;
+    }
+  }
+  return out;
 }
 
 /** Liga/desliga uma preferência da pessoa (ex.: receber o resumo semanal). Fica na wa_usage: count 1 = ligado. */

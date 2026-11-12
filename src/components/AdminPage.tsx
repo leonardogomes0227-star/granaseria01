@@ -27,10 +27,11 @@ const toolLabel = (t: string) => {
 const KEY = 'gs_admin';
 const readKey = () => {
   try {
-    return sessionStorage.getItem(KEY) ?? '';
+    sessionStorage.removeItem(KEY);
   } catch {
-    return '';
+    // sem storage, segue
   }
+  return '';
 };
 const ICON = { up: '👍', down: '👎', note: '💬' } as const;
 const SOURCE: Record<string, string> = { geral: 'pedido do bot', livre: 'mandou por conta própria' };
@@ -82,7 +83,7 @@ export function AdminPage() {
       setStats((await res.json()) as Stats);
       setSecret(key);
       try {
-        sessionStorage.setItem(KEY, key);
+        sessionStorage.removeItem(KEY);
         // este aparelho é do dono: o atalho "Painel do dono" passa a aparecer na aba Mais
         localStorage.setItem('gs-dono', '1');
       } catch {
@@ -130,7 +131,7 @@ export function AdminPage() {
           </button>
         </form>
         {state === 'wrong' && <div className="insight insight-warn" role="alert">Senha incorreta.</div>}
-        {state === 'error' && <div className="insight insight-warn" role="alert">Não consegui carregar. Confira se o painel está configurado (ADMIN_SECRET e o SQL de métricas) e tente de novo.</div>}
+        {state === 'error' && <div className="insight insight-warn" role="alert">Não consegui carregar. Confira a senha e tente de novo.</div>}
       </div>
     );
   }

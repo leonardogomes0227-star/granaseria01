@@ -1,6 +1,7 @@
 // Conta da pessoa no Supabase (tabela user_state), acessada pelo servidor com a service role.
 // Mesma abordagem do whatsapp/db.ts: REST (PostgREST) com fetch, sem SDK.
 
+import { codigoVinculoAceito } from '../linkEntrada.js';
 import { supabaseKeyHeaders } from '../whatsapp/db.js';
 
 export type StateSnapshot = Record<string, string>; // chave do localStorage → valor (texto)
@@ -53,8 +54,23 @@ export async function findUserById(userId: string): Promise<UserRow | null> {
   return row ?? null;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Grava o código de vínculo. A service role ignora o GRANT da coluna: o navegador não escolhe o código. */
+export async function definirCodigoDeVinculo(userId: string, code: string, expiresIso: string): Promise<void> {
+  if (!UUID.test(userId) || !codigoVinculoAceito(code)) throw new Error('código inválido');
+  const row = await findUserById(userId);
+  const body = { link_code: code, link_code_expires: expiresIso };
+  const res = row
+    ? await rest(`user_state?user_id=eq.${userId}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(body) })
+    : await rest('user_state', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: userId, state: {}, ...body }) });
+  if (res.status === 409) throw new Error('código em uso');
+  await ok(res, 'link-code');
+}
+
 /** Vincula o número a quem gerou o código no site. O número vem do próprio WhatsApp: não dá pra vincular o de outra pessoa. */
 export async function linkPhoneByCode(code: string, phone: string): Promise<boolean> {
+  if (!codigoVinculoAceito(code) || !/^\d{10,15}$/.test(phone)) return false;
   const q = new URLSearchParams({ link_code: `eq.${code}`, link_code_expires: `gt.${new Date().toISOString()}`, select: 'user_id', limit: '1' });
   const res = await rest(`user_state?${q}`);
   await ok(res, 'select');
