@@ -5,6 +5,7 @@ import { brl } from './datas';
 import { completarParcelada } from './painelDividas';
 import { Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
 import { toast } from '../components/ui/Toast';
+import { useUmaVez } from './umaVez';
 
 /* ---------- Nova dívida, do jeito simples: que tipo é → quanto deve (e quanto paga por mês) → pronto ---------- */
 // O juro vem de um valor comum para o tipo (e isso é dito na tela); quem sabe os detalhes usa o formulário completo.
@@ -32,6 +33,7 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
   const [estimado, setEstimado] = useState(false);
   const [erro, setErro] = useState('');
   const [feita, setFeita] = useState<{ nome: string; estimou: number; juros: number; calculado: boolean; totalEstimado: number; prazo: number } | null>(null);
+  const envio = useUmaVez();
 
   const zerar = () => { setPasso(1); setT(null); setNome(''); setTotal(0); setMensal(0); setDia(''); setFaltam(''); setEstimado(false); setErro(''); setFeita(null); };
   const fechar = () => { onFechar(); setTimeout(zerar, 200); };
@@ -39,15 +41,17 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
   // abre já no tipo pedido (ex.: "Financiamento da casa" vindo do cadastro de contas)
   useEffect(() => {
     const pedido = tipoInicial ? TIPOS.find((x) => x.nome === tipoInicial) : undefined;
+    if (aberta) envio.soltar();
     if (aberta && pedido) { setT(pedido); setPasso(2); }
-  }, [aberta, tipoInicial]);
+  }, [aberta, tipoInicial, envio]);
 
   const salvar = (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!t) return;
+    envio.tentar(() => {
+    if (!t) return false;
     const n = typeof faltam === 'number' && faltam > 0 ? faltam : 0;
-    if (!(total > 0) && !(mensal > 0)) return setErro('Informe pelo menos um valor: quanto deve no total, ou quanto paga por mês.');
-    if (typeof dia === 'number' && (dia < 1 || dia > 31)) return setErro('O dia do vencimento vai de 1 a 31.');
+    if (!(total > 0) && !(mensal > 0)) { setErro('Informe pelo menos um valor: quanto deve no total, ou quanto paga por mês.'); return false; }
+    if (typeof dia === 'number' && (dia < 1 || dia > 31)) { setErro('O dia do vencimento vai de 1 a 31.'); return false; }
     // saldo: o que a pessoa disse; sem isso, calculado pela parcela e pelo número de parcelas que faltam
     // só a parcela, sem saber o total nem quantas faltam: estimo pelo prazo comum do tipo e marco como estimativa
     const soParcela = !(total > 0) && mensal > 0 && n === 0;
@@ -63,10 +67,12 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
     const estimou = mensal > 0 ? 0 : Math.max(10, Math.round(saldo * (juros / 100 + 0.01)));
     const final = nome.trim() || t.nome;
     const ok = salvarDivida({ nome: final, saldo, jurosMensal: juros, parcelaMinima: mensal > 0 ? mensal : estimou, venceDia: typeof dia === 'number' ? dia : undefined, tipo: t.tipo, estimado: estimado || soParcela, parcelasRestantes: n > 0 ? n : undefined });
-    if (!ok) return setErro('Não consegui salvar. Confira o nome e o valor.');
+    if (!ok) { setErro('Não consegui salvar. Confira o nome e o valor.'); return false; }
     setFeita({ nome: final, estimou, juros, calculado, totalEstimado: soParcela ? saldo : 0, prazo: t.tipo === 'parcelada' && soParcela ? prazo || 12 : 0 });
     toast(`Dívida cadastrada: ${final}`);
     setPasso(3);
+    return true;
+    });
   };
 
   return (

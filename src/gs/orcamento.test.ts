@@ -43,6 +43,11 @@ describe('orçamento', () => {
     expect(r.ritmo).toBeCloseTo((1350 / 10) * 31, 0);
     expect(r.sobraProjetada).toBeLessThan(0);
   });
+  it('quando o gasto passa do que sobra, o percentual passa de 100', () => {
+    const e = base();
+    e.lancamentos = [{ id: 'z', descricao: 'viagem', valor: 4000, data: '2026-10-02', categoria: 'Lazer' }];
+    expect(resumoDoMes(e, '2026-10', '2026-10-10').pctUsado).toBeGreaterThan(100);
+  });
   it('ação: estouro vence, depois quase, depois ritmo', () => {
     const e = base();
     e.limites = { Compras: 80 };

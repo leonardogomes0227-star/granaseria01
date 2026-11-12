@@ -12,7 +12,7 @@ const NO_PAGO = [
   'Tudo do plano grátis, sem prazo',
   'Seu caminho até sair das dívidas: a data em que você fica livre, e o que fazer a cada mês',
   'Um Coach que resolve com você, com os seus números, um passo de cada vez',
-  'Anote pelo WhatsApp e por foto: "gastei 35 no mercado", a foto do cupom ou do pix',
+  'Anote pelo WhatsApp: "gastei 35 no mercado"',
   'Saiba antes de decidir: o que uma compra, um parcelamento ou um empréstimo fazem com a sua data',
   'Mande a fatura do cartão (PDF, foto ou texto) e veja para onde foi o dinheiro',
   'Reserva, metas e investir em passos, com dados reais do mercado',

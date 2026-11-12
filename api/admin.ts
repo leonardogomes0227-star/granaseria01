@@ -131,7 +131,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     return Response.json({ restauradas, erros });
   }
-  if (new URL(request.url).searchParams.get('acao') !== 'avisar') return Response.json({ error: 'ação desconhecida' }, { status: 400 });
+  if (new URL(request.url).searchParams.get('acao') !== 'avisar') return Response.json({ error: 'Ação desconhecida.' }, { status: 400 });
   const template = process.env.WHATSAPP_NEWS_TEMPLATE || 'novidade_site';
   const language = process.env.WHATSAPP_REMINDER_LANGUAGE || 'pt_BR';
   let direct = 0;

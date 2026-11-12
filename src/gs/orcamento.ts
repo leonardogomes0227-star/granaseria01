@@ -85,7 +85,7 @@ export function resumoDoMes(e: Estado, mes: string, hoje: string): ResumoMes {
     gastoVar,
     livre,
     orcamento,
-    pctUsado: orcamento > 0 ? Math.min(100, (gastoVar / orcamento) * 100) : gastoVar > 0 ? 100 : 0,
+    pctUsado: orcamento > 0 ? (gastoVar / orcamento) * 100 : gastoVar > 0 ? 100 : 0,
     pctMes: (passados / dn) * 100,
     porDia: limiteDiario(e, mes, hoje),
     restam: diasRestantes(mes, hoje),

@@ -9,12 +9,18 @@ import { terminoDaEspera } from './ferramentas';
 import { apagarNoServidor, restaurarNoServidor } from './servidor';
 
 const ok = (n: number) => Number.isFinite(n) && n > 0;
+/** Corta por caractere (emoji conta 1) e não deixa um pedaço de emoji no fim. */
+const cortar = (s: string, n: number) => {
+  let out = Array.from(s.trim()).slice(0, n).join('');
+  if (/[\uD800-\uDBFF]$/.test(out)) out = out.slice(0, -1);
+  return out;
+};
 
 /* ---------- contas fixas ---------- */
 export function salvarGastoFixo(g: Omit<GastoFixo, 'id' | 'pagamentos'> & { id?: string }): boolean {
   if (!g.nome.trim() || !ok(g.valor) || !(g.diaVencimento >= 1 && g.diaVencimento <= 31)) return false;
   atualizar((e) => {
-    const dados = { nome: g.nome.trim().slice(0, 60), valor: arred(g.valor), diaVencimento: Math.round(g.diaVencimento), categoria: g.categoria };
+    const dados = { nome: cortar(g.nome, 60), valor: arred(g.valor), diaVencimento: Math.round(g.diaVencimento), categoria: g.categoria };
     return g.id ? { ...e, gastosFixos: e.gastosFixos.map((x) => (x.id === g.id ? { ...x, ...dados } : x)) } : { ...e, gastosFixos: [...e.gastosFixos, { id: novoId('gf'), pagamentos: {}, criadaEm: hojeSP(), ...dados }] };
   });
   return true;
@@ -34,7 +40,8 @@ export const desfazerBaixa = (id: string, mes: string) =>
 export function salvarLancamento(l: Omit<Lancamento, 'id'> & { id?: string }): boolean {
   if (!ok(l.valor) || !l.categoria || !/^\d{4}-\d{2}-\d{2}$/.test(l.data) || l.data > hojeSP()) return false;
   atualizar((e) => {
-    const dados = { descricao: l.descricao.trim().slice(0, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, ...(l.forma ? { forma: l.forma.slice(0, 20) } : {}), ...(l.contaId ? { contaId: l.contaId } : {}) };
+    // forma e conta entram sempre: na edição, tirar "Pix" ou "Sem conta" precisa apagar o que estava salvo
+    const dados = { descricao: cortar(l.descricao, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, forma: l.forma ? cortar(l.forma, 20) : undefined, contaId: l.contaId || undefined };
     return l.id ? { ...e, lancamentos: e.lancamentos.map((x) => (x.id === l.id ? { ...x, ...dados } : x)) } : { ...e, lancamentos: [...e.lancamentos, { id: novoId('l'), ...dados }] };
   });
   return true;
@@ -89,7 +96,7 @@ export function salvarDivida(d: Omit<Divida, 'id' | 'pagamentos'> & { id?: strin
   if (!d.nome.trim() || !ok(d.saldo) || d.jurosMensal < 0 || d.parcelaMinima < 0) return false;
   atualizar((e) => {
     const dia = d.venceDia && Number.isInteger(d.venceDia) && d.venceDia >= 1 && d.venceDia <= 31 ? d.venceDia : undefined;
-    const dados = { nome: d.nome.trim().slice(0, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima), venceDia: dia, tipo: d.tipo, estimado: d.estimado ? true : undefined, parcelasRestantes: d.parcelasRestantes && d.parcelasRestantes > 0 ? Math.round(d.parcelasRestantes) : undefined };
+    const dados = { nome: cortar(d.nome, 60), saldo: arred(d.saldo), jurosMensal: Math.round(d.jurosMensal * 100) / 100, parcelaMinima: arred(d.parcelaMinima), venceDia: dia, tipo: d.tipo, estimado: d.estimado ? true : undefined, parcelasRestantes: d.parcelasRestantes && d.parcelasRestantes > 0 ? Math.round(d.parcelasRestantes) : undefined };
     return d.id ? { ...e, dividas: e.dividas.map((x) => (x.id === d.id ? { ...x, ...dados } : x)) } : { ...e, dividas: [...e.dividas, { id: novoId('dv'), pagamentos: [], cadastradaEm: hojeSP(), ...dados }] };
   });
   return true;
@@ -126,7 +133,7 @@ export const decidirDesejo = (id: string, status: 'comprou' | 'desistiu') => atu
 export function salvarAssinatura(a: Omit<Assinatura, 'id'> & { id?: string }): boolean {
   if (!a.nome.trim() || !ok(a.valor)) return false;
   atualizar((e) => {
-    const dados = { nome: a.nome.trim().slice(0, 60), valor: arred(a.valor), ativa: a.ativa, personalizada: a.personalizada, canceladaEm: a.canceladaEm, ...(a.uso ? { uso: a.uso, revisadaEm: a.revisadaEm } : {}) };
+    const dados = { nome: cortar(a.nome, 60), valor: arred(a.valor), ativa: a.ativa, personalizada: a.personalizada, canceladaEm: a.canceladaEm, ...(a.uso ? { uso: a.uso, revisadaEm: a.revisadaEm } : {}) };
     return a.id ? { ...e, assinaturas: e.assinaturas.map((x) => (x.id === a.id ? { ...x, ...dados } : x)) } : { ...e, assinaturas: [...e.assinaturas, { id: novoId('as'), ...dados }] };
   });
   return true;
@@ -331,7 +338,7 @@ export const voltarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c
 export function salvarReceita(r: Omit<Receita, 'id'> & { id?: string }): boolean {
   if (!ok(r.valor) || !/^\d{4}-\d{2}-\d{2}$/.test(r.data) || r.data > hojeSP()) return false;
   atualizar((e) => {
-    const dados = { descricao: r.descricao.trim().slice(0, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo, ...(r.contaId ? { contaId: r.contaId } : {}) };
+    const dados = { descricao: cortar(r.descricao, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo, contaId: r.contaId || undefined };
     return r.id ? { ...e, receitas: e.receitas.map((x) => (x.id === r.id ? { ...x, ...dados } : x)) } : { ...e, receitas: [...e.receitas, { id: novoId('r'), ...dados }] };
   });
   return true;
@@ -401,7 +408,7 @@ export function salvarTransferencia(t: Omit<Transferencia, 'id'> & { id?: string
   const ids = new Set(e.contas.map((c: ContaBancaria) => c.id));
   if (!ok(t.valor) || t.de === t.para || !ids.has(t.de) || !ids.has(t.para) || !/^\d{4}-\d{2}-\d{2}$/.test(t.data) || t.data > hojeSP()) return false;
   atualizar((x) => {
-    const dados = { data: t.data, valor: arred(t.valor), de: t.de, para: t.para, ...(t.descricao?.trim() ? { descricao: t.descricao.trim().slice(0, 80) } : {}) };
+    const dados = { data: t.data, valor: arred(t.valor), de: t.de, para: t.para, descricao: cortar(t.descricao ?? '', 80) || undefined };
     return t.id ? { ...x, transferencias: x.transferencias.map((y) => (y.id === t.id ? { ...y, ...dados } : y)) } : { ...x, transferencias: [...x.transferencias, { id: novoId('tr'), ...dados }] };
   });
   return true;

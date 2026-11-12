@@ -201,7 +201,7 @@ function PrimeiraVisao({ temDivida, temCartao, onIr }: { temDivida: boolean | nu
       <section className="cm-card" style={{ marginTop: 20 }} aria-label="WhatsApp">
         <span className="cm-eyebrow">Mais fácil ainda</span>
         <b style={{ display: 'block', font: '600 22px/1.2 var(--cm-serif)', margin: '6px 0' }}>Anote gastos pelo WhatsApp</b>
-        <p className="cm-mudo" style={{ margin: '0 0 12px' }}>Mande <b>gastei 35 no mercado</b> ou uma <b>foto do cupom</b>. Eu anoto e aparece aqui.</p>
+        <p className="cm-mudo" style={{ margin: '0 0 12px' }}>Mande <b>gastei 35 no mercado</b>. Eu anoto e aparece aqui.</p>
         <a className="gs-btn sec" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Conectar o WhatsApp</a>
       </section>
       
