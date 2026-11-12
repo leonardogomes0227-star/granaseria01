@@ -41,13 +41,19 @@ export function GradeFerramentas({ area, todas = false }: { area: Area; todas?: 
     const c = f.continuar?.(e, hoje);
     return <ToolTile key={f.id} icone={f.icone} titulo={f.titulo} resolve={f.resolve} status={f.st.texto} tom={f.st.tom} rota={f.rota} continuar={c ? `Continuar (passo ${c.passo} de ${c.total}): ${c.o}` : undefined} />;
   };
-  // nenhuma ferramenta fica escondida: o dono achou que tinham sumido (ex.: cartão). O plano só muda a ordem.
-  const minhas = grade.flatMap((g) => g.itens).sort((a, b) => Number(lib.has(b.id)) - Number(lib.has(a.id)));
+  // nenhuma ferramenta fica escondida: o dono achou que tinham sumido (ex.: cartão). O plano só muda a ordem, dentro de cada grupo.
+  const grupos = grade.map((g) => ({ grupo: g.grupo, itens: [...g.itens].sort((a, b) => Number(lib.has(b.id)) - Number(lib.has(a.id))) })).filter((g) => g.itens.length > 0);
+  const minhas = grupos.flatMap((g) => g.itens);
   const outras: typeof minhas = [];
   return (
     <div id="ferramentas" style={{ scrollMarginTop: 80 }}>
       {area !== 'perfil' && <h2 className="cm-h2">{todas ? TITULO_AREA[area] : `Ferramentas de ${TITULO_AREA[area]}`}</h2>}
-      {minhas.length ? <ToolGrid>{minhas.map(tile)}</ToolGrid> : (
+      {minhas.length ? grupos.map((g) => (
+        <div key={g.grupo} className="pn-bloco-grupo">
+          <h3 className="pn-grupo-titulo">{g.grupo}</h3>
+          <ToolGrid>{g.itens.map(tile)}</ToolGrid>
+        </div>
+      )) : (
         <div className="cm-card suave">
           <p style={{ margin: 0, fontSize: 15.5, lineHeight: 1.5 }}>{e.caminho.plano ? `${resumoDoPlano(e.caminho.plano)} ${NOME_AREA[area]} entra depois: quando chegar a hora, o Coach libera as ferramentas daqui.` : `Ainda não há ferramentas de ${NOME_AREA[area]} no seu plano.`}</p>
           <div className="gs-acoes"><Link to="/coach?plano=1" className="gs-btn sec pequeno">Mudar meu plano</Link></div>
