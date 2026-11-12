@@ -7,6 +7,20 @@ import { Landing } from '../gs/Landing';
 import { Porteiro } from '../gs/Porteiro';
 import { ErroGlobal } from '../gs/ErroGlobal';
 
+/** Enquanto o painel carrega: o mesmo desenho, sem números. */
+function PainelCarregando() {
+  return (
+    <div className="pn pn-skel" role="status" aria-label="Carregando o painel">
+      <span className="sk sk-titulo" />
+      <span className="sk sk-busca" />
+      <div className="pn-acoes">{[0, 1, 2, 3].map((i) => <span key={i} className="sk sk-acao" />)}</div>
+      <div className="pn-stats">{[0, 1, 2, 3].map((i) => <span key={i} className="sk sk-stat" />)}</div>
+      <span className="sk sk-hero" />
+      <span className="sr-only">Carregando…</span>
+    </div>
+  );
+}
+
 /* ---------- Início ---------- */
 // Logado: o dashboard do app (src/gs/Inicio.tsx). Ainda não: a página de entrada (src/gs/Landing.tsx).
 
@@ -26,7 +40,7 @@ export function HomePage({
   return (
     <ErroGlobal>
       <Porteiro>
-        <Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}><Caderno /></Suspense>
+        <Suspense fallback={<PainelCarregando />}><Caderno /></Suspense>
       </Porteiro>
     </ErroGlobal>
   );
