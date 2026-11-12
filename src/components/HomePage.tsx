@@ -1,9 +1,10 @@
 import { painelToken } from '../painel';
+import { useSession } from '../account';
 import { lazy, Suspense } from 'react';
 import { importarComRetry } from '../gs/importar';
 // a tela de quem está logado vem num pacote separado: a página de entrada abre mais rápido
 const Caderno = lazy(() => importarComRetry(() => import('../gs/Caderno')).then((m) => ({ default: m.Caderno })));
-import { Landing } from '../gs/Landing';
+const Landing = lazy(() => importarComRetry(() => import('../gs/Landing')).then((m) => ({ default: m.Landing })));
 import { Porteiro } from '../gs/Porteiro';
 import { ErroGlobal } from '../gs/ErroGlobal';
 
@@ -34,9 +35,11 @@ export function HomePage({
   onResume: () => void;
   onOpenTool?: unknown;
 }) {
-  const logged = Boolean(painelToken());
+  const session = useSession();
+  // o mesmo critério do LoginGate: link do WhatsApp ou sessão de e-mail
+  const logged = Boolean(painelToken() || session);
   const resume = savedProgress && savedProgress.step > 0 && savedProgress.step < 7 ? savedProgress.step : null;
-  if (!logged) return <Landing resume={resume} onStart={onStart} onResume={onResume} />;
+  if (!logged) return <Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}><Landing resume={resume} onStart={onStart} onResume={onResume} /></Suspense>;
   return (
     <ErroGlobal>
       <Porteiro>
