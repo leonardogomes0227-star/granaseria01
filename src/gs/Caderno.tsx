@@ -21,7 +21,7 @@ import { NOME_ASSISTENTE } from './assistenteLocal';
 import { LinhaDegraus, Medidor, MiniBarras, MiniLinha } from './graficosMini';
 import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
-import { ICONES } from './base';
+import { ICONES, useContagem } from './base';
 
 /* ---------- Início: o painel ---------- */
 // Saudação, o número do dia, o mês e as ferramentas que a pessoa mais usa — cada uma com a pergunta que responde.
@@ -122,10 +122,18 @@ export function Caderno() {
     return { total: ds.reduce((t, d) => t + d.saldo, 0), fim: sim.quita ? sim.dataFinal : null, pagoPct: original > 0 ? (1 - atual / original) * 100 : 0 };
   }, [e, mes]);
   const gastoMes = e.lancamentos.filter((l) => mesDe(l.data) === mes).reduce((t, l) => t + l.valor, 0);
+  const orcamento = Object.values(e.limites).reduce((t, n) => t + (typeof n === 'number' ? n : 0), 0);
+  const baseGasto = orcamento > 0 ? orcamento : e.config.renda;
+  const rotuloGasto = orcamento > 0 ? 'do orçamento' : 'da renda';
+  const pctGasto = baseGasto > 0 ? Math.min(100, Math.round((gastoMes / baseGasto) * 100)) : null;
   const guardado = guardadoNoMes(e, mes);
   const saude = useMemo(() => (e.config.renda > 0 ? saudeFinanceira(e, mes, hoje) : null), [e, mes, hoje]);
   const sequencia = useMemo(() => sequenciaDeDias(e, hoje), [e, hoje]);
   const sobra = disp.modo === 'incompleto' ? null : disp.livre;
+  const heroAlvo = sobra === null ? 0 : sobra > 0 ? disp.porDia : -sobra;
+  const heroContado = useContagem(heroAlvo, 780);
+  const faltaContada = useContagem(falta, 860);
+  const gastoContado = useContagem(gastoMes, 740);
   const semContas = e.gastosFixos.length === 0;
   const semDivida = e.dividas.length === 0;
   const mesNome = nomeMes(mes);
@@ -167,16 +175,7 @@ export function Caderno() {
   );
 
   return (
-    <div className="pn">
-      <header className="pn-cab">
-        <div className="pn-ola">
-          <h1>{nome ? `Olá, ${nome}!` : 'Olá!'}</h1>
-          <p>{mesNome.charAt(0).toLocaleUpperCase('pt-BR') + mesNome.slice(1)} · suas contas, dívidas e gastos em um lugar só</p>
-        </div>
-        <BarraPerguntar />
-        <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
-      </header>
-
+    <div className="pn pn-v2">
       <AvisoCopiaMaior />
 
       {configurando && proximoPasso >= 0 && (
@@ -193,6 +192,43 @@ export function Caderno() {
           </ol>
         </section>
       )}
+
+      <div className="pn-palco">
+      <header className="pn-cab">
+        <div className="pn-ola">
+          <h1>{nome ? `Olá, ${nome}!` : 'Olá!'}</h1>
+          <p>{mesNome.charAt(0).toLocaleUpperCase('pt-BR') + mesNome.slice(1)}</p>
+        </div>
+        <BarraPerguntar />
+        <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
+      </header>
+      <button type="button" className={`pn-hero${sobra !== null && sobra <= 0 ? ' apertado' : ''}`} onClick={() => (sobra === null ? setRenda(true) : setCalc(true))}>
+        <span>
+          <small>{sobra === null ? 'Para começar' : sobra > 0 ? 'Pode gastar hoje' : 'Falta para fechar o mês'}</small>
+          <b className={sobra === null ? 'frase' : ''}>{sobra === null ? 'Informar renda' : sobra > 0 ? m(brl(heroContado)) : m(brl0(heroContado))}</b>
+          <em>{sobra === null ? 'Leva 10 segundos' : 'Ver a conta'}</em>
+        </span>
+        {sobra !== null && <MiniLinha valores={seteDias} rotulo="Gasto dos últimos 7 dias" />}
+      </button>
+
+      <Secao titulo="Seus números" sub="Gasto, contas em aberto e o que você guardou neste mês.">
+        <div className="pn-stats">
+          <Link to="/lancamentos" className="pn-stat">
+            <span><small>Gasto no mês</small><b>{m(brl0(gastoContado))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : `${pctGasto}% ${rotuloGasto}`}</em></span>
+            <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
+            {pctGasto !== null && <span className={`pn-uso${pctGasto >= 80 ? ' alto' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctGasto} aria-label={`Gasto no mês, ${pctGasto}% ${rotuloGasto}`}><i style={{ width: `${pctGasto}%` }} /></span>}
+          </Link>
+          <Link to="/pagar" className="pn-stat">
+            <i aria-hidden="true"><Receipt size={18} /></i>
+            <span><small>Contas abertas</small><b>{semContas ? 'Nenhuma' : `${abertas.length} de ${contas.length}`}</b><em>{semContas ? 'Cadastre a primeira' : atrasadas ? 'Tem atraso' : 'Toque para ver'}</em></span>
+          </Link>
+          <Link to="/guardar" className="pn-stat">
+            <i aria-hidden="true" className="ouro"><PiggyBank size={18} /></i>
+            <span><small>Guardado</small><b>{m(brl0(guardado))}</b><em>Neste mês</em></span>
+          </Link>
+        </div>
+      </Secao>
+      </div>
 
       <nav className="pn-acoes" aria-label="Ações rápidas">
         {paraPagar && (
@@ -215,38 +251,13 @@ export function Caderno() {
         </Link>
       </nav>
 
-      <Secao titulo="Seus números" sub="O que você já gastou, o que ainda está aberto e quanto pode gastar hoje.">
-        <div className="pn-stats">
-          <button type="button" className="pn-stat destaque" onClick={() => (sobra === null ? setRenda(true) : setCalc(true))}>
-            <span>
-              <small>{sobra === null ? 'Para começar' : sobra > 0 ? 'Pode gastar hoje' : 'Falta para fechar o mês'}</small>
-              <b>{sobra === null ? 'Informar renda' : sobra > 0 ? m(brl(disp.porDia)) : m(brl0(-sobra))}</b>
-              <em>{sobra === null ? 'Leva 10 segundos' : 'Ver a conta'}</em>
-            </span>
-            {sobra !== null && <MiniLinha valores={seteDias} rotulo="" />}
-          </button>
-          <Link to="/lancamentos" className="pn-stat">
-            <span><small>Gasto no mês</small><b>{m(brl0(gastoMes))}</b><em>Últimos 7 dias</em></span>
-            <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
-          </Link>
-          <Link to="/pagar" className="pn-stat">
-            <i aria-hidden="true"><Receipt size={18} /></i>
-            <span><small>Contas abertas</small><b>{semContas ? 'Nenhuma' : `${abertas.length} de ${contas.length}`}</b><em>{semContas ? 'Cadastre a primeira' : atrasadas ? 'Tem atraso' : 'Toque para ver'}</em></span>
-          </Link>
-          <Link to="/guardar" className="pn-stat">
-            <i aria-hidden="true" className="ouro"><PiggyBank size={18} /></i>
-            <span><small>Guardado</small><b>{m(brl0(guardado))}</b><em>Neste mês</em></span>
-          </Link>
-        </div>
-      </Secao>
-
       <div className="pn-bloco">
         <section className="pn-card pn-mes" aria-label="Falta pagar este mês">
           <header>
             <h2>Falta pagar em {mesNome.split(' ')[0]}</h2>
             {status && <span className={`pn-chip ${status.tom}`}>{status.texto}</span>}
           </header>
-          <b className="pn-valor">{m(brl0(falta))}</b>
+          <b className="pn-valor">{m(brl0(faltaContada))}</b>
           {semContas ? (
             <>
               <p className="pn-sub">Cadastre aluguel, luz, internet. Eu mostro o que pagar primeiro e aviso antes de vencer.</p>

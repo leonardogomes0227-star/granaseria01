@@ -40,6 +40,51 @@ export const PerguntarSobre = ({ pergunta, rotulo = `Perguntar ao ${NOME_ASSISTE
 
 const primeiroNome = (n: string) => (n.trim().split(/\s+/)[0] ?? '');
 
+const DICAS = [
+  'Toque em mim para perguntar.',
+  'Eu olho os seus números antes de responder.',
+  'O que vence primeiro é o que eu olho antes.',
+];
+
+/** O mascote do assistente: passeia numa faixa livre, pisca, fala pouco e sai do caminho. */
+function Mascote({ inicio, onAbrir }: { inicio: boolean; onAbrir: () => void }) {
+  const [min, setMin] = useState(false);
+  const [dica, setDica] = useState<string | null>(null);
+  const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => {
+    if (!inicio || min || reduz) return;
+    const mostra = window.setTimeout(() => {
+      const orb = document.querySelector('.as-orb-btn');
+      if (!orb) return;
+      const o = orb.getBoundingClientRect();
+      const caixa = { l: Math.max(8, o.left - 160), t: o.top - 4, r: o.left - 4, b: o.bottom + 4 };
+      const cobre = [...document.querySelectorAll('.pn-acao, .gs-btn, .cm-abas')].some((el) => {
+        const x = el.getBoundingClientRect();
+        return x.width > 8 && !(caixa.r < x.left || caixa.l > x.right || caixa.b < x.top || caixa.t > x.bottom);
+      });
+      if (!cobre) setDica(DICAS[Math.floor(Date.now() / 8000) % DICAS.length]);
+    }, 900);
+    const esconde = window.setTimeout(() => setDica(null), 6800);
+    return () => { window.clearTimeout(mostra); window.clearTimeout(esconde); };
+  }, [inicio, min, reduz]);
+  return (
+    <div className={`as-mascote${min ? ' min' : ''}${inicio && !min && !reduz ? ' anda' : ''}${reduz ? ' parado' : ''}`}>
+      <div className="as-andar">
+        {dica && !min && (
+          <p className="as-dica" role="status">
+            {dica}
+            <button type="button" onClick={() => setDica(null)} aria-label="Fechar a dica">×</button>
+          </p>
+        )}
+        <button type="button" className="as-orb-btn" onClick={onAbrir} aria-label={`Perguntar ao ${NOME_ASSISTENTE}, seu assistente`}>
+          <Orbe tamanho={min ? 40 : 52} />
+        </button>
+        <button type="button" className="as-recolher" aria-pressed={min} aria-label={min ? `Mostrar o ${NOME_ASSISTENTE} passeando` : `Recolher o ${NOME_ASSISTENTE}`} onClick={() => { setMin((v) => !v); setDica(null); }}>{min ? '+' : '–'}</button>
+      </div>
+    </div>
+  );
+}
+
 export function Assistente() {
   const e = useEstado();
   const hoje = useHoje();
@@ -108,12 +153,13 @@ export function Assistente() {
   return (
     <>
       {!aberto && (
-        <button type="button" className="as-flutua" onClick={() => abrirAssistente()} aria-label={`Perguntar ao ${NOME_ASSISTENTE}, seu assistente`}>
-          {balao && <span className="as-balao">Sou o {NOME_ASSISTENTE}, seu assistente</span>}
-          <Orbe tamanho={46} />
-          <span className="as-rotulo">Perguntar</span>
-        </button>
+        <Mascote
+          inicio={pathname === '/' || pathname === '/inicio'}
+          onAbrir={() => abrirAssistente()}
+        />
       )}
+      {/* o balão antigo de apresentação continua disponível para quem já o viu nesta visita */}
+      {balao && !aberto && <span className="sr-only">Sou o {NOME_ASSISTENTE}, seu assistente</span>}
       {aberto && <div className="as-fundo" onClick={() => setAberto(false)} aria-hidden="true" />}
       <aside className={`as-painel${aberto ? ' aberto' : ''}`} role="dialog" aria-modal="false" aria-label={`${NOME_ASSISTENTE}, seu assistente`} aria-hidden={!aberto}>
         <header>

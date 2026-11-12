@@ -80,7 +80,7 @@ export function Mais() {
   // só no aparelho em que o dono já entrou no painel (a senha continua sendo pedida lá)
   const dono = (() => { try { return localStorage.getItem('gs-dono') === '1'; } catch { return false; } })();
   return (
-    <>
+    <div className="ms-luxo">
       <h1 className="gs-titulo">Mais</h1>
       <p className="gs-sub">O nome é a ferramenta. Embaixo, a pergunta que ela responde e como você está agora.</p>
 
@@ -99,6 +99,7 @@ export function Mais() {
         ))}
       </div>
 
+      <div key={filtro} className="ms-troca">
       {filtro === 'tudo' && urgentes.length > 0 && (
         <section className="ms-grupo ms-urgente" aria-label="Precisa de você">
           <h2>Precisa de você</h2>
@@ -149,7 +150,8 @@ export function Mais() {
           </div>
         </section>
       ))}
-    </>
+      </div>
+    </div>
   );
 }
 
