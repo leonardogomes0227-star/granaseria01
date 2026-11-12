@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Folha, CampoDinheiro } from './ui';
+import { useUmaVez } from './umaVez';
 import { darBaixa, desfazerBaixa } from './acoes';
 import { toast } from '../components/ui/Toast';
 import { brl, mesCurto } from './datas';
@@ -9,7 +10,8 @@ import type { GastoFixo } from './tipos';
 
 export function BaixaSheet({ gasto, mes, onFechar }: { gasto: GastoFixo | null; mes: string; onFechar: () => void }) {
   const [valor, setValor] = useState(0);
-  useEffect(() => setValor(gasto ? gasto.pagamentos[mes]?.valorPago ?? gasto.valor : 0), [gasto, mes]);
+  const envio = useUmaVez();
+  useEffect(() => { envio.soltar(); setValor(gasto ? gasto.pagamentos[mes]?.valorPago ?? gasto.valor : 0); }, [gasto, mes, envio]);
   return (
     <Folha aberta={Boolean(gasto)} onFechar={onFechar} titulo={gasto ? `Pagar ${gasto.nome}` : ''}>
       <p className="gs-sub">Conta de {mesCurto(mes)}. Se pagou outro valor, é só ajustar.</p>
@@ -21,10 +23,13 @@ export function BaixaSheet({ gasto, mes, onFechar }: { gasto: GastoFixo | null; 
           className="gs-btn"
           disabled={!(valor > 0)}
           onClick={() => {
-            if (!gasto || !darBaixa(gasto.id, mes, valor)) return;
-            const id = gasto.id;
-            toast(`${gasto.nome} paga: ${brl(valor)}`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerBaixa(id, mes) } });
-            onFechar();
+            envio.tentar(() => {
+              if (!gasto || !darBaixa(gasto.id, mes, valor)) return false;
+              const id = gasto.id;
+              toast(`${gasto.nome} paga: ${brl(valor)}`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerBaixa(id, mes) } });
+              onFechar();
+              return true;
+            });
           }}
         >
           Confirmar pagamento

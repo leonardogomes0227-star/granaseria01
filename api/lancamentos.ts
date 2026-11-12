@@ -56,7 +56,7 @@ export async function GET(request: Request): Promise<Response> {
   const phone = await auth(request);
   if (!phone) return json({ error: 'Entre pelo link do WhatsApp para ver seus lançamentos.' }, 401);
   const mes = new URL(request.url).searchParams.get('mes') ?? currentMonth();
-  if (!isMonth(mes)) return json({ error: 'mês inválido' }, 400);
+  if (!isMonth(mes)) return json({ error: 'Mês inválido.' }, 400);
   if (mes > currentMonth()) return json({ error: 'Esse mês ainda não chegou.' }, 400);
   try {
     const entries = await listEntriesBetween(phone, monthStart(mes), monthStart(addMonths(mes, 1)));
@@ -71,14 +71,14 @@ export async function POST(request: Request): Promise<Response> {
   const phone = await auth(request);
   if (!phone) return json({ error: 'Entre pelo link do WhatsApp para anotar.' }, 401);
   const b = await readBody(request);
-  if (!b) return json({ error: 'pedido inválido' }, 400);
+  if (!b) return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   const kind = kindOf(b.kind);
-  if (!kind) return json({ error: 'tipo inválido' }, 400);
+  if (!kind) return json({ error: 'Tipo de lançamento inválido.' }, 400);
   try {
     // desfazer um apagar
     if (b.action === 'restaurar') {
       const id = Number(b.id);
-      if (!Number.isInteger(id) || id <= 0) return json({ error: 'id inválido' }, 400);
+      if (!Number.isInteger(id) || id <= 0) return json({ error: 'Não encontrei esse lançamento.' }, 400);
       const ok = await restoreEntry(phone, kind, id);
       return ok ? json({ ok: true }) : json({ error: 'Não dá pra desfazer este (rode supabase/fundacao.sql).' }, 409);
     }
@@ -110,7 +110,7 @@ export async function PATCH(request: Request): Promise<Response> {
   const b = await readBody(request);
   const kind = kindOf(b?.kind);
   const id = Number(b?.id);
-  if (!b || !kind || !Number.isInteger(id) || id <= 0) return json({ error: 'pedido inválido' }, 400);
+  if (!b || !kind || !Number.isInteger(id) || id <= 0) return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   const patch: { amount?: number; category?: string; description?: string; createdAt?: string } = {};
   if (b.amount !== undefined) {
     const a = checkAmount(b.amount);
@@ -140,7 +140,7 @@ export async function DELETE(request: Request): Promise<Response> {
   const b = await readBody(request);
   const kind = kindOf(b?.kind);
   const id = Number(b?.id);
-  if (!kind || !Number.isInteger(id) || id <= 0) return json({ error: 'pedido inválido' }, 400);
+  if (!kind || !Number.isInteger(id) || id <= 0) return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   try {
     const { soft } = await deleteEntry(phone, kind, id);
     return json({ ok: true, soft });

@@ -26,7 +26,7 @@ const select = async <T>(table: string, phone: string, extra: Record<string, str
 
 export async function GET(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return json({ error: 'link inválido ou expirado' }, 401);
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   try {
     const [perfil, chats, plano, aportes] = await Promise.all([
       select<{ coach: string }>('coach_perfil', phone),
@@ -42,7 +42,7 @@ export async function GET(request: Request): Promise<Response> {
     });
   } catch (err) {
     console.error('Coach: erro ao ler', err);
-    return json({ error: 'tabelas do coach indisponíveis' }, 503);
+    return json({ error: 'Não consegui abrir o coach agora. Tente de novo.' }, 503);
   }
 }
 
@@ -50,35 +50,35 @@ type Body = { action?: string; coach?: string; script?: string; history?: unknow
 
 export async function POST(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return json({ error: 'link inválido ou expirado' }, 401);
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   const raw = await request.text();
-  if (raw.length > MAX_BYTES) return json({ error: 'grande demais' }, 413);
+  if (raw.length > MAX_BYTES) return json({ error: 'Isso ficou grande demais.' }, 413);
   let b: Body;
   try {
     b = JSON.parse(raw) as Body;
   } catch {
-    return json({ error: 'pedido inválido' }, 400);
+    return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   }
   const now = new Date().toISOString();
   try {
     if (b.action === 'coach') {
-      if (!b.coach || !COACHES.includes(b.coach)) return json({ error: 'coach inválido' }, 400);
+      if (!b.coach || !COACHES.includes(b.coach)) return json({ error: 'Coach inválido.' }, 400);
       await upsert('coach_perfil', 'phone', { phone, coach: b.coach, updated_at: now });
     } else if (b.action === 'chat') {
-      if (!b.script || !/^[a-z]+(:\d{4}-\d{2})?$/.test(b.script) || !Array.isArray(b.history)) return json({ error: 'conversa inválida' }, 400);
+      if (!b.script || !/^[a-z]+(:\d{4}-\d{2})?$/.test(b.script) || !Array.isArray(b.history)) return json({ error: 'Conversa inválida.' }, 400);
       await upsert('coach_chat', 'phone,script', { phone, script: b.script, history: b.history, updated_at: now });
     } else if (b.action === 'plano') {
-      if (typeof b.plano !== 'object' || !b.plano) return json({ error: 'plano inválido' }, 400);
+      if (typeof b.plano !== 'object' || !b.plano) return json({ error: 'Plano inválido.' }, 400);
       await upsert('coach_plano', 'phone', { phone, respostas: b.respostas ?? {}, plano: b.plano, updated_at: now });
     } else if (b.action === 'aporte') {
       const valor = Number(b.valor);
-      if (!isMonth(b.mes) || !Number.isFinite(valor) || valor < 0 || valor > 10_000_000) return json({ error: 'aporte inválido' }, 400);
-      if (b.mes > currentMonth()) return json({ error: 'não dá pra registrar mês que ainda não chegou' }, 400);
+      if (!isMonth(b.mes) || !Number.isFinite(valor) || valor < 0 || valor > 10_000_000) return json({ error: 'Aporte inválido.' }, 400);
+      if (b.mes > currentMonth()) return json({ error: 'Não dá para registrar um mês que ainda não chegou.' }, 400);
       await upsert('coach_aportes', 'phone,mes', { phone, mes: b.mes, valor: Math.round(valor * 100) / 100, origem: 'site' });
-    } else return json({ error: 'ação desconhecida' }, 400);
+    } else return json({ error: 'Não conheço essa ação.' }, 400);
     return json({ ok: true });
   } catch (err) {
     console.error('Coach: erro ao gravar', err);
-    return json({ error: 'não consegui salvar agora' }, 502);
+    return json({ error: 'Não consegui salvar agora. Tente de novo.' }, 502);
   }
 }

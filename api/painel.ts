@@ -37,7 +37,7 @@ const masked = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phon
 
 export async function GET(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
   // ?copias=1: as cópias de segurança guardadas, para a tela "Recuperar dados" (Meus dados)
   if (new URL(request.url).searchParams.get('copias') === '1') return Response.json({ copias: listarCopias((await loadState(phone)).state) });
   const now = new Date();
@@ -65,14 +65,14 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function PUT(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
   const raw = await request.text();
-  if (raw.length > MAX_BYTES) return Response.json({ error: 'grande demais' }, { status: 413 });
+  if (raw.length > MAX_BYTES) return Response.json({ error: 'Isso ficou grande demais.' }, { status: 413 });
   let body: { state?: Record<string, unknown>; permitirReducao?: unknown };
   try {
     body = JSON.parse(raw);
   } catch {
-    return Response.json({ error: 'JSON inválido' }, { status: 400 });
+    return Response.json({ error: 'Não entendi o pedido. Tente de novo.' }, { status: 400 });
   }
   const { state, userId } = await loadState(phone);
   // só as chaves do site, só texto; o resto do perfil (coisas do bot) fica como está
@@ -98,12 +98,12 @@ export async function PUT(request: Request): Promise<Response> {
  */
 export async function POST(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
   let body: { event?: unknown; feedback?: { tool?: unknown; kind?: unknown; note?: unknown } };
   try {
     body = JSON.parse((await request.text()).slice(0, 4000));
   } catch {
-    return Response.json({ error: 'JSON inválido' }, { status: 400 });
+    return Response.json({ error: 'Não entendi o pedido. Tente de novo.' }, { status: 400 });
   }
   const safe = (v: unknown) => (typeof v === 'string' && /^[a-z0-9:_-]{1,48}$/.test(v) ? v : null);
   const event = safe(body.event);
@@ -120,7 +120,7 @@ export async function POST(request: Request): Promise<Response> {
 /** "Limpar tudo" (?manter=1) e "Apagar conta e desconectar" do site (Meus dados): remove a cópia guardada pelo número (LGPD) e esvazia o estado da conta vinculada, se houver. */
 export async function DELETE(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'link inválido ou expirado' }, { status: 401 });
+  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
   try {
     const user = accountsConfigured() ? await findUserByPhone(phone) : null;
     if (user) await saveState(user.user_id, {});
@@ -129,7 +129,7 @@ export async function DELETE(request: Request): Promise<Response> {
     else await eraseWhatsAppData(phone);
   } catch (err) {
     console.error('painel: não consegui apagar', err);
-    return Response.json({ error: 'não consegui apagar agora' }, { status: 502 });
+    return Response.json({ error: 'Não consegui apagar agora. Tente de novo.' }, { status: 502 });
   }
   return new Response(null, { status: 204 });
 }

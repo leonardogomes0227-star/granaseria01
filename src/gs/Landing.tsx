@@ -152,7 +152,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         <div className="lp-passos" style={{ marginTop: 14 }}>
           {[
             ['Diga quanto você ganha', 'É só um número. Leva 1 minuto.'],
-            ['Anote o que entra e o que sai', 'No app ou pelo WhatsApp, do seu jeito: “mercado 80 no pix”. Por texto, áudio ou foto do cupom.'],
+            ['Anote o que entra e o que sai', 'No app ou pelo WhatsApp, do seu jeito: “mercado 80 no pix”.'],
             ['Siga o que o app mostra', 'Quanto está livre, o que vence e o próximo passo. Uma coisa de cada vez.'],
           ].map(([t, x], i) => <div className="lp-passo" key={t}><em>{i + 1}</em><div><b>{t}</b><span>{x}</span></div></div>)}
         </div>
