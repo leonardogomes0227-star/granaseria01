@@ -6,6 +6,7 @@ import { Assistente } from '../gs/Assistente';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
+import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
@@ -121,7 +122,9 @@ function CascaPublica({ children }: { children: ReactNode }) {
 
 export function AppShell({ children }: { children: ReactNode; wide?: boolean }) {
   const app = useVisualDoApp();
-  return app && Boolean(painelToken()) ? <Casca>{children}</Casca> : <CascaPublica>{children}</CascaPublica>;
+  const session = useSession();
+  // e-mail (Supabase) entra no app do mesmo jeito que o link do WhatsApp
+  return app && Boolean(painelToken() || session) ? <Casca>{children}</Casca> : <CascaPublica>{children}</CascaPublica>;
 }
 
 /** Título de cada página: curto, com uma linha embaixo se precisar. */

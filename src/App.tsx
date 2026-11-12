@@ -1,7 +1,9 @@
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { importarComRetry } from './gs/importar';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
-import { PrivacyPage, TermsPage, NotFoundPage } from './components/Pages';
+const PrivacyPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.TermsPage })));
+const NotFoundPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.NotFoundPage })));
 import { HomePage } from './components/HomePage';
 import { AppShell } from './components/AppShell';
 import { Toaster } from './components/ui/Toast';
@@ -11,9 +13,9 @@ import { INITIAL_DATA, WizardData } from './types';
 import { track, trackPageview } from './analytics';
 import { useSession } from './account';
 import { startSync } from './sync';
-import { AccountPage } from './components/Account';
-import { AdminPage } from './components/AdminPage';
-import { MeuMes } from './gs/MeuMes';
+const AccountPage = lazy(() => importarComRetry(() => import('./components/Account')).then((m) => ({ default: m.AccountPage })));
+const AdminPage = lazy(() => importarComRetry(() => import('./components/AdminPage')).then((m) => ({ default: m.AdminPage })));
+const MeuMes = lazy(() => importarComRetry(() => import('./gs/MeuMes')).then((m) => ({ default: m.MeuMes })));
 const Dividas = lazy(() => importarComRetry(() => import('./gs/Dividas')).then((m) => ({ default: m.Dividas })));
 const Atrasos = lazy(() => importarComRetry(() => import('./gs/Atrasos')).then((m) => ({ default: m.Atrasos })));
 const PossoComprar = lazy(() => importarComRetry(() => import('./gs/PossoComprar')).then((m) => ({ default: m.PossoComprar })));
@@ -33,7 +35,7 @@ const Recuperacao = lazy(() => importarComRetry(() => import('./gs/Recuperacao')
 const Cortar = lazy(() => importarComRetry(() => import('./gs/Cortar')).then((m) => ({ default: m.Cortar })));
 const Investir = lazy(() => importarComRetry(() => import('./gs/investir/Investir')).then((m) => ({ default: m.Investir })));
 import { MeusDados } from './gs/MeusDados';
-import { Mais } from './gs/Mais';
+const Mais = lazy(() => importarComRetry(() => import('./gs/Mais')).then((m) => ({ default: m.Mais })));
 const PassoDoDiagnostico = lazy(() => importarComRetry(() => import('./components/PassoDoDiagnostico')).then((m) => ({ default: m.PassoDoDiagnostico })));
 const TelaCaminho = lazy(() => importarComRetry(() => import('./gs/TelaCaminho')).then((m) => ({ default: m.TelaCaminho })));
 const FerramentaAntiga = lazy(() => importarComRetry(() => import('./components/FerramentaAntiga')).then((m) => ({ default: m.FerramentaAntiga })));
@@ -45,13 +47,14 @@ const TodasFerramentas = lazy(() => importarComRetry(() => import('./gs/Areas'))
 import { RespostaFerramenta } from './gs/RespostaFerramenta';
 import { RESPOSTA_DO_SLUG } from './gs/respostas';
 const DevUI = lazy(() => importarComRetry(() => import('./gs/DevUI')).then((m) => ({ default: m.DevUI })));
-import { Sobre } from './gs/Sobre';
-import { Planos } from './gs/Planos';
+const Sobre = lazy(() => importarComRetry(() => import('./gs/Sobre')).then((m) => ({ default: m.Sobre })));
+const Planos = lazy(() => importarComRetry(() => import('./gs/Planos')).then((m) => ({ default: m.Planos })));
 import { Porteiro } from './gs/Porteiro';
 import { ErroGlobal } from './gs/ErroGlobal';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
-import { GuidesIndex, GuidePage } from './components/Guides';
+const GuidesIndex = lazy(() => importarComRetry(() => import('./components/Guides')).then((m) => ({ default: m.GuidesIndex })));
+const GuidePage = lazy(() => importarComRetry(() => import('./components/Guides')).then((m) => ({ default: m.GuidePage })));
 import { getGuide } from './guides';
 import { PLAN_KEYS, RESET_ID, RESET_KEY } from './reset';
 
@@ -292,21 +295,21 @@ function App() {
           path="/ferramentas/:slug"
           element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
         />
-        <Route path="/politica-de-privacidade" element={<Titled title="Política de privacidade"><AppShell><PrivacyPage /></AppShell></Titled>} />
-        <Route path="/termos-de-uso" element={<Titled title="Termos de uso"><AppShell><TermsPage /></AppShell></Titled>} />
-        <Route path="/guias" element={<Titled title="Guias"><AppShell><GuidesIndex /></AppShell></Titled>} />
+        <Route path="/politica-de-privacidade" element={<Titled title="Política de privacidade"><AppShell><Suspense fallback={null}><PrivacyPage /></Suspense></AppShell></Titled>} />
+        <Route path="/termos-de-uso" element={<Titled title="Termos de uso"><AppShell><Suspense fallback={null}><TermsPage /></Suspense></AppShell></Titled>} />
+        <Route path="/guias" element={<Titled title="Guias"><AppShell><Suspense fallback={null}><GuidesIndex /></Suspense></AppShell></Titled>} />
         <Route path="/guias/:slug" element={<GuideRoute onStart={startWizard} />} />
-        <Route path="/conta" element={<Titled title="Minha conta"><AppShell><AccountPage session={session} /></AppShell></Titled>} />
+        <Route path="/conta" element={<Titled title="Minha conta"><AppShell><Suspense fallback={null}><AccountPage session={session} /></Suspense></AppShell></Titled>} />
         <Route
           path="/admin"
           element={
             <Titled title="Painel">
               <AppBar onHome={goHome} />
-              <AdminPage />
+              <Suspense fallback={null}><AdminPage /></Suspense>
             </Titled>
           }
         />
-        <Route path="*" element={<Titled title="Página não encontrada"><AppShell><NotFoundPage /></AppShell></Titled>} />
+        <Route path="*" element={<Titled title="Página não encontrada"><AppShell><Suspense fallback={null}><NotFoundPage /></Suspense></AppShell></Titled>} />
       </Routes>
       <Toaster />
     </>
@@ -405,7 +408,7 @@ function GuideRoute({ onStart }: { onStart: () => void }) {
   const { slug } = useParams();
   const guide = getGuide(slug);
   useTitle(guide ? guide.title : 'Página não encontrada');
-  return <AppShell>{guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}</AppShell>;
+  return <AppShell><Suspense fallback={null}>{guide ? <GuidePage guide={guide} onStart={onStart} /> : <NotFoundPage />}</Suspense></AppShell>;
 }
 
 /** "Planejamento" virou as áreas: /plano#metas abre as metas em Guardar; o resto abre a lista de todas as ferramentas. */
@@ -451,7 +454,7 @@ function ToolRoute({
   if (!tool) {
     return (
       <AppShell>
-        <NotFoundPage />
+        <Suspense fallback={null}><NotFoundPage /></Suspense>
       </AppShell>
     );
   }
