@@ -21,7 +21,7 @@ import { NOME_ASSISTENTE } from './assistenteLocal';
 import { LinhaDegraus, Medidor, MiniBarras, MiniLinha } from './graficosMini';
 import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
-import { ICONES } from './base';
+import { ICONES, useContagem } from './base';
 
 /* ---------- Início: o painel ---------- */
 // Saudação, o número do dia, o mês e as ferramentas que a pessoa mais usa — cada uma com a pergunta que responde.
@@ -130,6 +130,10 @@ export function Caderno() {
   const saude = useMemo(() => (e.config.renda > 0 ? saudeFinanceira(e, mes, hoje) : null), [e, mes, hoje]);
   const sequencia = useMemo(() => sequenciaDeDias(e, hoje), [e, hoje]);
   const sobra = disp.modo === 'incompleto' ? null : disp.livre;
+  const heroAlvo = sobra === null ? 0 : sobra > 0 ? disp.porDia : -sobra;
+  const heroContado = useContagem(heroAlvo, 780);
+  const faltaContada = useContagem(falta, 860);
+  const gastoContado = useContagem(gastoMes, 740);
   const semContas = e.gastosFixos.length === 0;
   const semDivida = e.dividas.length === 0;
   const mesNome = nomeMes(mes);
@@ -201,7 +205,7 @@ export function Caderno() {
       <button type="button" className={`pn-hero${sobra !== null && sobra <= 0 ? ' apertado' : ''}`} onClick={() => (sobra === null ? setRenda(true) : setCalc(true))}>
         <span>
           <small>{sobra === null ? 'Para começar' : sobra > 0 ? 'Pode gastar hoje' : 'Falta para fechar o mês'}</small>
-          <b className={sobra === null ? 'frase' : ''}>{sobra === null ? 'Informar renda' : sobra > 0 ? m(brl(disp.porDia)) : m(brl0(-sobra))}</b>
+          <b className={sobra === null ? 'frase' : ''}>{sobra === null ? 'Informar renda' : sobra > 0 ? m(brl(heroContado)) : m(brl0(heroContado))}</b>
           <em>{sobra === null ? 'Leva 10 segundos' : 'Ver a conta'}</em>
         </span>
         {sobra !== null && <MiniLinha valores={seteDias} rotulo="Gasto dos últimos 7 dias" />}
@@ -210,7 +214,7 @@ export function Caderno() {
       <Secao titulo="Seus números" sub="Gasto, contas em aberto e o que você guardou neste mês.">
         <div className="pn-stats">
           <Link to="/lancamentos" className="pn-stat">
-            <span><small>Gasto no mês</small><b>{m(brl0(gastoMes))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : `${pctGasto}% ${rotuloGasto}`}</em></span>
+            <span><small>Gasto no mês</small><b>{m(brl0(gastoContado))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : `${pctGasto}% ${rotuloGasto}`}</em></span>
             <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
             {pctGasto !== null && <span className={`pn-uso${pctGasto >= 80 ? ' alto' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctGasto} aria-label={`Gasto no mês, ${pctGasto}% ${rotuloGasto}`}><i style={{ width: `${pctGasto}%` }} /></span>}
           </Link>
@@ -253,7 +257,7 @@ export function Caderno() {
             <h2>Falta pagar em {mesNome.split(' ')[0]}</h2>
             {status && <span className={`pn-chip ${status.tom}`}>{status.texto}</span>}
           </header>
-          <b className="pn-valor">{m(brl0(falta))}</b>
+          <b className="pn-valor">{m(brl0(faltaContada))}</b>
           {semContas ? (
             <>
               <p className="pn-sub">Cadastre aluguel, luz, internet. Eu mostro o que pagar primeiro e aviso antes de vencer.</p>

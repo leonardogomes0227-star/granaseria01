@@ -99,6 +99,7 @@ export function Mais() {
         ))}
       </div>
 
+      <div key={filtro} className="ms-troca">
       {filtro === 'tudo' && urgentes.length > 0 && (
         <section className="ms-grupo ms-urgente" aria-label="Precisa de você">
           <h2>Precisa de você</h2>
@@ -149,6 +150,7 @@ export function Mais() {
           </div>
         </section>
       ))}
+      </div>
     </div>
   );
 }

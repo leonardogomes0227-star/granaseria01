@@ -1,0 +1,175 @@
+/* ==========================================================================
+   Sistema do app logado: a mesma escala em todas as telas.
+   Tipografia, espaço, cartão, botão e foco. Movimento curto e discreto.
+   ========================================================================== */
+
+html.gs-app .gs-app2 {
+  --sis-t1: 12px;
+  --sis-t2: 14px;
+  --sis-t3: 16px;
+  --sis-t4: 20px;
+  --sis-t5: 28px;
+  --sis-t6: clamp(32px, 8vw, 40px);
+  --sis-e1: 8px;
+  --sis-e2: 12px;
+  --sis-e3: 16px;
+  --sis-e4: 24px;
+  --sis-r1: 14px;
+  --sis-r2: 20px;
+  --sis-r3: 28px;
+  --sis-sombra: 0 1px 2px rgba(22, 16, 8, .05), 0 16px 32px -22px rgba(22, 16, 8, .38);
+  --sis-foco: 0 0 0 3px rgba(201, 162, 76, .55);
+  --sis-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+html.gs-app .gs-app2 .gs-principal > * {
+  animation: sis-sobe .36s var(--sis-ease) both;
+}
+@keyframes sis-sobe { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+html.gs-app .gs-app2 .gs-titulo {
+  font-size: var(--sis-t6) !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.05 !important;
+}
+html.gs-app .gs-app2 .gs-sub,
+html.gs-app .gs-app2 .gs-mudo { font-size: var(--sis-t2); line-height: 1.45; }
+html.gs-app .gs-app2 .gs-card,
+html.gs-app .gs-app2 .cm-card,
+html.gs-app .gs-app2 .dv-card {
+  border-radius: var(--sis-r3);
+  box-shadow: var(--sis-sombra);
+}
+html.gs-app .gs-app2 .gs-btn {
+  border-radius: var(--sis-r1);
+  min-height: 48px;
+  transition: transform .16s var(--sis-ease), box-shadow .16s var(--sis-ease), background .16s;
+}
+html.gs-app .gs-app2 .gs-btn:active { transform: scale(.98); }
+html.gs-app .gs-app2 .gs-btn:focus-visible,
+html.gs-app .gs-app2 .cm-seg button:focus-visible,
+html.gs-app .gs-app2 .ms-filtros button:focus-visible,
+html.gs-app .gs-app2 input:focus-visible {
+  outline: none;
+  box-shadow: var(--sis-foco);
+}
+html.gs-app .gs-app2 input,
+html.gs-app .gs-app2 select,
+html.gs-app .gs-app2 textarea {
+  border-radius: var(--sis-r1);
+  transition: border-color .16s, box-shadow .16s;
+}
+html.gs-app .gs-app2 .cm-seg button,
+html.gs-app .gs-app2 .ms-filtros button { transition: background .18s var(--sis-ease), color .18s, transform .16s; }
+html.gs-app .gs-app2 .ms-troca { animation: sis-sobe .28s var(--sis-ease) both; }
+html.gs-app .pn.pn-v2 .pn-acoes { margin-bottom: 28px; }
+html.gs-app .pn.pn-v2 .pn-mes > header { padding-right: 76px; }
+html.gs-app .gs-app2 .pn-uso > i,
+html.gs-app .gs-app2 .pn-barra > i,
+html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
+
+/* ---------- mascote: canto direito, acima da barra, sem cruzar os botões ---------- */
+.as-mascote {
+  position: fixed;
+  z-index: 38;
+  right: 10px;
+  left: auto;
+  width: 64px;
+  bottom: calc(78px + env(safe-area-inset-bottom));
+  height: 64px;
+  pointer-events: none;
+}
+.as-andar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: max-content;
+  pointer-events: none;
+}
+.as-mascote.anda .as-andar { animation: as-boia 4.8s ease-in-out infinite; }
+@keyframes as-boia {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-10px, -7px, 0); }
+}
+.as-orb-btn,
+.as-recolher,
+.as-dica,
+.as-dica button { pointer-events: auto; }
+.as-orb-btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: transform .16s var(--sis-ease, ease);
+}
+.as-orb-btn:active { transform: scale(.92); }
+.as-orb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(230, 199, 122, .7); border-radius: 50%; }
+.as-recolher {
+  position: absolute;
+  right: 36px;
+  bottom: 36px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: #1B1915;
+  color: #F8F1E2;
+  font: 700 14px/1 var(--cm-sans, sans-serif);
+  cursor: pointer;
+  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, .45);
+}
+.as-recolher:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(230, 199, 122, .7); }
+.as-dica {
+  position: absolute;
+  right: 62px;
+  bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: max-content;
+  max-width: 148px;
+  margin: 0;
+  padding: 10px 8px 10px 12px;
+  border-radius: 16px 16px 16px 6px;
+  background: #fff;
+  color: #1B1915;
+  font: 600 13px/1.35 var(--cm-sans, sans-serif);
+  box-shadow: 0 14px 28px -16px rgba(20, 14, 4, .45);
+  animation: sis-sobe .28s ease both;
+}
+.as-dica button {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #F3EEE4;
+  color: #1B1915;
+  cursor: pointer;
+  font: 700 16px/1 sans-serif;
+}
+.as-mascote.min { left: auto; width: 88px; height: 64px; }
+.as-mascote.min .as-andar,
+.as-mascote.parado .as-andar { animation: none; }
+.as-mascote.min .as-dica { display: none; }
+@media (min-width: 1000px) {
+  .as-mascote { right: 28px; bottom: 24px; }
+}
+html.gs-app[data-tema="escuro"] .as-dica { background: #F6F1E6; color: #1B1915; }
+html.gs-app[data-tema="escuro"] .as-recolher { background: #F6F1E6; color: #1B1915; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.gs-app .gs-app2 .gs-principal > *,
+  html.gs-app .gs-app2 .ms-troca,
+  .as-dica,
+  .as-mascote.anda .as-andar { animation: none !important; }
+  html.gs-app .gs-app2 .gs-btn,
+  html.gs-app .gs-app2 .pn-uso > i,
+  html.gs-app .gs-app2 .pn-barra > i { transition: none; }
+}
