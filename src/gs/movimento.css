@@ -120,14 +120,40 @@ html.gs-app .cm-abas a:active { transform: scale(.975); }
   z-index: 46;
   transition: transform .72s cubic-bezier(.22, .85, .28, 1);
 }
-.as-mascote .as-orbe { animation: gs-respira 3.6s ease-in-out infinite; }
-.as-mascote .as-orbe i { animation: gs-olhar 6.2s ease-in-out infinite; }
+.as-mascote .as-pernas, .as-mascote .as-boca { display: none !important; }
+.as-mascote .as-orbe { animation: gs-respira 3.6s ease-in-out infinite; overflow: hidden; }
+.as-mascote .as-orbe::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 252, 240, .7) 50%, transparent 62%);
+  transform: translateX(-70%);
+  animation: orbe-brilho 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.as-mascote .as-orbe i { animation: gs-olhar 6.2s ease-in-out infinite; z-index: 1; }
 .as-mascote .as-orbe i:last-child { animation-delay: .08s; }
 .as-figura.andando .as-orb-btn { animation: none; }
-.as-mascote.andando .as-orbe { animation: gs-passo .48s cubic-bezier(.37, 0, .2, 1) infinite; }
-.as-figura.andando .as-pernas i { animation: gs-perna .48s cubic-bezier(.45, 0, .55, 1) infinite; }
-.as-mascote.festa .as-orbe,
-.as-mascote.meta .as-orbe { animation: gs-festa .55s cubic-bezier(.22, 1, .36, 1) 3; }
+.as-mascote.andando .as-orbe { animation: orbe-passo .46s cubic-bezier(.45, 0, .2, 1) infinite; }
+.as-mascote.festa .as-orbe, .as-mascote.meta .as-orbe { animation: orbe-festa .5s cubic-bezier(.22, 1, .36, 1) 3; }
+.as-mascote.preocupado:not(.andando) .as-orbe, .as-mascote.tom-perigo:not(.andando) .as-orbe { animation: orbe-balanca 1.05s ease-in-out infinite; }
+.as-mascote.tom-perigo .as-orbe { box-shadow: inset 0 -6px 12px rgba(90, 30, 20, .45), inset 0 3px 6px rgba(255, 255, 255, .7), 0 0 0 8px rgba(224, 122, 104, .28), 0 0 22px rgba(224, 122, 104, .55); }
+.as-mascote.tom-aviso .as-orbe { box-shadow: inset 0 -6px 12px rgba(90, 58, 6, .45), inset 0 3px 6px rgba(255, 255, 255, .7), 0 0 0 8px rgba(230, 199, 122, .32), 0 0 22px rgba(230, 199, 122, .6); }
+.as-mascote.tom-ok .as-orbe { box-shadow: inset 0 -6px 12px rgba(30, 70, 40, .35), inset 0 3px 6px rgba(255, 255, 255, .7), 0 0 0 8px rgba(125, 206, 160, .3), 0 0 22px rgba(125, 206, 160, .5); }
+.as-orb-btn.toque .as-orbe { animation: orbe-gelatina .48s cubic-bezier(.2, 1.4, .32, 1); }
+.as-faisca, .as-moeda { position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #FFF6D2; opacity: 0; pointer-events: none; }
+.as-moeda { width: 8px; height: 8px; background: radial-gradient(circle at 35% 35%, #FFF6D2, #C9963E); }
+.as-mascote.festa .as-faisca, .as-mascote.meta .as-faisca, .as-mascote.festa .as-moeda, .as-mascote.meta .as-moeda { animation: orbe-faisca .7s ease-out 2; }
+.as-mascote.festa .as-faisca:nth-of-type(1), .as-mascote.meta .as-faisca:nth-of-type(1) { --dx: -16px; --dy: -18px; }
+.as-mascote.festa .as-faisca:nth-of-type(2), .as-mascote.meta .as-faisca:nth-of-type(2) { --dx: 14px; --dy: -20px; animation-delay: .05s; }
+.as-mascote.festa .as-moeda, .as-mascote.meta .as-moeda { --dx: 4px; --dy: -24px; animation-delay: .08s; }
+@keyframes orbe-passo { 0%, 100% { transform: translateY(0) scale(1, 1); } 32% { transform: translateY(-8px) scale(1.1, .86); } 68% { transform: translateY(1px) scale(.9, 1.12); } }
+@keyframes orbe-festa { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.16, .9); } 70% { transform: scale(.94, 1.1); } }
+@keyframes orbe-balanca { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes orbe-chega { 0% { opacity: 0; transform: scale(.4); } 70% { opacity: 1; transform: scale(1.12, .9); } 100% { transform: none; } }
+@keyframes orbe-gelatina { 0% { transform: scale(1, 1); } 30% { transform: scale(1.18, .78); } 55% { transform: scale(.9, 1.16); } 100% { transform: none; } }
+@keyframes orbe-brilho { 0%, 100% { transform: translateX(-70%); } 50% { transform: translateX(70%); } }
+@keyframes orbe-faisca { 0% { opacity: 0; transform: translate(0, 0) scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
 .as-boca, .as-brilho { display: none; }
 .as-mascote.festa .as-boca,
 .as-mascote.meta .as-boca {
@@ -359,7 +385,11 @@ html.gs-app .as-chip.ok { background: #1E4634; }
 html.gs-app .as-pontos { display: flex; gap: 5px; margin: 0 0 8px; }
 html.gs-app .as-pontos i { width: 6px; height: 6px; border-radius: 50%; background: rgba(248, 241, 226, .28); }
 html.gs-app .as-pontos i.on { background: #E6C77A; transform: scale(1.25); }
+html.gs-app .as-fala.as-apertada { padding: 5px 8px; }
+html.gs-app .as-fala.as-apertada p { font-size: 12px; line-height: 1.25; margin-bottom: 4px; }
+html.gs-app .as-fala.as-apertada a, html.gs-app .as-fala.as-apertada button { min-height: 26px; font-size: 12px; }
 html.gs-app .as-fala a, html.gs-app .as-fala button { min-height: 30px; padding: 0 10px; }
+.as-orb-btn { position: relative; }
 html.gs-app .as-fala a.prim, html.gs-app .as-fala button.prim {
   background: linear-gradient(180deg, #F3E2B0, #C9963E) !important;
   color: #1B1408 !important;
@@ -384,7 +414,10 @@ html.gs-app[data-tema="escuro"] .as-fala { background: rgba(20, 18, 14, .96); co
 @media (prefers-reduced-motion: reduce) {
   .as-mascote,
   .as-mascote .as-orbe,
+  .as-mascote .as-orbe::after,
   .as-mascote .as-orbe i,
+  .as-faisca,
+  .as-moeda,
   .midas-svg .corpo,
   .midas-svg .braco,
   .midas-svg .olho,
