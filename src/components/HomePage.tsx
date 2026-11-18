@@ -11,12 +11,14 @@ import { ErroGlobal } from '../gs/ErroGlobal';
 /** Enquanto o painel carrega: o mesmo desenho, sem números. */
 function PainelCarregando() {
   return (
-    <div className="pn pn-skel" role="status" aria-label="Carregando o painel">
-      <span className="sk sk-titulo" />
+    <div className="pn pn-v2 pn-skel" role="status" aria-label="Carregando o painel">
+      <div className="pn-cab"><span className="sk sk-titulo" /><span className="sk sk-redondo" /></div>
       <span className="sk sk-busca" />
-      <div className="pn-acoes">{[0, 1, 2, 3].map((i) => <span key={i} className="sk sk-acao" />)}</div>
-      <div className="pn-stats">{[0, 1, 2, 3].map((i) => <span key={i} className="sk sk-stat" />)}</div>
       <span className="sk sk-hero" />
+      <div className="pn-stats">{[0, 1, 2].map((i) => <span key={i} className="sk sk-stat" />)}</div>
+      <div className="pn-acoes">{[0, 1, 2, 3].map((i) => <span key={i} className="sk sk-acao" />)}</div>
+      <span className="sk sk-card" />
+      <span className="sk sk-card curto" />
       <span className="sr-only">Carregando…</span>
     </div>
   );

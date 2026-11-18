@@ -26,6 +26,7 @@ import { Card, Eyebrow, Lista, ListItem, Moeda, ProgressRing, Segmented, ToolGri
 import { corDe } from './categorias';
 import { saudeFinanceira } from './saude';
 import { definirTema, useTema } from './tema';
+import { definirSons, tocar, useSonsLigados } from './sons';
 import { mascarar, useOculto } from './privacidade';
 import { getName } from '../painel';
 import { waLink } from '../whatsapp';
@@ -343,6 +344,7 @@ function SaudeFinanceira() {
 export function Perfil() {
   const e = useEstado();
   const tema = useTema();
+  const sons = useSonsLigados();
   const nome = e.config.nome || getName() || 'Você';
   return (
     <>
@@ -369,6 +371,10 @@ export function Perfil() {
       <h2 className="cm-h2">Aparência</h2>
       <Segmented rotulo="Tema" valor={tema} onChange={definirTema} opcoes={[{ id: 'claro', nome: 'Claro' }, { id: 'escuro', nome: 'Escuro' }]} />
       <p className="cm-mudo" style={{ marginTop: -6 }}>O claro é a cara do Grana Séria. O escuro fica aqui para quem prefere.</p>
+
+      <h2 className="cm-h2">Sons</h2>
+      <Segmented rotulo="Sons da interface" valor={sons ? 'on' : 'off'} onChange={(id) => { const ligar = id === 'on'; definirSons(ligar); if (ligar) tocar('sucesso'); }} opcoes={[{ id: 'on', nome: 'Ligados' }, { id: 'off', nome: 'Silêncio' }]} />
+      <p className="cm-mudo" style={{ marginTop: -6 }}>Toque, troca de tela e um aviso baixinho quando você salva. Começa ligado.</p>
 
       <div id="instalar" style={{ marginTop: 24 }}><InstalarApp /></div>
 

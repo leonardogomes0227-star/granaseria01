@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { tipoDoAviso, tocar } from '../../gs/sons';
 
 /* ---------- Toast (spec v2, seções 8 e 10): canto de baixo, 5 s, com ação ("Desfazer") ---------- */
 // Um só na tela: o novo substitui o anterior (e o anterior se confirma, ex.: o apagar vira definitivo).
@@ -38,6 +39,9 @@ export function toast(texto: string, opts: { acao?: ToastAcao; duracao?: number;
   if (atual) encerrar(true); // o anterior se confirma
   const t: ToastItem = { id: ++seq, texto, acao: opts.acao, duracao: opts.duracao ?? 5000, aoSumir: opts.aoSumir };
   emitir(t);
+  const som = tipoDoAviso(texto);
+  if (som) tocar(som);
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('gs-aviso', { detail: texto }));
   timer = window.setTimeout(() => {
     if (atual?.id === t.id) encerrar(true);
   }, t.duracao);

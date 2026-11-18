@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { importarComRetry } from './gs/importar';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
 const PrivacyPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.PrivacyPage })));
@@ -7,6 +8,9 @@ const NotFoundPage = lazy(() => importarComRetry(() => import('./components/Page
 import { HomePage } from './components/HomePage';
 import { AppShell } from './components/AppShell';
 import { Toaster } from './components/ui/Toast';
+import { Assistente } from './gs/Assistente';
+import { EsqueletoTela } from './gs/Esqueleto';
+import { OuvirSons } from './gs/OuvirSons';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -187,6 +191,23 @@ function App() {
     if (location.pathname === '/' || location.pathname === '/inicio') setSavedProgress(loadSavedProgress());
   }, [location.pathname]);
 
+  useEffect(() => {
+    const noClique = (ev: MouseEvent) => {
+      if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      const alvo = ev.target instanceof Element ? ev.target.closest('a[href]') : null;
+      if (!(alvo instanceof HTMLAnchorElement) || alvo.target === '_blank' || alvo.origin !== window.location.origin) return;
+      if (typeof document.startViewTransition !== 'function') return;
+      const url = new URL(alvo.href);
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      ev.preventDefault();
+      const ir = () => navigate(`${url.pathname}${url.search}${url.hash}`);
+      try { document.startViewTransition(() => { flushSync(ir); }); } catch { ir(); }
+    };
+    document.addEventListener('click', noClique);
+    return () => document.removeEventListener('click', noClique);
+  }, [navigate]);
+
   const session = useSession();
   useEffect(() => {
     void startSync(session);
@@ -311,6 +332,9 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><Suspense fallback={null}><NotFoundPage /></Suspense></AppShell></Titled>} />
       </Routes>
+      {/* O Midas fica fora das rotas: cada página tem a sua casca, e remontar o guia no meio do passo fazia ele piscar. */}
+      <Assistente />
+      <OuvirSons />
       <Toaster />
     </>
   );
@@ -395,7 +419,7 @@ function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: st
         ) : (
           <LoginGate what={o}>
             <ErroGlobal>
-              <Porteiro><Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}>{children}</Suspense></Porteiro>
+              <Porteiro><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></Porteiro>
             </ErroGlobal>
           </LoginGate>
         )}

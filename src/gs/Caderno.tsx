@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, Check, ChevronRight, Eye, EyeOff, Landmark, MessageCircle, PiggyBank, Receipt, ShieldCheck, Wallet } from 'lucide-react';
 import { abrirAdicionar } from './AdicionarMov';
@@ -22,6 +22,7 @@ import { LinhaDegraus, Medidor, MiniBarras, MiniLinha } from './graficosMini';
 import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
 import { ICONES, useContagem } from './base';
+import { vibrar } from './sons';
 
 /* ---------- Início: o painel ---------- */
 // Saudação, o número do dia, o mês e as ferramentas que a pessoa mais usa — cada uma com a pergunta que responde.
@@ -99,6 +100,8 @@ export function Caderno() {
   const [calc, setCalc] = useState(false);
   const [renda, setRenda] = useState(false);
   const [baixa, setBaixa] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState<'dias' | 'mes'>('dias');
+  const palco = useRef<HTMLDivElement>(null);
   const nome = primeiroNome(e.config.nome || getName() || '');
   const disp = useMemo(() => detalheDisponivel(e, mes, hoje), [e, mes, hoje]);
   const contas = useMemo(() => contasDoMes(e, mes, hoje), [e, mes, hoje]);
@@ -135,20 +138,37 @@ export function Caderno() {
   const heroContado = useContagem(heroAlvo, 780);
   const faltaContada = useContagem(falta, 860);
   const gastoContado = useContagem(gastoMes, 740);
+  const guardadoContado = useContagem(guardado, 820);
+  const dividaContada = useContagem(dividas?.total ?? 0, 900);
   const semContas = e.gastosFixos.length === 0;
   const semDivida = e.dividas.length === 0;
   const mesNome = nomeMes(mes);
   const diaHoje = Number(hoje.slice(8, 10));
+  useEffect(() => {
+    const el = palco.current;
+    if (!el) return;
+    let quadro = 0;
+    const aplicar = () => {
+      const y = Math.min(1, Math.max(0, window.scrollY / 160));
+      el.style.setProperty('--colapso', y.toFixed(3));
+    };
+    const noScroll = () => { cancelAnimationFrame(quadro); quadro = requestAnimationFrame(aplicar); };
+    noScroll();
+    window.addEventListener('scroll', noScroll, { passive: true });
+    return () => { cancelAnimationFrame(quadro); window.removeEventListener('scroll', noScroll); };
+  }, []);
 
   // gráficos: gasto de cada um dos últimos 7 dias; e quanto das contas do mês vence até cada dia
-  const { seteDias, curvaContas } = useMemo(() => {
+  const { seteDias, rotulos7, curvaContas, doMes } = useMemo(() => {
     const porDia = new Map<string, number>();
     for (const l of e.lancamentos) porDia.set(l.data, (porDia.get(l.data) ?? 0) + l.valor);
     const sete = Array.from({ length: 7 }, (_, i) => porDia.get(somaDias(hoje, i - 6)) ?? 0);
+    const rotulos7 = Array.from({ length: 7 }, (_, i) => somaDias(hoje, i - 6).slice(8));
     const diasNoMes = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).getUTCDate();
     let soma = 0;
     const curva = Array.from({ length: diasNoMes }, (_, i) => (soma += contas.filter((c) => Number(c.vencimento.slice(8, 10)) === i + 1).reduce((t, c) => t + c.valor, 0)));
-    return { seteDias: sete, curvaContas: curva };
+    const doMes = Array.from({ length: diasNoMes }, (_, i) => porDia.get(`${mes}-${String(i + 1).padStart(2, '0')}`) ?? 0);
+    return { seteDias: sete, rotulos7, curvaContas: curva, doMes };
   }, [e.lancamentos, hoje, mes, contas]);
 
   // primeiros passos: somem sozinhos quando renda e contas estão cadastradas
@@ -194,7 +214,7 @@ export function Caderno() {
         </section>
       )}
 
-      <div className="pn-palco">
+      <div className="pn-palco" ref={palco}>
       <header className="pn-cab">
         <div className="pn-ola">
           <h1>{nome ? `Olá, ${nome}!` : 'Olá!'}</h1>
@@ -210,13 +230,32 @@ export function Caderno() {
           <em>{sobra === null ? 'Leva 10 segundos' : 'Ver a conta'}</em>
         </span>
         {sobra !== null && <MiniLinha valores={seteDias} rotulo="Gasto dos últimos 7 dias" />}
+        <span className="pn-brilho" aria-hidden="true" />
+        {pctGasto !== null && <span className="pn-anel" style={{ ['--pct' as string]: String(pctBarra) }} role="img" aria-label={`${pctBarra}% ${rotuloGasto}`} />}
       </button>
 
       <Secao titulo="Seus números" sub="Gasto, contas em aberto e o que você guardou neste mês.">
         <div className="pn-stats">
           <Link to="/lancamentos" className="pn-stat">
             <span><small>Gasto no mês</small><b>{m(brl0(gastoContado))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : pctGasto > 100 ? `${pctGasto}% ${rotuloGasto} · passou` : `${pctGasto}% ${rotuloGasto}`}</em></span>
-            <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
+            <span
+              className={`pn-grafico ${periodo}`}
+              onClick={(ev) => { ev.preventDefault(); ev.stopPropagation(); }}
+              onPointerDown={(ev) => { ev.stopPropagation(); (ev.currentTarget as HTMLElement).dataset.x = String(ev.clientX); }}
+              onPointerUp={(ev) => {
+                const x0 = Number((ev.currentTarget as HTMLElement).dataset.x ?? ev.clientX);
+                const dx = ev.clientX - x0;
+                if (Math.abs(dx) < 36) return;
+                setPeriodo(dx < 0 ? 'mes' : 'dias');
+                vibrar(10);
+              }}
+            >
+              <span className="pn-periodo" role="group" aria-label="Período do gráfico">
+                <button type="button" className={periodo === 'dias' ? 'on' : ''} onClick={(ev) => { ev.preventDefault(); setPeriodo('dias'); vibrar(8); }}>7 dias</button>
+                <button type="button" className={periodo === 'mes' ? 'on' : ''} onClick={(ev) => { ev.preventDefault(); setPeriodo('mes'); vibrar(8); }}>Mês</button>
+              </span>
+              <MiniBarras valores={periodo === 'dias' ? seteDias : doMes} rotulos={periodo === 'dias' ? rotulos7.map((d) => `Dia ${Number(d)}`) : doMes.map((_, i) => `Dia ${i + 1}`)} rotulo={periodo === 'dias' ? 'Gasto de cada um dos últimos 7 dias' : 'Gasto de cada dia do mês'} onEscolha={() => vibrar(6)} />
+            </span>
             {pctGasto !== null && <span className={`pn-uso${pctGasto >= 80 ? ' alto' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctBarra} aria-label={`Gasto no mês, ${pctGasto}% ${rotuloGasto}`}><i style={{ width: `${pctBarra}%` }} /></span>}
           </Link>
           <Link to="/pagar" className="pn-stat">
@@ -225,7 +264,7 @@ export function Caderno() {
           </Link>
           <Link to="/guardar" className="pn-stat">
             <i aria-hidden="true" className="ouro"><PiggyBank size={18} /></i>
-            <span><small>Guardado</small><b>{m(brl0(guardado))}</b><em>Neste mês</em></span>
+            <span><small>Guardado</small><b>{m(brl0(guardadoContado))}</b><em>Neste mês</em></span>
           </Link>
         </div>
       </Secao>
@@ -284,7 +323,7 @@ export function Caderno() {
         {dividas ? (
           <Link to="/plano/dividas" className="pn-card pn-divida">
             <header><h2>Dívidas</h2><ArrowUpRight size={18} aria-hidden="true" /></header>
-            <b className="pn-num">{m(brl0(dividas.total))}</b>
+            <b className="pn-num">{m(brl0(dividaContada))}</b>
             <p className="pn-sub">{dividas.fim ? `Você fica livre em ${nomeMes(dividas.fim)}.` : 'Com o pagamento de hoje ela não zera. Veja como sair.'}</p>
             <Medidor pct={dividas.pagoPct} rotulo="Dívida já paga" legenda="já pago" />
           </Link>

@@ -1,13 +1,23 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUp, ChevronRight, Search, Sparkles, X } from 'lucide-react';
-import { useEstado } from './store';
+import { useSession } from '../account';
+import { getName, painelToken } from '../painel';
+import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
-import { getName } from '../painel';
+import { comentarioDoGasto, dicasDoMidas, textoSeCouber, type Dica, type HumorMidas, type TomDica } from './midasDicas';
+/** Destaca o número da frase (R$ e porcentagem) sem mudar o texto. */
+function FraseDica({ texto }: { texto: string }) {
+  const pedacos = texto.split(/(R\$\s?[\d.]+|\d+%)/g);
+  return <>{pedacos.map((p, i) => (/^(R\$|\d+%)/.test(p) ? <strong key={i}>{p}</strong> : <span key={i}>{p}</span>))}</>;
+}
+import { rotaDoApp } from './visual';
+import { aoLadoDoAlvo, casaDoMidas, cruza, lugarSemCobrir, type Caixa } from './midasPosicao';
 import { NOME_ASSISTENTE, SUGESTOES, perguntarAoAssistente, type MensagemAssistente } from './assistenteLocal';
 
 /* ---------- O assistente: a bolinha dourada que flutua, a barra "pergunte" e o painel de conversa ---------- */
 // As respostas vêm de assistenteLocal.ts (é lá que a API entra depois). Aqui é só a tela.
+// O mascote fica montado uma vez (em App), para a troca de rota não recriar o guia no meio do passo.
 
 export const EVENTO_ASSISTENTE = 'gs-assistente';
 /** Abre o painel; com uma pergunta, já envia. */
@@ -53,8 +63,30 @@ const gravarMidas = (p: PrefMidas) => {
   try { localStorage.setItem(CHAVE_MIDAS, JSON.stringify({ ...lerMidas(), ...p })); } catch { /* segue nesta visita */ }
 };
 const dicasDaSessao = new Set<string>();
+const vistasMidas: Record<string, number> = {};
+let iaDoCoach: Promise<boolean> | null = null;
+const coachLigado = () => (iaDoCoach ??= fetch('/api/conselheiro').then((r) => (r.ok ? r.json() : {})).then((j: { ativo?: boolean }) => j.ativo === true).catch(() => false));
+/** A regra já fala. Se o conselheiro estiver ligado no servidor, ele só pode encurtar a mesma frase. */
+async function enriquecer(dica: Dica): Promise<string> {
+  const tk = painelToken();
+  if (!tk || !(await coachLigado())) return dica.texto;
+  try {
+    const res = await fetch('/api/conselheiro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk}` },
+      body: JSON.stringify({ question: `Reescreva em uma frase curta, em português do Brasil, sem mudar nenhum número: ${dica.texto}`, history: [] }),
+    });
+    if (!res.ok) return dica.texto;
+    const j = (await res.json()) as { reply?: string };
+    return textoSeCouber(dica.texto, j.reply);
+  } catch {
+    return dica.texto;
+  }
+}
 /** O passo da visita nesta aba. Não vai pro localStorage: só evita perder o guia quando a tela remonta. */
 let guiaMemoria: { indice: number; pausado: boolean } | null = null;
+/** A posição também sobrevive a um remonte, para ele não piscar de volta pro canto. */
+let posMemoria: { x: number; y: number } | null = null;
 
 type Passo = { sel: string; texto: string; rota?: string };
 const TOUR: Passo[] = [
@@ -75,138 +107,179 @@ const DICAS_TELA: { teste: (p: string) => boolean; sel: string; texto: string }[
 ];
 
 const reduzMovimento = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-const visivel = (sel: string) => [...document.querySelectorAll(sel)].find((el) => {
-  const r = el.getBoundingClientRect();
-  return r.width > 8 && r.height > 8;
-}) ?? null;
-const casaDoMidas = () => {
+function useReduz() {
+  const [v, setV] = useState(reduzMovimento);
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!mq) return;
+    const fn = () => setV(mq.matches);
+    mq.addEventListener?.('change', fn);
+    return () => mq.removeEventListener?.('change', fn);
+  }, []);
+  return v;
+}
+const rectDe = (r: DOMRect): Caixa => ({ l: r.left, t: r.top, r: r.right, b: r.bottom });
+const navCaixa = (): Caixa | null => {
   const nav = document.querySelector('nav.cm-abas');
-  const nr = nav?.getBoundingClientRect();
-  const acima = nr && nr.height > 0 ? nr.top : window.innerHeight - 12;
-  return { x: Math.max(12, window.innerWidth - 78), y: Math.max(12, acima - 74) };
+  if (!nav) return null;
+  const r = nav.getBoundingClientRect();
+  if (r.width < 8 || r.height < 8) return null;
+  return rectDe(r);
 };
-const aoLado = (r: DOMRect) => {
-  const nav = document.querySelector('nav.cm-abas');
-  const nr = nav?.getBoundingClientRect();
-  const limite = nr && nr.height > 0 ? nr.top - 78 : window.innerHeight - 78;
-  let x = r.left - 74;
-  let y = r.top + r.height / 2 - 28;
-  if (x < 8) x = Math.min(r.right + 12, window.innerWidth - 74);
-  y = Math.max(8, Math.min(y, limite));
-  return { x, y };
-};
-const rotaAtual = (p: string) => (p === '/inicio' ? '/' : p);
-type Caixa = { l: number; t: number; r: number; b: number };
-const cruza = (a: Caixa, b: Caixa) => !(a.r + 4 <= b.l || a.l >= b.r + 4 || a.b + 4 <= b.t || a.t >= b.b + 4);
-const obstaculos = (extra?: DOMRect | null): Caixa[] => {
-  const lista = [...document.querySelectorAll('a, button, input, select, textarea, [role="button"], nav.cm-abas, .cm-mais')]
-    .filter((el) => !el.closest('.as-fala') && !el.closest('.as-menu'))
-    .flatMap((el) => {
-      if (el.closest('.as-mascote') && !el.closest('.as-figura') && !el.classList.contains('as-opcoes') && !el.classList.contains('as-recolher')) return [];
-      const s = getComputedStyle(el);
-      if (s.display === 'none' || s.visibility === 'hidden' || s.pointerEvents === 'none') return [];
+const casaAgora = () => casaDoMidas(window.innerWidth, window.innerHeight, navCaixa());
+/** Sobe o canto de casa enquanto ele cobrir um botão da tela (o atalho de anotar gasto, por exemplo). */
+const cantoLivre = () => {
+  const base = casaAgora();
+  const nav = navCaixa();
+  let y = base.y;
+  const cobre = (yy: number) => {
+    const corpo: Caixa = { l: base.x - 4, t: yy - 8, r: base.x + 70, b: yy + 78 };
+    if (nav && cruza(corpo, nav, 0)) return true;
+    for (const el of document.querySelectorAll('.pn-acao, .pn-stat, .pn-ftile, .cm-mais')) {
+      if (el.closest('.as-mascote, .as-painel, nav.cm-abas')) continue;
       const r = el.getBoundingClientRect();
-      if (r.width < 8 || r.height < 8 || r.bottom < 0 || r.top > window.innerHeight) return [];
-      return [{ l: r.left, t: r.top, r: r.right, b: r.bottom }];
-    });
-  if (extra && extra.width > 8) lista.push({ l: extra.left, t: extra.top, r: extra.right, b: extra.bottom });
+      if (r.width < 20 || r.height < 20 || r.bottom < 0 || r.top > window.innerHeight) continue;
+      if (cruza(corpo, rectDe(r), 0)) return true;
+    }
+    return false;
+  };
+  for (let i = 0; i < 14 && cobre(y); i++) y = Math.max(64, y - 22);
+  return { x: base.x, y };
+};
+const escolher = (sel: string): Element | null => {
+  const els = [...document.querySelectorAll(sel)].filter((el) => {
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden') return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 8 && r.height > 8;
+  });
+  return els.find((el) => {
+    const r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.top < window.innerHeight && r.right > 0 && r.left < window.innerWidth;
+  }) ?? els[0] ?? null;
+};
+const obstaculos = (foco: DOMRect | null): Caixa[] => {
+  const lista: Caixa[] = [];
+  for (const el of document.querySelectorAll('nav.cm-abas, .cm-lateral, .cm-topo')) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 8 && r.height > 8) lista.push(rectDe(r));
+  }
+  if (foco && foco.width > 8 && foco.width < 220 && foco.height < 180) lista.push(rectDe(foco));
+  let n = 0;
+  for (const el of document.querySelectorAll('a, button, input, select, textarea, [role="button"]')) {
+    if (n >= 24) break;
+    if (el.closest('.as-mascote, .as-fala, nav.cm-abas, .cm-lateral, .cm-topo')) continue;
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden' || s.pointerEvents === 'none') continue;
+    const r = el.getBoundingClientRect();
+    // Um bloco grande (o herói, um grupo) não empurra a fala para o canto oposto.
+    if (r.width < 8 || r.height < 8 || r.width > 220 || r.height > 160 || r.bottom < 0 || r.top > window.innerHeight) continue;
+    lista.push(rectDe(r));
+    n += 1;
+  }
   return lista;
 };
-const cabe = (l: number, t: number, w: number, h: number, obs: Caixa[]) => {
-  if (l < 6 || t < 6 || l + w > window.innerWidth - 6 || t + h > window.innerHeight - 6) return false;
-  const c = { l, t, r: l + w, b: t + h };
-  return !obs.some((o) => cruza(c, o));
+const preso = (el: Element) => getComputedStyle(el).position === 'fixed' || !!el.closest('nav.cm-abas, .cm-lateral');
+/** O anel marca o topo do alvo. Uma seção mais alta que a tela não vira um buraco do tamanho da página. */
+const anelDe = (r: DOMRect) => {
+  const alt = Math.min(r.height, 200);
+  const larg = Math.min(r.width, Math.max(32, window.innerWidth - 16));
+  const top = Math.max(8, Math.min(r.top, window.innerHeight - alt - 8));
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - larg - 8));
+  return new DOMRect(left, top, Math.max(24, larg), Math.max(24, alt));
 };
-/** Um lugar livre, de preferência perto do mascote. */
-const lugarDaFala = (w: number, h: number, px: number, py: number, obs: Caixa[]): { l: number; t: number } | null => {
-  const maxL = window.innerWidth - w - 6;
-  const maxT = window.innerHeight - h - 6;
-  if (maxL < 6 || maxT < 6) return null;
-  const candidatos = [{ l: px, t: py }];
-  for (const o of obs) {
-    candidatos.push({ l: Math.min(o.l, maxL), t: o.t - h - 8 }, { l: Math.min(o.l, maxL), t: o.b + 8 }, { l: o.r + 8, t: o.t }, { l: o.l - w - 8, t: o.t });
-  }
-  let melhor: { l: number; t: number; d: number } | null = null;
-  const tenta = (l: number, t: number) => {
-    const cl = Math.max(6, Math.min(l, maxL));
-    const ct = Math.max(6, Math.min(t, maxT));
-    if (!cabe(cl, ct, w, h, obs)) return null;
-    return { l: cl, t: ct, d: (cl - px) * (cl - px) + (ct - py) * (ct - py) };
-  };
-  const guarda = (achou: { l: number; t: number; d: number } | null) => { if (achou && (!melhor || achou.d < melhor.d)) melhor = achou; };
-  for (const p of candidatos) guarda(tenta(p.l, p.t));
-  for (let t = 6; t <= maxT; t += 8) for (let l = 6; l <= maxL; l += 8) guarda(tenta(l, t));
-  return melhor;
-};
+const jaNaTela = (r: DOMRect) => r.top >= -4 && r.left >= -4 && r.bottom <= window.innerHeight + 4 && r.right <= window.innerWidth + 4;
+const rotaAtual = (p: string) => (p === '/inicio' ? '/' : p);
+const somaGuardada = (guardados: { valor: number }[]) => guardados.reduce((s, g) => s + g.valor, 0);
 
-/** O mascote: anda com um pulo, aponta e volta pro canto sem cobrir o menu. */
+/** O mascote: anda com um passo, respira parado e não cobre o menu. */
 function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) {
   const nav = useNavigate();
   const { pathname } = useLocation();
-  const reduz = reduzMovimento();
+  const e = useEstado();
+  const hoje = useHoje();
+  const reduz = useReduz();
   const [min, setMin] = useState(() => lerMidas().min === true);
-  const [pos, setPos] = useState(casaDoMidas);
-  const [pronto] = useState(true);
+  const [pos, setPos] = useState(() => posMemoria ?? (typeof document === 'undefined' ? { x: 16, y: 16 } : casaAgora()));
   const [face, setFace] = useState(1);
   const [andando, setAndando] = useState(false);
   const [tour, setTour] = useState<number | null>(() => guiaMemoria?.indice ?? null);
   const [pausado, setPausado] = useState(() => guiaMemoria?.pausado ?? false);
   const [foco, setFoco] = useState<DOMRect | null>(null);
-  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' } | null>(null);
+  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' | 'festa' | 'dica'; rota?: string; rotulo?: string; id?: string; tom?: TomDica; humor?: HumorMidas; icone?: string; indice?: number; total?: number } | null>(null);
+  const [chega, setChega] = useState(true);
+  const [mexe, setMexe] = useState(false);
+  const [apertada, setApertada] = useState(false);
   const [ancora, setAncora] = useState<{ l: number; t: number } | null>(null);
-  const [miuda, setMiuda] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [humor, setHumor] = useState<'' | 'festa' | 'meta'>('');
   const posRef = useRef(pos);
   const tourRef = useRef(tour);
   const pausadoRef = useRef(pausado);
+  const falaRef = useRef(fala);
+  const alvoRef = useRef<Element | null>(null);
   const falaEl = useRef<HTMLDivElement>(null);
   const pedidoRota = useRef<{ rota: string; desde: string } | null>(null);
   const seguindo = useRef(false);
+  const vivoRef = useRef(true);
+  const andarTimer = useRef(0);
+  const humorTimer = useRef(0);
+  const festaTimer = useRef(0);
+  const metasVistas = useRef<Map<string, number> | null>(null);
+  const passoDica = useRef(0);
+  const miuda = typeof window !== 'undefined' && window.innerWidth <= 330;
   tourRef.current = tour;
   pausadoRef.current = pausado;
-  const timer = useRef<number[]>([]);
-  const limpar = () => { timer.current.forEach((id) => window.clearTimeout(id)); timer.current = []; };
-  const depois = (ms: number, fn: () => void) => { const id = window.setTimeout(fn, ms); timer.current.push(id); };
+  falaRef.current = fala;
+  posMemoria = pos;
 
-  const ir = (x: number, y: number) => {
+  const ir = (x: number, y: number, imediato = false) => {
+    const navBox = navCaixa();
     const nx = Math.max(8, Math.min(x, window.innerWidth - 70));
-    const ny = Math.max(8, Math.min(y, window.innerHeight - 70));
-    setFace(nx < posRef.current.x - 6 ? -1 : nx > posRef.current.x + 6 ? 1 : (posRef.current.x <= nx ? 1 : -1));
-    posRef.current = { x: nx, y: ny };
-    setPos({ x: nx, y: ny });
-    if (!reduz) {
-      setAndando(true);
-      depois(880, () => setAndando(false));
+    const ny = Math.max(8, Math.min(navBox ? Math.min(y, navBox.t - 80) : y, window.innerHeight - 70));
+    const antes = posRef.current;
+    if (Math.hypot(nx - antes.x, ny - antes.y) < 2) return;
+    setFace(nx < antes.x - 6 ? -1 : nx > antes.x + 6 ? 1 : (antes.x <= nx ? 1 : -1));
+    const prox = { x: nx, y: ny };
+    posRef.current = prox;
+    posMemoria = prox;
+    setPos(prox);
+    if (imediato || reduz) {
+      window.clearTimeout(andarTimer.current);
+      setAndando(false);
+      return;
     }
+    setAndando(true);
+    window.clearTimeout(andarTimer.current);
+    andarTimer.current = window.setTimeout(() => { if (vivoRef.current) setAndando(false); }, 720);
   };
-
-  useEffect(() => { posRef.current = pos; }, [pos]);
-  useEffect(() => () => limpar(), []);
+  const irRef = useRef(ir);
+  irRef.current = ir;
 
   const encerrar = () => {
-    limpar();
     pedidoRota.current = null;
     seguindo.current = false;
     guiaMemoria = null;
+    alvoRef.current = null;
     setPausado(false);
     setTour(null);
     setFoco(null);
     setFala(null);
     gravarMidas({ tour: true });
-    ir(casaDoMidas().x, casaDoMidas().y);
+    const c = cantoLivre();
+    ir(c.x, c.y);
   };
-
   const pausar = () => {
-    limpar();
     pedidoRota.current = null;
     seguindo.current = false;
     if (tourRef.current !== null) guiaMemoria = { indice: tourRef.current, pausado: true };
+    alvoRef.current = null;
     setPausado(true);
     setFala(null);
     setFoco(null);
-    ir(casaDoMidas().x, casaDoMidas().y);
+    const c = cantoLivre();
+    ir(c.x, c.y);
   };
-
   /** Troca de tela só quando o guia pede. Sair no meio pausa neste passo. */
   const seguir = (indice: number) => {
     const passo = TOUR[indice];
@@ -215,6 +288,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     setPausado(false);
     setFala(null);
     setFoco(null);
+    alvoRef.current = null;
     const aqui = rotaAtual(pathname);
     const muda = Boolean(passo.rota && passo.rota !== aqui);
     pedidoRota.current = muda && passo.rota ? { rota: passo.rota, desde: aqui } : null;
@@ -223,36 +297,124 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     if (muda && passo.rota) nav(passo.rota);
     setTour(indice);
   };
+  const festejar = (texto: string, tipo: 'festa' | 'meta') => {
+    setHumor(tipo);
+    window.clearTimeout(humorTimer.current);
+    humorTimer.current = window.setTimeout(() => { if (vivoRef.current) setHumor(''); }, 1700);
+    if (tourRef.current !== null && !pausadoRef.current) return;
+    setFala({ texto, modo: 'festa' });
+    window.clearTimeout(festaTimer.current);
+    festaTimer.current = window.setTimeout(() => {
+      if (!vivoRef.current) return;
+      setFala((atual) => (atual?.modo === 'festa' ? null : atual));
+    }, 2200);
+  };
+  const encerrarRef = useRef(encerrar);
+  const pausarRef = useRef(pausar);
+  const seguirRef = useRef(seguir);
+  const festejarRef = useRef(festejar);
+  encerrarRef.current = encerrar;
+  pausarRef.current = pausar;
+  seguirRef.current = seguir;
+  festejarRef.current = festejar;
 
+  useEffect(() => { posRef.current = pos; }, [pos]);
+  useEffect(() => { const id = window.setTimeout(() => setChega(false), 700); return () => window.clearTimeout(id); }, []);
+  useEffect(() => { setApertada(false); }, [fala?.id]);
+  useEffect(() => () => {
+    vivoRef.current = false;
+    window.clearTimeout(andarTimer.current);
+    window.clearTimeout(humorTimer.current);
+    window.clearTimeout(festaTimer.current);
+  }, []);
   useEffect(() => {
     if (tour === null) { if (!pausado) guiaMemoria = null; return; }
     guiaMemoria = { indice: tour, pausado };
   }, [tour, pausado]);
   useEffect(() => () => {
     if (tourRef.current === null) return;
-    guiaMemoria = { indice: tourRef.current, pausado: seguindo.current ? false : true };
+    guiaMemoria = { indice: tourRef.current, pausado: seguindo.current ? false : pausadoRef.current };
     seguindo.current = false;
   }, []);
 
+  useLayoutEffect(() => {
+    if (tourRef.current !== null && !pausadoRef.current) return;
+    const c = cantoLivre();
+    if (Math.hypot(c.x - posRef.current.x, c.y - posRef.current.y) < 12) return;
+    irRef.current(c.x, c.y, true);
+  }, []);
+
   useEffect(() => {
-    if (min || pausado || tour !== null || guiaMemoria || lerMidas().tour) return;
+    if (tour !== null && !pausado) return;
+    let vivo = true;
+    const ajustar = () => {
+      if (!vivo || (tourRef.current !== null && !pausadoRef.current)) return;
+      const c = cantoLivre();
+      const dist = Math.hypot(c.x - posRef.current.x, c.y - posRef.current.y);
+      if (dist < 8) return;
+      irRef.current(c.x, c.y, dist < 100);
+    };
+    const a = window.setTimeout(ajustar, 350);
+    const b = window.setTimeout(ajustar, 1400);
+    void document.fonts?.ready?.then(ajustar);
+    return () => { vivo = false; window.clearTimeout(a); window.clearTimeout(b); };
+  }, [pathname, tour, pausado]);
+
+  useEffect(() => {
+    const ajustar = () => {
+      if (tourRef.current !== null && !pausadoRef.current) return;
+      const c = cantoLivre();
+      if (Math.hypot(c.x - posRef.current.x, c.y - posRef.current.y) < 16) return;
+      irRef.current(c.x, c.y, true);
+    };
+    window.addEventListener('resize', ajustar);
+    window.visualViewport?.addEventListener('resize', ajustar);
+    return () => {
+      window.removeEventListener('resize', ajustar);
+      window.visualViewport?.removeEventListener('resize', ajustar);
+    };
+  }, []);
+
+  const mostrarDica = (forcar = false) => {
+    const agora = Date.now();
+    const todas = dicasDoMidas(getEstado(), hoje);
+    if (todas.length === 0) return;
+    const livres = forcar ? todas : dicasDoMidas(getEstado(), hoje, vistasMidas, agora);
+    if (livres.length === 0) return;
+    const dica = forcar ? todas[passoDica.current % todas.length] : livres[0];
+    const indice = Math.max(0, todas.findIndex((d) => d.id === dica.id));
+    passoDica.current = (indice + 1) % todas.length;
+    vistasMidas[dica.id] = agora;
+    setFoco(null);
+    alvoRef.current = null;
+    setFala({ texto: dica.texto, modo: 'dica', rota: dica.rota, rotulo: dica.rotulo, id: dica.id, tom: dica.tom, humor: dica.humor, icone: dica.icone, indice, total: todas.length });
+    void enriquecer(dica).then((texto) => {
+      if (!vivoRef.current) return;
+      setFala((atual) => (atual?.id === dica.id ? { ...atual, texto } : atual));
+    });
+  };
+  const mostrarDicaRef = useRef(mostrarDica);
+  mostrarDicaRef.current = mostrarDica;
+
+  useEffect(() => {
+    if (min || pausado || tour !== null || (fala && fala.modo === 'tour')) return;
     if (pathname !== '/' && pathname !== '/inicio') return;
     const id = window.setTimeout(() => {
-      if (tourRef.current !== null || pausadoRef.current) return;
-      setTour(0);
-    }, 1100);
+      if (tourRef.current !== null || pausadoRef.current || falaRef.current) return;
+      mostrarDicaRef.current(false);
+    }, 900);
     return () => window.clearTimeout(id);
-  }, [pathname, min, pausado, tour]);
+  }, [pathname, min, pausado, tour, hoje]);
 
   useEffect(() => {
     if (tour === null || oculto || min || pausado) return;
     const passo = TOUR[tour];
-    if (!passo) { encerrar(); return; }
+    if (!passo) { encerrarRef.current(); return; }
     const aqui = rotaAtual(pathname);
     if (passo.rota && passo.rota !== aqui) {
       const pedido = pedidoRota.current;
       if (pedido?.rota === passo.rota && (aqui === pedido.desde || aqui === passo.rota)) return;
-      pausar();
+      pausarRef.current();
       return;
     }
     pedidoRota.current = null;
@@ -260,26 +422,58 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     let vivo = true;
     let espera = 0;
     let depoisFala = 0;
+    let quadro = 0;
+    let tentativas = 0;
+    const apontar = (el: Element) => {
+      if (!vivo || pausadoRef.current) return;
+      const r = anelDe(el.getBoundingClientRect());
+      alvoRef.current = el;
+      setFoco(r);
+      if (!reduz) {
+        const p = aoLadoDoAlvo(rectDe(r), window.innerWidth, window.innerHeight, navCaixa());
+        irRef.current(p.x, p.y);
+      }
+      depoisFala = window.setTimeout(() => {
+        if (!vivo || pausadoRef.current) return;
+        setFala({ texto: passo.texto, modo: 'tour' });
+      }, reduz ? 0 : 760);
+    };
     const mostrar = () => {
       if (!vivo || pausadoRef.current) return;
-      const el = visivel(passo.sel);
-      if (!el) { seguir(tour + 1); return; }
-      el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: reduz ? 'auto' : 'smooth' });
-      espera = window.setTimeout(() => {
+      const el = escolher(passo.sel);
+      if (!el) {
+        if (tentativas < 15) { tentativas += 1; espera = window.setTimeout(mostrar, 200); return; }
+        seguirRef.current(tour + 1);
+        return;
+      }
+      if (reduz || preso(el) || jaNaTela(el.getBoundingClientRect())) {
+        espera = window.setTimeout(() => apontar(el), reduz ? 16 : 40);
+        return;
+      }
+      el.scrollIntoView({ block: el.getBoundingClientRect().height > 320 ? 'start' : 'center', inline: 'nearest', behavior: 'smooth' });
+      let ultimo = '';
+      let estavel = 0;
+      let n = 0;
+      const quadroPasso = () => {
         if (!vivo || pausadoRef.current) return;
         const r = el.getBoundingClientRect();
-        setFoco(r);
-        if (!reduz) { const p = aoLado(r); ir(p.x, p.y); }
-        depoisFala = window.setTimeout(() => {
-          if (!vivo || pausadoRef.current) return;
-          setFala({ texto: passo.texto, modo: 'tour' });
-        }, reduz ? 0 : 900);
-      }, reduz ? 30 : 380);
+        const chave = `${Math.round(r.top)}:${Math.round(r.left)}`;
+        estavel = chave === ultimo ? estavel + 1 : 0;
+        ultimo = chave;
+        n += 1;
+        if (estavel >= 3 || n > 48) apontar(el);
+        else quadro = requestAnimationFrame(quadroPasso);
+      };
+      quadro = requestAnimationFrame(quadroPasso);
     };
-    const id = window.setTimeout(mostrar, 80);
-    return () => { vivo = false; window.clearTimeout(id); window.clearTimeout(espera); window.clearTimeout(depoisFala); };
-    // seguir lê o passo atual; o efeito acompanha o índice e a rota
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const id = window.setTimeout(mostrar, 50);
+    return () => {
+      vivo = false;
+      window.clearTimeout(id);
+      window.clearTimeout(espera);
+      window.clearTimeout(depoisFala);
+      cancelAnimationFrame(quadro);
+    };
   }, [tour, pathname, oculto, min, pausado, reduz]);
 
   useEffect(() => {
@@ -287,45 +481,112 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     const regra = DICAS_TELA.find((d) => d.teste(pathname));
     if (!regra) return;
     let falaTimer = 0;
+    let espera = 0;
     const id = window.setTimeout(() => {
-      if (tourRef.current !== null && !pausadoRef.current) return;
-      const el = visivel(regra.sel);
+      if ((tourRef.current !== null && !pausadoRef.current) || falaRef.current) return;
+      const el = escolher(regra.sel);
       if (!el) return;
       dicasDaSessao.add(pathname);
-      const r = el.getBoundingClientRect();
-      setFoco(r);
-      if (!reduz) { const p = aoLado(r); ir(p.x, p.y); }
-      falaTimer = window.setTimeout(() => {
+      const mostrar = () => {
         if (tourRef.current !== null && !pausadoRef.current) return;
-        setFala({ texto: regra.texto, modo: 'tela' });
-      }, reduz ? 0 : 900);
+        const r = anelDe(el.getBoundingClientRect());
+        alvoRef.current = el;
+        setFoco(r);
+        if (!reduz) {
+          const p = aoLadoDoAlvo(rectDe(r), window.innerWidth, window.innerHeight, navCaixa());
+          irRef.current(p.x, p.y);
+        }
+        falaTimer = window.setTimeout(() => {
+          if (tourRef.current !== null && !pausadoRef.current) return;
+          setFala({ texto: regra.texto, modo: 'tela' });
+        }, reduz ? 0 : 760);
+      };
+      if (reduz || preso(el) || jaNaTela(el.getBoundingClientRect())) mostrar();
+      else {
+        el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        espera = window.setTimeout(mostrar, 520);
+      }
     }, 1500);
-    return () => { window.clearTimeout(id); window.clearTimeout(falaTimer); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, tour, pausado, min, oculto]);
+    return () => { window.clearTimeout(id); window.clearTimeout(falaTimer); window.clearTimeout(espera); };
+  }, [pathname, tour, pausado, min, oculto, reduz]);
 
   useEffect(() => {
-    if (!pronto || min || reduz || (tour !== null && !pausado) || fala || oculto) return;
-    const id = window.setInterval(() => {
-      if (tourRef.current !== null && !pausadoRef.current) return;
-      const c = casaDoMidas();
-      ir(c.x + (Math.random() > 0.5 ? 36 : -28), c.y - 10);
-      depois(2000, () => ir(casaDoMidas().x, casaDoMidas().y));
-    }, 8000);
-    return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pronto, min, reduz, tour, pausado, fala, oculto]);
+    if (!foco) return;
+    let quadro = 0;
+    const atualizar = () => {
+      const el = alvoRef.current;
+      if (!el?.isConnected) return;
+      const r = anelDe(el.getBoundingClientRect());
+      setFoco((prev) => (prev && Math.abs(prev.top - r.top) < 1 && Math.abs(prev.left - r.left) < 1 && Math.abs(prev.width - r.width) < 1 && Math.abs(prev.height - r.height) < 1 ? prev : r));
+    };
+    const noScroll = () => { cancelAnimationFrame(quadro); quadro = requestAnimationFrame(atualizar); };
+    window.addEventListener('scroll', noScroll, true);
+    window.addEventListener('resize', noScroll);
+    return () => {
+      cancelAnimationFrame(quadro);
+      window.removeEventListener('scroll', noScroll, true);
+      window.removeEventListener('resize', noScroll);
+    };
+  }, [foco !== null]); // eslint-disable-line react-hooks/exhaustive-deps -- liga uma vez enquanto o alvo existe
 
-  useEffect(() => { setMiuda(false); }, [fala?.texto]);
+  useEffect(() => {
+    const onAviso = (ev: Event) => {
+      const texto = String((ev as CustomEvent<string>).detail ?? '');
+      if (/gasto anotado|compra no cartão|compra no cartao/i.test(texto)) {
+        const frase = comentarioDoGasto(getEstado(), hoje) ?? 'Anotado.';
+        festejarRef.current(frase, 'festa');
+      }
+    };
+    window.addEventListener('gs-aviso', onAviso);
+    return () => window.removeEventListener('gs-aviso', onAviso);
+  }, []);
+
+  useEffect(() => {
+    const mapa = new Map(e.metas.map((m) => [m.id, somaGuardada(m.guardados)]));
+    const antes = metasVistas.current;
+    metasVistas.current = mapa;
+    if (!antes) return;
+    for (const m of e.metas) {
+      const agora = mapa.get(m.id) ?? 0;
+      const prev = antes.get(m.id);
+      if (prev === undefined || prev >= m.alvo || agora < m.alvo) continue;
+      festejarRef.current(`Meta ${m.nome} batida.`, 'meta');
+    }
+  }, [e.metas]);
+
   useLayoutEffect(() => {
     const el = falaEl.current;
     if (!el || !fala || min || oculto) { setAncora(null); return; }
-    const lugar = lugarDaFala(el.offsetWidth, el.offsetHeight, pos.x, pos.y - el.offsetHeight - 8, obstaculos(foco));
-    if (!lugar) { if (!miuda) setMiuda(true); return; }
+    const criticos = [...document.querySelectorAll('nav.cm-abas, .cm-mais, .pn-acao, .as-barra, .pn-redondo, .pn-periodo button, .pn-stat, .pn-ftile, .pn-hero, .gs-btn')].flatMap((el) => {
+      if (el.closest('.as-mascote, .as-fala')) return [];
+      const r = el.getBoundingClientRect();
+      return r.width > 8 && r.height > 8 ? [{ l: r.left - 6, t: r.top - 6, r: r.right + 6, b: r.bottom + 6 }] : [];
+    });
+    const hero = document.querySelector('.pn-hero')?.getBoundingClientRect();
+    const lugar = lugarSemCobrir(el.offsetWidth || 220, el.offsetHeight || 96, pos.x, pos.y, window.innerWidth, window.innerHeight, criticos, hero && hero.width > 8 ? [rectDe(hero)] : [], navCaixa());
+    const busca = document.querySelector('.as-barra')?.getBoundingClientRect();
+    const altura = el.offsetHeight || 96;
+    let topo = lugar.t;
+    if (busca && busca.height > 8 && topo < busca.bottom && topo + altura > busca.top - 14) {
+      const acima = busca.top - 14 - altura;
+      if (acima >= 4) topo = acima;
+      else if (!apertada) { setApertada(true); return; }
+    }
     const l = Math.round(lugar.l - pos.x);
-    const t = Math.round(lugar.t - pos.y);
+    const t = Math.round(topo - pos.y);
     setAncora((prev) => (prev && prev.l === l && prev.t === t ? prev : { l, t }));
-  }, [fala, pos.x, pos.y, foco, min, oculto, pathname, miuda]);
+  }, [fala, pos.x, pos.y, foco, min, oculto, pathname, miuda, apertada]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const fechar = (ev: PointerEvent) => {
+      const alvo = ev.target instanceof Element ? ev.target : null;
+      if (alvo?.closest('.as-menu, .as-opcoes')) return;
+      setMenu(false);
+    };
+    window.addEventListener('pointerdown', fechar, true);
+    return () => window.removeEventListener('pointerdown', fechar, true);
+  }, [menu]);
 
   const alternarMin = () => {
     const prox = !min;
@@ -334,7 +595,9 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     setMenu(false);
     setFala(null);
     setFoco(null);
-    ir(casaDoMidas().x, casaDoMidas().y);
+    alvoRef.current = null;
+    const c = cantoLivre();
+    ir(c.x, c.y);
   };
 
   return (
@@ -343,35 +606,48 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       <div className="as-foco" style={{ width: Math.round(foco.width + 12), height: Math.round(foco.height + 12), transform: `translate3d(${Math.round(foco.left - 6)}px, ${Math.round(foco.top - 6)}px, 0)` }} />
     )}
     <div
-      className={`as-mascote${min ? ' min' : ''}${andando ? ' andando' : ''}${reduz ? ' parado' : ''}${oculto ? ' oculto' : ''}${pausado ? ' pausado' : ''}${pronto ? '' : ' sem-mover'}`}
+      className={`as-mascote${min ? ' min' : ''}${andando ? ' andando' : ''}${reduz ? ' parado' : ''}${oculto ? ' oculto' : ''}${pausado ? ' pausado' : ''}${humor ? ` ${humor}` : ''}${fala?.tom ? ` tom-${fala.tom}` : ''}${fala?.humor ? ` ${fala.humor}` : ''}`}
       style={{ transform: `translate3d(${Math.round(pos.x)}px, ${Math.round(pos.y)}px, 0)` }}
     >
-      <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}`}>
-        <button type="button" className="as-orb-btn" onClick={onAbrir} aria-label={`Perguntar ao ${NOME_ASSISTENTE}, seu assistente`}>
+      <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}${chega ? ' chega' : ''}`}>
+        <button type="button" className={`as-orb-btn${mexe ? ' toque' : ''}`} onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 520); if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
           <Orbe tamanho={min ? 40 : 52} />
+          <i className="as-faisca" aria-hidden="true" /><i className="as-faisca" aria-hidden="true" /><i className="as-moeda" aria-hidden="true" />
         </button>
         <span className="as-pernas" aria-hidden="true"><i /><i /></span>
       </div>
       {fala && !min && !oculto && (
-        <div ref={falaEl} className={`as-fala${miuda ? ' miuda' : ''}`} role="dialog" aria-label="Dica do Midas" style={ancora ? { left: ancora.l, top: ancora.t } : { visibility: 'hidden' }}>
-          <p>{fala.texto}</p>
-          <div>
-            {fala.modo === 'tour' ? (
-              <>
-                <button type="button" onClick={encerrar}>Pular</button>
-                <button type="button" onClick={() => seguir((tour ?? 0) + 1)}>{tour !== null && tour >= TOUR.length - 1 ? 'Pronto' : 'Próximo'}</button>
-              </>
-            ) : (
-              <button type="button" onClick={() => { setFala(null); setFoco(null); }}>Fechar</button>
-            )}
-          </div>
+        <div key={fala.id ?? fala.texto} ref={falaEl} className={`as-fala${miuda ? ' miuda' : ''}${apertada ? ' as-apertada' : ''} ${fala.tom ?? (fala.modo === 'festa' ? 'ok' : 'neutro')}${ancora && ancora.t > 36 ? ' cauda-cima' : ' cauda-baixo'}`} role={fala.modo === 'festa' ? 'status' : 'dialog'} aria-live="polite" aria-label={fala.texto} style={ancora ? { left: ancora.l, top: ancora.t } : { visibility: 'hidden' }}>
+          <p className={reduz ? undefined : 'as-revela'}>{(fala.icone || fala.tom) && <span className={`as-chip ${fala.tom ?? 'neutro'}`} aria-hidden="true">{fala.icone ?? '💡'}</span>}<FraseDica texto={fala.texto} /></p>
+          {typeof fala.total === 'number' && fala.total > 1 && (
+            <span className="as-pontos" aria-label={`Dica ${(fala.indice ?? 0) + 1} de ${fala.total}`}>
+              {Array.from({ length: Math.min(fala.total, 6) }, (_, i) => <i key={i} className={i === (fala.total! <= 6 ? fala.indice : (fala.indice ?? 0) % 6) ? 'on' : ''} />)}
+            </span>
+          )}
+          {fala.modo !== 'festa' && (
+            <div>
+              {fala.modo === 'tour' ? (
+                <>
+                  <button type="button" className="sec" onClick={encerrar}>Pular</button>
+                  <button type="button" className="prim" onClick={() => seguir((tour ?? 0) + 1)}>{tour !== null && tour >= TOUR.length - 1 ? 'Pronto' : 'Próximo'}</button>
+                </>
+              ) : fala.modo === 'dica' ? (
+                <>
+                  {fala.rota && fala.rota !== pathname ? <Link className="prim" to={fala.rota} onClick={() => setFala(null)}>{fala.rotulo ?? 'Ver'}</Link> : <button type="button" className="prim" onClick={() => setFala(null)}>Ver</button>}
+                  <button type="button" className="sec" onClick={() => mostrarDica(true)}>Outra dica</button>
+                </>
+              ) : (
+                <button type="button" className="sec" onClick={() => { setFala(null); setFoco(null); alvoRef.current = null; }}>Fechar</button>
+              )}
+            </div>
+          )}
         </div>
       )}
       {!min && (
         <button type="button" className="as-opcoes" aria-expanded={menu} aria-label="Opções do Midas" onClick={() => setMenu((v) => !v)}>⋯</button>
       )}
       {menu && !min && (
-        <div className="as-menu" role="menu">
+        <div className={`as-menu${pos.y < 150 ? ' baixo' : ''}${pos.x > window.innerWidth - 196 ? ' direita' : ''}`} role="menu">
           <button type="button" role="menuitem" onClick={() => seguir(tourRef.current ?? 0)}>Me mostra o app</button>
           <button type="button" role="menuitem" onClick={() => { setMenu(false); onAbrir(); }}>Perguntar</button>
         </div>
@@ -382,7 +658,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   );
 }
 
-export function Assistente() {
+function AssistenteNoApp() {
   const e = useEstado();
   const hoje = useHoje();
   const { pathname } = useLocation();
@@ -396,6 +672,7 @@ export function Assistente() {
   const estado = useRef({ e, hoje, msgs });
   estado.current = { e, hoje, msgs };
   const nome = primeiroNome(e.config.nome || getName() || '');
+  const noApp = e.config.onboardingFeito;
 
   const enviar = async (pergunta: string) => {
     const p = pergunta.trim();
@@ -447,6 +724,8 @@ export function Assistente() {
   // trocar de tela (tocou num atalho da resposta) fecha o painel no celular
   useEffect(() => { setAberto(false); }, [pathname]);
 
+  if (!noApp) return null;
+
   return (
     <>
       <Mascote oculto={aberto} onAbrir={() => { setAberto(true); setBalao(false); }} />
@@ -486,4 +765,12 @@ export function Assistente() {
       </aside>
     </>
   );
+}
+
+/** Fora do app (a página de entrada) ele nem monta, para não gravar o estado de quem só está lendo. */
+export function Assistente() {
+  const session = useSession();
+  const { pathname } = useLocation();
+  if (!rotaDoApp(pathname) || !(painelToken() || session)) return null;
+  return <AssistenteNoApp />;
 }
