@@ -220,6 +220,65 @@ html.gs-app[data-tema="escuro"] .pn-skel .sk-card {
   background-size: 400% 100%;
 }
 
+html.gs-app .pn.pn-v2 .pn-palco { --colapso: 0; }
+html.gs-app .pn.pn-v2 .pn-palco .pn-ola h1 {
+  transform: translateY(calc(var(--colapso) * -8px)) scale(calc(1 - var(--colapso) * .2));
+  transform-origin: left center;
+}
+html.gs-app .pn.pn-v2 .pn-palco::after {
+  transform: translate3d(calc(var(--colapso) * 28px), calc(var(--colapso) * -36px), 0) scale(calc(1 - var(--colapso) * .12));
+}
+html.gs-app .pn.pn-v2 .pn-hero { view-transition-name: gs-hero; }
+html.gs-app .pn.pn-v2 .pn-brilho {
+  position: absolute;
+  inset: -20% -40%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 36%, rgba(255, 244, 214, .34) 50%, transparent 64%);
+  animation: gs-brilho 3.4s ease-in-out infinite;
+}
+@keyframes gs-brilho { from { transform: translateX(-40%); } to { transform: translateX(40%); } }
+html.gs-app .pn.pn-v2 .pn-anel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: conic-gradient(#F3E2B0 calc(var(--pct) * 1%), rgba(255, 255, 255, .16) 0);
+  -webkit-mask: radial-gradient(circle, transparent 58%, #000 60%);
+  mask: radial-gradient(circle, transparent 58%, #000 60%);
+}
+.pn-periodo { display: flex; gap: 6px; margin-bottom: 6px; }
+.pn-periodo button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .08);
+  color: inherit;
+  font: 700 12px var(--cm-sans, sans-serif);
+}
+.pn-periodo button.on { background: #E6C77A; color: #1B1408; }
+.pn-grafico.mes .gm-barras { animation: gs-entra .42s cubic-bezier(.2, 1.35, .32, 1); }
+.gm-toque { position: relative; display: block; touch-action: pan-y; }
+.gm-dica {
+  position: absolute;
+  left: 0;
+  top: -22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1B1915;
+  color: #F8F1E2;
+  font: 700 11px var(--cm-sans, sans-serif);
+  pointer-events: none;
+}
+.gm-medidor .valor { transition: stroke-dashoffset 1.05s cubic-bezier(.16, 1.2, .32, 1); }
+::view-transition-old(root) { animation: gs-sai .32s ease both; }
+::view-transition-new(root) { animation: gs-entra .4s cubic-bezier(.22, 1, .36, 1) both; }
+::view-transition-old(gs-hero),
+::view-transition-new(gs-hero) { animation-duration: .45s; }
+@keyframes gs-sai { to { opacity: 0; transform: translateY(-10px) scale(.98); } }
+
 @media (prefers-reduced-motion: reduce) {
   .as-mascote,
   .as-mascote .as-orbe,
@@ -241,7 +300,11 @@ html.gs-app[data-tema="escuro"] .pn-skel .sk-card {
   .gm-minilinha path,
   .gm-medidor .valor,
   .gs-skel .sk,
-  .pn-skel .sk { animation: none !important; transition: none !important; }
+  .pn-skel .sk,
+  html.gs-app .pn.pn-v2 .pn-brilho,
+  .pn-grafico.mes .gm-barras { animation: none !important; transition: none !important; }
+  ::view-transition-old(root),
+  ::view-transition-new(root) { animation: none !important; }
   .gm-linha .traco,
   .gm-minilinha path { stroke-dashoffset: 0; stroke-dasharray: none; }
   html.gs-mola .gs-app2 .gs-principal { transform: none; }

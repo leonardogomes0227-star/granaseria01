@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import { importarComRetry } from './gs/importar';
 import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom';
 const PrivacyPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.PrivacyPage })));
@@ -189,6 +190,23 @@ function App() {
   useEffect(() => {
     if (location.pathname === '/' || location.pathname === '/inicio') setSavedProgress(loadSavedProgress());
   }, [location.pathname]);
+
+  useEffect(() => {
+    const noClique = (ev: MouseEvent) => {
+      if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      const alvo = ev.target instanceof Element ? ev.target.closest('a[href]') : null;
+      if (!(alvo instanceof HTMLAnchorElement) || alvo.target === '_blank' || alvo.origin !== window.location.origin) return;
+      if (typeof document.startViewTransition !== 'function') return;
+      const url = new URL(alvo.href);
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+      ev.preventDefault();
+      const ir = () => navigate(`${url.pathname}${url.search}${url.hash}`);
+      try { document.startViewTransition(() => { flushSync(ir); }); } catch { ir(); }
+    };
+    document.addEventListener('click', noClique);
+    return () => document.removeEventListener('click', noClique);
+  }, [navigate]);
 
   const session = useSession();
   useEffect(() => {

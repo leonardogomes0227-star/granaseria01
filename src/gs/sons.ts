@@ -114,7 +114,17 @@ function emitir(ctxAtual: AudioContext, tipo: TipoSom) {
   nota(ctxAtual, master, 155.56, agora + 0.06, 0.16, 'sine', 0.028);
 }
 
+/** Vibração curta, só onde o aparelho deixa e quem não pediu menos movimento. */
+export function vibrar(ms: number | number[]) {
+  if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+  try {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    navigator.vibrate(ms);
+  } catch { /* sem motor */ }
+}
+
 export function tocar(tipo: TipoSom) {
+  vibrar(tipo === 'sucesso' ? [8, 30, 12] : tipo === 'erro' ? [14, 40, 14] : 8);
   const ctxAtual = contexto();
   if (!ctxAtual) return;
   const play = () => { if (ctxAtual.state === 'running' && sonsLigados()) emitir(ctxAtual, tipo); };

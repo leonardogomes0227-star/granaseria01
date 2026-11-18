@@ -1,14 +1,27 @@
 // Gráficos pequenos dos cards do Início (só desenho; os números vêm prontos).
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type PointerEvent as ReactPointerEvent } from 'react';
 
-/** Barrinhas (ex.: gasto dos últimos 7 dias). A última barra é a de hoje, em destaque. */
-export function MiniBarras({ valores, rotulo }: { valores: number[]; rotulo: string }) {
+/** Barrinhas. Arrastar o dedo mostra o valor daquele dia. */
+export function MiniBarras({ valores, rotulo, rotulos, onEscolha }: { valores: number[]; rotulo: string; rotulos?: string[]; onEscolha?: (i: number) => void }) {
   const max = Math.max(1, ...valores);
+  const [i, setI] = useState<number | null>(null);
+  const escolher = (ev: ReactPointerEvent<SVGSVGElement>) => {
+    const r = ev.currentTarget.getBoundingClientRect();
+    const idx = Math.min(valores.length - 1, Math.max(0, Math.floor(((ev.clientX - r.left) / Math.max(1, r.width)) * valores.length)));
+    setI((prev) => {
+      if (prev !== idx) onEscolha?.(idx);
+      return idx;
+    });
+  };
+  const ativo = i ?? valores.length - 1;
   return (
-    <svg className="gm-barras" viewBox={`0 0 ${valores.length * 10} 32`} role="img" aria-label={rotulo} preserveAspectRatio="none">
-      {valores.map((v, i) => { const h = Math.max(3, (v / max) * 30); return <rect key={i} x={i * 10 + 2} y={32 - h} width={6} height={h} rx={3} className={i === valores.length - 1 ? 'hoje' : ''} style={{ animationDelay: `${i * 45}ms` }} />; })}
-    </svg>
+    <span className="gm-toque">
+      <svg className="gm-barras" viewBox={`0 0 ${valores.length * 10} 32`} role="img" aria-label={rotulo} preserveAspectRatio="none" onPointerDown={escolher} onPointerMove={(ev) => { if (ev.buttons === 1 || ev.pointerType === 'touch') escolher(ev); }}>
+        {valores.map((v, n) => { const h = Math.max(3, (v / max) * 30); return <rect key={n} x={n * 10 + 2} y={32 - h} width={6} height={h} rx={3} className={n === ativo ? 'hoje' : ''} style={{ animationDelay: `${n * 45}ms` }} />; })}
+      </svg>
+      {i !== null && <em className="gm-dica">{rotulos?.[i] ?? `Dia ${i + 1}`} · {valores[i].toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })}</em>}
+    </span>
   );
 }
 

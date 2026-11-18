@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUp, ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { useSession } from '../account';
 import { getName, painelToken } from '../painel';
-import { useEstado } from './store';
+import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
+import { comentarioDoGasto, dicasDoMidas, textoSeCouber, type Dica } from './midasDicas';
 import { rotaDoApp } from './visual';
 import { aoLadoDoAlvo, casaDoMidas, cruza, lugarDaFala, type Caixa } from './midasPosicao';
 import { NOME_ASSISTENTE, SUGESTOES, perguntarAoAssistente, type MensagemAssistente } from './assistenteLocal';
@@ -57,6 +58,26 @@ const gravarMidas = (p: PrefMidas) => {
   try { localStorage.setItem(CHAVE_MIDAS, JSON.stringify({ ...lerMidas(), ...p })); } catch { /* segue nesta visita */ }
 };
 const dicasDaSessao = new Set<string>();
+const vistasMidas: Record<string, number> = {};
+let iaDoCoach: Promise<boolean> | null = null;
+const coachLigado = () => (iaDoCoach ??= fetch('/api/conselheiro').then((r) => (r.ok ? r.json() : {})).then((j: { ativo?: boolean }) => j.ativo === true).catch(() => false));
+/** A regra já fala. Se o conselheiro estiver ligado no servidor, ele só pode encurtar a mesma frase. */
+async function enriquecer(dica: Dica): Promise<string> {
+  const tk = painelToken();
+  if (!tk || !(await coachLigado())) return dica.texto;
+  try {
+    const res = await fetch('/api/conselheiro', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tk}` },
+      body: JSON.stringify({ question: `Reescreva em uma frase curta, em português do Brasil, sem mudar nenhum número: ${dica.texto}`, history: [] }),
+    });
+    if (!res.ok) return dica.texto;
+    const j = (await res.json()) as { reply?: string };
+    return textoSeCouber(dica.texto, j.reply);
+  } catch {
+    return dica.texto;
+  }
+}
 /** O passo da visita nesta aba. Não vai pro localStorage: só evita perder o guia quando a tela remonta. */
 let guiaMemoria: { indice: number; pausado: boolean } | null = null;
 /** A posição também sobrevive a um remonte, para ele não piscar de volta pro canto. */
@@ -171,6 +192,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   const nav = useNavigate();
   const { pathname } = useLocation();
   const e = useEstado();
+  const hoje = useHoje();
   const reduz = useReduz();
   const [min, setMin] = useState(() => lerMidas().min === true);
   const [pos, setPos] = useState(() => posMemoria ?? (typeof document === 'undefined' ? { x: 16, y: 16 } : casaAgora()));
@@ -179,7 +201,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   const [tour, setTour] = useState<number | null>(() => guiaMemoria?.indice ?? null);
   const [pausado, setPausado] = useState(() => guiaMemoria?.pausado ?? false);
   const [foco, setFoco] = useState<DOMRect | null>(null);
-  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' | 'festa' } | null>(null);
+  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' | 'festa' | 'dica'; rota?: string; rotulo?: string; id?: string } | null>(null);
   const [ancora, setAncora] = useState<{ l: number; t: number } | null>(null);
   const [menu, setMenu] = useState(false);
   const [humor, setHumor] = useState<'' | 'festa' | 'meta'>('');
@@ -196,7 +218,8 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   const humorTimer = useRef(0);
   const festaTimer = useRef(0);
   const metasVistas = useRef<Map<string, number> | null>(null);
-  const miuda = typeof window !== 'undefined' && window.innerWidth <= 390;
+  const passoDica = useRef(0);
+  const miuda = typeof window !== 'undefined' && window.innerWidth <= 330;
   tourRef.current = tour;
   pausadoRef.current = pausado;
   falaRef.current = fala;
@@ -342,15 +365,35 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     };
   }, []);
 
+  const mostrarDica = (forcar = false) => {
+    const agora = Date.now();
+    const todas = dicasDoMidas(getEstado(), hoje);
+    if (todas.length === 0) return;
+    const livres = forcar ? todas : dicasDoMidas(getEstado(), hoje, vistasMidas, agora);
+    if (livres.length === 0) return;
+    const dica = forcar ? todas[passoDica.current % todas.length] : livres[0];
+    passoDica.current = (todas.findIndex((d) => d.id === dica.id) + 1) % todas.length;
+    vistasMidas[dica.id] = agora;
+    setFoco(null);
+    alvoRef.current = null;
+    setFala({ texto: dica.texto, modo: 'dica', rota: dica.rota, rotulo: dica.rotulo, id: dica.id });
+    void enriquecer(dica).then((texto) => {
+      if (!vivoRef.current) return;
+      setFala((atual) => (atual?.id === dica.id ? { ...atual, texto } : atual));
+    });
+  };
+  const mostrarDicaRef = useRef(mostrarDica);
+  mostrarDicaRef.current = mostrarDica;
+
   useEffect(() => {
-    if (min || pausado || tour !== null || guiaMemoria || lerMidas().tour) return;
+    if (min || pausado || tour !== null || (fala && fala.modo === 'tour')) return;
     if (pathname !== '/' && pathname !== '/inicio') return;
     const id = window.setTimeout(() => {
-      if (tourRef.current !== null || pausadoRef.current) return;
-      setTour(0);
-    }, 1100);
+      if (tourRef.current !== null || pausadoRef.current || falaRef.current) return;
+      mostrarDicaRef.current(false);
+    }, 900);
     return () => window.clearTimeout(id);
-  }, [pathname, min, pausado, tour]);
+  }, [pathname, min, pausado, tour, hoje]);
 
   useEffect(() => {
     if (tour === null || oculto || min || pausado) return;
@@ -478,7 +521,10 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   useEffect(() => {
     const onAviso = (ev: Event) => {
       const texto = String((ev as CustomEvent<string>).detail ?? '');
-      if (/gasto anotado|compra no cartão|compra no cartao/i.test(texto)) festejarRef.current('Anotado.', 'festa');
+      if (/gasto anotado|compra no cartão|compra no cartao/i.test(texto)) {
+        const frase = comentarioDoGasto(getEstado(), hoje) ?? 'Anotado.';
+        festejarRef.current(frase, 'festa');
+      }
     };
     window.addEventListener('gs-aviso', onAviso);
     return () => window.removeEventListener('gs-aviso', onAviso);
@@ -539,7 +585,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       style={{ transform: `translate3d(${Math.round(pos.x)}px, ${Math.round(pos.y)}px, 0)` }}
     >
       <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}`}>
-        <button type="button" className="as-orb-btn" onClick={onAbrir} aria-label={`Perguntar ao ${NOME_ASSISTENTE}, seu assistente`}>
+        <button type="button" className="as-orb-btn" onClick={() => { if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
           <Orbe tamanho={min ? 40 : 52} />
         </button>
         <span className="as-boca" aria-hidden="true" />
@@ -555,6 +601,11 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
                 <>
                   <button type="button" onClick={encerrar}>Pular</button>
                   <button type="button" onClick={() => seguir((tour ?? 0) + 1)}>{tour !== null && tour >= TOUR.length - 1 ? 'Pronto' : 'Próximo'}</button>
+                </>
+              ) : fala.modo === 'dica' ? (
+                <>
+                  {fala.rota && fala.rota !== pathname ? <Link to={fala.rota} onClick={() => setFala(null)}>{fala.rotulo ?? 'Ver'}</Link> : null}
+                  <button type="button" onClick={() => mostrarDica(true)}>Outra</button>
                 </>
               ) : (
                 <button type="button" onClick={() => { setFala(null); setFoco(null); alvoRef.current = null; }}>Fechar</button>
