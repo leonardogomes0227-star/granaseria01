@@ -69,23 +69,23 @@ async function limiteAtingido(ip: string, hoje: string): Promise<boolean> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  if (!mesmaOrigem(request)) return json({ error: 'origem não permitida' }, 403);
+  if (!mesmaOrigem(request)) return json({ error: 'Não consegui responder a partir desta página.' }, 403);
   const chave = process.env.ANTHROPIC_API_KEY;
-  if (!chave) return json({ guiado: true, error: 'Chat inteligente indisponível: falta configurar ANTHROPIC_API_KEY.' }, 503);
+  if (!chave) return json({ guiado: true, error: 'A conversa livre ainda não está ligada. As respostas guiadas continuam funcionando.' }, 503);
 
   let b: Corpo;
   try {
     const raw = await request.text();
-    if (raw.length > 20_000) return json({ error: 'pedido inválido' }, 413);
+    if (raw.length > 20_000) return json({ error: 'Isso ficou grande demais.' }, 413);
     b = JSON.parse(raw) as Corpo;
   } catch {
-    return json({ error: 'pedido inválido' }, 400);
+    return json({ error: 'Não entendi a pergunta. Escreva de novo.' }, 400);
   }
   const mensagens = (Array.isArray(b.messages) ? b.messages : [])
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim().length > 0)
     .slice(-10)
     .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MSG) }));
-  if (mensagens.length === 0 || mensagens[mensagens.length - 1].role !== 'user') return json({ error: 'pedido inválido' }, 400);
+  if (mensagens.length === 0 || mensagens[mensagens.length - 1].role !== 'user') return json({ error: 'Não entendi a pergunta. Escreva de novo.' }, 400);
   // a conversa tem que começar com a pessoa
   while (mensagens.length && mensagens[0].role !== 'user') mensagens.shift();
 

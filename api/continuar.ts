@@ -16,12 +16,12 @@ export async function POST(request: Request): Promise<Response> {
   }
   contarLimite(`continuar:${ip}`, 60 * 60 * 1000);
   const raw = await request.text();
-  if (raw.length > MAX_BYTES) return Response.json({ error: 'grande demais' }, { status: 413 });
+  if (raw.length > MAX_BYTES) return Response.json({ error: 'Isso ficou grande demais.' }, { status: 413 });
   let body: { state?: Record<string, unknown> };
   try {
     body = JSON.parse(raw);
   } catch {
-    return Response.json({ error: 'JSON inválido' }, { status: 400 });
+    return Response.json({ error: 'Não entendi o pedido. Tente de novo.' }, { status: 400 });
   }
   // só as chaves que o bot entende, e só texto
   const state: Record<string, string> = {};
@@ -29,14 +29,14 @@ export async function POST(request: Request): Promise<Response> {
     const v = body.state?.[k];
     if (typeof v === 'string') state[k] = v;
   }
-  if (!state['selos-wizard-progress']) return Response.json({ error: 'sem diagnóstico' }, { status: 400 });
+  if (!state['selos-wizard-progress']) return Response.json({ error: 'Ainda não há um diagnóstico para continuar.' }, { status: 400 });
 
   const code = Array.from({ length: 6 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
   try {
     await saveHandoff(code, state);
   } catch (err) {
     console.error('Continuar no WhatsApp: não salvou', err);
-    return Response.json({ error: 'indisponível' }, { status: 503 });
+    return Response.json({ error: 'Não consegui guardar agora. Tente de novo.' }, { status: 503 });
   }
   return Response.json({ code });
 }

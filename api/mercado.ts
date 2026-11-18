@@ -17,18 +17,18 @@ function mesmaOrigem(request: Request): boolean {
 }
 
 export async function GET(request: Request): Promise<Response> {
-  if (!mesmaOrigem(request)) return Response.json({ error: 'origem não permitida' }, { status: 403 });
+  if (!mesmaOrigem(request)) return Response.json({ error: 'Não consegui responder a partir desta página.' }, { status: 403 });
   const rapido = new URL(request.url).searchParams.get('rapido') === '1';
   try {
     if (rapido) {
       const r = await obterRapido();
-      if (!r.btc && !r.usd) return Response.json({ error: 'sem dados' }, { status: 503 });
+      if (!r.btc && !r.usd) return Response.json({ error: 'Não consegui buscar os dados do mercado agora.' }, { status: 503 });
       return Response.json({ btc: r.btc, usd: r.usd }, { headers: { 'Cache-Control': 'no-store' } });
     }
     const d = await obterMercado();
-    if (!d) return Response.json({ error: 'sem dados' }, { status: 503 });
+    if (!d) return Response.json({ error: 'Não consegui buscar os dados do mercado agora.' }, { status: 503 });
     return Response.json(d, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
-    return Response.json({ error: 'sem dados' }, { status: 503 });
+    return Response.json({ error: 'Não consegui buscar os dados do mercado agora.' }, { status: 503 });
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, InputHTMLAttributes } from 'react';
+import { digitarDinheiro } from './dinheiroCampo';
 
 // Campo numérico no padrão brasileiro: formata enquanto digita ("4500" → "4.500", vírgula pros centavos).
 // Substitui <input type="number">, que no celular não aceita vírgula direito e não mostra separador de milhar.
@@ -38,21 +39,9 @@ export function DecimalInput({
   }, [value, decimals]);
 
   const handleChange = (raw: string) => {
-    // aceita "." digitado como vírgula quando parece decimal ("12.5"), senão trata ponto como milhar
-    let s = raw;
-    if (decimals > 0 && !s.includes(',') && /\.\d{1,2}$/.test(s) && !/\.\d{3}/.test(s)) s = s.replace(/\.(\d{1,2})$/, ',$1');
-    s = s.replace(/[^\d,]/g, '');
-    const hasComma = decimals > 0 && s.includes(',');
-    const [intRaw, ...decParts] = s.split(',');
-    const dec = decParts.join('').slice(0, decimals);
-    const intDigits = intRaw.replace(/^0+(?=\d)/, '').slice(0, 9);
-
-    let num = parseFloat(`${intDigits || '0'}.${dec || '0'}`);
-    if (num > max) num = max;
-
-    const intFmt = intDigits ? Number(intDigits).toLocaleString('pt-BR') : hasComma ? '0' : '';
-    setText(parseFloat(`${intDigits || '0'}.${dec || '0'}`) > max ? formatNumber(max, decimals) : intFmt + (hasComma ? `,${dec}` : ''));
-    onChange(num);
+    const r = digitarDinheiro(raw, decimals, max);
+    setText(r.texto);
+    onChange(r.valor);
   };
 
   return (

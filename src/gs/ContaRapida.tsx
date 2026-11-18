@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { salvarGastoFixo } from './acoes';
+import { useUmaVez } from './umaVez';
 import { Campo, CampoDinheiro, CampoNumero, Folha } from './ui';
 import { toast } from '../components/ui/Toast';
 
@@ -18,13 +19,17 @@ function Formulario({ conta, onFechar }: { conta: ContaInicial; onFechar: () => 
   const [tentou, setTentou] = useState(false);
   const nomeOk = nome.trim().length > 0;
   const diaOk = typeof dia === 'number' && dia >= 1 && dia <= 31;
+  const envio = useUmaVez();
   const salvar = (ev: React.FormEvent) => {
     ev.preventDefault();
-    setTentou(true);
-    if (!nomeOk || !(valor > 0) || !diaOk) return;
-    if (!salvarGastoFixo({ id: conta.id, nome, valor, diaVencimento: dia as number, categoria: conta.categoria })) return;
-    toast(`${nome.trim()} ${conta.id ? 'atualizada' : 'adicionada'}`);
-    onFechar();
+    envio.tentar(() => {
+      setTentou(true);
+      if (!nomeOk || !(valor > 0) || !diaOk) return false;
+      if (!salvarGastoFixo({ id: conta.id, nome, valor, diaVencimento: dia as number, categoria: conta.categoria })) return false;
+      toast(`${nome.trim()} ${conta.id ? 'atualizada' : 'adicionada'}`);
+      onFechar();
+      return true;
+    });
   };
   return (
     <Folha aberta onFechar={onFechar} titulo={conta.id ? `Editar ${conta.nome}` : conta.nomeLivre ? 'Outra conta fixa' : conta.nome}>
