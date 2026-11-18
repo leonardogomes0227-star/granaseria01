@@ -125,7 +125,8 @@ export function Caderno() {
   const orcamento = Object.values(e.limites).reduce((t, n) => t + (typeof n === 'number' ? n : 0), 0);
   const baseGasto = orcamento > 0 ? orcamento : e.config.renda;
   const rotuloGasto = orcamento > 0 ? 'do orçamento' : 'da renda';
-  const pctGasto = baseGasto > 0 ? Math.min(100, Math.round((gastoMes / baseGasto) * 100)) : null;
+  const pctGasto = baseGasto > 0 ? Math.round((gastoMes / baseGasto) * 100) : null;
+  const pctBarra = pctGasto === null ? 0 : Math.min(100, pctGasto);
   const guardado = guardadoNoMes(e, mes);
   const saude = useMemo(() => (e.config.renda > 0 ? saudeFinanceira(e, mes, hoje) : null), [e, mes, hoje]);
   const sequencia = useMemo(() => sequenciaDeDias(e, hoje), [e, hoje]);
@@ -214,9 +215,9 @@ export function Caderno() {
       <Secao titulo="Seus números" sub="Gasto, contas em aberto e o que você guardou neste mês.">
         <div className="pn-stats">
           <Link to="/lancamentos" className="pn-stat">
-            <span><small>Gasto no mês</small><b>{m(brl0(gastoContado))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : `${pctGasto}% ${rotuloGasto}`}</em></span>
+            <span><small>Gasto no mês</small><b>{m(brl0(gastoContado))}</b><em>{pctGasto === null ? 'Últimos 7 dias' : pctGasto > 100 ? `${pctGasto}% ${rotuloGasto} · passou` : `${pctGasto}% ${rotuloGasto}`}</em></span>
             <MiniBarras valores={seteDias} rotulo="Gasto de cada um dos últimos 7 dias" />
-            {pctGasto !== null && <span className={`pn-uso${pctGasto >= 80 ? ' alto' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctGasto} aria-label={`Gasto no mês, ${pctGasto}% ${rotuloGasto}`}><i style={{ width: `${pctGasto}%` }} /></span>}
+            {pctGasto !== null && <span className={`pn-uso${pctGasto >= 80 ? ' alto' : ''}`} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pctBarra} aria-label={`Gasto no mês, ${pctGasto}% ${rotuloGasto}`}><i style={{ width: `${pctBarra}%` }} /></span>}
           </Link>
           <Link to="/pagar" className="pn-stat">
             <i aria-hidden="true"><Receipt size={18} /></i>
@@ -344,7 +345,7 @@ export function Caderno() {
           <section className="pn-card pn-zap" aria-label="Anote pelo WhatsApp">
             <i aria-hidden="true"><MessageCircle size={22} /></i>
             <h2>Anote pelo WhatsApp</h2>
-            <p className="pn-sub">Mande "gastei 35 no mercado" ou a foto do cupom. Eu anoto aqui.</p>
+            <p className="pn-sub">Mande "gastei 35 no mercado". Eu anoto aqui.</p>
             <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer"><ShieldCheck size={16} aria-hidden="true" /> Abrir o WhatsApp</a>
           </section>
         </div>

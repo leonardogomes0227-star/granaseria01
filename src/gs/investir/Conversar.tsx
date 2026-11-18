@@ -63,7 +63,7 @@ export function Conversar() {
 
   return (
     <>
-      {guiado && <p className="gs-banner" role="status">Chat inteligente indisponível: falta configurar ANTHROPIC_API_KEY. Estou respondendo no modo guiado, com os seus números.</p>}
+      {guiado && <p className="gs-banner" role="status">A conversa livre ainda não está ligada. Estou respondendo com as contas do app, usando os seus números.</p>}
       <div className="gs-card" style={{ minHeight: 280 }} aria-live="polite">
         {chat.length === 0 && <p className="gs-sub" style={{ margin: 0 }}>Pergunte sobre quanto investir, onde guardar a reserva ou como funciona o mercado. Eu uso os seus números e os dados de mercado do app.</p>}
         {chat.map((m) => (

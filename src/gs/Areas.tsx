@@ -351,13 +351,13 @@ export function Perfil() {
 
       <section className="cm-card" id="whatsapp" aria-label="WhatsApp">
         <Eyebrow>Anote pelo WhatsApp</Eyebrow>
-        <b style={{ display: 'block', font: '600 24px/1.2 var(--cm-serif)', margin: '6px 0' }}>Mande "gastei 35 no mercado" ou a foto do cupom.</b>
+        <b style={{ display: 'block', font: '600 24px/1.2 var(--cm-serif)', margin: '6px 0' }}>Mande "gastei 35 no mercado".</b>
         <p className="cm-mudo" style={{ margin: '0 0 6px' }}>Eu anoto, categorizo e o gasto aparece aqui com o selo "via WhatsApp". Também funciona:</p>
         <ul className="cm-mudo" style={{ margin: '0 0 14px', paddingLeft: 18, lineHeight: 1.6 }}>
           <li><b>recebi 3000 de salário</b>: registra a entrada</li>
           <li><b>quanto posso gastar hoje?</b>: responde com o seu número</li>
           <li><b>resumo</b>: como está o seu mês</li>
-          <li>foto de comprovante de pix ou áudio contando o gasto</li>
+          <li>escreva o valor; a leitura de foto e de áudio ainda não está ligada</li>
         </ul>
         <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Abrir o WhatsApp</a>
       </section>

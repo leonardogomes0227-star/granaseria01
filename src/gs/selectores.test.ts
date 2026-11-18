@@ -66,6 +66,9 @@ describe('seletores', () => {
     expect(vencimentoNoMes('2026-02', 31)).toBe('2026-02-28');
     expect(vencimentoNoMes('2028-02', 30)).toBe('2028-02-29');
     expect(vencimentoNoMes('2026-04', 31)).toBe('2026-04-30');
+    expect(diasRestantes('2028-02', '2028-02-29')).toBe(1);
+    expect(diasRestantes('2026-02', '2026-02-28')).toBe(1);
+    expect(vencimentoNoMes('2028-02', 31)).toBe('2028-02-29');
   });
   it('estado das contas: atrasada, vence logo, em dia, paga', () => {
     const e = base();

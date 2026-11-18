@@ -16,6 +16,7 @@ import { FestaQuitou, type Quitada } from './FestaQuitou';
 import { capacidadeDePagamento, completarParcelada, economiaDoPlano, pagamentoSugerido, pagoNaDivida, pagoNoMes, planoDoMes, proximaAcao, quitarMaisRapido } from './painelDividas';
 import { useHoje } from './useHoje';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
+import { useUmaVez } from './umaVez';
 import type { Divida } from './tipos';
 
 /* ---------- Quitar dívidas: um painel vivo. Contagem até ficar livre, meta do mês, o que fazer agora e quanto o seu bolso aguenta. ---------- */
@@ -269,7 +270,8 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
 }
 function PagarSheet({ divida, sugerido, onFechar, onQuitou }: { divida: Divida | null; sugerido: number; onFechar: () => void; onQuitou: (q: Quitada) => void }) {
   const [v, setV] = useState(0);
-  useEffect(() => setV(divida ? Math.min(sugerido || 0, saldoAtual(divida)) : 0), [divida, sugerido]);
+  const envio = useUmaVez();
+  useEffect(() => { envio.soltar(); setV(divida ? Math.min(sugerido || 0, saldoAtual(divida)) : 0); }, [divida, sugerido, envio]);
   return (
     <Folha aberta={Boolean(divida)} onFechar={onFechar} titulo={divida ? `Pagamento em ${divida.nome}` : ''}>
       <CampoDinheiro rotulo="Quanto você pagou?" valor={v} onChange={setV} grande />
@@ -280,18 +282,20 @@ function PagarSheet({ divida, sugerido, onFechar, onQuitou }: { divida: Divida |
           className="gs-btn"
           disabled={!(v > 0)}
           onClick={() => {
-            if (!divida) return;
-            const data = hojeSP();
-            const valor = v;
-            const id = divida.id;
-            const quita = valor >= saldoAtual(divida) - 0.005;
-            if (pagarDivida(id, valor, data)) {
+            envio.tentar(() => {
+              if (!divida || !(v > 0)) return false;
+              const data = hojeSP();
+              const valor = v;
+              const id = divida.id;
+              const quita = valor >= saldoAtual(divida) - 0.005;
+              if (!pagarDivida(id, valor, data)) return false;
               if (quita) {
                 onQuitou({ nome: divida.nome, valor: divida.saldo, libera: divida.parcelaMinima, desfazer: () => desfazerPagamentoDivida(id, data, valor) });
               }
               else toast(`Pagamento de ${brl0(valor)} registrado`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerPagamentoDivida(id, data, valor) } });
-            }
-            onFechar();
+              onFechar();
+              return true;
+            });
           }}
         >
           Registrar pagamento

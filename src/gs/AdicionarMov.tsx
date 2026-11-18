@@ -9,6 +9,7 @@ import { CATEGORIAS_MOV, type Lancamento, type Receita, type Transferencia } fro
 import { brl, hoje as hojeSP, somaDias } from './datas';
 import { iconeDe } from './categorias';
 import { Campo, CampoDinheiro, Folha } from './ui';
+import { useUmaVez } from './umaVez';
 import { impactoCompra } from './faturaCsv';
 import { folgaMensal } from './selectores';
 import { mesDe } from './datas';
@@ -62,6 +63,7 @@ export function AdicionarMov() {
   const [avisoCartao, setAvisoCartao] = useState('');
   const contasRef = useRef(e.contas);
   contasRef.current = e.contas;
+  const envio = useUmaVez();
   const hoje = hojeSP();
   const ontem = somaDias(hoje, -1);
   const atalhos = useMemo(() => atalhosFrequentes(e, hoje), [e, hoje]);
@@ -71,6 +73,7 @@ export function AdicionarMov() {
       const p = (ev as CustomEvent<PedidoAdicionar>).detail ?? {};
       const g = p.editarGasto, r = p.editarReceita, t = p.editarTransferencia;
       const ultima = lerConta();
+      envio.soltar();
       setErro(''); setApagar(false); setNovaConta(''); setParcelasCartao(1); setAvisoCartao('');
       setOriginal(g ?? r ?? t ?? null);
       setEditId(g?.id ?? r?.id ?? t?.id ?? null);
@@ -90,7 +93,7 @@ export function AdicionarMov() {
     };
     window.addEventListener(EVENTO_ADICIONAR, abrir);
     return () => window.removeEventListener(EVENTO_ADICIONAR, abrir);
-  }, []);
+  }, [envio]);
 
   const fechar = () => setAberta(false);
   const [lendo, setLendo] = useState(false);
@@ -147,34 +150,38 @@ export function AdicionarMov() {
 
   const salvar = (ev?: React.FormEvent) => {
     ev?.preventDefault();
-    const m = validar1() || validarTransf();
-    if (m) { setErro(m); if (!tudo) setPasso(validar1() ? 1 : 2); return; }
-    if (data > hojeSP()) return setErro('A data não pode ser no futuro.');
-    if (conta) guardarConta(conta);
-    // compra no crédito com cartão cadastrado: entra na fatura (e nas parcelas), não vira gasto à parte, para não contar duas vezes
-    if (tipo === 'despesa' && forma === 'Crédito' && e.cartao && !editId) {
-      const imp = impactoCompra(e.cartao, { valor, parcelas: parcelasCartao }, folgaMensal(e, mesDe(hojeSP())).folga);
-      if (imp.veredito !== 'cabe' && avisoCartao !== `${valor}:${parcelasCartao}`) {
-        setAvisoCartao(`${valor}:${parcelasCartao}`);
-        setErro('');
-        return;
+    envio.tentar(() => {
+      const m = validar1() || validarTransf();
+      if (m) { setErro(m); if (!tudo) setPasso(validar1() ? 1 : 2); return false; }
+      if (data > hojeSP()) { setErro('A data não pode ser no futuro.'); return false; }
+      if (conta) guardarConta(conta);
+      // compra no crédito com cartão cadastrado: entra na fatura (e nas parcelas), não vira gasto à parte, para não contar duas vezes
+      if (tipo === 'despesa' && forma === 'Crédito' && e.cartao && !editId) {
+        const imp = impactoCompra(e.cartao, { valor, parcelas: parcelasCartao }, folgaMensal(e, mesDe(hojeSP())).folga);
+        if (imp.veredito !== 'cabe' && avisoCartao !== `${valor}:${parcelasCartao}`) {
+          setAvisoCartao(`${valor}:${parcelasCartao}`);
+          setErro('');
+          return false;
+        }
+        if (!comprarNoCartao({ descricao: desc || cat || 'Compra', valor, parcelas: parcelasCartao })) { setErro('Não consegui registrar no cartão.'); return false; }
+        toast(parcelasCartao > 1 ? `Compra no cartão: ${parcelasCartao}x de ${brl(valor / parcelasCartao)}` : `Compra no cartão: ${brl(valor)} na fatura`);
+        fechar();
+        return true;
       }
-      if (!comprarNoCartao({ descricao: desc || cat || 'Compra', valor, parcelas: parcelasCartao })) return setErro('Não consegui registrar no cartão.');
-      toast(parcelasCartao > 1 ? `Compra no cartão: ${parcelasCartao}x de ${brl(valor / parcelasCartao)}` : `Compra no cartão: ${brl(valor)} na fatura`);
-      return fechar();
-    }
-    if (tipo === 'despesa') {
-      if (!salvarLancamento({ id: editId ?? undefined, descricao: desc, valor, data, categoria: cat || 'Outros', forma: forma || undefined, contaId: conta || undefined, serverId: (original as Lancamento | null)?.serverId })) return setErro('Confira os dados e tente de novo.');
-      toast(`${editId ? 'Gasto atualizado' : 'Gasto anotado'}: ${brl(valor)} em ${cat || 'Outros'}`);
-    } else if (tipo === 'receita') {
-      if (!salvarReceita({ id: editId ?? undefined, descricao: desc, valor, data, tipo: rTipo, contaId: conta || undefined, serverId: (original as Receita | null)?.serverId })) return setErro('Confira os dados e tente de novo.');
-      if (rTipo === 'extra' && !editId) toast(`Renda extra registrada: +${brl(valor)} no que você tem este mês`, { acao: { rotulo: 'Melhor destino', onClick: () => nav('/plano/extras') } });
-      else toast(`${editId ? 'Receita atualizada' : 'Receita registrada'}: ${brl(valor)}`);
-    } else {
-      if (!salvarTransferencia({ id: editId ?? undefined, data, valor, de: conta, para: destino, descricao: desc })) return setErro('Confira os dados e tente de novo.');
-      toast(`Transferência registrada: ${brl(valor)}`);
-    }
-    fechar();
+      if (tipo === 'despesa') {
+        if (!salvarLancamento({ id: editId ?? undefined, descricao: desc, valor, data, categoria: cat || 'Outros', forma: forma || undefined, contaId: conta || undefined, serverId: (original as Lancamento | null)?.serverId })) { setErro('Confira os dados e tente de novo.'); return false; }
+        toast(`${editId ? 'Gasto atualizado' : 'Gasto anotado'}: ${brl(valor)} em ${cat || 'Outros'}`);
+      } else if (tipo === 'receita') {
+        if (!salvarReceita({ id: editId ?? undefined, descricao: desc, valor, data, tipo: rTipo, contaId: conta || undefined, serverId: (original as Receita | null)?.serverId })) { setErro('Confira os dados e tente de novo.'); return false; }
+        if (rTipo === 'extra' && !editId) toast(`Renda extra registrada: +${brl(valor)} no que você tem este mês`, { acao: { rotulo: 'Melhor destino', onClick: () => nav('/plano/extras') } });
+        else toast(`${editId ? 'Receita atualizada' : 'Receita registrada'}: ${brl(valor)}`);
+      } else {
+        if (!salvarTransferencia({ id: editId ?? undefined, data, valor, de: conta, para: destino, descricao: desc })) { setErro('Confira os dados e tente de novo.'); return false; }
+        toast(`Transferência registrada: ${brl(valor)}`);
+      }
+      fechar();
+      return true;
+    });
   };
 
   const excluir = () => {
@@ -185,11 +192,14 @@ export function AdicionarMov() {
     fechar();
   };
   const duplicar = () => {
-    if (tipo === 'despesa') salvarLancamento({ descricao: desc, valor, data: hojeSP(), categoria: cat || 'Outros', forma: forma || undefined, contaId: conta || undefined });
-    else if (tipo === 'receita') salvarReceita({ descricao: desc, valor, data: hojeSP(), tipo: rTipo, contaId: conta || undefined });
-    else salvarTransferencia({ data: hojeSP(), valor, de: conta, para: destino, descricao: desc });
-    toast('Lançamento duplicado com a data de hoje');
-    fechar();
+    envio.tentar(() => {
+      if (tipo === 'despesa') salvarLancamento({ descricao: desc, valor, data: hojeSP(), categoria: cat || 'Outros', forma: forma || undefined, contaId: conta || undefined });
+      else if (tipo === 'receita') salvarReceita({ descricao: desc, valor, data: hojeSP(), tipo: rTipo, contaId: conta || undefined });
+      else salvarTransferencia({ data: hojeSP(), valor, de: conta, para: destino, descricao: desc });
+      toast('Lançamento duplicado com a data de hoje');
+      fechar();
+      return true;
+    });
   };
 
   const ver = (n: number) => tudo || passo === n;

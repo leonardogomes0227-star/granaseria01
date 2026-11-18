@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { assistentePorId } from './assistentes';
 import { Anel } from './graficos';
 import { DecimalInput } from '../components/DecimalInput';
+import { digitarNumero, fecharNumero } from './numeroCampo';
 import { CalendarDays, Gift, Landmark, Lightbulb, PiggyBank, Search, Sprout, Target, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 
 /* ---------- campo de dinheiro: digita o valor do jeito que fala (870 = R$ 870; 870,50 com centavos) ---------- */
@@ -38,14 +39,14 @@ export function CampoNumero({ rotulo, valor, onChange, min, max, sufixo, placeho
         aria-invalid={Boolean(erro)}
         data-passo={passo}
         onChange={(e) => {
-          const t = e.target.value.replace(/[^\d,.]/g, '');
-          setTexto(t);
-          if (t === '') return onChange('');
-          let n = Number(t.replace(',', '.'));
-          if (!Number.isFinite(n)) return;
-          if (max !== undefined) n = Math.min(max, n);
-          if (min !== undefined && n < min) n = min;
-          onChange(n);
+          const r = digitarNumero(e.target.value, max);
+          setTexto(r.texto);
+          if (r.valor !== null) onChange(r.valor);
+        }}
+        onBlur={() => {
+          const r = fecharNumero(texto, min, max);
+          setTexto(r.texto);
+          onChange(r.valor);
         }}
       />
       {erro && <em className="gs-erro">{erro}</em>}

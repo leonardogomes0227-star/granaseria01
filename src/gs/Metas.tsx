@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useEstado } from './store';
 import { criarMeta, desfazerGuardarNaMeta, guardarNaMeta, removerMeta, restaurarMeta } from './acoes';
@@ -7,6 +7,7 @@ import { brl0, dataBR, diasEntre, hoje as hojeSP } from './datas';
 import { Car, Home, Landmark, PiggyBank, Plane, Target, type LucideIcon } from 'lucide-react';
 import { Barra, Campo, CampoDinheiro, Confirmar, Folha } from './ui';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
+import { useUmaVez } from './umaVez';
 import type { Meta } from './tipos';
 
 const MODELOS: [string, LucideIcon][] = [['Reserva de emergência', PiggyBank], ['Comprar um carro', Car], ['Fazer uma viagem', Plane], ['Quitar dívidas', Landmark], ['Comprar um imóvel', Home], ['Outra meta', Target]];
@@ -72,15 +73,20 @@ export function NovaMeta({ aberta, onFechar }: { aberta: boolean; onFechar: () =
   const [alvo, setAlvo] = useState(0);
   const [prazo, setPrazo] = useState('');
   const [erro, setErro] = useState('');
+  const envio = useUmaVez();
+  useEffect(() => { if (aberta) envio.soltar(); }, [aberta, envio]);
   const salvar = (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!nome.trim()) return setErro('Dê um nome para a meta.');
-    if (!(alvo > 0)) return setErro('Quanto você quer juntar?');
-    if (prazo && prazo <= hojeSP()) return setErro('O prazo precisa ser uma data futura.');
-    if (!criarMeta({ nome, alvo, prazo: prazo || undefined })) return setErro('Não consegui criar a meta.');
-    toast(`Meta criada: ${nome.trim()}`);
-    setNome(''); setAlvo(0); setPrazo(''); setErro('');
-    onFechar();
+    envio.tentar(() => {
+      if (!nome.trim()) { setErro('Dê um nome para a meta.'); return false; }
+      if (!(alvo > 0)) { setErro('Quanto você quer juntar?'); return false; }
+      if (prazo && prazo <= hojeSP()) { setErro('O prazo precisa ser uma data futura.'); return false; }
+      if (!criarMeta({ nome, alvo, prazo: prazo || undefined })) { setErro('Não consegui criar a meta.'); return false; }
+      toast(`Meta criada: ${nome.trim()}`);
+      setNome(''); setAlvo(0); setPrazo(''); setErro('');
+      onFechar();
+      return true;
+    });
   };
   return (
     <Folha aberta={aberta} onFechar={onFechar} titulo="Nova meta">
@@ -101,15 +107,20 @@ export function NovaMeta({ aberta, onFechar }: { aberta: boolean; onFechar: () =
 function GuardarMeta({ meta, onFechar }: { meta: Meta | null; onFechar: () => void }) {
   const [valor, setValor] = useState(0);
   const [erro, setErro] = useState('');
+  const envio = useUmaVez();
+  useEffect(() => { envio.soltar(); setValor(0); setErro(''); }, [meta?.id, envio]);
   if (!meta) return null;
   const salvar = (ev: React.FormEvent) => {
     ev.preventDefault();
-    if (!(valor > 0)) return setErro('Digite quanto vai guardar.');
-    const m = meta, v = valor, d = hojeSP();
-    guardarNaMeta(m.id, v, d);
-    toast(`${brl0(v)} guardados para ${m.nome}`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerGuardarNaMeta(m.id, d, v) } });
-    setValor(0); setErro('');
-    onFechar();
+    envio.tentar(() => {
+      if (!(valor > 0)) { setErro('Digite quanto vai guardar.'); return false; }
+      const m = meta, v = valor, d = hojeSP();
+      if (!guardarNaMeta(m.id, v, d)) return false;
+      toast(`${brl0(v)} guardados para ${m.nome}`, { acao: { rotulo: 'Desfazer', onClick: () => desfazerGuardarNaMeta(m.id, d, v) } });
+      setValor(0); setErro('');
+      onFechar();
+      return true;
+    });
   };
   return (
     <Folha aberta onFechar={onFechar} titulo={`Guardar para ${meta.nome}`}>
