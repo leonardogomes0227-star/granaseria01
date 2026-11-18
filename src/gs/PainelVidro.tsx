@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { brl0, diaCurto } from './datas';
 import { painelVidro, type Delta, type DiaCalor, type Kpi } from './painelVidro';
@@ -21,6 +21,49 @@ type Aba = (typeof ABAS)[number]['id'];
 
 function movimentoReduzido(): boolean {
   return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+
+const GLIFOS = 'abcdefghijklmnopqrstuvwxyz0123456789#%&';
+
+/** Título que "se decifra": letras trocam até virar o texto. Sem movimento, mostra direto. */
+function Titulo({ texto }: { texto: string }) {
+  const [vis, setVis] = useState(texto);
+  useEffect(() => {
+    if (movimentoReduzido()) { setVis(texto); return; }
+    const t0 = performance.now();
+    const dur = 520;
+    let raf = 0;
+    const passo = (agora: number) => {
+      const f = Math.min(1, (agora - t0) / dur);
+      const fixas = Math.floor(f * texto.length);
+      setVis(texto.split('').map((c, i) => (i < fixas || c === ' ' ? c : GLIFOS[Math.floor(Math.random() * GLIFOS.length)])).join(''));
+      if (f < 1) raf = requestAnimationFrame(passo); else setVis(texto);
+    };
+    raf = requestAnimationFrame(passo);
+    return () => cancelAnimationFrame(raf);
+  }, [texto]);
+  return <h2 aria-label={texto}><span aria-hidden="true">{vis}</span></h2>;
+}
+
+/** Pílula que desliza até o botão ativo: a ponta da frente corre, a de trás vem depois. */
+function usePilula(grupo: React.RefObject<HTMLElement>, ativo: string) {
+  const pilula = useRef<HTMLElement>(null);
+  const ant = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const g = grupo.current; const pl = pilula.current;
+    const btn = g?.querySelector<HTMLElement>('[data-ativo="true"]');
+    if (!g || !pl || !btn) return;
+    const esq = btn.offsetLeft; const larg = btn.offsetWidth;
+    const indo = ant.current === null || esq >= ant.current;
+    pl.style.setProperty('--pl-esq', `${esq}px`);
+    pl.style.setProperty('--pl-larg', `${larg}px`);
+    pl.style.setProperty('--pl-t-esq', ant.current === null ? '0s' : indo ? '.5s' : '.3s');
+    pl.style.setProperty('--pl-t-larg', ant.current === null ? '0s' : indo ? '.3s' : '.5s');
+    pl.classList.add('pronta');
+    ant.current = esq;
+  }, [grupo, ativo]);
+  return pilula;
 }
 
 function Numero({ valor, ms = 900 }: { valor: number; ms?: number }) {
@@ -128,6 +171,10 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
   const [dir, setDir] = useState<'dir' | 'esq'>('dir');
   const [dia, setDia] = useState<string | null>(null);
   const raiz = useRef<HTMLDivElement>(null);
+  const gAbas = useRef<HTMLDivElement>(null);
+  const gModo = useRef<HTMLDivElement>(null);
+  const plAbas = usePilula(gAbas, aba);
+  const plModo = usePilula(gModo, modo);
   const saldo = p.kpis.find((k) => k.id === 'saldo')!;
   const faixa = FAIXA.map((id) => p.kpis.find((k) => k.id === id)!);
   const patrimonio = p.kpis.find((k) => k.id === 'patrimonio')!;
@@ -200,9 +247,10 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
             <em>{saldo.valor === null ? saldo.vazio : saldo.extra ?? saldo.nota}</em>
             {saldo.valor !== null && <Seta delta={saldo.delta} bom={saldo.bomQuando} />}
           </div>
-          <div className="vd-modo" role="group" aria-label="O que o gráfico mostra">
-            <button type="button" className={modo === 'despesa' ? 'on' : ''} aria-pressed={modo === 'despesa'} onClick={() => trocarModo('despesa')}>Despesa</button>
-            <button type="button" className={modo === 'receita' ? 'on' : ''} aria-pressed={modo === 'receita'} onClick={() => trocarModo('receita')}>Receita</button>
+          <div className="vd-modo" role="group" aria-label="O que o gráfico mostra" ref={gModo}>
+            <i className="vd-pilula-mov" ref={plModo as React.RefObject<HTMLElement>} aria-hidden="true" />
+            <button type="button" data-ativo={modo === 'despesa'} className={modo === 'despesa' ? 'on' : ''} aria-pressed={modo === 'despesa'} onClick={() => trocarModo('despesa')}>Despesa</button>
+            <button type="button" data-ativo={modo === 'receita'} className={modo === 'receita' ? 'on' : ''} aria-pressed={modo === 'receita'} onClick={() => trocarModo('receita')}>Receita</button>
           </div>
         </header>
         <button type="button" className="vd-hero-acao" onClick={saldo.valor === null ? onRenda : onSaldo}>
@@ -215,16 +263,17 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
         {faixa.map((k, n) => kpi(k, n))}
       </div>
 
-      <div className="vd-abas" role="tablist" aria-label="Detalhes do mês">
+      <div className="vd-abas" role="tablist" aria-label="Detalhes do mês" ref={gAbas}>
+        <i className="vd-pilula-mov" ref={plAbas as React.RefObject<HTMLElement>} aria-hidden="true" />
         {ABAS.map((item) => (
-          <button key={item.id} type="button" role="tab" aria-selected={aba === item.id} className={aba === item.id ? 'on' : ''} onClick={() => trocarAba(item.id)}>{item.nome}</button>
+          <button key={item.id} type="button" role="tab" data-ativo={aba === item.id} aria-selected={aba === item.id} className={aba === item.id ? 'on' : ''} onClick={() => trocarAba(item.id)}>{item.nome}</button>
         ))}
       </div>
 
       <PainelAba aba={aba} dir={dir}>
         {aba === 'categorias' && (
           <section className="vd-vidro" aria-label="Categorias">
-            <header><h2>Categorias</h2><Link to="/plano/orcamento">Limites</Link></header>
+            <header><Titulo texto="Categorias" /><Link to="/plano/orcamento">Limites</Link></header>
             {p.categorias.length === 0 ? <p className="vd-vazio">Nenhuma categoria com gasto ou limite neste mês.</p> : (
               <div className="vd-cats">
                 {p.categorias.map((c) => (
@@ -242,7 +291,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
 
         {aba === 'funil' && (
           <section className="vd-vidro" aria-label="Funil do mês">
-            <header><h2>Para onde foi</h2></header>
+            <header><Titulo texto="Para onde foi" /></header>
             {p.funil ? (
               <div className="vd-passos">
                 {p.funil.passos.map((passo, n) => (
@@ -262,7 +311,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
 
         {aba === 'calendario' && (
           <section className="vd-vidro" aria-label="Calendário de gastos">
-            <header><h2>Calendário</h2></header>
+            <header><Titulo texto="Calendário" /></header>
             <div className="vd-semana" aria-hidden="true">{SEMANA.map((d, n) => <span key={n}>{d}</span>)}</div>
             <div className="vd-calor">
               {Array.from({ length: p.calor[0]?.semana ?? 0 }, (_, n) => <span key={`v${n}`} />)}
@@ -292,7 +341,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
         {aba === 'movimento' && (
           <div className="vd-movimento">
             <section className="vd-vidro" aria-label="Próximas contas">
-              <header><h2>Próximas contas</h2><Link to="/pagar">Ver</Link></header>
+              <header><Titulo texto="Próximas contas" /><Link to="/pagar">Ver</Link></header>
               {p.contas.length === 0 ? <p className="vd-vazio">Nada em aberto neste mês.</p> : (
                 <ul className="vd-lista">
                   {p.contas.map((c) => (
@@ -305,7 +354,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
               )}
             </section>
             <section className="vd-vidro" aria-label="Maiores gastos do mês">
-              <header><h2>Maiores do mês</h2></header>
+              <header><Titulo texto="Maiores do mês" /></header>
               {p.maiores.length === 0 ? <p className="vd-vazio">Os maiores gastos do mês aparecem aqui.</p> : (
                 <ul className="vd-lista">
                   {p.maiores.map((l) => <li key={l.id}><span><b>{l.descricao}</b><small>{l.categoria}</small></span><b>{m(brl0(l.valor))}</b></li>)}
@@ -313,7 +362,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
               )}
             </section>
             <section className="vd-vidro" aria-label="Últimos lançamentos">
-              <header><h2>Últimos</h2><Link to="/lancamentos">Ver</Link></header>
+              <header><Titulo texto="Últimos" /><Link to="/lancamentos">Ver</Link></header>
               {p.ultimos.length === 0 ? <p className="vd-vazio">O último gasto anotado fica aqui.</p> : (
                 <ul className="vd-lista">
                   {p.ultimos.slice(0, 4).map((l) => <li key={l.id}><span><b>{l.descricao}</b><small>{diaCurto(l.data)}</small></span><b>{m(brl0(l.valor))}</b></li>)}
@@ -321,7 +370,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
               )}
             </section>
             <section className="vd-vidro" aria-label="Metas e patrimônio">
-              <header><h2>Guardado</h2><Link to="/guardar">Abrir</Link></header>
+              <header><Titulo texto="Guardado" /><Link to="/guardar">Abrir</Link></header>
               <p className="vd-patrimonio"><b>{patrimonio.valor === null ? '—' : m(brl0(patrimonio.valor))}</b><em>{patrimonio.valor === null ? patrimonio.vazio : patrimonio.nota}</em></p>
               {p.metas.length === 0 && p.dividas.length === 0 ? null : (
                 <ul className="vd-lista vd-prog">
