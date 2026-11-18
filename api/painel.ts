@@ -2,16 +2,20 @@
 // ("Authorization: Bearer <token>") e recebe o que está guardado pelo número: diagnóstico, plano e vazamentos (o mesmo
 // estado que o bot usa) e os gastos e entradas do mês. O que a pessoa muda no site volta por aqui (PUT).
 
-import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, eraseWhatsAppData, clearWhatsAppData, HANDOFF_KEYS } from '../server/whatsapp/hubdb.js';
+import { phoneFromWebLink, getProfileWithDate, saveProfile, trackEvent, eraseWhatsAppData, clearWhatsAppData, HANDOFF_KEYS, sessaoDuravel, bumpUsage } from '../server/whatsapp/hubdb.js';
 import { listExpensesSince, listIncomesSince } from '../server/whatsapp/db.js';
 import { startOfMonthBRT } from '../server/whatsapp/bot.js';
-import { accountsConfigured, findUserByPhone, saveState, type StateSnapshot } from '../server/account/db.js';
+import { accountsConfigured, definirCodigoDeVinculo, findUserByPhone, saveState, userIdFromToken, type StateSnapshot } from '../server/account/db.js';
+import { novoCodigoVinculo } from '../server/linkEntrada.js';
+import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
 import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { foiMantido, listarCopias, protegerEstado } from '../server/protegerEstado.js';
 import { pesoDoEstado } from '../src/gs/pesoEstado.js';
 
 const MAX_BYTES = 500_000; // o estado do app novo cresce com lançamentos e conversa de investimentos
+const PRIVADO = { 'Cache-Control': 'no-store' };
+const json = (body: unknown, status = 200) => Response.json(body, { status, headers: PRIVADO });
 
 async function auth(request: Request): Promise<string | null> {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
@@ -35,11 +39,49 @@ async function loadState(phone: string): Promise<{ state: StateSnapshot; updated
 
 const masked = (phone: string) => `(${phone.slice(2, 4)}) •••••-${phone.slice(-4)}`;
 
+/** Código de vínculo do WhatsApp. O navegador manda o token da sessão de e-mail; o código nasce aqui, com entropia de verdade. */
+async function criarVinculo(request: Request): Promise<Response> {
+  if (!accountsConfigured()) return json({ error: 'Conta indisponível.' }, 503);
+  const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`vinculo-ip:${ip}`, 30, 60 * 60 * 1000)) return json({ error: 'Muitas tentativas. Espere um pouco.' }, 429);
+  const userId = token ? await userIdFromToken(token).catch(() => null) : null;
+  if (!userId) {
+    contarLimite(`vinculo-ip:${ip}`, 60 * 60 * 1000);
+    return json({ error: 'Entre na sua conta para vincular o WhatsApp.' }, 401);
+  }
+  try {
+    if (!(await bumpUsage(`user:${userId}`, `novocodigo:${new Date().toISOString().slice(0, 13)}`, 5))) {
+      return json({ error: 'Você já gerou vários códigos. Espere um pouco e tente de novo.' }, 429);
+    }
+  } catch {
+    return json({ error: 'Não consegui gerar o código agora.' }, 503);
+  }
+  const expires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  for (let i = 0; i < 3; i++) {
+    try {
+      const code = novoCodigoVinculo();
+      await definirCodigoDeVinculo(userId, code, expires);
+      return json({ code, expires });
+    } catch (err) {
+      if (i === 2 || !String(err).includes('código em uso')) {
+        console.error('vínculo: não gravei o código');
+        return json({ error: 'Não consegui gerar o código agora.' }, 502);
+      }
+    }
+  }
+  return json({ error: 'Não consegui gerar o código agora.' }, 502);
+}
+
 export async function GET(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
+  const url = new URL(request.url);
   // ?copias=1: as cópias de segurança guardadas, para a tela "Recuperar dados" (Meus dados)
-  if (new URL(request.url).searchParams.get('copias') === '1') return Response.json({ copias: listarCopias((await loadState(phone)).state) });
+  if (url.searchParams.get('copias') === '1') return json({ copias: listarCopias((await loadState(phone)).state) });
+  // ?entrada=1: o ?t= da mensagem era de uso curto. Devolve o token longo, que só fica no navegador.
+  const bruto = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim() ?? '';
+  const duravel = url.searchParams.get('entrada') === '1' ? await sessaoDuravel(bruto).catch(() => null) : null;
   const now = new Date();
   const since = startOfMonthBRT(now);
   const [{ state, updatedAt }, expenses, incomes] = await Promise.all([
@@ -52,7 +94,7 @@ export async function GET(request: Request): Promise<Response> {
   // estado do app em branco no servidor: não se apresenta como "mais novo", para nenhum aparelho com dados (nem
   // uma aba aberta com uma versão antiga do site) trocar os seus dados por ele; o aparelho então manda os dados de volta
   const vazio = pesoDoEstado(state['grana-seria:v1']) === 0;
-  return Response.json({
+  return json({
     phone: masked(phone),
     state: vazio ? Object.fromEntries(Object.entries(state).filter(([k]) => k !== 'grana-seria:v1' && !k.startsWith('grana-seria:v1:backup'))) : Object.fromEntries(Object.entries(state).filter(([k]) => !k.startsWith('grana-seria:v1:backup'))),
     updatedAt: vazio ? null : updatedAt,
@@ -60,19 +102,20 @@ export async function GET(request: Request): Promise<Response> {
       expenses: expenses.map((e) => ({ ...pick(e), category: e.category, method: e.payment_method ?? null })),
       incomes: incomes.map((i) => ({ ...pick(i), source: i.source, method: i.method ?? null })),
     },
+    ...(duravel ? { token: duravel } : {}),
   });
 }
 
 export async function PUT(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   const raw = await request.text();
-  if (raw.length > MAX_BYTES) return Response.json({ error: 'Isso ficou grande demais.' }, { status: 413 });
+  if (raw.length > MAX_BYTES) return json({ error: 'Isso ficou grande demais.' }, 413);
   let body: { state?: Record<string, unknown>; permitirReducao?: unknown };
   try {
     body = JSON.parse(raw);
   } catch {
-    return Response.json({ error: 'Não entendi o pedido. Tente de novo.' }, { status: 400 });
+    return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   }
   const { state, userId } = await loadState(phone);
   // só as chaves do site, só texto; o resto do perfil (coisas do bot) fica como está
@@ -89,7 +132,7 @@ export async function PUT(request: Request): Promise<Response> {
   const protegido = protegerEstado(state, next, new Date(), body.permitirReducao === true);
   await (userId ? saveState(userId, protegido) : saveProfile(phone, protegido));
   // mantido: o servidor não aceitou trocar os dados por um estado bem menor; o aparelho busca o da conta em vez de insistir
-  return Response.json({ updatedAt: new Date().toISOString(), mantido: foiMantido(state, next, protegido) });
+  return json({ updatedAt: new Date().toISOString(), mantido: foiMantido(state, next, protegido) });
 }
 
 /**
@@ -97,13 +140,14 @@ export async function PUT(request: Request): Promise<Response> {
  * { event: "tool:site-debts" } quando abre uma ferramenta, e { feedback: { tool, kind: "up"|"down", note? } }.
  */
 export async function POST(request: Request): Promise<Response> {
+  if (new URL(request.url).searchParams.get('acao') === 'vincular') return criarVinculo(request);
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   let body: { event?: unknown; feedback?: { tool?: unknown; kind?: unknown; note?: unknown } };
   try {
     body = JSON.parse((await request.text()).slice(0, 4000));
   } catch {
-    return Response.json({ error: 'Não entendi o pedido. Tente de novo.' }, { status: 400 });
+    return json({ error: 'Não entendi o pedido. Tente de novo.' }, 400);
   }
   const safe = (v: unknown) => (typeof v === 'string' && /^[a-z0-9:_-]{1,48}$/.test(v) ? v : null);
   const event = safe(body.event);
@@ -114,13 +158,13 @@ export async function POST(request: Request): Promise<Response> {
     const note = typeof fb.note === 'string' && fb.note.trim() ? fb.note.trim().slice(0, 600) : undefined;
     await trackEvent(phone, `feedback:${fb.kind}:site-${tool}`, note);
   }
-  return Response.json({ ok: true });
+  return json({ ok: true });
 }
 
 /** "Limpar tudo" (?manter=1) e "Apagar conta e desconectar" do site (Meus dados): remove a cópia guardada pelo número (LGPD) e esvazia o estado da conta vinculada, se houver. */
 export async function DELETE(request: Request): Promise<Response> {
   const phone = await auth(request);
-  if (!phone) return Response.json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, { status: 401 });
+  if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   try {
     const user = accountsConfigured() ? await findUserByPhone(phone) : null;
     if (user) await saveState(user.user_id, {});
@@ -129,7 +173,7 @@ export async function DELETE(request: Request): Promise<Response> {
     else await eraseWhatsAppData(phone);
   } catch (err) {
     console.error('painel: não consegui apagar', err);
-    return Response.json({ error: 'Não consegui apagar agora. Tente de novo.' }, { status: 502 });
+    return json({ error: 'Não consegui apagar agora. Tente de novo.' }, 502);
   }
   return new Response(null, { status: 204 });
 }

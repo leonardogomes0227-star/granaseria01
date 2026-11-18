@@ -9,6 +9,7 @@ import type { StateSnapshot } from '../account/db.js';
 import { siteLink } from './site.js';
 import { podeFecharMes, quandoPodeFechar } from '../../src/lib/mesesFuturos.js';
 import { monthName } from '../../src/coachChat/months.js';
+import { codigoVinculoAceito } from '../linkEntrada.js';
 
 export type PlanCommand =
   | { kind: 'link'; code: string }
@@ -28,8 +29,11 @@ function normalize(text: string): string {
 /** Só frases exatas: "paguei 500 no mercado" continua sendo um gasto, não fecha o mês. */
 export function parsePlanCommand(input: string): PlanCommand | null {
   const t = normalize(input);
-  const link = t.match(/^vincular\s+(\d{6})$/);
-  if (link) return { kind: 'link', code: link[1] };
+  const link = t.match(/^vincular\s+([a-z0-9]{6,10})$/);
+  if (link) {
+    const code = link[1].toUpperCase();
+    if (codigoVinculoAceito(code)) return { kind: 'link', code };
+  }
   if (/^(plano|meu plano|plano do mes|o que pagar)$/.test(t)) return { kind: 'plan' };
   if (/^(paguei|sim|paguei tudo|ja paguei|pago|feito)$/.test(t)) return { kind: 'paid' };
   if (/^(nao paguei|nao consegui|nao consegui pagar|nao)$/.test(t)) return { kind: 'notPaid' };

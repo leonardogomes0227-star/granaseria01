@@ -3,6 +3,7 @@
 
 import { obterMercado } from '../../server/mercado/fontes.js';
 import { bumpUsage } from '../../server/whatsapp/hubdb.js';
+import { ipDoCliente } from '../../server/rede.js';
 
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const LIMITE_DIA = 20;
@@ -28,15 +29,12 @@ const numero = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Ma
 
 function mesmaOrigem(request: Request): boolean {
   const origem = request.headers.get('origin');
-  if (origem) {
-    try {
-      return new URL(origem).host === new URL(request.url).host;
-    } catch {
-      return false;
-    }
+  if (!origem) return false;
+  try {
+    return new URL(origem).host === new URL(request.url).host;
+  } catch {
+    return false;
   }
-  const site = request.headers.get('sec-fetch-site');
-  return !site || site === 'same-origin' || site === 'none';
 }
 
 /** Só números e valores de uma lista: nada de texto livre do usuário entra no contexto. */
@@ -77,7 +75,9 @@ export async function POST(request: Request): Promise<Response> {
 
   let b: Corpo;
   try {
-    b = (await request.json()) as Corpo;
+    const raw = await request.text();
+    if (raw.length > 20_000) return json({ error: 'Isso ficou grande demais.' }, 413);
+    b = JSON.parse(raw) as Corpo;
   } catch {
     return json({ error: 'Não entendi a pergunta. Escreva de novo.' }, 400);
   }
@@ -89,7 +89,7 @@ export async function POST(request: Request): Promise<Response> {
   // a conversa tem que começar com a pessoa
   while (mensagens.length && mensagens[0].role !== 'user') mensagens.shift();
 
-  const ip = (request.headers.get('x-forwarded-for') ?? 'local').split(',')[0].trim();
+  const ip = ipDoCliente(request);
   const hoje = new Date().toISOString().slice(0, 10);
   const bateuLimite = await limiteAtingido(ip, hoje);
   if (bateuLimite) return json({ error: 'Você chegou ao limite de 20 mensagens por hoje. Volte amanhã.' }, 429);

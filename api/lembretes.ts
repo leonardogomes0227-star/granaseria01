@@ -6,13 +6,18 @@ import { sendTemplate } from '../server/whatsapp/meta.js';
 import { readPlanState, tasksInline } from '../server/whatsapp/planbot.js';
 import { accountsConfigured, listReminderCandidates, updateUser } from '../server/account/db.js';
 import { combinadoParaHoje } from '../server/lembretesCoach.js';
+import { mesmoSegredo } from '../server/segredo.js';
+import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
 
 const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
 
 export async function GET(request: Request): Promise<Response> {
   // a Vercel manda "Authorization: Bearer <CRON_SECRET>" nas chamadas do cron
-  const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`cron:${ip}`, 30, 60 * 60 * 1000)) return new Response('Muitas tentativas', { status: 429 });
+  const apresentado = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+  if (!mesmoSegredo(apresentado, process.env.CRON_SECRET)) {
+    contarLimite(`cron:${ip}`, 60 * 60 * 1000);
     return new Response('Unauthorized', { status: 401 });
   }
   if (!accountsConfigured()) return new Response('Contas desligadas', { status: 200 });

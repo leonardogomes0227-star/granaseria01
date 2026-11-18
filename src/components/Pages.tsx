@@ -34,8 +34,13 @@ export function PrivacyPage() {
       </p>
       <p>
         Se você criar uma conta (login pelo e-mail), seu diagnóstico, seu plano e os vazamentos marcados passam a
-        ser guardados também no nosso banco de dados (Supabase), para você acessar de qualquer aparelho. Só você,
-        logado, consegue ler esses dados.
+        ser guardados também no nosso banco de dados (Supabase), para você acessar de qualquer aparelho. O e-mail
+        fica guardado só para enviar o link de acesso. Só você, logado, consegue ler esses dados.
+      </p>
+      <p>
+        Se você entra pelo link do WhatsApp, uma cópia do que está no aparelho (plano, gastos, dívidas, nome e o
+        restante do caderno) também fica no banco, ligada ao seu número, para o site e o WhatsApp mostrarem a mesma
+        coisa. O link é pessoal: não compartilhe.
       </p>
       <p>
         Para apagar essa cópia, use o botão "Apagar tudo" em Meus dados, dentro do app: ele remove os dados do aparelho
@@ -44,8 +49,9 @@ export function PrivacyPage() {
       <h3>WhatsApp</h3>
       <p>
         Se você vincular seu WhatsApp, guardamos o número para responder suas mensagens e mandar o lembrete mensal
-        do plano no dia que você escolher. Os gastos que você registra por lá ficam salvos para montar seus
-        resumos. Você pode desligar os lembretes ou desvincular o número a qualquer momento.
+        do plano no dia que você escolher. Os gastos que você registra por lá (valor, descrição e categoria) ficam
+        salvos para montar seus resumos. As mensagens passam pela Meta, que opera o WhatsApp. Você pode desligar os
+        lembretes ou desvincular o número a qualquer momento.
       </p>
       <h3>Leitor de fatura</h3>
       <p>
@@ -65,11 +71,17 @@ export function PrivacyPage() {
         manda ficam guardadas junto do seu número de telefone, só para montar seu plano e continuar a conversa de
         onde parou. Para apagar tudo, é só mandar "apagar meus dados" no WhatsApp, ou entrar em contato pelo e-mail abaixo.
       </p>
+      <p>
+        O coach dentro do app, quando a conversa com IA está ligada, envia a sua pergunta e um resumo dos números
+        (sem nome, telefone ou e-mail) para a Anthropic. O chat de investimentos, quando está ligado, faz o mesmo
+        com renda, reserva, dívidas e perfil. Um áudio enviado no WhatsApp, quando a transcrição está ligada, segue
+        para o serviço de transcrição configurado no servidor e não fica gravado por nós.
+      </p>
       <h3>Métricas de uso</h3>
       <p>
         Usamos métricas sem cookies (Plausible) para saber quantas pessoas usam cada parte do site e melhorar o
-        que não funciona. Elas nunca incluem valores em reais nem dados que identifiquem você. Se um dia usarmos
-        o Pixel da Meta para anúncios, ele recebe só o nome das páginas e ações, nunca seus números.
+        que não funciona. Elas nunca incluem valores em reais nem dados que identifiquem você. Se o Pixel da Meta
+        estiver ligado, ele recebe só o nome das páginas e ações, nunca seus números.
       </p>
       <h3>Seus direitos</h3>
       <p>

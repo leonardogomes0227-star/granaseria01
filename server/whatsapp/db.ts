@@ -1,6 +1,11 @@
 // Acesso ao Supabase pela API REST (PostgREST), só com fetch — sem SDK no servidor.
 // Usa a service role key, que NUNCA vai pro navegador: só existe nas variáveis de ambiente da Vercel.
 
+import { abrirTexto, selarTexto } from '../cripto.js';
+
+const selarDesc = (s: string) => selarTexto(s);
+const abrirDesc = (s: string | null | undefined) => (typeof s === 'string' ? abrirTexto(s) : '');
+
 export interface Expense {
   id: number;
   phone: string;
@@ -99,7 +104,7 @@ export async function insertExpense(e: {
         phone: e.phone,
         amount: e.amount,
         category: e.category,
-        description: e.description,
+        description: selarDesc(e.description),
         wa_message_id: e.waMessageId,
         ...(e.createdAt ? { created_at: e.createdAt } : {}),
         ...(withMethod && e.method ? { payment_method: e.method } : {}),
@@ -120,7 +125,7 @@ export async function listExpensesSince(phone: string, since: Date): Promise<Exp
   if (res.status === 400) res = await get('id,phone,amount,category,description,created_at'); // sem a coluna ainda
   if (!res.ok) throw new Error(`Supabase select ${res.status}: ${await res.text()}`);
   const rows = (await res.json()) as Expense[];
-  return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
+  return rows.map((r) => ({ ...r, amount: Number(r.amount), description: abrirDesc(r.description) }));
 }
 
 /** Apaga o gasto mais recente da pessoa e devolve o que foi apagado. */
@@ -137,7 +142,7 @@ export async function deleteLastExpense(phone: string): Promise<Expense | null> 
   const [last] = (await res.json()) as Expense[];
   if (!last) return null;
   await removeRow('expenses', phone, last.id);
-  return { ...last, amount: Number(last.amount) };
+  return { ...last, amount: Number(last.amount), description: abrirDesc(last.description) };
 }
 
 /** Corrige o gasto mais recente (valor, descrição e/ou categoria). Devolve como era e como ficou. */
@@ -156,13 +161,14 @@ export async function updateLastExpense(
   if (!res.ok) throw new Error(`Supabase select ${res.status}: ${await res.text()}`);
   const [last] = (await res.json()) as Expense[];
   if (!last) return null;
+  const gravar = patch.description !== undefined ? { ...patch, description: selarDesc(patch.description) } : patch;
   const upd = await rest(`expenses?id=eq.${last.id}&phone=eq.${phone}`, {
     method: 'PATCH',
     headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify(patch),
+    body: JSON.stringify(gravar),
   });
   if (!upd.ok) throw new Error(`Supabase update ${upd.status}: ${await upd.text()}`);
-  const before = { ...last, amount: Number(last.amount) };
+  const before = { ...last, amount: Number(last.amount), description: abrirDesc(last.description) };
   return { before, after: { ...before, ...patch } };
 }
 
@@ -175,7 +181,7 @@ export async function insertIncome(i: { phone: string; amount: number; source: s
       phone: i.phone,
       amount: i.amount,
       source: i.source,
-      description: i.description,
+      description: selarDesc(i.description),
       wa_message_id: i.waMessageId,
       ...(i.method ? { method: i.method } : {}),
     }),
@@ -196,7 +202,7 @@ export async function listIncomesSince(phone: string, since: Date): Promise<Inco
   const res = await rest(`incomes?${q}`);
   if (!res.ok) throw new Error(`Supabase select incomes ${res.status}: ${await res.text()}`);
   const rows = (await res.json()) as Income[];
-  return rows.map((r) => ({ ...r, amount: Number(r.amount) }));
+  return rows.map((r) => ({ ...r, amount: Number(r.amount), description: abrirDesc(r.description) }));
 }
 
 /** Apaga a entrada mais recente da pessoa e devolve o que foi apagado. */
@@ -207,7 +213,7 @@ export async function deleteLastIncome(phone: string): Promise<Income | null> {
   const [last] = (await res.json()) as Income[];
   if (!last) return null;
   await removeRow('incomes', phone, last.id);
-  return { ...last, amount: Number(last.amount) };
+  return { ...last, amount: Number(last.amount), description: abrirDesc(last.description) };
 }
 
 /* ---------- lançamentos pelo site (spec v2, 7.2 e 8): listar, anotar, editar, apagar e desfazer ---------- */
@@ -238,8 +244,8 @@ export async function listEntriesBetween(phone: string, from: Date, to: Date): P
   const exRows = (await exRes.json()) as (Expense & { origem?: string })[];
   const inRows = inc.ok ? ((await inc.json()) as (Income & { origem?: string })[]) : [];
   return [
-    ...exRows.map((r) => ({ id: r.id, kind: 'out' as const, amount: Number(r.amount), category: r.category, description: r.description, method: r.payment_method ?? null, created_at: r.created_at, origem: r.origem === 'site' ? ('site' as const) : ('whatsapp' as const) })),
-    ...inRows.map((r) => ({ id: r.id, kind: 'in' as const, amount: Number(r.amount), category: r.source, description: r.description, method: r.method ?? null, created_at: r.created_at, origem: r.origem === 'site' ? ('site' as const) : ('whatsapp' as const) })),
+    ...exRows.map((r) => ({ id: r.id, kind: 'out' as const, amount: Number(r.amount), category: r.category, description: abrirDesc(r.description), method: r.payment_method ?? null, created_at: r.created_at, origem: r.origem === 'site' ? ('site' as const) : ('whatsapp' as const) })),
+    ...inRows.map((r) => ({ id: r.id, kind: 'in' as const, amount: Number(r.amount), category: r.source, description: abrirDesc(r.description), method: r.method ?? null, created_at: r.created_at, origem: r.origem === 'site' ? ('site' as const) : ('whatsapp' as const) })),
   ].sort((a, b) => b.created_at.localeCompare(a.created_at));
 }
 
@@ -253,7 +259,7 @@ export async function insertSiteEntry(
   const base: Record<string, unknown> = {
     phone,
     amount: e.amount,
-    description: e.description,
+    description: selarDesc(e.description),
     created_at: e.createdAt,
     ...(e.kind === 'out' ? { category: e.category } : { source: e.category }),
     ...(soft ? { origem: 'site', ...(e.missaoId ? { missao_id: e.missaoId } : {}) } : {}),
@@ -273,7 +279,7 @@ export async function insertSiteEntry(
     kind: e.kind,
     amount: Number(row.amount),
     category: String(e.kind === 'out' ? row.category : row.source),
-    description: String(row.description ?? ''),
+    description: abrirDesc(typeof row.description === 'string' ? row.description : ''),
     method: (row.payment_method ?? row.method ?? null) as string | null,
     created_at: String(row.created_at),
     origem: 'site',
@@ -285,7 +291,7 @@ export async function updateEntry(phone: string, kind: EntryKind, id: number, pa
   const table = tableOf(kind);
   const body: Record<string, unknown> = {};
   if (patch.amount !== undefined) body.amount = patch.amount;
-  if (patch.description !== undefined) body.description = patch.description;
+  if (patch.description !== undefined) body.description = selarDesc(patch.description);
   if (patch.createdAt !== undefined) body.created_at = patch.createdAt;
   if (patch.category !== undefined) body[kind === 'out' ? 'category' : 'source'] = patch.category;
   if (await hasSoftDelete(table)) body.updated_at = new Date().toISOString();

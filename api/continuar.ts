@@ -4,11 +4,17 @@
 
 import { randomInt } from 'node:crypto';
 import { HANDOFF_KEYS, saveHandoff } from '../server/whatsapp/hubdb.js';
+import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O, 1/I: fácil de ler e digitar
 const MAX_BYTES = 40_000;
 
 export async function POST(request: Request): Promise<Response> {
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`continuar:${ip}`, 20, 60 * 60 * 1000)) {
+    return Response.json({ error: 'Muitas tentativas. Espere um pouco.' }, { status: 429, headers: { 'Cache-Control': 'no-store' } });
+  }
+  contarLimite(`continuar:${ip}`, 60 * 60 * 1000);
   const raw = await request.text();
   if (raw.length > MAX_BYTES) return Response.json({ error: 'Isso ficou grande demais.' }, { status: 413 });
   let body: { state?: Record<string, unknown> };

@@ -93,6 +93,7 @@ function maskPhone(p: string) {
 function LoggedIn({ session }: { session: Session }) {
   const [row, setRow] = useState<Row | null>(null);
   const [busy, setBusy] = useState(false);
+  const [erroCodigo, setErroCodigo] = useState('');
 
   const load = async () => {
     if (!supabase) return;
@@ -132,9 +133,18 @@ function LoggedIn({ session }: { session: Session }) {
     setBusy(false);
   };
 
-  const newCode = () => {
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    void save({ link_code: code, link_code_expires: new Date(Date.now() + 30 * 60 * 1000).toISOString() });
+  const newCode = async () => {
+    if (!supabase) return;
+    setBusy(true);
+    setErroCodigo('');
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    const res = token
+      ? await fetch('/api/painel?acao=vincular', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+      : null;
+    if (!res?.ok) setErroCodigo(res?.status === 429 ? 'Você gerou vários códigos. Espere um pouco e tente de novo.' : 'Não consegui gerar o código agora. Tente de novo em instantes.');
+    await load();
+    setBusy(false);
   };
 
   const unlink = async () => {
@@ -215,9 +225,10 @@ function LoggedIn({ session }: { session: Session }) {
         ) : (
           <>
             <p className="account-line">Receba no dia do pagamento o que fazer no mês e responda “paguei” quando fizer.</p>
-            <button type="button" className="btn-primary" onClick={newCode} disabled={busy}>
+            <button type="button" className="btn-primary" onClick={() => void newCode()} disabled={busy}>
               <MessageCircle size={16} /> Vincular meu WhatsApp
             </button>
+            {erroCodigo && <p className="field-error">{erroCodigo}</p>}
           </>
         )}
       </div>

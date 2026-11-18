@@ -35,7 +35,7 @@ const REGRAS = [
 type Line = { from?: string; text?: string };
 type Body = { question?: string; history?: Line[] };
 
-const json = (body: unknown, status = 200) => Response.json(body, { status });
+const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
 /** Quem é a pessoa e qual o estado dela: pelo link do WhatsApp (telefone) ou pelo login de e-mail. */
 async function pessoa(request: Request): Promise<{ chave: string; state: StateSnapshot } | null> {
@@ -73,7 +73,7 @@ export async function POST(request: Request): Promise<Response> {
   const question = (body.question ?? '').trim().slice(0, 500);
   if (!question) return json({ error: 'Escreva sua pergunta.' }, 400);
 
-  if (!(await bumpUsage(quem.chave, `conselheiro:${todaySP()}`, DAILY_LIMIT).catch(() => true))) {
+  if (!(await bumpUsage(quem.chave, `conselheiro:${todaySP()}`, DAILY_LIMIT).catch(() => false))) {
     return json({ error: 'Por hoje chega de conversa. Amanhã a gente continua; suas recomendações seguem no app.' }, 429);
   }
 

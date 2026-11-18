@@ -5,13 +5,25 @@ vi.mock('./whatsapp/hubdb.js', () => ({ bumpUsage: (...a: unknown[]) => contar(.
 vi.mock('./mercado/fontes.js', () => ({ obterMercado: async () => null }));
 
 const pedido = (ip = '1.2.3.4') =>
-  new Request('https://x.test/api/investimentos/chat', { method: 'POST', headers: { 'x-forwarded-for': ip, 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'oi' }] }) });
+  new Request('https://x.test/api/investimentos/chat', {
+    method: 'POST',
+    headers: { origin: 'https://x.test', 'x-forwarded-for': ip, 'content-type': 'application/json' },
+    body: JSON.stringify({ messages: [{ role: 'user', content: 'oi' }] }),
+  });
 
 describe('limite diário do chat de investimentos (Supabase)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('ANTHROPIC_API_KEY', 'chave-de-teste');
     vi.stubGlobal('fetch', vi.fn(async () => Response.json({ content: [{ type: 'text', text: 'resposta' }] })));
+  });
+
+  it('sem a origem do site: recusa, pra um script de fora não gastar a IA', async () => {
+    contar.mockResolvedValue(true);
+    const { POST } = await import('../api/investimentos/chat');
+    const r = await POST(new Request('https://x.test/api/investimentos/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'oi' }] }) }));
+    expect(r.status).toBe(403);
+    expect(contar).not.toHaveBeenCalled();
   });
 
   it('dentro do limite: responde e conta o uso do IP em hash, nunca o IP puro', async () => {

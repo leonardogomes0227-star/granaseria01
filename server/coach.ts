@@ -3,7 +3,7 @@
 // Na janela de 24h da Meta vai o texto completo com o link do painel; fora dela, o modelo aprovado (lembrete_plano),
 // com os passos numa linha só (parâmetro de modelo não aceita quebra de linha).
 
-import { createWebLink, getFlag, getLastInbound, listProfiles, setFlag } from './whatsapp/hubdb.js';
+import { createEntryLink, getFlag, getLastInbound, listProfiles, setFlag } from './whatsapp/hubdb.js';
 import { sendTemplate, sendText } from './whatsapp/meta.js';
 import { SITE_URL } from './whatsapp/site.js';
 import { parseTasks, remindToday, todayBRT, TASKS_KEY } from '../src/coach.js';
@@ -42,7 +42,7 @@ export async function runCoach(now = new Date()): Promise<{ sent: number; skippe
         continue;
       }
       const texts = due.slice(0, 5).map((t) => t.text);
-      const link = `${SITE_URL}/painel?t=${await createWebLink(phone)}#coach`;
+      const link = `${SITE_URL}/painel?t=${await createEntryLink(phone)}&entrada=1#coach`;
       const last = await getLastInbound(phone).catch(() => null);
       if (last && now.getTime() - last.getTime() < DAY_MS - 10 * 60 * 1000) await sendText(phone, coachText(texts, link, state['gs-nome'] ?? null));
       else await sendTemplate(phone, template, language, [`${texts.join(' · ')}. Marque como feito no seu painel: ${link}`.slice(0, 900)]);
