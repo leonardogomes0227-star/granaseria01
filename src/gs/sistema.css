@@ -124,6 +124,7 @@ html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
 .as-opcoes { top: -4px; left: -4px; }
 .as-menu {
   position: absolute;
+  z-index: 2;
   left: 0;
   bottom: calc(100% + 8px);
   display: grid;
@@ -137,10 +138,11 @@ html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
 .as-menu button { min-height: 36px; border: 0; border-radius: 10px; background: #F6F1E6; color: #1B1915; font: 700 13px var(--cm-sans, sans-serif); cursor: pointer; text-align: left; padding: 0 10px; }
 .as-fala {
   position: absolute;
+  z-index: 1;
   left: 0;
-  bottom: calc(100% + 10px);
+  top: 0;
   width: max-content;
-  max-width: min(230px, 74vw);
+  max-width: min(200px, 58vw);
   padding: 10px 12px;
   border-radius: 16px 16px 16px 6px;
   background: #fff;
@@ -148,7 +150,11 @@ html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
   font: 600 13.5px/1.35 var(--cm-sans, sans-serif);
   box-shadow: 0 16px 32px -18px rgba(20, 14, 4, .5);
 }
-.as-fala.baixo { bottom: auto; top: calc(100% + 28px); }
+.as-fala.miuda { max-width: 128px; padding: 6px 8px; font-size: 12px; }
+@media (max-width: 400px) {
+  .as-fala { max-width: min(148px, 46vw); padding: 8px; font-size: 12.5px; }
+  .as-fala button { min-height: 30px; padding: 0 8px; font-size: 12px; }
+}
 .as-fala p { margin: 0 0 8px; }
 .as-fala div { display: flex; gap: 6px; }
 .as-fala button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px; background: #1B1915; color: #F8F1E2; font: 700 12.5px var(--cm-sans, sans-serif); cursor: pointer; }
