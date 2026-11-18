@@ -7,6 +7,7 @@ import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBa
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
 import { NovaDividaSheet } from './NovaDivida';
 import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
+import { NumeroVidro } from './vidroComum';
 import { Anel, LinhaDoTempo } from './graficos';
 import { gastoMensalMedio } from './selectores';
 import { CalculaJuro, MaisRapido, Quitadas, Quitou, TIPOS_DIVIDA } from './DividasExtras';
@@ -124,7 +125,7 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
               {dias !== null ? (
                 <>
                   <span className="gs-rotulo">Você fica livre em</span>
-                  <p className="gs-grande" style={{ margin: '2px 0' }}>{dias > 365 ? meses(resultado.meses) : `${dias} ${dias === 1 ? 'dia' : 'dias'}`}</p>
+                  <p className="gs-grande" style={{ margin: '2px 0' }}>{dias > 365 ? meses(resultado.meses) : <><NumeroVidro valor={dias} formato={(n) => String(Math.round(n))} /> {dias === 1 ? 'dia' : 'dias'}</>}</p>
                   <p className="gs-sub" style={{ margin: 0 }}>{mesCurto(fim!)} · você deve {brl0(totalAtual)}</p>
                   <p className="gs-sub" style={{ margin: '4px 0 0' }}>Juros: {brl0(jurosDoMes(sim))} por mês</p>
                 </>

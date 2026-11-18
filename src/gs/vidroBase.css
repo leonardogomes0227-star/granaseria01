@@ -1,0 +1,130 @@
+/* Vidro compartilhado: tokens, fundo com três luzes, cartão e o brilho. Vale no app inteiro. */
+
+html.gs-app,
+.vd {
+  --vd-tinta: #F7F4EE;
+  --vd-mudo: #C9C2B6;
+  --vd-linha: rgba(255, 255, 255, .16);
+  --vd-ouro: #E8D7A8;
+  --vd-vidro: rgba(18, 16, 22, .62);
+}
+
+.vd-fundo {
+  position: absolute;
+  inset: -40px;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: 32px;
+  background: #07060A;
+}
+.vd-fundo-app {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  border-radius: 0;
+  background: #07060A;
+}
+.vd-blob {
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: .85;
+  animation: vd-flutua 16s ease-in-out infinite;
+}
+.vd-blob.ouro { left: -40px; top: -30px; background: #C6A15A; }
+.vd-blob.ambar { right: -70px; top: 18%; width: 240px; height: 240px; background: #E07A3D; opacity: .55; animation-duration: 19s; animation-delay: -6s; }
+.vd-blob.violeta { left: 18%; bottom: -80px; width: 320px; height: 220px; background: #6E5B92; opacity: .45; animation-duration: 22s; animation-delay: -11s; }
+@keyframes vd-flutua {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(28px, -22px, 0) scale(1.08); }
+}
+
+.vd-ondas { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.vd-onda {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 244, 220, .7);
+  animation: vd-sonar .7s ease-out forwards;
+}
+@keyframes vd-sonar { to { transform: scale(16); opacity: 0; } }
+
+.vd-vidro,
+.vd-inclina {
+  position: relative;
+  overflow: hidden;
+  border-radius: 26px;
+  color: var(--vd-tinta);
+  background-color: var(--vd-vidro);
+  background-image: radial-gradient(180px 120px at var(--mx, 70%) var(--my, 0%), rgba(255, 236, 200, .16), transparent 60%);
+  border: 1px solid var(--vd-linha);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 18px 40px -28px rgba(0, 0, 0, .8);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .18s ease-out;
+}
+.vd-vidro { padding: 22px 20px; animation: vd-entra .7s cubic-bezier(.16, 1, .3, 1) backwards; }
+.vd-vidro::before,
+.vd-brilho::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, .16) 48%, transparent 62%);
+  transform: translateX(-130%);
+  animation: vd-shimmer 8.5s ease-in-out infinite;
+}
+@keyframes vd-entra {
+  from { opacity: 0; filter: blur(10px); transform: perspective(900px) translateY(22px) scale(.96); }
+  to { opacity: 1; filter: none; }
+}
+@keyframes vd-shimmer {
+  0%, 62% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+.vd-vidro > * { position: relative; z-index: 1; }
+
+.vd-tela { animation: vd-profundidade .48s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes vd-profundidade {
+  from { opacity: 0; filter: blur(10px); transform: translateY(22px) scale(.96); }
+  to { opacity: 1; filter: none; transform: none; }
+}
+@keyframes vd-sai-prof {
+  to { opacity: 0; filter: blur(10px); transform: scale(.94) translateY(-12px); }
+}
+@keyframes vd-entra-prof {
+  from { opacity: 0; filter: blur(12px); transform: scale(1.045) translateY(26px); }
+  to { opacity: 1; filter: none; transform: none; }
+}
+::view-transition-old(root) { animation: vd-sai-prof .36s cubic-bezier(.4, 0, .2, 1) both; }
+::view-transition-new(root) { animation: vd-entra-prof .5s cubic-bezier(.16, 1, .3, 1) both; }
+html:active-view-transition .vd-tela { animation: none; }
+
+@keyframes vd-enche { from { transform: scaleX(0); transform-origin: left center; } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-blob, .vd-vidro, .vd-vidro::before, .vd-brilho::before, .vd-onda, .vd-tela,
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation: none !important;
+  }
+  .vd-vidro, .vd-inclina, .vd-tela { opacity: 1; filter: none; transform: none; transition: none; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}
+
+@media (forced-colors: active) {
+  .vd-vidro, .vd-inclina, .vd-fundo, .vd-fundo-app {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .vd-blob { display: none; }
+}

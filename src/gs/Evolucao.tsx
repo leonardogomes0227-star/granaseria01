@@ -40,7 +40,7 @@ export function Evolucao() {
       <Titulo titulo="Relatórios" />
 
       {frases.length > 0 ? (
-        <section className="gs-card" aria-label="O que eu notei">
+        <section className="gs-card destaque" aria-label="O que eu notei">
           <span className="gs-rotulo">O que eu notei</span>
           {frases.map((f) => <p key={f.id} className={`gs-frase ${f.tom}`}>{f.texto}</p>)}
         </section>

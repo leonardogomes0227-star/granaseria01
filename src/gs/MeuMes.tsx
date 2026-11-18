@@ -11,6 +11,7 @@ import { desfazerBaixa, removerGastoFixo, restaurarGastoFixo, salvarGastoFixo } 
 import { BaixaSheet } from './BaixaSheet';
 import { Historico } from './Historico';
 import { Campo, CampoDinheiro, CampoNumero, Confirmar, Folha, Titulo, Vazio } from './ui';
+import { NumeroVidro } from './vidroComum';
 import { apagarComDesfazer, toast } from '../components/ui/Toast';
 
 /* ---------- Meu mês: Contas fixas e Dia a dia, separados ---------- */
@@ -71,7 +72,7 @@ function ContasFixas({ mes, hoje }: { mes: string; hoje: string }) {
     <>
       <div className="gs-card destaque">
         <span className="gs-rotulo">Falta pagar</span>
-        <p className="gs-grande" style={{ margin: '4px 0' }}>{brl0(faltaPagar(e, mes))}</p>
+        <p className="gs-grande" style={{ margin: '4px 0' }}><NumeroVidro valor={faltaPagar(e, mes)} formato={brl0} /></p>
         <span className="gs-mudo">de {brl0(total)} neste mês{fixosPagos(e, mes) > 0 ? ` · já pagou ${brl0(fixosPagos(e, mes))}` : ''}</span>
       </div>
       {contas.length === 0 ? (

@@ -7,6 +7,7 @@ import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
 import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
+import { TransicaoTela } from '../gs/vidroComum';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 import { useHoje } from '../gs/useHoje';
@@ -76,7 +77,7 @@ function Casca({ children }: { children: ReactNode }) {
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
-        <main className="gs-principal">{children}</main>
+        <main className="gs-principal"><TransicaoTela>{children}</TransicaoTela></main>
       </div>
       <nav className="cm-abas" aria-label="Seções">
         {NAV.slice(0, 2).map(item)}
@@ -178,7 +179,7 @@ function CascaPublica({ children }: { children: ReactNode }) {
           <Link className="gs-btn pequeno" to="/entrar">Entrar</Link>
         </div>
       </header>
-      <main className="gs-principal">{children}</main>
+      <main className="gs-principal"><TransicaoTela>{children}</TransicaoTela></main>
       <footer className="gs-rodape">
         <p>
           <Link to="/guias">Guias</Link> · <Link to="/planos">Planos</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>

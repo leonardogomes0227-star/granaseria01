@@ -9,6 +9,7 @@ import { envelopes, gastoPorCategoria, planoDeOrcamento, regra503020, resumoDoMe
 import { corDe } from './categorias';
 import { definirLimite, removerLancamento, salvarLancamento } from './acoes';
 import { Agora, Barra, Campo, CampoDinheiro, Dica, Folha, MaisAjuda, Titulo, Vazio } from './ui';
+import { NumeroVidro } from './vidroComum';
 import { Anel, Rosquinha } from './graficos';
 import { toast } from '../components/ui/Toast';
 import { getEstado } from './store';
@@ -54,7 +55,7 @@ export function Orcamento() {
         <div style={{ flex: 'none', width: 96 }}><Anel pct={r.pctUsado} grande={`${Math.round(r.pctUsado)}%`} sub="já foi" tamanho={96} cor={r.pctUsado > r.pctMes + 10 ? 'var(--danger)' : 'var(--gold-strong)'} /></div>
         <div style={{ minWidth: 0 }}>
           <span className="gs-rotulo">Ainda dá pro dia a dia</span>
-          <p className="gs-grande" style={{ margin: '2px 0' }}>{brl0(Math.max(0, r.livre))}</p>
+          <p className="gs-grande" style={{ margin: '2px 0' }}><NumeroVidro valor={Math.max(0, r.livre)} formato={brl0} /></p>
           <p className="gs-sub" style={{ margin: 0 }}>{brl0(Math.max(0, r.porDia))} por dia · {r.restam} {r.restam === 1 ? 'dia' : 'dias'} até o fim do mês</p>
         </div>
       </section>

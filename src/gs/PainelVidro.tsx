@@ -6,7 +6,8 @@ import { mascarar, useOculto } from './privacidade';
 import { useEstado } from './store';
 import { tocar } from './sons';
 import { useHoje } from './useHoje';
-import { useContagem } from './base';
+import { useContagem } from './contagem';
+import { CartaoVidro, FundoAnimado, inclinar, movimentoReduzido, soltar } from './vidroComum';
 import './vidro.css';
 
 const SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
@@ -19,10 +20,6 @@ const ABAS = [
 ] as const;
 type Aba = (typeof ABAS)[number]['id'];
 
-function movimentoReduzido(): boolean {
-  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-
 function Numero({ valor, ms = 900 }: { valor: number; ms?: number }) {
   const n = useContagem(valor, ms);
   return <>{brl0(n)}</>;
@@ -34,23 +31,6 @@ function Seta({ delta, bom }: { delta: Delta | null; bom: 'sobe' | 'desce' }) {
   const seta = delta.sentido === 'sobe' ? '↑' : '↓';
   const pct = delta.pct === null ? '' : ` ${Math.abs(Math.round(delta.pct))}%`;
   return <small className={`vd-delta ${bomAgora ? 'bom' : 'ruim'}`}>{seta}{pct}</small>;
-}
-
-function inclinar(ev: ReactPointerEvent<HTMLElement>) {
-  if (movimentoReduzido()) return;
-  const el = ev.currentTarget;
-  const r = el.getBoundingClientRect();
-  const px = (ev.clientX - r.left) / Math.max(1, r.width);
-  const py = (ev.clientY - r.top) / Math.max(1, r.height);
-  el.style.setProperty('--rx', `${((0.5 - py) * 7).toFixed(2)}deg`);
-  el.style.setProperty('--ry', `${((px - 0.5) * 9).toFixed(2)}deg`);
-  el.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
-  el.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
-}
-
-function soltar(ev: ReactPointerEvent<HTMLElement>) {
-  ev.currentTarget.style.setProperty('--rx', '0deg');
-  ev.currentTarget.style.setProperty('--ry', '0deg');
 }
 
 function rotuloSegue(pct: number | null | undefined, daReceita: boolean): string {
@@ -183,16 +163,10 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
 
   return (
     <div className="vd" ref={raiz} onPointerDown={onda}>
-      <div className="vd-fundo" aria-hidden="true"><i className="vd-blob ouro" /><i className="vd-blob ambar" /><i className="vd-blob violeta" /></div>
+      <FundoAnimado />
       <div className="vd-ondas" aria-hidden="true" />
 
-      <section
-        className="vd-vidro vd-hero"
-        aria-label="Saldo do mês"
-        style={{ animationDelay: '.04s' }}
-        onPointerMove={inclinar}
-        onPointerLeave={soltar}
-      >
+      <CartaoVidro className="vd-hero" aria-label="Saldo do mês" style={{ animationDelay: '.04s' }}>
         <header>
           <div>
             <small>Saldo do mês</small>
@@ -209,7 +183,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
           {saldo.valor === null ? 'Informar renda' : 'Ver a conta'}
         </button>
         {semSerie ? <p className="vd-vazio">Quando entrar receita ou gasto, o mês desenha aqui.</p> : <Grafico key={modo} dias={p.dias} modo={modo} />}
-      </section>
+      </CartaoVidro>
 
       <div className="vd-kpis" aria-label="Números do mês">
         {faixa.map((k, n) => kpi(k, n))}
