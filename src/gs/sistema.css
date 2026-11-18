@@ -68,52 +68,49 @@ html.gs-app .gs-app2 .pn-uso > i,
 html.gs-app .gs-app2 .pn-barra > i,
 html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
 
-/* ---------- mascote: canto direito, acima da barra, sem cruzar os botões ---------- */
+/* ---------- mascote que anda: só transform, o resto da tela continua clicável ---------- */
 .as-mascote {
   position: fixed;
   z-index: 38;
-  right: 10px;
-  left: auto;
-  width: 64px;
-  bottom: calc(78px + env(safe-area-inset-bottom));
-  height: 64px;
-  pointer-events: none;
-}
-.as-andar {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
   width: max-content;
+  height: auto;
   pointer-events: none;
+  transition: transform .85s cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
 }
-.as-mascote.anda .as-andar { animation: as-boia 4.8s ease-in-out infinite; }
-@keyframes as-boia {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(-10px, -7px, 0); }
+.as-mascote.parado,
+.as-mascote.sem-mover,
+.as-mascote.oculto { transition: none; }
+.as-mascote.oculto { visibility: hidden; }
+.as-foco {
+  position: fixed;
+  z-index: 37;
+  left: 0;
+  top: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px #E6C77A, 0 0 0 9999px rgba(12, 11, 9, .42);
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1);
 }
-.as-orb-btn,
-.as-recolher,
-.as-dica,
-.as-dica button { pointer-events: auto; }
-.as-orb-btn {
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-  transition: transform .16s var(--sis-ease, ease);
-}
+.as-figura { position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.as-figura.esq { transform: scaleX(-1); }
+.as-figura.andando .as-orb-btn { animation: as-pulo .42s ease-in-out infinite; }
+@keyframes as-pulo { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -7px, 0); } }
+.as-pernas { display: none; gap: 5px; height: 9px; margin-top: -2px; }
+.as-figura.andando .as-pernas { display: flex; }
+.as-pernas i { width: 3px; height: 8px; border-radius: 2px; background: #7A5412; transform-origin: top center; animation: as-perna .42s ease-in-out infinite; }
+.as-pernas i:last-child { animation-delay: .21s; }
+@keyframes as-perna { 0%, 100% { transform: rotate(22deg); } 50% { transform: rotate(-22deg); } }
+.as-orb-btn, .as-recolher, .as-opcoes, .as-fala, .as-fala button, .as-menu, .as-menu button { pointer-events: auto; }
+.as-orb-btn { width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: pointer; }
 .as-orb-btn:active { transform: scale(.92); }
-.as-orb-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(230, 199, 122, .7); border-radius: 50%; }
-.as-recolher {
+.as-orb-btn:focus-visible, .as-recolher:focus-visible, .as-opcoes:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(230, 199, 122, .7); border-radius: 50%; }
+.as-recolher, .as-opcoes {
   position: absolute;
-  right: 36px;
-  bottom: 36px;
   width: 22px;
   height: 22px;
   border: 0;
@@ -122,53 +119,59 @@ html.gs-app .gs-app2 .cm-prog > i { transition: width .7s var(--sis-ease); }
   color: #F8F1E2;
   font: 700 14px/1 var(--cm-sans, sans-serif);
   cursor: pointer;
-  box-shadow: 0 4px 10px -4px rgba(0, 0, 0, .45);
 }
-.as-recolher:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(230, 199, 122, .7); }
-.as-dica {
+.as-recolher { top: -4px; right: -4px; }
+.as-opcoes { top: -4px; left: -4px; }
+.as-menu {
   position: absolute;
-  right: 62px;
-  bottom: 6px;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  z-index: 2;
+  left: 0;
+  bottom: calc(100% + 8px);
+  display: grid;
+  gap: 4px;
+  min-width: 168px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 16px 32px -18px rgba(20, 14, 4, .5);
+}
+.as-menu button { min-height: 36px; border: 0; border-radius: 10px; background: #F6F1E6; color: #1B1915; font: 700 13px var(--cm-sans, sans-serif); cursor: pointer; text-align: left; padding: 0 10px; }
+.as-fala {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 0;
   width: max-content;
-  max-width: 148px;
-  margin: 0;
-  padding: 10px 8px 10px 12px;
+  max-width: min(200px, 58vw);
+  padding: 10px 12px;
   border-radius: 16px 16px 16px 6px;
   background: #fff;
   color: #1B1915;
-  font: 600 13px/1.35 var(--cm-sans, sans-serif);
-  box-shadow: 0 14px 28px -16px rgba(20, 14, 4, .45);
-  animation: sis-sobe .28s ease both;
+  font: 600 13.5px/1.35 var(--cm-sans, sans-serif);
+  box-shadow: 0 16px 32px -18px rgba(20, 14, 4, .5);
 }
-.as-dica button {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 50%;
-  background: #F3EEE4;
-  color: #1B1915;
-  cursor: pointer;
-  font: 700 16px/1 sans-serif;
+.as-fala.miuda { max-width: 128px; padding: 6px 8px; font-size: 12px; }
+@media (max-width: 400px) {
+  .as-fala { max-width: min(148px, 46vw); padding: 8px; font-size: 12.5px; }
+  .as-fala button { min-height: 30px; padding: 0 8px; font-size: 12px; }
 }
-.as-mascote.min { left: auto; width: 88px; height: 64px; }
-.as-mascote.min .as-andar,
-.as-mascote.parado .as-andar { animation: none; }
-.as-mascote.min .as-dica { display: none; }
-@media (min-width: 1000px) {
-  .as-mascote { right: 28px; bottom: 24px; }
-}
-html.gs-app[data-tema="escuro"] .as-dica { background: #F6F1E6; color: #1B1915; }
-html.gs-app[data-tema="escuro"] .as-recolher { background: #F6F1E6; color: #1B1915; }
+.as-fala p { margin: 0 0 8px; }
+.as-fala div { display: flex; gap: 6px; }
+.as-fala button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px; background: #1B1915; color: #F8F1E2; font: 700 12.5px var(--cm-sans, sans-serif); cursor: pointer; }
+.as-fala button:first-child { background: #F3EEE4; color: #1B1915; }
+.as-mascote.min .as-pernas, .as-mascote.min .as-fala, .as-mascote.min .as-menu, .as-mascote.min .as-opcoes { display: none; }
+html.gs-app[data-tema="escuro"] .as-fala,
+html.gs-app[data-tema="escuro"] .as-menu { background: #F6F1E6; color: #1B1915; }
+html.gs-app[data-tema="escuro"] .as-recolher,
+html.gs-app[data-tema="escuro"] .as-opcoes { background: #F6F1E6; color: #1B1915; }
 
 @media (prefers-reduced-motion: reduce) {
   html.gs-app .gs-app2 .gs-principal > *,
   html.gs-app .gs-app2 .ms-troca,
-  .as-dica,
-  .as-mascote.anda .as-andar { animation: none !important; }
+  .as-mascote,
+  .as-foco,
+  .as-figura.andando .as-orb-btn,
+  .as-pernas i { animation: none !important; transition: none !important; }
   html.gs-app .gs-app2 .gs-btn,
   html.gs-app .gs-app2 .pn-uso > i,
   html.gs-app .gs-app2 .pn-barra > i { transition: none; }

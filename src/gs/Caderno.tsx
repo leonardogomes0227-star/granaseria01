@@ -69,7 +69,7 @@ function FerramentasDoPainel() {
     <Secao titulo="Ferramentas" sub="A pergunta embaixo do nome diz para que ela serve. Um toque abre." extra={<Link to="/mais">Ver todas</Link>}>
       <div className="pn-ferramentas">
         {grupos.map((g) => (
-          <div key={g.titulo}>
+          <div key={g.titulo} data-midas={g.titulo.toLowerCase()}>
             <h3 className="pn-grupo-titulo">{g.titulo}</h3>
             <div className="pn-ftiles">
               {g.itens.map(({ f, st }) => {
