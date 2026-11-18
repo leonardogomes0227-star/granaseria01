@@ -1,6 +1,6 @@
 // Componentes base do visual "O Caminho" (estilos em caminho.css). Só mostram: nenhum deles calcula dinheiro.
 
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Award, Banknote, BookOpen, CalendarClock, CalendarDays, ChartColumn, ChartLine, ChartPie, Check, CheckCheck, ChevronRight, Compass, CreditCard, Crown, Delete, FileText, Flag, Gift, Info, Landmark, LifeBuoy, Map, MessageCircle, PiggyBank, Plus, Quote, Receipt, ArrowRightLeft, Scale, Scissors, Search, Shield, Smartphone, Sparkles, Sprout, Sun, Target, Timer, UserRound, Bell, Swords, Wallet, type LucideIcon } from 'lucide-react';
 import { Moeda } from '../components/ui/Moeda';
@@ -21,20 +21,25 @@ export const StatusDot = ({ tom = '', children }: { tom?: TomStatus; children: R
 export const Eyebrow = ({ children }: { children: ReactNode }) => <span className="cm-eyebrow">{children}</span>;
 
 /** Número que conta até o valor ao abrir (parado para quem pediu menos movimento). */
-export function useContagem(alvo: number, ms = 600): number {
-  const [v, setV] = useState(alvo);
+export function useContagem(alvo: number, ms = 700): number {
+  const reduz = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const [v, setV] = useState(() => (reduz || !Number.isFinite(alvo) ? alvo : 0));
+  const fromRef = useRef(reduz ? alvo : 0);
   useEffect(() => {
-    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !Number.isFinite(alvo)) { setV(alvo); return; }
+    if (reduz || !Number.isFinite(alvo)) { setV(alvo); fromRef.current = alvo; return; }
+    const from = fromRef.current;
     const t0 = performance.now();
+    const dur = from === 0 ? ms : Math.min(ms, 480);
     let id = 0;
     const passo = (t: number) => {
-      const k = Math.min(1, (t - t0) / ms);
-      setV(alvo * (1 - (1 - k) ** 3));
+      const k = Math.min(1, (t - t0) / dur);
+      setV(from + (alvo - from) * (1 - (1 - k) ** 3));
       if (k < 1) id = requestAnimationFrame(passo);
+      else fromRef.current = alvo;
     };
     id = requestAnimationFrame(passo);
     return () => cancelAnimationFrame(id);
-  }, [alvo, ms]);
+  }, [alvo, ms, reduz]);
   return v;
 }
 

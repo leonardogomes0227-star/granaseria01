@@ -1,0 +1,248 @@
+/* ==========================================================================
+   Movimento do app: entrada das telas, números, gráficos, Midas e o puxão.
+   Carregado por último. Quem pediu menos movimento vê o estado final, parado.
+   ========================================================================== */
+
+@keyframes gs-entra {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gs-respira {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+@keyframes gs-olhar {
+  0%, 18% { transform: translateX(0) scaleY(1); }
+  22% { transform: translateX(0) scaleY(.14); }
+  26%, 48% { transform: translateX(1.6px) scaleY(1); }
+  56% { transform: translateX(1.6px) scaleY(.14); }
+  62%, 78% { transform: translateX(-1.8px) scaleY(1); }
+  86% { transform: translateX(0) scaleY(.12); }
+  92%, 100% { transform: translateX(0) scaleY(1); }
+}
+@keyframes gs-passo {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1, 1); }
+  30% { transform: translate3d(0, -7px, 0) scale(1.04, .96); }
+  58% { transform: translate3d(0, -1px, 0) scale(.98, 1.03); }
+}
+@keyframes gs-perna {
+  0% { transform: rotate(20deg); }
+  50% { transform: rotate(-22deg); }
+  100% { transform: rotate(20deg); }
+}
+@keyframes gs-festa {
+  0%, 100% { transform: scale(1) rotate(0); }
+  25% { transform: scale(1.14) rotate(-8deg); }
+  55% { transform: scale(1.08) rotate(8deg); }
+  80% { transform: scale(1.12) rotate(-3deg); }
+}
+@keyframes gs-revela {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes gs-surge {
+  from { opacity: 0; transform: translateY(8px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes gm-cresce {
+  from { transform: scaleY(.08); }
+  to { transform: scaleY(1); }
+}
+@keyframes gm-traco {
+  to { stroke-dashoffset: 0; }
+}
+
+html.gs-app { overscroll-behavior-y: contain; }
+html.gs-app .gs-app2 .gs-principal > * {
+  animation: gs-entra .5s cubic-bezier(.22, 1, .36, 1) both;
+}
+html.gs-app .pn.pn-v2 .pn-hero b,
+html.gs-app .pn.pn-v2 .pn-stat b,
+html.gs-app .pn.pn-v2 .pn-valor,
+html.gs-app .pn.pn-v2 .pn-num {
+  font-variant-numeric: tabular-nums;
+}
+html.gs-app .pn.pn-v2 .pn-stat,
+html.gs-app .pn.pn-v2 .pn-card,
+html.gs-app .pn.pn-v2 .pn-acao,
+html.gs-app .pn.pn-v2 .pn-ftile,
+html.gs-app .pn.pn-v2 .pn-bloco > * {
+  animation: gs-entra .52s cubic-bezier(.22, 1, .36, 1) both;
+}
+html.gs-app .pn.pn-v2 .pn-stats > :nth-child(1) { animation-delay: .08s; }
+html.gs-app .pn.pn-v2 .pn-stats > :nth-child(2) { animation-delay: .15s; }
+html.gs-app .pn.pn-v2 .pn-stats > :nth-child(3) { animation-delay: .22s; }
+html.gs-app .pn.pn-v2 .pn-acoes > :nth-child(1) { animation-delay: .1s; }
+html.gs-app .pn.pn-v2 .pn-acoes > :nth-child(2) { animation-delay: .16s; }
+html.gs-app .pn.pn-v2 .pn-acoes > :nth-child(3) { animation-delay: .22s; }
+html.gs-app .pn.pn-v2 .pn-acoes > :nth-child(4) { animation-delay: .28s; }
+html.gs-app .pn.pn-v2 .pn-bloco > :nth-child(1) { animation-delay: .18s; }
+html.gs-app .pn.pn-v2 .pn-bloco > :nth-child(2) { animation-delay: .26s; }
+html.gs-app .pn.pn-v2 .pn-bloco > :nth-child(3) { animation-delay: .34s; }
+html.gs-app .pn.pn-v2 .pn-ftile:nth-child(2) { animation-delay: .06s; }
+html.gs-app .pn.pn-v2 .pn-ftile:nth-child(3) { animation-delay: .12s; }
+html.gs-app .pn.pn-v2 .pn-stat,
+html.gs-app .pn.pn-v2 .pn-acao,
+html.gs-app .pn.pn-v2 .pn-ftile,
+html.gs-app .pn.pn-v2 .pn-card,
+html.gs-app .cm-abas a {
+  transition: transform .16s cubic-bezier(.22, 1, .36, 1), box-shadow .16s ease;
+}
+html.gs-app .pn.pn-v2 .pn-stat:active,
+html.gs-app .pn.pn-v2 .pn-acao:active,
+html.gs-app .pn.pn-v2 .pn-ftile:active,
+html.gs-app .cm-abas a:active { transform: scale(.975); }
+@media (hover: hover) {
+  html.gs-app .pn.pn-v2 .pn-card:hover,
+  html.gs-app .pn.pn-v2 .pn-acao:hover,
+  html.gs-app .pn.pn-v2 .pn-ftile:hover { transform: translateY(-3px); }
+}
+
+.gm-barras rect {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: gm-cresce .62s cubic-bezier(.22, 1, .36, 1) both;
+}
+.gm-minilinha path,
+.gm-linha .traco {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: gm-traco .9s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+
+/* Midas: acima da barra (z 40) e abaixo das folhas (z 90) e do painel de conversa (z 59). */
+.as-foco {
+  z-index: 45;
+  box-shadow: 0 0 0 3px #E6C77A, 0 0 0 100vmax rgba(12, 11, 9, .46);
+  transition: transform .28s cubic-bezier(.22, 1, .36, 1), width .28s, height .28s;
+}
+.as-mascote {
+  z-index: 46;
+  transition: transform .72s cubic-bezier(.22, .85, .28, 1);
+}
+.as-mascote .as-orbe { animation: gs-respira 3.6s ease-in-out infinite; }
+.as-mascote .as-orbe i { animation: gs-olhar 6.2s ease-in-out infinite; }
+.as-mascote .as-orbe i:last-child { animation-delay: .08s; }
+.as-figura.andando .as-orb-btn { animation: none; }
+.as-mascote.andando .as-orbe { animation: gs-passo .48s cubic-bezier(.37, 0, .2, 1) infinite; }
+.as-figura.andando .as-pernas i { animation: gs-perna .48s cubic-bezier(.45, 0, .55, 1) infinite; }
+.as-mascote.festa .as-orbe,
+.as-mascote.meta .as-orbe { animation: gs-festa .55s cubic-bezier(.22, 1, .36, 1) 3; }
+.as-boca, .as-brilho { display: none; }
+.as-mascote.festa .as-boca,
+.as-mascote.meta .as-boca {
+  display: block;
+  width: 14px;
+  height: 7px;
+  margin-top: -16px;
+  border-bottom: 2px solid #fff;
+  border-radius: 0 0 12px 12px;
+  pointer-events: none;
+}
+.as-mascote.festa .as-brilho,
+.as-mascote.meta .as-brilho {
+  display: block;
+  position: absolute;
+  top: -6px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff6d2;
+  box-shadow: -18px 10px 0 -1px #ffe7a3, 6px 16px 0 -2px #fff;
+  pointer-events: none;
+}
+.as-fala {
+  max-width: min(230px, calc(100vw - 20px));
+  animation: gs-surge .28s cubic-bezier(.22, 1, .36, 1) both;
+}
+.as-fala .as-revela { animation: gs-revela .55s steps(18, end) both; }
+.as-fala div { animation: gs-surge .28s .18s cubic-bezier(.22, 1, .36, 1) both; }
+.as-menu.baixo { top: calc(100% + 8px); bottom: auto; }
+.as-menu.direita { left: auto; right: 0; }
+.as-orb-btn, .as-recolher, .as-opcoes, .as-fala button { touch-action: manipulation; }
+
+.gs-puxar-ind {
+  position: fixed;
+  z-index: 44;
+  left: 50%;
+  top: calc(10px + env(safe-area-inset-top));
+  width: 34px;
+  height: 34px;
+  margin-left: -17px;
+  border-radius: 50%;
+  background: #1B1915;
+  box-shadow: 0 10px 22px -14px rgba(20, 14, 4, .7);
+  opacity: 0;
+  transform: translateY(-8px) scale(.86);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.gs-puxar-ind i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 12px auto 0;
+  border-right: 2px solid #E6C77A;
+  border-bottom: 2px solid #E6C77A;
+  transform: rotate(45deg);
+}
+html.gs-puxando .gs-puxar-ind,
+html.gs-refresco .gs-puxar-ind { opacity: 1; transform: translateY(calc(var(--gs-puxar, 0px) * .25)) scale(1); }
+html.gs-mola .gs-app2 .gs-principal { transform: translateY(var(--gs-puxar, 0px)); transition: transform .42s cubic-bezier(.22, 1, .36, 1); }
+html.gs-mola.gs-puxando .gs-app2 .gs-principal { transition: none; }
+html.gs-refresco .gs-app2 .gs-principal > *,
+html.gs-refresco .pn.pn-v2 .pn-stat,
+html.gs-refresco .pn.pn-v2 .pn-card,
+html.gs-refresco .pn.pn-v2 .pn-acao,
+html.gs-refresco .pn.pn-v2 .pn-ftile {
+  animation: gs-entra .48s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.pn-skel .sk-redondo { width: 44px; height: 44px; border-radius: 50%; justify-self: end; }
+.pn-skel .sk-card { height: 148px; border-radius: 28px; }
+.pn-skel .sk-card.curto, .gs-skel .sk-card.curto { height: 96px; }
+.gs-skel { display: grid; gap: 12px; }
+.gs-skel .sk, .pn-skel .sk-redondo, .pn-skel .sk-card {
+  display: block;
+  border-radius: 18px;
+  background: linear-gradient(90deg, var(--pn-suave, #F3F2EE) 25%, #fff 37%, var(--pn-suave, #F3F2EE) 63%);
+  background-size: 400% 100%;
+  animation: pn-pulso 1.2s ease infinite;
+}
+.gs-skel .sk-titulo { height: 34px; width: 48%; }
+.gs-skel .sk-linha { height: 14px; width: 70%; }
+.gs-skel .sk-card { height: 128px; border-radius: 28px; }
+html.gs-app[data-tema="escuro"] .gs-skel .sk,
+html.gs-app[data-tema="escuro"] .pn-skel .sk-redondo,
+html.gs-app[data-tema="escuro"] .pn-skel .sk-card {
+  background: linear-gradient(90deg, #24211C 25%, #2E2A24 37%, #24211C 63%);
+  background-size: 400% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-mascote,
+  .as-mascote .as-orbe,
+  .as-mascote .as-orbe i,
+  .as-pernas i,
+  .as-fala,
+  .as-fala .as-revela,
+  .as-fala div,
+  .as-foco,
+  .gs-puxar-ind,
+  html.gs-app .gs-app2 .gs-principal > *,
+  html.gs-app .pn.pn-v2 .pn-stat,
+  html.gs-app .pn.pn-v2 .pn-card,
+  html.gs-app .pn.pn-v2 .pn-acao,
+  html.gs-app .pn.pn-v2 .pn-ftile,
+  html.gs-app .pn.pn-v2 .pn-bloco > *,
+  .gm-barras rect,
+  .gm-linha .traco,
+  .gm-minilinha path,
+  .gm-medidor .valor,
+  .gs-skel .sk,
+  .pn-skel .sk { animation: none !important; transition: none !important; }
+  .gm-linha .traco,
+  .gm-minilinha path { stroke-dashoffset: 0; stroke-dasharray: none; }
+  html.gs-mola .gs-app2 .gs-principal { transform: none; }
+}

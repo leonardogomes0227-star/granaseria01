@@ -12,6 +12,7 @@ import './gs/gs2.css';
 import './gs/caminho.css';
 import './gs/painelVisual.css';
 import './gs/sistema.css';
+import './gs/movimento.css';
 import './gs/tema';
 import { initAnalytics } from './analytics';
 

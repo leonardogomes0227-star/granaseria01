@@ -135,6 +135,8 @@ export function Caderno() {
   const heroContado = useContagem(heroAlvo, 780);
   const faltaContada = useContagem(falta, 860);
   const gastoContado = useContagem(gastoMes, 740);
+  const guardadoContado = useContagem(guardado, 820);
+  const dividaContada = useContagem(dividas?.total ?? 0, 900);
   const semContas = e.gastosFixos.length === 0;
   const semDivida = e.dividas.length === 0;
   const mesNome = nomeMes(mes);
@@ -225,7 +227,7 @@ export function Caderno() {
           </Link>
           <Link to="/guardar" className="pn-stat">
             <i aria-hidden="true" className="ouro"><PiggyBank size={18} /></i>
-            <span><small>Guardado</small><b>{m(brl0(guardado))}</b><em>Neste mês</em></span>
+            <span><small>Guardado</small><b>{m(brl0(guardadoContado))}</b><em>Neste mês</em></span>
           </Link>
         </div>
       </Secao>
@@ -284,7 +286,7 @@ export function Caderno() {
         {dividas ? (
           <Link to="/plano/dividas" className="pn-card pn-divida">
             <header><h2>Dívidas</h2><ArrowUpRight size={18} aria-hidden="true" /></header>
-            <b className="pn-num">{m(brl0(dividas.total))}</b>
+            <b className="pn-num">{m(brl0(dividaContada))}</b>
             <p className="pn-sub">{dividas.fim ? `Você fica livre em ${nomeMes(dividas.fim)}.` : 'Com o pagamento de hoje ela não zera. Veja como sair.'}</p>
             <Medidor pct={dividas.pagoPct} rotulo="Dívida já paga" legenda="já pago" />
           </Link>

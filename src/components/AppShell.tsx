@@ -1,8 +1,7 @@
-import { useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { House, Landmark, Menu, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
-import { Assistente } from '../gs/Assistente';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
@@ -86,10 +85,80 @@ function Casca({ children }: { children: ReactNode }) {
       </nav>
       <AdicionarMov />
       <MenuAdicionar />
-      {pronto && <Assistente />}
+      <PuxarParaAtualizar />
       <Resolver />
     </div>
   );
+}
+
+/** Puxar o topo da tela dá um refresco visual (os cartões entram de novo). Não recarrega a rede. */
+function PuxarParaAtualizar() {
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const raiz = document.documentElement;
+    let y0 = 0;
+    let ativo = false;
+    let dy = 0;
+    let timer = 0;
+    const comecar = (ev: TouchEvent) => {
+      if (window.scrollY > 2) return;
+      const alvo = ev.target instanceof Element ? ev.target : null;
+      if (alvo?.closest('input, textarea, select, .as-painel, .gs-fundo, .as-fala')) return;
+      y0 = ev.touches[0]?.clientY ?? 0;
+      ativo = true;
+      dy = 0;
+    };
+    const mover = (ev: TouchEvent) => {
+      if (!ativo) return;
+      if (window.scrollY > 2) {
+        ativo = false;
+        raiz.classList.remove('gs-puxando');
+        raiz.style.setProperty('--gs-puxar', '0px');
+        return;
+      }
+      const d = (ev.touches[0]?.clientY ?? y0) - y0;
+      if (d <= 0) {
+        dy = 0;
+        raiz.style.setProperty('--gs-puxar', '0px');
+        return;
+      }
+      dy = Math.min(84, d * 0.42);
+      raiz.classList.add('gs-mola', 'gs-puxando');
+      raiz.style.setProperty('--gs-puxar', `${dy}px`);
+    };
+    const fim = () => {
+      if (!ativo && dy <= 0) return;
+      const soltou = dy;
+      ativo = false;
+      dy = 0;
+      raiz.classList.remove('gs-puxando');
+      raiz.style.setProperty('--gs-puxar', '0px');
+      if (soltou > 54) {
+        raiz.classList.remove('gs-refresco');
+        void raiz.offsetWidth;
+        raiz.classList.add('gs-refresco');
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        raiz.classList.remove('gs-mola', 'gs-refresco');
+        raiz.style.removeProperty('--gs-puxar');
+      }, soltou > 54 ? 700 : 420);
+    };
+    window.addEventListener('touchstart', comecar, { passive: true });
+    window.addEventListener('touchmove', mover, { passive: true });
+    window.addEventListener('touchend', fim);
+    window.addEventListener('touchcancel', fim);
+    return () => {
+      window.removeEventListener('touchstart', comecar);
+      window.removeEventListener('touchmove', mover);
+      window.removeEventListener('touchend', fim);
+      window.removeEventListener('touchcancel', fim);
+      window.clearTimeout(timer);
+      raiz.classList.remove('gs-mola', 'gs-puxando', 'gs-refresco');
+      raiz.style.removeProperty('--gs-puxar');
+    };
+  }, []);
+  return <div className="gs-puxar-ind" aria-hidden="true"><i /></div>;
 }
 
 /** Quem ainda não entrou: cabeçalho enxuto (marca, guias, entrar), sem abas, e o rodapé com os avisos. */

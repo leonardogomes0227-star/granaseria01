@@ -7,6 +7,9 @@ const NotFoundPage = lazy(() => importarComRetry(() => import('./components/Page
 import { HomePage } from './components/HomePage';
 import { AppShell } from './components/AppShell';
 import { Toaster } from './components/ui/Toast';
+import { Assistente } from './gs/Assistente';
+import { EsqueletoTela } from './gs/Esqueleto';
+import { OuvirSons } from './gs/OuvirSons';
 import { AppBar } from './components/Layout';
 import { ToolId, getTool, getToolBySlug } from './tools';
 import { INITIAL_DATA, WizardData } from './types';
@@ -311,6 +314,9 @@ function App() {
         />
         <Route path="*" element={<Titled title="Página não encontrada"><AppShell><Suspense fallback={null}><NotFoundPage /></Suspense></AppShell></Titled>} />
       </Routes>
+      {/* O Midas fica fora das rotas: cada página tem a sua casca, e remontar o guia no meio do passo fazia ele piscar. */}
+      <Assistente />
+      <OuvirSons />
       <Toaster />
     </>
   );
@@ -395,7 +401,7 @@ function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: st
         ) : (
           <LoginGate what={o}>
             <ErroGlobal>
-              <Porteiro><Suspense fallback={<p className="gs-mudo" role="status" style={{ padding: 16 }}>Carregando…</p>}>{children}</Suspense></Porteiro>
+              <Porteiro><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></Porteiro>
             </ErroGlobal>
           </LoginGate>
         )}
