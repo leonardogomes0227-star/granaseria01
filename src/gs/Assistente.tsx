@@ -5,9 +5,10 @@ import { useSession } from '../account';
 import { getName, painelToken } from '../painel';
 import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
-import { comentarioDoGasto, dicasDoMidas, textoSeCouber, type Dica } from './midasDicas';
+import { comentarioDoGasto, dicasDoMidas, textoSeCouber, type Dica, type HumorMidas, type TomDica } from './midasDicas';
+import { FraseDica, MidasFigura } from './MidasFigura';
 import { rotaDoApp } from './visual';
-import { aoLadoDoAlvo, casaDoMidas, cruza, lugarDaFala, type Caixa } from './midasPosicao';
+import { aoLadoDoAlvo, casaDoMidas, cruza, lugarSemCobrir, type Caixa } from './midasPosicao';
 import { NOME_ASSISTENTE, SUGESTOES, perguntarAoAssistente, type MensagemAssistente } from './assistenteLocal';
 
 /* ---------- O assistente: a bolinha dourada que flutua, a barra "pergunte" e o painel de conversa ---------- */
@@ -201,7 +202,10 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   const [tour, setTour] = useState<number | null>(() => guiaMemoria?.indice ?? null);
   const [pausado, setPausado] = useState(() => guiaMemoria?.pausado ?? false);
   const [foco, setFoco] = useState<DOMRect | null>(null);
-  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' | 'festa' | 'dica'; rota?: string; rotulo?: string; id?: string } | null>(null);
+  const [fala, setFala] = useState<{ texto: string; modo: 'tour' | 'tela' | 'festa' | 'dica'; rota?: string; rotulo?: string; id?: string; tom?: TomDica; humor?: HumorMidas; icone?: string; indice?: number; total?: number } | null>(null);
+  const [chega, setChega] = useState(true);
+  const [mexe, setMexe] = useState(false);
+  const [falando, setFalando] = useState(false);
   const [ancora, setAncora] = useState<{ l: number; t: number } | null>(null);
   const [menu, setMenu] = useState(false);
   const [humor, setHumor] = useState<'' | 'festa' | 'meta'>('');
@@ -311,6 +315,13 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   festejarRef.current = festejar;
 
   useEffect(() => { posRef.current = pos; }, [pos]);
+  useEffect(() => { const id = window.setTimeout(() => setChega(false), 700); return () => window.clearTimeout(id); }, []);
+  useEffect(() => {
+    if (!fala || reduz) { setFalando(false); return; }
+    setFalando(true);
+    const id = window.setTimeout(() => setFalando(false), 980);
+    return () => window.clearTimeout(id);
+  }, [fala?.id, fala?.texto, reduz]);
   useEffect(() => () => {
     vivoRef.current = false;
     window.clearTimeout(andarTimer.current);
@@ -372,11 +383,12 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     const livres = forcar ? todas : dicasDoMidas(getEstado(), hoje, vistasMidas, agora);
     if (livres.length === 0) return;
     const dica = forcar ? todas[passoDica.current % todas.length] : livres[0];
-    passoDica.current = (todas.findIndex((d) => d.id === dica.id) + 1) % todas.length;
+    const indice = Math.max(0, todas.findIndex((d) => d.id === dica.id));
+    passoDica.current = (indice + 1) % todas.length;
     vistasMidas[dica.id] = agora;
     setFoco(null);
     alvoRef.current = null;
-    setFala({ texto: dica.texto, modo: 'dica', rota: dica.rota, rotulo: dica.rotulo, id: dica.id });
+    setFala({ texto: dica.texto, modo: 'dica', rota: dica.rota, rotulo: dica.rotulo, id: dica.id, tom: dica.tom, humor: dica.humor, icone: dica.icone, indice, total: todas.length });
     void enriquecer(dica).then((texto) => {
       if (!vivoRef.current) return;
       setFala((atual) => (atual?.id === dica.id ? { ...atual, texto } : atual));
@@ -546,7 +558,13 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   useLayoutEffect(() => {
     const el = falaEl.current;
     if (!el || !fala || min || oculto) { setAncora(null); return; }
-    const lugar = lugarDaFala(el.offsetWidth || 168, el.offsetHeight || 84, pos.x, pos.y, window.innerWidth, window.innerHeight, obstaculos(foco), navCaixa());
+    const criticos = [...document.querySelectorAll('nav.cm-abas, .cm-mais, .pn-acao, .as-barra, .pn-redondo, .pn-periodo button, .pn-stat, .pn-ftile, .pn-hero, .gs-btn')].flatMap((el) => {
+      if (el.closest('.as-mascote, .as-fala')) return [];
+      const r = el.getBoundingClientRect();
+      return r.width > 8 && r.height > 8 ? [{ l: r.left - 6, t: r.top - 6, r: r.right + 6, b: r.bottom + 6 }] : [];
+    });
+    const hero = document.querySelector('.pn-hero')?.getBoundingClientRect();
+    const lugar = lugarSemCobrir(el.offsetWidth || 220, el.offsetHeight || 120, pos.x, pos.y, window.innerWidth, window.innerHeight, criticos, hero && hero.width > 8 ? [rectDe(hero)] : [], navCaixa());
     const l = Math.round(lugar.l - pos.x);
     const t = Math.round(lugar.t - pos.y);
     setAncora((prev) => (prev && prev.l === l && prev.t === t ? prev : { l, t }));
@@ -584,31 +602,34 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       className={`as-mascote${min ? ' min' : ''}${andando ? ' andando' : ''}${reduz ? ' parado' : ''}${oculto ? ' oculto' : ''}${pausado ? ' pausado' : ''}${humor ? ` ${humor}` : ''}`}
       style={{ transform: `translate3d(${Math.round(pos.x)}px, ${Math.round(pos.y)}px, 0)` }}
     >
-      <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}`}>
-        <button type="button" className="as-orb-btn" onClick={() => { if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
-          <Orbe tamanho={min ? 40 : 52} />
+      <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}${chega ? ' chega' : ''}`}>
+        <button type="button" className="as-orb-btn" onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 480); if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
+          <MidasFigura humor={fala?.humor ?? (humor === 'festa' || humor === 'meta' ? 'festa' : 'feliz')} andando={andando} falando={falando} apontando={Boolean(foco) || fala?.modo === 'dica'} toque={mexe} />
         </button>
-        <span className="as-boca" aria-hidden="true" />
-        <span className="as-brilho" aria-hidden="true" />
         <span className="as-pernas" aria-hidden="true"><i /><i /></span>
       </div>
       {fala && !min && !oculto && (
-        <div ref={falaEl} className={`as-fala${miuda ? ' miuda' : ''}${fala.modo === 'festa' ? ' festa' : ''}`} role={fala.modo === 'festa' ? 'status' : 'dialog'} aria-live="polite" aria-label={fala.modo === 'festa' ? fala.texto : 'Dica do Midas'} style={ancora ? { left: ancora.l, top: ancora.t } : { visibility: 'hidden' }}>
-          <p className={reduz || fala.modo === 'festa' ? undefined : 'as-revela'}>{fala.texto}</p>
+        <div key={fala.id ?? fala.texto} ref={falaEl} className={`as-fala${miuda ? ' miuda' : ''} ${fala.tom ?? (fala.modo === 'festa' ? 'ok' : 'neutro')}${ancora && ancora.t > 36 ? ' cauda-cima' : ' cauda-baixo'}`} role={fala.modo === 'festa' ? 'status' : 'dialog'} aria-live="polite" aria-label={fala.texto} style={ancora ? { left: ancora.l, top: ancora.t } : { visibility: 'hidden' }}>
+          <p className={reduz ? undefined : 'as-revela'}>{(fala.icone || fala.tom) && <span className={`as-chip ${fala.tom ?? 'neutro'}`} aria-hidden="true">{fala.icone ?? '💡'}</span>}<FraseDica texto={fala.texto} /></p>
+          {typeof fala.total === 'number' && fala.total > 1 && (
+            <span className="as-pontos" aria-label={`Dica ${(fala.indice ?? 0) + 1} de ${fala.total}`}>
+              {Array.from({ length: Math.min(fala.total, 6) }, (_, i) => <i key={i} className={i === (fala.total! <= 6 ? fala.indice : (fala.indice ?? 0) % 6) ? 'on' : ''} />)}
+            </span>
+          )}
           {fala.modo !== 'festa' && (
             <div>
               {fala.modo === 'tour' ? (
                 <>
-                  <button type="button" onClick={encerrar}>Pular</button>
-                  <button type="button" onClick={() => seguir((tour ?? 0) + 1)}>{tour !== null && tour >= TOUR.length - 1 ? 'Pronto' : 'Próximo'}</button>
+                  <button type="button" className="sec" onClick={encerrar}>Pular</button>
+                  <button type="button" className="prim" onClick={() => seguir((tour ?? 0) + 1)}>{tour !== null && tour >= TOUR.length - 1 ? 'Pronto' : 'Próximo'}</button>
                 </>
               ) : fala.modo === 'dica' ? (
                 <>
-                  {fala.rota && fala.rota !== pathname ? <Link to={fala.rota} onClick={() => setFala(null)}>{fala.rotulo ?? 'Ver'}</Link> : null}
-                  <button type="button" onClick={() => mostrarDica(true)}>Outra</button>
+                  {fala.rota && fala.rota !== pathname ? <Link className="prim" to={fala.rota} onClick={() => setFala(null)}>{fala.rotulo ?? 'Ver'}</Link> : <button type="button" className="prim" onClick={() => setFala(null)}>Ver</button>}
+                  <button type="button" className="sec" onClick={() => mostrarDica(true)}>Outra dica</button>
                 </>
               ) : (
-                <button type="button" onClick={() => { setFala(null); setFoco(null); alvoRef.current = null; }}>Fechar</button>
+                <button type="button" className="sec" onClick={() => { setFala(null); setFoco(null); alvoRef.current = null; }}>Fechar</button>
               )}
             </div>
           )}

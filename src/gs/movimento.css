@@ -273,6 +273,108 @@ html.gs-app .pn.pn-v2 .pn-anel {
   pointer-events: none;
 }
 .gm-medidor .valor { transition: stroke-dashoffset 1.05s cubic-bezier(.16, 1.2, .32, 1); }
+
+/* Midas com corpo: braços, boca e peso. Só transform, para o celular segurar 60fps. */
+.as-orb-btn:has(.midas-svg) { width: 78px; height: 94px; overflow: visible; border-radius: 40px; }
+.as-figura:has(.midas-svg) .as-pernas { display: none !important; }
+.midas-svg { width: 78px; height: 94px; display: block; overflow: visible; }
+.midas-svg .braco path { fill: none; stroke: #C9963E; stroke-width: 5.5; stroke-linecap: round; }
+.midas-svg .mao, .midas-svg .bola, .midas-svg .perna { fill: #E8C56A; }
+.midas-svg .bola { fill: #F0D48A; stroke: #C9963E; stroke-width: 1.5; }
+.midas-svg .luz { fill: rgba(255, 250, 230, .75); }
+.midas-svg .olho { fill: #1B1408; }
+.midas-svg .pupila { fill: #fff; }
+.midas-svg .sobra { fill: none; stroke: #8A5A12; stroke-width: 2.2; stroke-linecap: round; }
+.midas-svg .boca { display: none; fill: none; stroke: #1B1408; stroke-width: 2.4; stroke-linecap: round; }
+.midas-svg .boca-fala, .midas-svg .boca-o { fill: #1B1408; stroke: none; }
+.midas-svg.feliz .boca-feliz, .midas-svg.orgulhoso .boca-feliz, .midas-svg.festa .boca-feliz, .midas-svg.neutro .boca-feliz { display: block; }
+.midas-svg.preocupado .boca-preocupado { display: block; }
+.midas-svg.surpreso .boca-o { display: block; }
+.midas-svg.pensando .boca-pensa { display: block; }
+.midas-svg.surpreso .olho { transform: scale(1.25); transform-box: fill-box; transform-origin: center; }
+.midas-svg.preocupado .sobra-e { transform: rotate(12deg); transform-box: fill-box; transform-origin: center; }
+.midas-svg.preocupado .sobra-d { transform: rotate(-12deg); transform-box: fill-box; transform-origin: center; }
+.midas-svg.orgulhoso .olho { transform: scaleY(.55); transform-box: fill-box; transform-origin: center; }
+.midas-svg .sombra { fill: rgba(20, 14, 4, .28); }
+.midas-svg .faiscas { opacity: 0; fill: #FFF6D2; }
+.midas-svg.festa .faiscas, .midas-svg.orgulhoso .faiscas { opacity: 1; animation: midas-faisca .7s ease-in-out infinite; }
+.midas-svg .corpo { transform-box: view-box; transform-origin: 44px 78px; animation: midas-respira 3.1s ease-in-out infinite; }
+.midas-svg .braco { transform-box: view-box; }
+.midas-svg .braco-e { transform-origin: 22px 50px; animation: midas-braco 3.4s ease-in-out infinite; }
+.midas-svg .braco-d { transform-origin: 66px 48px; animation: midas-braco 3.4s ease-in-out infinite reverse; }
+.midas-svg .olho { transform-box: fill-box; transform-origin: center; animation: midas-pisca 5s infinite; }
+.midas-svg.andando .corpo { animation: midas-passo .46s cubic-bezier(.45, 0, .2, 1) infinite; }
+.midas-svg.andando .perna-e { animation: midas-perna .46s ease-in-out infinite; transform-origin: 34px 80px; transform-box: fill-box; }
+.midas-svg.andando .perna-d { animation: midas-perna .46s ease-in-out infinite reverse; transform-origin: 54px 80px; transform-box: fill-box; }
+.midas-svg.andando .braco-e, .midas-svg.andando .braco-d { animation: midas-braco-anda .46s ease-in-out infinite; }
+.midas-svg.andando .braco-d { animation-direction: reverse; }
+.midas-svg.apontando .braco-d { animation: none; transform: rotate(-62deg); }
+.midas-svg.falando .boca { display: none; }
+.midas-svg.falando .boca-fala { display: block; animation: midas-fala .16s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+.midas-svg.toque { animation: midas-mexe .46s cubic-bezier(.2, 1.35, .32, 1); transform-origin: 44px 80px; transform-box: view-box; }
+.as-figura.chega { animation: midas-chega .62s cubic-bezier(.18, 1.45, .36, 1) both; }
+@keyframes midas-respira { 0%, 100% { transform: scale(1, 1) rotate(0); } 50% { transform: scale(1.04, .96) rotate(-1.4deg); } }
+@keyframes midas-passo { 0%, 100% { transform: translateY(0) scale(1, 1); } 35% { transform: translateY(-7px) scale(1.08, .9); } 70% { transform: translateY(1px) scale(.94, 1.08); } }
+@keyframes midas-perna { 0%, 100% { transform: rotate(18deg); } 50% { transform: rotate(-20deg); } }
+@keyframes midas-braco { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(-10deg); } }
+@keyframes midas-braco-anda { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-24deg); } }
+@keyframes midas-pisca { 0%, 42%, 48%, 100% { transform: scaleY(1); } 45% { transform: scaleY(.12); } }
+@keyframes midas-fala { to { transform: scale(1.15, 1.7); } }
+@keyframes midas-mexe { 0% { transform: scale(1, 1) rotate(0); } 30% { transform: scale(1.12, .86) rotate(-8deg); } 60% { transform: scale(.94, 1.1) rotate(6deg); } 100% { transform: none; } }
+@keyframes midas-chega { 0% { opacity: 0; transform: translateY(18px) scale(.45, .55); } 70% { opacity: 1; transform: translateY(-3px) scale(1.06, .94); } 100% { opacity: 1; transform: none; } }
+@keyframes midas-faisca { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+html.gs-app .as-fala {
+  width: min(232px, calc(100vw - 36px));
+  max-width: min(232px, calc(100vw - 36px));
+  padding: 7px 10px 7px;
+  border-radius: 22px;
+  background: rgba(20, 18, 14, .94);
+  color: #F8F1E2;
+  border: 1px solid rgba(230, 199, 122, .55);
+  box-shadow: 0 22px 40px -18px rgba(0, 0, 0, .72), 0 0 0 1px rgba(230, 199, 122, .12), 0 0 28px -10px rgba(230, 199, 122, .55);
+  backdrop-filter: blur(8px);
+  animation: as-pop .46s cubic-bezier(.18, 1.4, .36, 1) both;
+}
+html.gs-app .as-fala::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #16140F;
+  border-right: 1px solid rgba(230, 199, 122, .55);
+  border-bottom: 1px solid rgba(230, 199, 122, .55);
+}
+html.gs-app .as-fala.cauda-baixo::after { right: 22px; bottom: -7px; transform: rotate(45deg); }
+html.gs-app .as-fala.cauda-cima::after { right: 22px; top: -7px; transform: rotate(225deg); }
+html.gs-app .as-fala.perigo { border-color: rgba(224, 122, 104, .85); box-shadow: 0 22px 40px -18px rgba(0, 0, 0, .72), 0 0 22px -8px rgba(224, 122, 104, .7); }
+html.gs-app .as-fala.aviso { border-color: rgba(230, 199, 122, .9); }
+html.gs-app .as-fala.ok { border-color: rgba(125, 206, 160, .85); box-shadow: 0 22px 40px -18px rgba(0, 0, 0, .72), 0 0 22px -8px rgba(125, 206, 160, .55); }
+html.gs-app .as-fala p { color: #F8F1E2; margin-bottom: 6px; font-size: 13.5px; }
+html.gs-app .as-fala strong { color: #F3E2B0; font-weight: 800; }
+html.gs-app .as-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; margin: 0 6px 0 0; padding: 0 4px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 12px; vertical-align: -3px; }
+html.gs-app .as-chip.perigo { background: #5C2A22; }
+html.gs-app .as-chip.aviso { background: #5C4816; }
+html.gs-app .as-chip.ok { background: #1E4634; }
+html.gs-app .as-pontos { display: flex; gap: 5px; margin: 0 0 8px; }
+html.gs-app .as-pontos i { width: 6px; height: 6px; border-radius: 50%; background: rgba(248, 241, 226, .28); }
+html.gs-app .as-pontos i.on { background: #E6C77A; transform: scale(1.25); }
+html.gs-app .as-fala a, html.gs-app .as-fala button { min-height: 30px; padding: 0 10px; }
+html.gs-app .as-fala a.prim, html.gs-app .as-fala button.prim {
+  background: linear-gradient(180deg, #F3E2B0, #C9963E) !important;
+  color: #1B1408 !important;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+html.gs-app .as-fala button.sec {
+  background: transparent !important;
+  color: #F8F1E2 !important;
+  box-shadow: inset 0 0 0 1px rgba(230, 199, 122, .5);
+}
+@keyframes as-pop { from { opacity: 0; transform: translateY(12px) scale(.82); } to { opacity: 1; transform: none; } }
+html.gs-app[data-tema="escuro"] .as-fala { background: rgba(20, 18, 14, .96); color: #F8F1E2; }
 ::view-transition-old(root) { animation: gs-sai .32s ease both; }
 ::view-transition-new(root) { animation: gs-entra .4s cubic-bezier(.22, 1, .36, 1) both; }
 ::view-transition-old(gs-hero),
@@ -283,6 +385,14 @@ html.gs-app .pn.pn-v2 .pn-anel {
   .as-mascote,
   .as-mascote .as-orbe,
   .as-mascote .as-orbe i,
+  .midas-svg .corpo,
+  .midas-svg .braco,
+  .midas-svg .olho,
+  .midas-svg .perna,
+  .midas-svg.toque,
+  .as-figura.chega,
+  .midas-svg.falando .boca-fala,
+  .midas-svg .faiscas,
   .as-pernas i,
   .as-fala,
   .as-fala .as-revela,

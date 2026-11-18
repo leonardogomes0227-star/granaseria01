@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { comentarioDoGasto, dicasDoMidas, textoSeCouber, todasAsDicas } from './midasDicas';
+import { comentarioDoGasto, dicasDoMidas, textoSeCouber, todasAsDicas, tomDaRegra } from './midasDicas';
 import { ESTADO_INICIAL, type Estado } from './tipos';
 
 const HOJE = '2026-11-18';
@@ -100,6 +100,17 @@ describe('dicas do Midas', () => {
     ];
     expect(comentarioDoGasto(e, HOJE)).toBe('Esse foi o 3º delivery da semana. Comida já foi 105% do orçamento.');
     expect(comentarioDoGasto(e, HOJE, e.lancamentos[0])).toContain('3º delivery');
+  });
+
+  it('o tom segue a gravidade da regra', () => {
+    expect(tomDaRegra('conta-atrasada')).toBe('perigo');
+    expect(tomDaRegra('orcamento-estouro')).toBe('perigo');
+    expect(tomDaRegra('conta-amanha')).toBe('aviso');
+    expect(tomDaRegra('orcamento-ritmo')).toBe('aviso');
+    expect(tomDaRegra('meta')).toBe('ok');
+    expect(tomDaRegra('sequencia')).toBe('ok');
+    expect(tomDaRegra('decimo')).toBe('neutro');
+    expect(dicasDoMidas(ESTADO_INICIAL(), HOJE)[0].icone).toBe('💡');
   });
 
   it('a frase da regra fica se a resposta da IA apagar o número ou for longa demais', () => {

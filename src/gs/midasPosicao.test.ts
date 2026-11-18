@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aoLadoDoAlvo, areaCruze, casaDoMidas, cruza, lugarDaFala, type Caixa } from './midasPosicao';
+import { aoLadoDoAlvo, areaCruze, casaDoMidas, cruza, lugarDaFala, lugarSemCobrir, type Caixa } from './midasPosicao';
 
 const navDe = (vw: number, vh: number): Caixa => ({ l: 12, t: vh - 86, r: vw - 12, b: vh - 10 });
 
@@ -46,6 +46,15 @@ describe('lugar do Midas', () => {
     const caixa: Caixa = { l: fala.l, t: fala.t, r: fala.l + 150, b: fala.t + 88 };
     expect(areaCruze(caixa, nav)).toBe(0);
     expect(areaCruze(caixa, alvo)).toBe(0);
+  });
+
+  it('não senta em cima de um botão quando existe um vão', () => {
+    const nav = navDe(360, 740);
+    const botao: Caixa = { l: 180, t: 80, r: 340, b: 200 };
+    const fala = lugarSemCobrir(160, 90, 280, 120, 360, 740, [botao], [], nav);
+    const caixa: Caixa = { l: fala.l, t: fala.t, r: fala.l + 160, b: fala.t + 90 };
+    expect(areaCruze(caixa, botao)).toBe(0);
+    expect(areaCruze(caixa, nav)).toBe(0);
   });
 
   it('sempre devolve um ponto, mesmo com a tela cheia de obstáculos', () => {

@@ -90,3 +90,54 @@ export function lugarDaFala(
   }
   return melhor;
 }
+
+/**
+ * Prefere um lugar que não cubra botões nem a barra. Se não houver, fica no de menor cobertura,
+ * ainda perto do mascote.
+ */
+export function lugarSemCobrir(
+  w: number,
+  h: number,
+  px: number,
+  py: number,
+  vw: number,
+  vh: number,
+  criticos: Caixa[],
+  suaves: Caixa[],
+  nav: Caixa | null,
+): { l: number; t: number } {
+  const largura = Math.max(48, w);
+  const altura = Math.max(36, h);
+  const maxB = (nav ? nav.t : vh) - MARGEM;
+  const maxL = Math.max(MARGEM, vw - MARGEM - largura);
+  const maxT = Math.max(MARGEM, maxB - altura);
+  const clamp = (l: number, t: number) => ({
+    l: Math.max(MARGEM, Math.min(l, maxL)),
+    t: Math.max(MARGEM, Math.min(t, maxT)),
+  });
+  const preferido = { l: px - largura + 28, t: py - altura - 16 };
+  const seeds: { l: number; t: number }[] = [
+    preferido,
+    { l: px - largura - 12, t: py - 8 },
+    { l: px + 8, t: py - altura - 12 },
+    { l: MARGEM, t: Math.max(MARGEM, py - altura) },
+    { l: MARGEM, t: maxT },
+    { l: maxL, t: MARGEM },
+  ];
+  const passo = vw < 420 ? 16 : 24;
+  for (let t = MARGEM; t <= maxT; t += passo) for (let l = MARGEM; l <= maxL; l += passo) seeds.push({ l, t });
+  let melhor = clamp(preferido.l, preferido.t);
+  let melhorNota = Number.POSITIVE_INFINITY;
+  for (const s of seeds) {
+    const p = clamp(s.l, s.t);
+    const c: Caixa = { l: p.l, t: p.t, r: p.l + largura, b: p.t + altura };
+    let nota = Math.hypot((p.l + largura / 2) - (px + 28), (p.t + altura) - py);
+    let cobre = false;
+    for (const o of criticos) if (areaCruze(c, o) > 0) { cobre = true; nota += 200000; }
+    if (nav && areaCruze(c, nav) > 0) { cobre = true; nota += 200000; }
+    if (!cobre) nota -= 8000;
+    for (const o of suaves) nota += areaCruze(c, o) * 0.08;
+    if (nota < melhorNota) { melhorNota = nota; melhor = p; }
+  }
+  return melhor;
+}
