@@ -31,6 +31,7 @@ function Titulo({ texto }: { texto: string }) {
   const [vis, setVis] = useState(texto);
   useEffect(() => {
     if (movimentoReduzido()) { setVis(texto); return; }
+    tocar('digitar');
     const t0 = performance.now();
     const dur = 520;
     let raf = 0;
@@ -195,14 +196,14 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
   const trocarModo = (proximo: 'despesa' | 'receita') => {
     if (proximo === modo) return;
     setModo(proximo);
-    tocar('pop');
+    tocar('deslizar');
   };
   const trocarAba = (id: Aba) => {
     if (id === aba) return;
     const ordem = ABAS.map((a) => a.id);
     setDir(ordem.indexOf(id) > ordem.indexOf(aba) ? 'dir' : 'esq');
     setAba(id);
-    tocar('navegar');
+    tocar('deslizar');
   };
   const abrirDia = (data: string, futuro: boolean) => {
     if (futuro) return;
