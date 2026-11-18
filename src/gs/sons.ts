@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 
 export const CHAVE_SONS = 'gs-sons';
-export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro';
+export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop';
 
 const ouvintes = new Set<() => void>();
 let gesto = false;
@@ -108,6 +108,11 @@ function emitir(ctxAtual: AudioContext, tipo: TipoSom) {
     nota(ctxAtual, master, 523.25, agora, 0.11, 'sine', 0.04);
     nota(ctxAtual, master, 659.25, agora + 0.07, 0.16, 'sine', 0.035);
     nota(ctxAtual, master, 783.99, agora + 0.14, 0.2, 'triangle', 0.02);
+    return;
+  }
+  if (tipo === 'pop') {
+    nota(ctxAtual, master, 988, agora, 0.045, 'sine', 0.05);
+    nota(ctxAtual, master, 1318, agora + 0.02, 0.05, 'triangle', 0.02);
     return;
   }
   nota(ctxAtual, master, 196, agora, 0.14, 'triangle', 0.04);
