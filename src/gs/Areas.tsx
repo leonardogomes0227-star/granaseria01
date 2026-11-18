@@ -23,6 +23,7 @@ import { InstalarApp } from './InstalarApp';
 import { abrirAdicionar } from './AdicionarMov';
 import { abrirResolver } from './Resolver';
 import { Card, Eyebrow, Lista, ListItem, Moeda, ProgressRing, Segmented, ToolGrid, ToolTile } from './base';
+import { NumeroVidro } from './vidroComum';
 import { corDe } from './categorias';
 import { saudeFinanceira } from './saude';
 import { definirTema, useTema } from './tema';
@@ -159,7 +160,7 @@ export function AreaPagar() {
       <h1 className="gs-titulo">Contas</h1>
       <section className="ini-destaque" aria-label="O que falta pagar">
         <span className="cm-eyebrow">Falta pagar em {nomeMes(mes).split(' ')[0]}</span>
-        <b className="ini-valor">{m(brl0(falta))}</b>
+        <b className="ini-valor">{oculto ? m(brl0(falta)) : <NumeroVidro valor={falta} formato={brl0} />}</b>
         <p>{vazio ? 'Cadastre suas contas para eu te mostrar o que pagar primeiro.' : atrasadas.length ? `${atrasadas.length} ${atrasadas.length === 1 ? 'conta atrasada' : 'contas atrasadas'}. Comece por ${atrasadas.length === 1 ? 'ela' : 'elas'}.` : abertasMes.length ? `${abertasMes.length} ${abertasMes.length === 1 ? 'conta em aberto' : 'contas em aberto'} neste mês.` : 'Tudo pago por aqui. Pode respirar.'}</p>
         {total > 0 && <div className="cm-prog" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pagoPct)} aria-label="Quanto já foi pago"><i style={{ width: `${pagoPct}%` }} /></div>}
         <div className="gs-acoes" style={{ marginTop: 14 }}>
@@ -224,7 +225,7 @@ export function AreaGastos() {
       <h1 className="gs-titulo">Gastos</h1>
       <section className="cm-topo-area" aria-label="Quanto dá para gastar">
         <Eyebrow>{disp.modo === 'incompleto' ? 'Gasto anotado no mês' : 'Dá para gastar hoje'}</Eyebrow>
-        <span className="cm-num">{disp.modo === 'incompleto' ? m(brl(total)) : m(brl(disp.porDia))}</span>
+        <span className="cm-num">{disp.modo === 'incompleto' ? (oculto ? m(brl(total)) : <NumeroVidro valor={total} formato={brl} />) : (oculto ? m(brl(disp.porDia)) : <NumeroVidro valor={disp.porDia} formato={brl} />)}</span>
         <p>{disp.modo === 'incompleto' ? 'Informe sua renda no Caminho para eu calcular o limite do dia.' : disp.livre < 0 ? `O mês passou ${m(brl0(-disp.livre))} do que entra. Veja onde cortar primeiro.` : `Você já anotou ${m(brl0(total))} neste mês e sobram ${m(brl0(disp.livre))} para ${disp.diasRestantes} ${disp.diasRestantes === 1 ? 'dia' : 'dias'}.`}</p>
         <div className="gs-acoes">
           {disp.modo !== 'incompleto' && disp.livre < 0 ? <Link to="/plano/cortar" className="gs-btn">Ver onde cortar</Link> : <button type="button" className="gs-btn" onClick={() => abrirAdicionar()}>Anotar gasto</button>}
@@ -281,7 +282,7 @@ export function AreaGuardar() {
         <ProgressRing pct={meta > 0 ? (guardado / meta) * 100 : 0} rotulo="Reserva de emergência"><Moeda tamanho={58} /></ProgressRing>
         <div style={{ flex: 1, minWidth: 200 }}>
           <Eyebrow>Reserva de emergência</Eyebrow>
-          <span className="cm-num">{m(brl0(guardado))}</span>
+          <span className="cm-num">{oculto ? m(brl0(guardado)) : <NumeroVidro valor={guardado} formato={brl0} />}</span>
           <p>
             {meta > 0 ? `de ${m(brl0(meta))}. ` : ''}
             {marco?.status === 'feito' ? 'Reserva completa. Agora é manter.' : f?.data ? `No ritmo de hoje, completa em ${f.data}.` : marco?.pendencia}
@@ -351,7 +352,7 @@ export function Perfil() {
       <h1 className="gs-titulo">{nome}</h1>
       <p className="gs-sub">Seus dados, seus avisos e o que mais você precisar ajustar.</p>
 
-      <section className="cm-card" id="whatsapp" aria-label="WhatsApp">
+      <section className="cm-card vd-brilho" id="whatsapp" aria-label="WhatsApp">
         <Eyebrow>Anote pelo WhatsApp</Eyebrow>
         <b style={{ display: 'block', font: '600 24px/1.2 var(--cm-serif)', margin: '6px 0' }}>Mande "gastei 35 no mercado".</b>
         <p className="cm-mudo" style={{ margin: '0 0 6px' }}>Eu anoto, categorizo e o gasto aparece aqui com o selo "via WhatsApp". Também funciona:</p>
@@ -370,7 +371,7 @@ export function Perfil() {
 
       <h2 className="cm-h2">Aparência</h2>
       <Segmented rotulo="Tema" valor={tema} onChange={definirTema} opcoes={[{ id: 'claro', nome: 'Claro' }, { id: 'escuro', nome: 'Escuro' }]} />
-      <p className="cm-mudo" style={{ marginTop: -6 }}>O claro é a cara do Grana Séria. O escuro fica aqui para quem prefere.</p>
+      <p className="cm-mudo" style={{ marginTop: -6 }}>Os dois usam o vidro escuro. No escuro, as luzes de fundo ficam mais discretas.</p>
 
       <h2 className="cm-h2">Sons</h2>
       <Segmented rotulo="Sons da interface" valor={sons ? 'on' : 'off'} onChange={(id) => { const ligar = id === 'on'; definirSons(ligar); if (ligar) tocar('sucesso'); }} opcoes={[{ id: 'on', nome: 'Ligados' }, { id: 'off', nome: 'Silêncio' }]} />

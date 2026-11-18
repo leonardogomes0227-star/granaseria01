@@ -54,6 +54,7 @@ const DevUI = lazy(() => importarComRetry(() => import('./gs/DevUI')).then((m) =
 const Sobre = lazy(() => importarComRetry(() => import('./gs/Sobre')).then((m) => ({ default: m.Sobre })));
 const Planos = lazy(() => importarComRetry(() => import('./gs/Planos')).then((m) => ({ default: m.Planos })));
 import { Porteiro } from './gs/Porteiro';
+import { VidroCamada } from './gs/vidroComum';
 import { ErroGlobal } from './gs/ErroGlobal';
 import { startPainelSync, captureLoginFromUrl, siteEvent } from './painel';
 import { LoginGate } from './components/LoginGate';
@@ -222,6 +223,7 @@ function App() {
 
   return (
     <>
+      <VidroCamada />
       <ScrollManager />
       <Routes>
         <Route

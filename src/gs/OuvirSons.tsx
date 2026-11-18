@@ -70,10 +70,10 @@ export function OuvirSons() {
   }, [noApp]);
 
   useEffect(() => {
-    if (!noApp) return;
+    if (!rotaDoApp(pathname)) return;
     if (primeiro.current) { primeiro.current = false; return; }
     if (sonsLigados()) tocar('navegar');
-  }, [pathname, noApp]);
+  }, [pathname]);
 
   return null;
 }

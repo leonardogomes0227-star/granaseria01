@@ -1,0 +1,523 @@
+/* O resto do app na mesma língua do painel: fundo fundo, vidro, um ouro só de destaque, respiro. */
+
+html.gs-app,
+html.gs-app:not([data-tema="escuro"]),
+html.gs-app[data-tema="escuro"] {
+  --vd-tinta: #F7F4EE;
+  --vd-mudo: #C9C2B6;
+  --vd-linha: rgba(255, 255, 255, .16);
+  --vd-ouro: #E8D7A8;
+  --vd-vidro: rgba(18, 16, 22, .62);
+  --bg: #07060A;
+  --bg-2: rgba(255, 255, 255, .06);
+  --surface: rgba(18, 16, 22, .62);
+  --ivory: rgba(16, 14, 20, .78);
+  --ink: #F7F4EE;
+  --ink-muted: #C9C2B6;
+  --text: #F7F4EE;
+  --text-soft: #C9C2B6;
+  --text-faint: #C9C2B6;
+  --line: rgba(255, 255, 255, .14);
+  --line-strong: rgba(255, 255, 255, .22);
+  --gold: #E8D7A8;
+  --gold-strong: #E8D7A8;
+  --gold-soft: rgba(232, 215, 168, .14);
+  --gold-texto: #E8D7A8;
+  --gold-bright: #E8D7A8;
+  --success: #8ED4A8;
+  --good: #8ED4A8;
+  --warning: #E8C98A;
+  --danger: #E59A90;
+  --bad: #E59A90;
+  --on-accent: #1B1408;
+  --cm-fundo: #07060A;
+  --cm-papel: rgba(18, 16, 22, .72);
+  --cm-tinta: #F7F4EE;
+  --cm-tinta-2: #C9C2B6;
+  --cm-linha: rgba(255, 255, 255, .14);
+  --cm-suave: rgba(255, 255, 255, .06);
+  --cm-ouro: #C6A15A;
+  --cm-ouro-claro: #E8D7A8;
+  --cm-ouro-tinta: rgba(232, 215, 168, .16);
+  --cm-ouro-texto: #E8D7A8;
+  --cm-ok: #8ED4A8;
+  --cm-atraso: #E59A90;
+  --cm-atencao: #E8C98A;
+  --pn-card: rgba(18, 16, 22, .62);
+  --pn-suave: rgba(255, 255, 255, .08);
+  --pn-linha: rgba(255, 255, 255, .14);
+  --gl-vidro: rgba(18, 16, 22, .62);
+  --gl-vidro-forte: rgba(22, 18, 28, .82);
+  --gl-borda: rgba(255, 255, 255, .16);
+  --gl-sombra: inset 0 1px 0 rgba(255, 255, 255, .16), 0 18px 40px -28px rgba(0, 0, 0, .85);
+  --gl-desfoque: blur(22px) saturate(1.2);
+  color-scheme: dark !important;
+  background: #07060A;
+}
+html.gs-app[data-tema="escuro"] .vd-blob.ambar,
+html.gs-app[data-tema="escuro"] .vd-blob.violeta { opacity: .28; }
+
+html.gs-app body,
+html.gs-app:not([data-tema="escuro"]) body,
+html.gs-app[data-tema="escuro"] body,
+html:not([data-tema="escuro"]).gs-app body {
+  background: #07060A !important;
+  color: #F7F4EE;
+}
+html.gs-app body::before,
+html.gs-app:not([data-tema="escuro"]) body::before,
+html.gs-app[data-tema="escuro"] body::before,
+html.gs-app:has(.pn-v2) body::before,
+html.gs-app:has(.ms-luxo) body::before,
+html.gs-app[data-tema="escuro"]:has(.pn-v2) body::before,
+html.gs-app[data-tema="escuro"]:has(.ms-luxo) body::before {
+  background: transparent !important;
+}
+#root { position: relative; z-index: 1; background: transparent; }
+html.gs-app .gs-casca { background: transparent; color: #F7F4EE; }
+
+/* um destaque, título grande, o resto respira */
+html.gs-app .gs-titulo {
+  font-size: clamp(36px, 8vw, 52px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.04em !important;
+  color: #FFFCF6 !important;
+  font-weight: 650 !important;
+  margin: 2px 0 8px;
+}
+html.gs-app .gs-sub,
+html.gs-app .gs-mudo,
+html.gs-app .gs-nota,
+html.gs-app .cm-mudo { color: #C9C2B6; font-size: 16px; line-height: 1.45; }
+html.gs-app .gs-h2,
+html.gs-app .cm-h2 {
+  margin: 22px 0 10px;
+  font-size: 13px !important;
+  letter-spacing: .14em !important;
+  text-transform: uppercase;
+  color: #E8D7A8 !important;
+  font-weight: 700 !important;
+}
+html.gs-app .gs-card h2,
+html.gs-app .cm-card h2,
+html.gs-app .gs-vazio b,
+html.gs-app .cm-vazio b {
+  font-size: clamp(26px, 6vw, 34px) !important;
+  letter-spacing: -0.03em !important;
+  text-transform: none;
+  color: #FFFCF6 !important;
+  font-weight: 650 !important;
+}
+html.gs-app .gs-app2 .gs-principal > .vd-tela,
+html.gs-app .gs-principal > .vd-tela {
+  animation: vd-profundidade .48s cubic-bezier(.16, 1, .3, 1) both;
+}
+/* A troca de tela não pode revelar o branco do navegador por baixo. */
+::view-transition { background: #07060A; }
+html:active-view-transition .vd-tela,
+html:active-view-transition .gs-principal > .vd-tela {
+  animation: none !important;
+}
+html.gs-app .ini-destaque::after { content: none; }
+html.gs-app .gs-principal { padding-top: 22px; }
+html.gs-app .gs-app2 .gs-principal { padding-top: 28px; }
+
+html.gs-app .gs-card,
+html.gs-app .cm-card,
+html.gs-app .ini-destaque,
+html.gs-app .ini-config,
+html.gs-app .ini-vazio,
+html.gs-app .cm-topo-area,
+html.gs-app .cm-lista,
+html.gs-app .ms-lista,
+html.gs-app .ms-perfil,
+html.gs-app .dv-card,
+html.gs-app .gs-plano,
+html.gs-app .pn-card,
+html.gs-app .pn-acao,
+html.gs-app .pn-ftile,
+html.gs-app .login-wall,
+html.gs-app .page-wrap,
+html.gs-app .lp-item,
+html.gs-app .lp-f,
+html.gs-app .lp-passo,
+html.gs-app .lp-calc,
+html.gs-app .gs-ind,
+html.gs-app .gs-kpi {
+  position: relative;
+  overflow: hidden;
+  color: #F7F4EE;
+  background-color: rgba(18, 16, 22, .62) !important;
+  background-image: radial-gradient(180px 120px at var(--mx, 78%) var(--my, 0%), rgba(255, 236, 200, .14), transparent 62%) !important;
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 18px 40px -28px rgba(0, 0, 0, .8) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+  transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform .18s ease-out;
+}
+html.gs-app .gs-card > *,
+html.gs-app .cm-card > *,
+html.gs-app .ini-destaque > *,
+html.gs-app .cm-topo-area > *,
+html.gs-app .login-wall > *,
+html.gs-app .page-wrap > *,
+html.gs-app .lp-calc > * { position: relative; z-index: 1; }
+
+html.gs-app .gs-card.destaque,
+html.gs-app .ini-destaque,
+html.gs-app .cm-topo-area,
+html.gs-app .dv-hero,
+html.gs-app .login-wall,
+html.gs-app .page-wrap {
+  padding: 26px 22px 22px;
+}
+html.gs-app .gs-card.destaque::before,
+html.gs-app .ini-destaque::before,
+html.gs-app .cm-topo-area::before,
+html.gs-app .dv-hero::before,
+html.gs-app .login-wall::before,
+html.gs-app .page-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, .14) 48%, transparent 62%);
+  transform: translateX(-130%);
+  animation: vd-shimmer 8.5s ease-in-out infinite;
+}
+html.gs-app .gs-card.destaque .gs-grande,
+html.gs-app .ini-destaque .ini-valor,
+html.gs-app .cm-topo-area .cm-num,
+html.gs-app .dv-hero .gs-grande,
+html.gs-app .gs-plano-preco b {
+  font-size: clamp(40px, 11vw, 64px) !important;
+  line-height: .95 !important;
+  letter-spacing: -0.045em !important;
+  color: #FFFCF6 !important;
+  font-weight: 720 !important;
+}
+html.gs-app .gs-card.destaque .gs-trio b {
+  font-size: clamp(22px, 5.5vw, 32px) !important;
+  color: #FFFCF6 !important;
+}
+html.gs-app .gs-rotulo,
+html.gs-app .cm-eyebrow { color: #E8D7A8 !important; letter-spacing: .08em; }
+html.gs-app .ini-destaque p,
+html.gs-app .cm-topo-area p { color: #C9C2B6; }
+
+/* listas em cascata */
+html.gs-app .cm-lista > *,
+html.gs-app .ms-lista > *,
+html.gs-app .gs-conta,
+html.gs-app .gs-linha,
+html.gs-app .cm-item-lista,
+html.gs-app .lp-item,
+html.gs-app .lp-f,
+html.gs-app .lp-passo,
+html.gs-app .ms-linha,
+html.gs-app .dv-card {
+  animation: vd-entra .55s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+html.gs-app .cm-lista > *:nth-child(2),
+html.gs-app .ms-lista > *:nth-child(2),
+html.gs-app .gs-conta:nth-child(2),
+html.gs-app .gs-linha:nth-child(2),
+html.gs-app .lp-item:nth-child(2),
+html.gs-app .lp-f:nth-child(2) { animation-delay: .05s; }
+html.gs-app .cm-lista > *:nth-child(3),
+html.gs-app .ms-lista > *:nth-child(3),
+html.gs-app .gs-conta:nth-child(3),
+html.gs-app .gs-linha:nth-child(3),
+html.gs-app .lp-f:nth-child(3) { animation-delay: .1s; }
+html.gs-app .cm-lista > *:nth-child(4),
+html.gs-app .ms-lista > *:nth-child(4),
+html.gs-app .gs-conta:nth-child(4),
+html.gs-app .gs-linha:nth-child(4) { animation-delay: .15s; }
+html.gs-app .cm-lista > *:nth-child(n + 5),
+html.gs-app .ms-lista > *:nth-child(n + 5),
+html.gs-app .gs-conta:nth-child(n + 5),
+html.gs-app .gs-linha:nth-child(n + 5) { animation-delay: .2s; }
+
+html.gs-app .gs-vazio,
+html.gs-app .cm-vazio,
+html.gs-app .ini-vazio {
+  padding: 36px 22px;
+  text-align: center;
+}
+html.gs-app .gs-vazio p,
+html.gs-app .cm-vazio p { max-width: 36ch; margin-left: auto; margin-right: auto; color: #C9C2B6; }
+
+html.gs-app .gs-barra,
+html.gs-app .cm-prog,
+html.gs-app .vd-trilha { background: rgba(255, 255, 255, .08); }
+html.gs-app .gs-barra > i,
+html.gs-app .cm-prog > i { background: #C6A15A; transform-origin: left center; animation: vd-enche .8s cubic-bezier(.16, 1, .3, 1) both; }
+html.gs-app .gs-barra.perigo > i,
+html.gs-app .vd-trilha.divida i { background: #C45C50; }
+
+/* navegação */
+html.gs-app .cm-abas {
+  background: rgba(7, 6, 10, .72) !important;
+  border-top: 1px solid rgba(255, 255, 255, .14) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.25) !important;
+  backdrop-filter: blur(22px) saturate(1.25) !important;
+}
+html.gs-app .cm-abas a { color: #C9C2B6; }
+html.gs-app .cm-abas a.on { color: #FFFCF6; }
+html.gs-app .cm-abas a.on svg { color: #E8D7A8; }
+html.gs-app .cm-mais {
+  background: linear-gradient(180deg, #F4E7C4, #C6A15A);
+  color: #1B1408;
+  border-color: rgba(255, 248, 230, .45);
+}
+html.gs-app .cm-lateral {
+  background: rgba(12, 10, 16, .72) !important;
+  border-color: rgba(255, 255, 255, .12) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.2) !important;
+  backdrop-filter: blur(22px) saturate(1.2) !important;
+}
+html.gs-app .cm-lateral a.cm-item { color: #C9C2B6; }
+html.gs-app .cm-lateral a.cm-item.on { background: rgba(232, 215, 168, .16); color: #FFFCF6; }
+html.gs-app .cm-lateral a.cm-item.on svg { color: #E8D7A8; }
+html.gs-app .cm-topo,
+html.gs-app .gs-topo {
+  background: rgba(7, 6, 10, .72);
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  color: #F7F4EE;
+}
+html.gs-app .cm-avatar,
+html.gs-app .pn-redondo,
+html.gs-app .gs-topo .gs-btn {
+  background: rgba(255, 255, 255, .08);
+  color: #F7F4EE;
+  border: 1px solid rgba(255, 255, 255, .16);
+}
+html.gs-app .gs-rodape,
+html.gs-app .gs-rodape a { color: #C9C2B6; }
+
+/* botões e campos: ouro só no principal, texto escuro em cima do ouro */
+html.gs-app .gs-btn:not(.sec):not(.link):not(.perigo),
+html.gs-app:not([data-tema="escuro"]) .gs-btn:not(.sec):not(.link):not(.perigo),
+html.gs-app .gs-topo .gs-btn:not(.link),
+html.gs-app .btn-primary,
+html.gs-app .login-cta {
+  background: linear-gradient(180deg, #F4E7C4, #C6A15A) !important;
+  color: #1B1408 !important;
+  border-color: transparent !important;
+}
+html.gs-app .gs-btn.sec,
+html.gs-app:not([data-tema="escuro"]) .gs-btn.sec {
+  background: rgba(255, 255, 255, .1) !important;
+  color: #F7F4EE !important;
+  border: 1px solid rgba(255, 255, 255, .28) !important;
+}
+html.gs-app .gs-btn.link,
+html.gs-app .cm-link { background: none !important; color: #E8D7A8 !important; border: 0; box-shadow: none; }
+html.gs-app .gs-btn.perigo { background: #9A4338 !important; color: #FFF7F5 !important; }
+html.gs-app .gs-chip,
+html.gs-app .cm-chip {
+  background: rgba(255, 255, 255, .06);
+  color: #F7F4EE;
+  border-color: rgba(255, 255, 255, .16);
+}
+html.gs-app .gs-chip.on,
+html.gs-app .cm-chip.on { background: #E8D7A8; color: #1B1408; border-color: #E8D7A8; }
+html.gs-app .gs-seg,
+html.gs-app .cm-seg,
+html.gs-app .ms-filtros button {
+  background: rgba(255, 255, 255, .06);
+  color: #C9C2B6;
+  border-color: rgba(255, 255, 255, .14);
+}
+html.gs-app .gs-seg button.on,
+html.gs-app .cm-seg button.on,
+html.gs-app .ms-filtros button.on,
+html.gs-app .ms-luxo .ms-filtros button.on {
+  background: rgba(255, 255, 255, .14);
+  color: #FFFCF6;
+  box-shadow: inset 0 -2px 0 #C6A15A;
+}
+html.gs-app .gs-campo input,
+html.gs-app .gs-campo select,
+html.gs-app .gs-campo textarea,
+html.gs-app .gs-select,
+html.gs-app .gs-busca,
+html.gs-app .cm-busca,
+html.gs-app .ms-luxo .cm-busca,
+html.gs-app .field-input,
+html.gs-app .gs-novaconta input,
+html.gs-app .gs-area,
+html.gs-app input,
+html.gs-app select,
+html.gs-app textarea {
+  background: rgba(255, 255, 255, .06);
+  color: #F7F4EE;
+  border-color: rgba(255, 255, 255, .18);
+}
+html.gs-app input::placeholder,
+html.gs-app textarea::placeholder { color: #C9C2B6; opacity: 1; }
+html.gs-app .gs-etiqueta { background: rgba(255, 255, 255, .08); color: #E7E0D4; }
+html.gs-app .gs-etiqueta.ok { color: #D7F3E0; background: rgba(80, 140, 96, .45); }
+html.gs-app .gs-etiqueta.aviso { color: #FFE7C2; background: rgba(180, 120, 40, .45); }
+html.gs-app .gs-etiqueta.perigo { color: #FFD4CC; background: rgba(168, 64, 48, .5); }
+html.gs-app .gs-banner,
+html.gs-app .gs-card.aviso {
+  background: rgba(232, 215, 168, .12);
+  border-color: rgba(232, 215, 168, .35);
+  color: #F7F4EE;
+}
+html.gs-app .gs-check { background: #E8D7A8; color: #1B1408; }
+
+/* folhas de adicionar e editar */
+html.gs-app .gs-fundo { background: rgba(0, 0, 0, .62); }
+html.gs-app .gs-folha {
+  background: rgba(16, 14, 20, .9) !important;
+  color: #F7F4EE;
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 -24px 50px -20px rgba(0, 0, 0, .85);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+html.gs-app .gs-folha h2 { color: #FFFCF6 !important; font-size: clamp(28px, 6vw, 36px) !important; }
+html.gs-app .gs-folha::before { background: rgba(255, 255, 255, .28); }
+
+/* capa, entrar e conta */
+html.gs-app .lp { color: #F7F4EE; }
+html.gs-app .lp-hero { background: transparent; }
+html.gs-app .lp-sec h2,
+html.gs-app .lp-fim h2 { color: #FFFCF6 !important; }
+html.gs-app .lp-sub,
+html.gs-app .lp-passo span,
+html.gs-app .lp-f small,
+html.gs-app .lp-nota { color: #C9C2B6 !important; }
+html.gs-app .lp-fim { background: transparent; }
+html.gs-app .login-wall h1,
+html.gs-app .page-wrap h1,
+html.gs-app .account-page h1 {
+  font-size: clamp(36px, 8vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: #FFFCF6;
+}
+html.gs-app .page-wrap,
+html.gs-app .login-wall { max-width: 560px; margin: 28px auto; border-radius: 28px; }
+html.gs-app .wizard-sub,
+html.gs-app .field-hint,
+html.gs-app .kicker { color: #C9C2B6; }
+html.gs-app .gs-plano li svg { color: #8ED4A8; }
+html.gs-app .gs-plano .lp-btn.vazio { color: #F7F4EE; border-color: rgba(255, 255, 255, .28); }
+html.gs-app .gs-plano.dest { background: rgba(18, 16, 22, .78) !important; color: #F7F4EE; }
+
+html.gs-app .pn.pn-v2 .pn-acao,
+html.gs-app .pn.pn-v2 .pn-acao.forte,
+html.gs-app .pn.pn-v2 .pn-card,
+html.gs-app .pn.pn-v2 .pn-ftile,
+html.gs-app .pn.pn-v2 .pn-stat,
+html.gs-app .pn.pn-v2 .ini-config {
+  background: rgba(18, 16, 22, .62) !important;
+  color: #F7F4EE !important;
+}
+html.gs-app .pn.pn-v2 .pn-ola h1,
+html.gs-app .pn.pn-v2 .pn-acao b,
+html.gs-app .pn.pn-v2 .pn-ftile b { color: #FFFCF6 !important; }
+html.gs-app .pn.pn-v2 .pn-acao small,
+html.gs-app .pn.pn-v2 .pn-ola p,
+html.gs-app .pn.pn-v2 .pn-ftile em,
+html.gs-app .pn.pn-v2 .pn-sub { color: #C9C2B6 !important; }
+html.gs-app .pn.pn-v2 .pn-acao.forte small { color: #E59A90 !important; }
+html.gs-app .pn.pn-v2 .pn-secao-cab h2 { color: #E8D7A8 !important; }
+html.gs-app .as-barra { background: rgba(18, 16, 22, .62); color: #C9C2B6; border: 1px solid rgba(255, 255, 255, .14); }
+html.gs-app:has(.vd-fundo-app) .vd > .vd-fundo:not(.vd-fundo-app) { display: none; }
+
+html.gs-app .app-bar,
+html.gs-app .site-header {
+  background: rgba(7, 6, 10, .72);
+  color: #F7F4EE;
+  border-bottom: 1px solid rgba(255, 255, 255, .12);
+}
+html.gs-app .ms-luxo .cm-busca,
+html.gs-app .ms-luxo .ms-linha,
+html.gs-app .ms-luxo .ms-agora,
+html.gs-app .ms-luxo .ms-lista,
+html.gs-app .ms-luxo .ms-perfil {
+  background: rgba(18, 16, 22, .72) !important;
+  color: #F7F4EE !important;
+  border: 1px solid rgba(255, 255, 255, .14) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12) !important;
+}
+html.gs-app .ms-luxo .ms-linha b,
+html.gs-app .ms-luxo .ms-agora b,
+html.gs-app .ms-luxo .ms-perfil b { color: #FFFCF6 !important; }
+html.gs-app .ms-luxo .ms-linha small,
+html.gs-app .ms-luxo .ms-agora small,
+html.gs-app .ms-luxo .ms-perfil small,
+html.gs-app .ms-luxo .cm-busca { color: #C9C2B6 !important; }
+html.gs-app .ms-luxo .ms-linha i,
+html.gs-app .ms-luxo .ms-agora i { background: rgba(232, 215, 168, .16) !important; color: #E8D7A8 !important; }
+html.gs-app .ms-linha,
+html.gs-app .ms-agora,
+html.gs-app .cm-item-lista { color: #F7F4EE; }
+html.gs-app .ms-linha small,
+html.gs-app .ms-agora small { color: #C9C2B6; }
+html.gs-app .ms-linha i,
+html.gs-app .ms-perfil i,
+html.gs-app .ms-luxo .ms-perfil i { background: rgba(232, 215, 168, .16); color: #E8D7A8; }
+html.gs-app .cm-tile { color: #F7F4EE; }
+html.gs-app .cm-tile .ic { background: rgba(232, 215, 168, .16); color: #E8D7A8; }
+
+@media (min-width: 1000px) {
+  html.gs-app .cm-lateral {
+    background: rgba(12, 10, 16, .62) !important;
+    border: 1px solid rgba(255, 255, 255, .14) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.gs-app .cm-lista > *,
+  html.gs-app .ms-lista > *,
+  html.gs-app .gs-conta,
+  html.gs-app .gs-linha,
+  html.gs-app .cm-item-lista,
+  html.gs-app .lp-item,
+  html.gs-app .lp-f,
+  html.gs-app .lp-passo,
+  html.gs-app .ms-linha,
+  html.gs-app .dv-card,
+  html.gs-app .gs-barra > i,
+  html.gs-app .cm-prog > i,
+  html.gs-app .gs-card.destaque::before,
+  html.gs-app .ini-destaque::before,
+  html.gs-app .cm-topo-area::before,
+  html.gs-app .dv-hero::before,
+  html.gs-app .login-wall::before,
+  html.gs-app .page-wrap::before,
+  html.gs-app .gs-principal > .vd-tela {
+    animation: none !important;
+  }
+  html.gs-app .gs-card,
+  html.gs-app .cm-card,
+  html.gs-app .ini-destaque,
+  html.gs-app .cm-topo-area,
+  html.gs-app .pn-card,
+  html.gs-app .pn-acao,
+  html.gs-app .pn-ftile { transform: none !important; transition: none !important; }
+}
+
+@media (forced-colors: active) {
+  html.gs-app .gs-card,
+  html.gs-app .cm-card,
+  html.gs-app .gs-folha,
+  html.gs-app .cm-abas,
+  html.gs-app .cm-lateral {
+    background: Canvas !important;
+    color: CanvasText !important;
+    border: 1px solid CanvasText !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}

@@ -8,6 +8,7 @@ import { abrirAdicionar } from './AdicionarMov';
 import { brl, diaRelativo } from './datas';
 import { iconeDe } from './categorias';
 import { Vazio } from './ui';
+import { NumeroVidro } from './vidroComum';
 
 const TIPOS: [FiltroMov['tipo'], string][] = [['todos', 'Tudo'], ['despesa', 'Despesas'], ['receita', 'Receitas'], ['transferencia', 'Transferências'], ['conta', 'Contas pagas'], ['guardado', 'Guardado']];
 const PERIODOS: [Periodo, string][] = [['mes', 'Mês'], ['7d', '7 dias'], ['30d', '30 dias'], ['ano', 'Ano']];
@@ -36,11 +37,11 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
   };
   return (
     <>
-      <div className="gs-card">
+      <div className="gs-card destaque">
         <div className="gs-trio">
-          <div><span className="gs-rotulo">Entrou</span><b className="gs-tab" style={{ color: 'var(--success)' }}>{brl(t.entrou)}</b></div>
-          <div><span className="gs-rotulo">Saiu</span><b className="gs-tab">{brl(t.saiu)}</b></div>
-          <div><span className="gs-rotulo">Diferença</span><b className="gs-tab" style={{ color: t.saldo < 0 ? 'var(--danger)' : undefined }}>{brl(t.saldo)}</b></div>
+          <div><span className="gs-rotulo">Entrou</span><b className="gs-tab" style={{ color: 'var(--success)' }}><NumeroVidro valor={t.entrou} formato={brl} /></b></div>
+          <div><span className="gs-rotulo">Saiu</span><b className="gs-tab"><NumeroVidro valor={t.saiu} formato={brl} /></b></div>
+          <div><span className="gs-rotulo">Diferença</span><b className="gs-tab" style={{ color: t.saldo < 0 ? 'var(--danger)' : undefined }}><NumeroVidro valor={t.saldo} formato={brl} /></b></div>
         </div>
       </div>
       <label className="gs-busca">
