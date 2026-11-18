@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 
 export const CHAVE_SONS = 'gs-sons';
-export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop';
+export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop' | 'deslizar' | 'digitar';
 
 const ouvintes = new Set<() => void>();
 let gesto = false;
@@ -110,6 +110,26 @@ function emitir(ctxAtual: AudioContext, tipo: TipoSom) {
     nota(ctxAtual, master, 783.99, agora + 0.14, 0.2, 'triangle', 0.02);
     return;
   }
+  if (tipo === 'deslizar') {
+    const o = ctxAtual.createOscillator();
+    const g = ctxAtual.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(380, agora);
+    o.frequency.exponentialRampToValueAtTime(1240, agora + 0.17);
+    g.gain.setValueAtTime(0.0001, agora);
+    g.gain.exponentialRampToValueAtTime(0.04, agora + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.0001, agora + 0.2);
+    o.connect(g);
+    g.connect(master);
+    o.start(agora);
+    o.stop(agora + 0.22);
+    nota(ctxAtual, master, 1568, agora + 0.15, 0.09, 'triangle', 0.016);
+    return;
+  }
+  if (tipo === 'digitar') {
+    for (let i = 0; i < 5; i++) nota(ctxAtual, master, 1800 + (i % 2) * 260, agora + i * 0.085, 0.022, 'square', 0.006);
+    return;
+  }
   if (tipo === 'pop') {
     nota(ctxAtual, master, 988, agora, 0.045, 'sine', 0.05);
     nota(ctxAtual, master, 1318, agora + 0.02, 0.05, 'triangle', 0.02);
@@ -128,8 +148,14 @@ export function vibrar(ms: number | number[]) {
   } catch { /* sem motor */ }
 }
 
+let ultimoDigitar = 0;
+
 export function tocar(tipo: TipoSom) {
-  vibrar(tipo === 'sucesso' ? [8, 30, 12] : tipo === 'erro' ? [14, 40, 14] : 8);
+  if (tipo === 'digitar') {
+    const agora = Date.now();
+    if (agora - ultimoDigitar < 400) return;
+    ultimoDigitar = agora;
+  } else vibrar(tipo === 'sucesso' ? [8, 30, 12] : tipo === 'erro' ? [14, 40, 14] : 8);
   const ctxAtual = contexto();
   if (!ctxAtual) return;
   const play = () => { if (ctxAtual.state === 'running' && sonsLigados()) emitir(ctxAtual, tipo); };
