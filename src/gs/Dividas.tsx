@@ -11,6 +11,7 @@ import { NovaDividaSheet } from './NovaDivida';
 import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
 import { Anel, LinhaDoTempo } from './graficos';
 import { gastoMensalMedio } from './selectores';
+import { evolucaoDividas } from './evolucaoLogica';
 import { CalculaJuro, MaisRapido, Quitadas, Quitou, TIPOS_DIVIDA } from './DividasExtras';
 import { efeitoNaDivida } from './extrasLogica';
 import { Amortizacao } from './Amortizacao';
@@ -124,7 +125,7 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
             { rotulo: 'Você deve', valor: totalAtual, icone: Wallet, tom: 'perigo', nota: `${abertas.length} ${abertas.length === 1 ? 'dívida' : 'dívidas'} em aberto` },
             { rotulo: 'Já pago', valor: Math.round(progresso), formato: 'pct', icone: Percent, tom: progresso > 0 ? 'ok' : '', nota: `de ${brl0(totalOriginal)} no total` },
             { rotulo: 'Juros por mês', valor: jurosDoMes(sim), icone: Flame, tom: 'aviso', nota: 'o que a dívida cobra' },
-            { rotulo: 'Plano mensal', valor: plano.pagamentoMensal, icone: HandCoins, nota: `pago neste mês: ${brl0(pagoMes)}` },
+            { rotulo: 'Plano mensal', valor: plano.pagamentoMensal, icone: HandCoins, serie: evolucaoDividas(e, hoje)?.porMes.map((x) => x.pago), bom: 'sobe', nota: `pago neste mês: ${brl0(pagoMes)}` },
           ]} />
           <GraficoBarras titulo="Quanto falta em cada dívida" sub="saldo em aberto"
             dados={abertas.map((d) => ({ rotulo: d.nome, valor: saldoAtual(d), tom: d.jurosMensal >= 8 ? 'perigo' : d.jurosMensal >= 3 ? 'aviso' : '', legenda: `${d.nome} · ${d.jurosMensal}% ao mês` }) as const)} />

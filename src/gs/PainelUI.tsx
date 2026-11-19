@@ -237,3 +237,31 @@ export function Rosca({ titulo, sub, fatias, centro, mascara }: { titulo: string
     </section>
   );
 }
+
+export interface PassoFunil { rotulo: string; valor: number; nota?: string | null }
+
+/** Funil do mês: da renda até o que sobrou, cada degrau mais estreito e com a fatia que seguiu. */
+export function FunilVidro({ titulo, sub, passos, segue, mascara }: { titulo: string; sub?: string; passos: PassoFunil[]; segue?: (number | null)[]; mascara?: (t: string) => string }) {
+  const base = Math.max(1, passos[0]?.valor ?? 1);
+  const fmt = (v: number) => (mascara ? mascara(brl0(v)) : brl0(v));
+  return (
+    <section className="pu-vidro" aria-label={titulo}>
+      <header><h2>{titulo}</h2>{sub && <small>{sub}</small>}</header>
+      <ol className="pu-funil">
+        {passos.map((p, n) => {
+          const largura = Math.max(14, Math.min(100, (Math.abs(p.valor) / base) * 100));
+          const falta = p.valor < 0;
+          const ultimo = n === passos.length - 1;
+          return (
+            <li key={p.rotulo} style={{ animationDelay: `${n * 0.09}s` }}>
+              {n > 0 && segue?.[n - 1] != null && <span className="pu-funil-segue">{Math.round(segue[n - 1] as number)}% seguiu</span>}
+              <div className={`pu-funil-barra${falta ? ' falta' : ''}${ultimo ? ' fim' : ''}`} style={{ width: `${largura}%` }}>
+                <span>{p.rotulo}</span><b>{fmt(p.valor)}</b>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}

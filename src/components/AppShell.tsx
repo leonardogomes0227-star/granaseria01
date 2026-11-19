@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { House, Landmark, Menu, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
+import { House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
@@ -9,6 +9,7 @@ import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
 import { iniciarEfeitos, titulosDaTela } from '../gs/efeitosGlobais';
 import { tocar } from '../gs/sons';
+import { abrirResolver } from '../gs/Resolver';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 import { useHoje } from '../gs/useHoje';
@@ -61,6 +62,13 @@ function Casca({ children }: { children: ReactNode }) {
   const primeira = useRef(true);
   useEffect(() => iniciarEfeitos(), []);
   useEffect(() => {
+    const tecla = (ev: KeyboardEvent) => {
+      if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); abrirResolver(); }
+    };
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, []);
+  useEffect(() => {
     if (!primeira.current) tocar('navegar');
     primeira.current = false;
     setTituloTela('');
@@ -90,6 +98,7 @@ function Casca({ children }: { children: ReactNode }) {
         {pathname !== '/' && pathname !== '/inicio' && tituloTela && (
           <div className="gl-trilha" key={pathname}>
             <span><Link to="/">Início</Link> <b aria-hidden="true">›</b> <em>{tituloTela}</em></span>
+            <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
             <span className="gl-vivo"><i aria-hidden="true" />Ao vivo</span>
           </div>
         )}
