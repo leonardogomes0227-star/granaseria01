@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { House, Landmark, Menu, Plus, Receipt, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
@@ -7,6 +7,8 @@ import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
 import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
+import { iniciarEfeitos, titulosDaTela } from '../gs/efeitosGlobais';
+import { tocar } from '../gs/sons';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
 import { useHoje } from '../gs/useHoje';
@@ -55,6 +57,15 @@ function Casca({ children }: { children: ReactNode }) {
   const nome = e.config.nome || getName() || '';
   const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
   const pronto = e.config.onboardingFeito;
+  const [tituloTela, setTituloTela] = useState('');
+  const primeira = useRef(true);
+  useEffect(() => iniciarEfeitos(), []);
+  useEffect(() => {
+    if (!primeira.current) tocar('navegar');
+    primeira.current = false;
+    setTituloTela('');
+    return titulosDaTela(setTituloTela);
+  }, [pathname]);
   const item = ([to, label, Icon]: (typeof NAV)[number]) => (
     <NavLink key={to} to={to} end={to === '/'} className={() => (aba === to ? 'on' : '')} aria-current={aba === to ? 'page' : undefined} aria-label={to === '/pagar' && atrasada ? `${label}, tem conta atrasada` : label}>
       <em><Icon size={23} strokeWidth={1.75} aria-hidden="true" />{to === '/pagar' && atrasada && <i aria-hidden="true" />}</em><span>{label}</span>
@@ -76,6 +87,12 @@ function Casca({ children }: { children: ReactNode }) {
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
+        {pathname !== '/' && pathname !== '/inicio' && tituloTela && (
+          <div className="gl-trilha" key={pathname}>
+            <span><Link to="/">Início</Link> <b aria-hidden="true">›</b> <em>{tituloTela}</em></span>
+            <span className="gl-vivo"><i aria-hidden="true" />Ao vivo</span>
+          </div>
+        )}
         <main className="gs-principal">{children}</main>
       </div>
       <nav className="cm-abas" aria-label="Seções">

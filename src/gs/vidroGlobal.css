@@ -1,0 +1,72 @@
+/* Painel em todas as telas do app: fundo com luz que flutua, vidro, entrada em cascata, pílula nas abas e caminho no topo. */
+
+/* luz que flutua atrás de tudo (só no tema escuro) */
+html.gs-app[data-tema="escuro"] .gs-casca { background: transparent; position: relative; isolation: isolate; }
+html.gs-app[data-tema="escuro"] .gs-casca::before,
+html.gs-app[data-tema="escuro"] .gs-casca::after {
+  content: ''; position: fixed; z-index: -1; pointer-events: none; border-radius: 50%; filter: blur(70px);
+  width: 340px; height: 340px; animation: vd-flutua 18s ease-in-out infinite;
+}
+html.gs-app[data-tema="escuro"] .gs-casca::before { left: -90px; top: -60px; background: #C6A15A; opacity: .22; }
+html.gs-app[data-tema="escuro"] .gs-casca::after { right: -110px; bottom: 80px; background: #6E5B92; opacity: .24; animation-duration: 23s; animation-delay: -8s; }
+
+/* pílula que desliza (abas, seletores e barra de baixo) */
+.gs-seg, .seg, .cm-seg { position: relative; }
+.gl-pilula {
+  position: absolute; z-index: 0; pointer-events: none; opacity: 0; border-radius: 999px;
+  left: var(--pl-esq, 0); top: var(--pl-top, 0); width: var(--pl-larg, 0); height: var(--pl-alt, 0);
+  background: linear-gradient(180deg, rgba(255, 255, 255, .16), rgba(255, 255, 255, .06));
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 -2px 0 #C6A15A, 0 6px 18px -8px rgba(198, 161, 90, .55);
+  transition: left var(--pl-t-esq, .4s) cubic-bezier(.65, 0, .2, 1), width var(--pl-t-larg, .4s) cubic-bezier(.65, 0, .2, 1), top .3s, height .3s;
+}
+.gl-pilula.pronta { opacity: 1; }
+.gl-com-pilula > :not(.gl-pilula) { position: relative; z-index: 1; }
+.gl-com-pilula > :not(.gl-pilula):is([aria-selected="true"], [aria-pressed="true"], [aria-current="page"], .on, .active, .ativo, .sel) { background: transparent !important; box-shadow: none !important; border-color: transparent !important; }
+html.gs-app:not([data-tema="escuro"]) .gl-pilula { background: rgba(198, 161, 90, .2); border-color: rgba(154, 95, 8, .25); }
+
+/* caminho no topo de cada tela */
+.gl-trilha {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 10px 16px 0; padding: 10px 14px; border-radius: 18px;
+  background: var(--gl-vidro, rgba(18, 16, 22, .55)); border: 1px solid var(--gl-borda, rgba(255, 255, 255, .14));
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  font: 600 14px var(--cm-sans, inherit); color: var(--ink-muted, #C9C2B6);
+  animation: vd-entra .6s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.gl-trilha a { color: inherit; text-decoration: none; }
+.gl-trilha b { margin: 0 4px; opacity: .6; }
+.gl-trilha em { font-style: normal; color: var(--ink, #F7F4EE); }
+.gl-vivo { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; background: rgba(80, 140, 96, .25); border: 1px solid rgba(142, 212, 168, .35); color: #BFEBCE; font: 700 13px var(--cm-sans, inherit); }
+html.gs-app:not([data-tema="escuro"]) .gl-vivo { color: #2F6B49; }
+.gl-vivo i { width: 8px; height: 8px; border-radius: 50%; background: #8ED4A8; animation: vd-pulso 1.8s ease-out infinite; }
+@keyframes vd-pulso { 0% { box-shadow: 0 0 0 0 rgba(142, 212, 168, .7); } 100% { box-shadow: 0 0 0 10px rgba(142, 212, 168, 0); } }
+
+/* entrada em cascata do conteúdo de cada tela */
+@keyframes gl-entra { from { opacity: 0; transform: translateY(18px) scale(.985); } to { opacity: 1; transform: none; } }
+.gs-principal > * { animation: gl-entra .6s cubic-bezier(.16, 1, .3, 1) backwards; }
+.gs-principal > * > * { animation: gl-entra .6s cubic-bezier(.16, 1, .3, 1) backwards; }
+.gs-principal > * > *:nth-child(1) { animation-delay: .02s; } .gs-principal > * > *:nth-child(2) { animation-delay: .08s; }
+.gs-principal > * > *:nth-child(3) { animation-delay: .14s; } .gs-principal > * > *:nth-child(4) { animation-delay: .2s; }
+.gs-principal > * > *:nth-child(5) { animation-delay: .26s; } .gs-principal > * > *:nth-child(6) { animation-delay: .32s; }
+.gs-principal > * > *:nth-child(n+7) { animation-delay: .38s; }
+
+/* brilho que passa pelos cartões */
+html.gs-app .gs-card, .cm-card, .cm-lista, .ini-cards > *, .pn-card { position: relative; overflow: hidden; }
+html.gs-app .gs-card::after, .cm-card::after, .cm-lista::after, .ini-cards > *::after, .pn-card::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 34%, rgba(255, 255, 255, .1) 48%, transparent 62%);
+  transform: translateX(-130%); animation: vd-shimmer 9s ease-in-out infinite;
+}
+html.gs-app:not([data-tema="escuro"]) .gs-card::after, html.gs-app:not([data-tema="escuro"]) .cm-card::after { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gs-principal > *, .gs-principal > * > *, .gl-trilha, .gl-vivo i, .gs-card::after, .cm-card::after, .cm-lista::after, .pn-card::after, .ini-cards > *::after,
+  html.gs-app[data-tema="escuro"] .gs-casca::before, html.gs-app[data-tema="escuro"] .gs-casca::after { animation: none !important; }
+  .gl-pilula { transition: none !important; }
+}
+
+/* iguais às de vidro.css (que só carrega com o painel do Início) */
+@keyframes vd-flutua { 0%, 100% { transform: translate3d(0, 0, 0) scale(1); } 50% { transform: translate3d(28px, -22px, 0) scale(1.08); } }
+@keyframes vd-entra { from { opacity: 0; filter: blur(10px); transform: perspective(900px) translateY(22px) scale(.96); } to { opacity: 1; filter: none; } }
+@keyframes vd-shimmer { 0%, 62% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
