@@ -10,6 +10,8 @@ import { corDe } from './categorias';
 import { Barra, Titulo, Vazio } from './ui';
 import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
+import { ArrowDownRight, ArrowUpRight, PiggyBank, Scale } from 'lucide-react';
+import { FaixaKpis, GraficoBarras, Rosca } from './PainelUI';
 
 /* ---------- Evolução: cada gráfico responde uma pergunta. Sem dados suficientes, diz isso em vez de inventar. ---------- */
 
@@ -38,6 +40,22 @@ export function Evolucao() {
   return (
     <>
       <Titulo titulo="Relatórios" />
+
+      {(() => {
+        const atual = serie.find((x) => x.mes === mes);
+        if (!atual) return null;
+        const sobra = atual.receitas - atual.despesas;
+        return (
+          <FaixaKpis itens={[
+            { rotulo: 'Receitas', valor: atual.receitas, icone: ArrowUpRight, tom: 'ok', nota: atual.receitaEstimada ? 'estimada pela renda' : 'no mês' },
+            { rotulo: 'Despesas', valor: atual.despesas, icone: ArrowDownRight, nota: 'dia a dia + contas pagas' },
+            { rotulo: 'Sobra', valor: sobra, icone: Scale, tom: sobra < 0 ? 'perigo' : 'ok', nota: sobra < 0 ? 'gastou mais do que entrou' : 'receitas menos despesas' },
+            { rotulo: 'Guardado', valor: atual.guardado, icone: PiggyBank, nota: 'no mês' },
+          ]} />
+        );
+      })()}
+      <GraficoBarras titulo="Despesas mês a mês" sub="últimos meses" dados={serie.map((x) => ({ rotulo: mesCurto(x.mes), valor: x.despesas, legenda: mesCurto(x.mes), tom: x.mes === mes ? 'aviso' : '' }) as const)} />
+      {cats.length > 0 && <Rosca titulo="Gastos por categoria" sub="este mês" fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))} centro={<>{brl0(cats.reduce((t, c) => t + c.valor, 0))}<small>no mês</small></>} />}
 
       {frases.length > 0 ? (
         <section className="gs-card" aria-label="O que eu notei">
