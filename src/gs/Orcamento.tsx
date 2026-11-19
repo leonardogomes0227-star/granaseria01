@@ -12,6 +12,8 @@ import { Agora, Barra, Campo, CampoDinheiro, Dica, Folha, MaisAjuda, Titulo, Vaz
 import { Anel, Rosquinha } from './graficos';
 import { toast } from '../components/ui/Toast';
 import { getEstado } from './store';
+import { Gauge, Layers, PiggyBank, TriangleAlert } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Orçamento em envelopes: quanto dá pro dia a dia, dividido por categoria, e quanto ainda dá em cada uma ---------- */
 
@@ -58,6 +60,19 @@ export function Orcamento() {
           <p className="gs-sub" style={{ margin: 0 }}>{brl0(Math.max(0, r.porDia))} por dia · {r.restam} {r.restam === 1 ? 'dia' : 'dias'} até o fim do mês</p>
         </div>
       </section>
+
+      {temEnvelopes && !montar && (
+        <>
+          <FaixaKpis itens={[
+            { rotulo: 'Ainda dá', valor: Math.max(0, r.livre), icone: PiggyBank, tom: r.livre < 0 ? 'perigo' : 'ok', nota: 'pro dia a dia' },
+            { rotulo: 'Por dia', valor: Math.max(0, r.porDia), icone: Gauge, nota: `${r.restam} ${r.restam === 1 ? 'dia' : 'dias'} até o fim do mês` },
+            { rotulo: 'Envelopes', valor: envs.length, formato: 'int', icone: Layers, nota: `${brl0(somaEnv)} no total` },
+            { rotulo: 'Estourados', valor: envs.filter((x) => x.tom === 'perigo').length, formato: 'int', icone: TriangleAlert, tom: envs.some((x) => x.tom === 'perigo') ? 'perigo' : 'ok', nota: envs.some((x) => x.tom === 'perigo') ? 'passaram do limite' : 'todos dentro' },
+          ]} />
+          <GraficoBarras titulo="Quanto cada envelope já usou" sub="gasto no mês"
+            dados={envs.map((x) => ({ rotulo: x.categoria, valor: x.gasto, tom: x.tom === 'ok' ? '' : x.tom, legenda: `${x.categoria} · limite ${brl0(x.limite)}` }) as const)} />
+        </>
+      )}
 
       {!temEnvelopes || montar ? (
         <MontarOrcamento plano={plano} refazer={temEnvelopes} onFeito={() => setMontar(false)} />

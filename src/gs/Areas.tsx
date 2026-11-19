@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
+import { Blocks, Flag, HeartPulse, NotebookPen, CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
 import { FaixaKpis, GraficoBarras, Rosca } from './PainelUI';
 import { atrasosAbertos } from './atrasosBase';
 import { FormConta } from './MeuMes';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl, brl0, diaCurto, diasNoMes, mesDe, nomeMes } from './datas';
-import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, totalVariaveis } from './selectores';
+import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, sequenciaDeDias, totalVariaveis } from './selectores';
+import { saldoAtual } from './dividas';
 import { prioridades } from './prioridades';
 import { gastosPorCategoria } from './evolucaoLogica';
 import { passosDoMes, type OrigemPasso, type Passo } from './passos';
 import { calcularCaminho, fraseDoMarco } from './caminho';
-import { FERRAMENTAS, GRUPOS, NOME_AREA, gradeDaArea, type Area } from './registroFerramentas';
+import { FERRAMENTAS, GRUPOS, NOME_AREA, gradeDaArea, urgentesDaArea, type Area } from './registroFerramentas';
 import { BotaoDoPasso, useExecutarPasso } from './PassosUI';
 import { ferramentasLiberadas, indicacoes, resumoDoPlano } from './planoPessoal';
 import { liberarFerramenta } from './acoes';
@@ -343,10 +344,21 @@ export function AreaGuardar() {
 
 /* ---------- Todas as ferramentas ---------- */
 export function TodasFerramentas() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const lib = useMemo(() => ferramentasLiberadas(e, hoje), [e, hoje]);
+  const areas = Object.keys(GRUPOS) as Area[];
+  const urgentes = useMemo(() => areas.reduce((t, a) => t + urgentesDaArea(a, e, hoje).length, 0), [areas, e, hoje]);
   return (
     <>
       <h1 className="gs-titulo">Ferramentas</h1>
       <p className="gs-sub">Tudo o que o app faz. Toque na que resolve o que você precisa.</p>
+      <FaixaKpis itens={[
+        { rotulo: 'Ferramentas', valor: FERRAMENTAS.length, formato: 'int', icone: Blocks, nota: 'no app inteiro' },
+        { rotulo: 'Liberadas pra você', valor: FERRAMENTAS.filter((f) => lib.has(f.id)).length, formato: 'int', icone: Flag, tom: 'ok', nota: 'pelo seu plano' },
+        { rotulo: 'Pedindo atenção', valor: urgentes, formato: 'int', icone: TriangleAlert, tom: urgentes ? 'aviso' : 'ok', nota: urgentes ? 'tem coisa para resolver' : 'nada urgente' },
+        { rotulo: 'Áreas', valor: areas.length, formato: 'int', icone: NotebookPen, nota: 'Contas, Gastos, Guardar…' },
+      ]} />
       <button type="button" className="cm-busca" onClick={abrirResolver}><Search size={20} aria-hidden="true" />O que você quer resolver?</button>
       {(Object.keys(GRUPOS) as Area[]).map((a) => (
         <section key={a} aria-label={NOME_AREA[a]}>
@@ -382,6 +394,27 @@ function SaudeFinanceira() {
   );
 }
 
+/** Os números do retrato da pessoa e o que pesa em cada ponto da nota. */
+function PerfilNumeros() {
+  const e = useEstado();
+  const hoje = useHoje();
+  const r = useMemo(() => saudeFinanceira(e, mesDe(hoje), hoje), [e, hoje]);
+  const seq = useMemo(() => sequenciaDeDias(e, hoje), [e, hoje]);
+  if (e.config.renda <= 0) return null;
+  return (
+    <>
+      <FaixaKpis itens={[
+        { rotulo: 'Saúde financeira', valor: r.nota, formato: 'int', icone: HeartPulse, tom: r.nota >= 75 ? 'ok' : r.nota >= 40 ? 'aviso' : 'perigo', nota: r.nota >= 75 ? 'saudável' : r.nota >= 40 ? 'no caminho' : 'hora de cuidar' },
+        { rotulo: 'Dias anotando', valor: seq, formato: 'int', icone: NotebookPen, tom: seq >= 3 ? 'ok' : '', nota: 'seguidos' },
+        { rotulo: 'Metas', valor: e.metas.length, formato: 'int', icone: Target, nota: e.metas.length ? 'em andamento' : 'nenhuma ainda' },
+        { rotulo: 'Dívidas', valor: e.dividas.filter((d) => saldoAtual(d) > 0).length, formato: 'int', icone: Landmark, nota: 'em aberto' },
+      ]} />
+      <GraficoBarras titulo="O que forma sua nota" sub="de 0 a 100" formato="pontos"
+        dados={r.criterios.map((c) => ({ rotulo: c.nome, valor: c.pontos, tom: c.pontos >= 75 ? 'ok' : c.pontos < 40 ? 'aviso' : '', legenda: `${c.nome} · ${c.detalhe}` }) as const)} />
+    </>
+  );
+}
+
 /* ---------- Perfil: seus dados, avisos, WhatsApp, planos, instalar, guias, sobre ---------- */
 export function Perfil() {
   const e = useEstado();
@@ -406,13 +439,14 @@ export function Perfil() {
         <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Abrir o WhatsApp</a>
       </section>
 
+      <PerfilNumeros />
       <SaudeFinanceira />
 
       <GradeFerramentas area="perfil" />
 
       <h2 className="cm-h2">Aparência</h2>
       <Segmented rotulo="Tema" valor={tema} onChange={definirTema} opcoes={[{ id: 'claro', nome: 'Claro' }, { id: 'escuro', nome: 'Escuro' }]} />
-      <p className="cm-mudo" style={{ marginTop: -6 }}>O claro é a cara do Grana Séria. O escuro fica aqui para quem prefere.</p>
+      <p className="cm-mudo" style={{ marginTop: -6 }}>O escuro (vidro e dourado) é o padrão. O claro fica aqui para quem prefere.</p>
 
       <h2 className="cm-h2">Sons</h2>
       <Segmented rotulo="Sons da interface" valor={sons ? 'on' : 'off'} onChange={(id) => { const ligar = id === 'on'; definirSons(ligar); if (ligar) tocar('sucesso'); }} opcoes={[{ id: 'on', nome: 'Ligados' }, { id: 'off', nome: 'Silêncio' }]} />
