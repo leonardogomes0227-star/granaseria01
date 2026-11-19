@@ -2,7 +2,8 @@
 import { useSyncExternalStore } from 'react';
 
 export type Tema = 'claro' | 'escuro';
-const CHAVE = 'gs-tema';
+// Chave nova: quem tinha o claro guardado da versão antiga passa para o escuro (o padrão novo) e escolhe de novo se quiser.
+const CHAVE = 'gs-tema-v2';
 const ouvintes = new Set<() => void>();
 const ler = (): Tema => { try { return localStorage.getItem(CHAVE) === 'claro' ? 'claro' : 'escuro'; } catch { return 'escuro'; } };
 let atual: Tema = ler();
