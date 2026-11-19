@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Blocks, Flag, HeartPulse, NotebookPen, CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
-import { FaixaKpis, GraficoBarras, Heatmap, Rosca } from './PainelUI';
+import { FaixaKpis, FunilVidro, GraficoBarras, Heatmap, Rosca } from './PainelUI';
+import { painelVidro } from './painelVidro';
 import { mesCurto } from './datas';
 import { atrasosAbertos } from './atrasosBase';
 import { FormConta } from './MeuMes';
@@ -244,6 +245,7 @@ export function AreaGastos() {
   const cats = useMemo(() => gastosPorCategoria(e, mes), [e, mes]);
   const total = totalVariaveis(e, mes);
   const meses6 = useMemo(() => serieMensal(e, hoje).filter((x) => x.temDados || x.mes === mes).slice(-6), [e, hoje, mes]);
+  const funil = useMemo(() => painelVidro(e, hoje).funil, [e, hoje]);
   const mapa = useMemo(() => matrizCategorias(e, meses6.map((x) => x.mes)), [e, meses6]);
   const ultimos = useMemo(() => [...e.lancamentos].filter((l) => mesDe(l.data) === mes).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5), [e.lancamentos, mes]);
   return (
@@ -266,6 +268,7 @@ export function AreaGastos() {
         { rotulo: 'Média por dia', valor: Math.round(total / Math.max(1, Number(hoje.slice(8, 10)))), icone: Gauge, nota: 'desde o dia 1' },
         { rotulo: 'Maior categoria', valor: cats[0] ? cats[0].categoria : '—', icone: Flame, tom: cats[0] ? 'aviso' : '', nota: cats[0] ? m(brl0(cats[0].valor)) : 'ainda sem gastos' },
       ]} />
+      {funil && <FunilVidro titulo="Da renda até o que sobrou" sub={nomeMes(mes).split(' ')[0]} mascara={m} passos={funil.passos} segue={funil.segue} />}
       <Rosca titulo="Para onde foi" sub={nomeMes(mes).split(' ')[0]} mascara={m}
         fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))}
         centro={<>{m(brl0(total))}<small>no mês</small></>} />

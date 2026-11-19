@@ -49,6 +49,34 @@ function decifrar(el: HTMLElement) {
   requestAnimationFrame(passo);
 }
 
+const REVELAR = '.pu-kpi, .pu-vidro, .cm-card, .gs-card, .cm-lista, .ini-cards > *, .cm-acao-card';
+
+/** Cartões abaixo da dobra sobem e aparecem quando chegam na tela (e os gráficos só começam a crescer aí). */
+function revelarAoRolar(): () => void {
+  if (typeof IntersectionObserver === 'undefined' || semMovimento()) return () => undefined;
+  const io = new IntersectionObserver((itens) => {
+    for (const it of itens) {
+      if (!it.isIntersecting) continue;
+      (it.target as HTMLElement).classList.remove('gl-oculto');
+      io.unobserve(it.target);
+    }
+  }, { threshold: 0.08, rootMargin: '0px 0px -6% 0px' });
+  const varrer = () => {
+    document.querySelectorAll<HTMLElement>(REVELAR).forEach((el) => {
+      if (el.dataset.gl) return;
+      el.dataset.gl = '1';
+      if (el.getBoundingClientRect().top < window.innerHeight * 0.92) return;
+      el.classList.add('gl-anim', 'gl-oculto');
+      io.observe(el);
+    });
+  };
+  let t = 0;
+  const obs = new MutationObserver(() => { window.clearTimeout(t); t = window.setTimeout(varrer, 60); });
+  obs.observe(document.body, { subtree: true, childList: true });
+  varrer();
+  return () => { obs.disconnect(); io.disconnect(); window.clearTimeout(t); };
+}
+
 /** Liga os efeitos na tela inteira. Devolve a função que desliga. */
 export function iniciarEfeitos(): () => void {
   const todos = () => document.querySelectorAll<HTMLElement>(GRUPOS);
@@ -65,7 +93,8 @@ export function iniciarEfeitos(): () => void {
   const redim = () => atualizar(false);
   window.addEventListener('resize', redim);
   atualizar(false);
-  return () => { obs.disconnect(); window.removeEventListener('resize', redim); window.cancelAnimationFrame(agendado); };
+  const parar = revelarAoRolar();
+  return () => { obs.disconnect(); parar(); window.removeEventListener('resize', redim); window.cancelAnimationFrame(agendado); };
 }
 
 /** A cada tela nova: espera o título aparecer, decifra e devolve o texto (para o caminho no topo). */
