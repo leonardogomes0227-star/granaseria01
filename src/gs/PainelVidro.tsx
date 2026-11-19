@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowDownRight, ArrowUpRight, Landmark, PiggyBank } from 'lucide-react';
 import { brl0, diaCurto } from './datas';
 import { painelVidro, type Delta, type DiaCalor, type Kpi } from './painelVidro';
 import { mascarar, useOculto } from './privacidade';
@@ -10,6 +11,13 @@ import { useContagem } from './base';
 import './vidro.css';
 
 const SEMANA = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+const ICONES = { receitas: ArrowUpRight, despesas: ArrowDownRight, guardado: PiggyBank, divida: Landmark } as const;
+const SUBTITULO: Record<string, string> = {
+  categorias: 'Quanto saiu de cada categoria neste mês',
+  funil: 'Do que entrou até o que sobrou',
+  calendario: 'Os dias em que o dinheiro mais saiu',
+  movimento: 'Contas, maiores gastos e o que você guardou',
+};
 const FAIXA: Kpi['id'][] = ['receitas', 'despesas', 'guardado', 'divida'];
 const ABAS = [
   { id: 'categorias', nome: 'Categorias' },
@@ -27,7 +35,7 @@ function movimentoReduzido(): boolean {
 const GLIFOS = 'abcdefghijklmnopqrstuvwxyz0123456789#%&';
 
 /** Título que "se decifra": letras trocam até virar o texto. Sem movimento, mostra direto. */
-function Titulo({ texto }: { texto: string }) {
+function Titulo({ texto, grande }: { texto: string; grande?: boolean }) {
   const [vis, setVis] = useState(texto);
   useEffect(() => {
     if (movimentoReduzido()) { setVis(texto); return; }
@@ -44,7 +52,7 @@ function Titulo({ texto }: { texto: string }) {
     raf = requestAnimationFrame(passo);
     return () => cancelAnimationFrame(raf);
   }, [texto]);
-  return <h2 aria-label={texto}><span aria-hidden="true">{vis}</span></h2>;
+  return <h2 className={grande ? 'vd-grande' : undefined} aria-label={texto}><span aria-hidden="true">{vis}</span></h2>;
 }
 
 /** Pílula que desliza até o botão ativo: a ponta da frente corre, a de trás vem depois. */
@@ -212,9 +220,10 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
   };
 
   const kpi = (k: Kpi, n: number) => {
+    const Icone = ICONES[k.id as keyof typeof ICONES];
     const miolo = (
       <span>
-        <small>{k.rotulo}</small>
+        <small>{Icone && <i className="vd-ico" aria-hidden="true"><Icone size={15} strokeWidth={2.2} /></i>}{k.rotulo}</small>
         <b>{k.valor === null ? '—' : oculto ? m(brl0(k.valor)) : <Numero valor={k.valor} ms={760} />}</b>
         {k.valor !== null ? <Seta delta={k.delta} bom={k.bomQuando} /> : <em>{k.vazio}</em>}
       </span>
@@ -233,6 +242,16 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
     <div className="vd" ref={raiz} onPointerDown={onda}>
       <div className="vd-fundo" aria-hidden="true"><i className="vd-blob ouro" /><i className="vd-blob ambar" /><i className="vd-blob violeta" /></div>
       <div className="vd-ondas" aria-hidden="true" />
+
+      <div className="vd-topo">
+        <span className="vd-trilha-nav">Início <b aria-hidden="true">›</b> <em>{ABAS.find((a) => a.id === aba)?.nome}</em></span>
+        <span className="vd-ao-vivo"><i aria-hidden="true" />Ao vivo</span>
+      </div>
+
+      <div className="vd-cabeca">
+        <Titulo texto={ABAS.find((a) => a.id === aba)?.nome ?? ''} grande />
+        <p key={aba}>{SUBTITULO[aba]}</p>
+      </div>
 
       <section
         className="vd-vidro vd-hero"
@@ -274,7 +293,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
       <PainelAba aba={aba} dir={dir}>
         {aba === 'categorias' && (
           <section className="vd-vidro" aria-label="Categorias">
-            <header><Titulo texto="Categorias" /><Link to="/plano/orcamento">Limites</Link></header>
+            <header><h2>Por categoria</h2><Link to="/plano/orcamento">Limites</Link></header>
             {p.categorias.length === 0 ? <p className="vd-vazio">Nenhuma categoria com gasto ou limite neste mês.</p> : (
               <div className="vd-cats">
                 {p.categorias.map((c) => (
@@ -292,7 +311,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
 
         {aba === 'funil' && (
           <section className="vd-vidro" aria-label="Funil do mês">
-            <header><Titulo texto="Para onde foi" /></header>
+            <header><h2>Para onde foi</h2></header>
             {p.funil ? (
               <div className="vd-passos">
                 {p.funil.passos.map((passo, n) => (
@@ -312,7 +331,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
 
         {aba === 'calendario' && (
           <section className="vd-vidro" aria-label="Calendário de gastos">
-            <header><Titulo texto="Calendário" /></header>
+            <header><h2>Gasto por dia</h2></header>
             <div className="vd-semana" aria-hidden="true">{SEMANA.map((d, n) => <span key={n}>{d}</span>)}</div>
             <div className="vd-calor">
               {Array.from({ length: p.calor[0]?.semana ?? 0 }, (_, n) => <span key={`v${n}`} />)}
