@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Flame, HandCoins, Percent, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 import { useEstado } from './store';
 import { brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntre, vencimentoNoMes } from './datas';
 import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, saldoAtual, simular } from './dividas';
@@ -118,6 +120,14 @@ function Painel({ onNova, onEditar, onQuitou }: { onNova: () => void; onEditar: 
 
       {aba === 'hoje' && (
         <>
+          <FaixaKpis itens={[
+            { rotulo: 'Você deve', valor: totalAtual, icone: Wallet, tom: 'perigo', nota: `${abertas.length} ${abertas.length === 1 ? 'dívida' : 'dívidas'} em aberto` },
+            { rotulo: 'Já pago', valor: Math.round(progresso), formato: 'pct', icone: Percent, tom: progresso > 0 ? 'ok' : '', nota: `de ${brl0(totalOriginal)} no total` },
+            { rotulo: 'Juros por mês', valor: jurosDoMes(sim), icone: Flame, tom: 'aviso', nota: 'o que a dívida cobra' },
+            { rotulo: 'Plano mensal', valor: plano.pagamentoMensal, icone: HandCoins, nota: `pago neste mês: ${brl0(pagoMes)}` },
+          ]} />
+          <GraficoBarras titulo="Quanto falta em cada dívida" sub="saldo em aberto"
+            dados={abertas.map((d) => ({ rotulo: d.nome, valor: saldoAtual(d), tom: d.jurosMensal >= 8 ? 'perigo' : d.jurosMensal >= 3 ? 'aviso' : '', legenda: `${d.nome} · ${d.jurosMensal}% ao mês` }) as const)} />
           <section className="gs-card destaque dv-hero" style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
             {progresso >= 1 && <div style={{ flex: 'none', width: 104 }}><Anel pct={progresso} grande={`${Math.round(progresso)}%`} sub="já pago" tamanho={104} cor="var(--success)" /></div>}
             <div>
