@@ -452,3 +452,8 @@ html.gs-app[data-tema="escuro"] .as-fala { background: rgba(20, 18, 14, .96); co
   .gm-minilinha path { stroke-dashoffset: 0; stroke-dasharray: none; }
   html.gs-mola .gs-app2 .gs-principal { transform: none; }
 }
+
+/* pontinho de aviso no Midas: chama a atenção sem abrir balão nem andar pela tela */
+.as-orb-btn.tem-aviso::after { content: ''; position: absolute; top: 6px; right: 6px; width: 13px; height: 13px; border-radius: 50%; background: #E0604F; border: 2px solid #1B1915; box-shadow: 0 0 0 0 rgba(224, 96, 79, .6); animation: as-aviso 2.2s ease-out infinite; }
+@keyframes as-aviso { 70% { box-shadow: 0 0 0 9px rgba(224, 96, 79, 0); } 100% { box-shadow: 0 0 0 0 rgba(224, 96, 79, 0); } }
+@media (prefers-reduced-motion: reduce) { .as-orb-btn.tem-aviso::after { animation: none; } }

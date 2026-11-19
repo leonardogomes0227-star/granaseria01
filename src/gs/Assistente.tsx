@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowUp, ChevronRight, Search, Sparkles, X } from 'lucide-react';
 import { useSession } from '../account';
 import { getName, painelToken } from '../painel';
 import { getEstado, useEstado } from './store';
 import { useHoje } from './useHoje';
-import { comentarioDoGasto, dicasDoMidas, textoSeCouber, type Dica, type HumorMidas, type TomDica } from './midasDicas';
+import { comentarioDoGasto, dicasDoMidas, dicasParaTela, temAvisoUrgente, textoSeCouber, type Dica, type HumorMidas, type TomDica } from './midasDicas';
 /** Destaca o número da frase (R$ e porcentagem) sem mudar o texto. */
 function FraseDica({ texto }: { texto: string }) {
   const pedacos = texto.split(/(R\$\s?[\d.]+|\d+%)/g);
@@ -325,6 +325,8 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   useEffect(() => { posRef.current = pos; }, [pos]);
   useEffect(() => { const id = window.setTimeout(() => setChega(false), 700); return () => window.clearTimeout(id); }, []);
   useEffect(() => { setApertada(false); }, [fala?.id]);
+  useEffect(() => { if (!fala) passoDica.current = 0; }, [fala]);
+  const urgente = useMemo(() => temAvisoUrgente(e, hoje), [e, hoje]);
   useEffect(() => () => {
     vivoRef.current = false;
     window.clearTimeout(andarTimer.current);
@@ -381,7 +383,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
 
   const mostrarDica = (forcar = false) => {
     const agora = Date.now();
-    const todas = dicasDoMidas(getEstado(), hoje);
+    const todas = forcar ? dicasParaTela(getEstado(), hoje, pathname) : dicasDoMidas(getEstado(), hoje);
     if (todas.length === 0) return;
     const livres = forcar ? todas : dicasDoMidas(getEstado(), hoje, vistasMidas, agora);
     if (livres.length === 0) return;
@@ -628,7 +630,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       style={{ transform: `translate3d(${Math.round(pos.x)}px, ${Math.round(pos.y)}px, 0)` }}
     >
       <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}${chega ? ' chega' : ''}`}>
-        <button type="button" className={`as-orb-btn${mexe ? ' toque' : ''}`} onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 520); if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
+        <button type="button" className={`as-orb-btn${mexe ? ' toque' : ''}${urgente && !fala ? ' tem-aviso' : ''}`} onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 520); if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
           <Orbe tamanho={min ? 40 : 52} />
           <i className="as-faisca" aria-hidden="true" /><i className="as-faisca" aria-hidden="true" /><i className="as-moeda" aria-hidden="true" />
         </button>
