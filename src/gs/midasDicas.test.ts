@@ -121,3 +121,21 @@ describe('dicas do Midas', () => {
     expect(textoSeCouber(original, 'Comida já foi 80% e ainda é dia 18.')).toBe('Comida já foi 80% e ainda é dia 18.');
   });
 });
+
+describe('Midas inteligente sem invadir', () => {
+  it('na tela de contas, a dica de conta vem na frente', async () => {
+    const { dicasParaTela } = await import('./midasDicas');
+    const e = base();
+    e.gastosFixos = [{ id: 'luz', nome: 'Luz', valor: 150, diaVencimento: 19, categoria: 'Luz', pagamentos: {}, criadaEm: '2026-01-01' }];
+    expect(dicasParaTela(e, HOJE, '/pagar')[0].regra).toBe('conta-amanha');
+  });
+
+  it('o número do dia aparece como dica e o aviso urgente vira só um sinal', async () => {
+    const { temAvisoUrgente } = await import('./midasDicas');
+    const e = base();
+    e.gastosFixos = [{ id: 'luz', nome: 'Luz', valor: 150, diaVencimento: 18, categoria: 'Luz', pagamentos: {}, criadaEm: '2026-01-01' }];
+    expect(temAvisoUrgente(e, HOJE)).toBe(true);
+    expect(temAvisoUrgente(base(), HOJE)).toBe(false);
+    expect(regras(base())).toContain('pode-hoje');
+  });
+});

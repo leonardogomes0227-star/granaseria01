@@ -4,7 +4,7 @@
 import { brl0, diasNoMes, mesDe, somaDias } from './datas';
 import { saldoAtual } from './dividas';
 import { gastoPorCategoria, mediaPorCategoria } from './orcamento';
-import { contasDoMes, detalheDisponivel, lancamentosDoMes, sequenciaDeDias } from './selectores';
+import { contasDoMes, detalheDisponivel, lancamentosDoMes, patrimonioGuardado, sequenciaDeDias } from './selectores';
 import type { Estado, Lancamento } from './tipos';
 
 export type TomDica = 'perigo' | 'aviso' | 'ok' | 'neutro';
@@ -25,7 +25,7 @@ export interface Dica {
 }
 
 const PERIGO = new Set(['conta-atrasada', 'orcamento-estouro']);
-const AVISO = new Set(['conta-hoje', 'conta-amanha', 'orcamento-ritmo', 'dias-dinheiro', 'pico', 'nada-hoje', 'divida-sem-plano']);
+const AVISO = new Set(['conta-hoje', 'conta-amanha', 'semana-contas', 'orcamento-ritmo', 'dias-dinheiro', 'pico', 'nada-hoje', 'divida-sem-plano']);
 const OK = new Set(['sequencia', 'meta', 'divida-progresso', 'calmo']);
 
 export function tomDaRegra(regra: string): TomDica {
@@ -52,6 +52,8 @@ export function iconeDaRegra(regra: string): string {
   if (regra === 'divida-progresso' || regra === 'divida-sem-plano') return '💳';
   if (regra === 'meta') return '🎯';
   if (regra === 'sequencia' || regra === 'calmo') return '✨';
+  if (regra === 'pode-hoje') return '💰';
+  if (regra === 'sem-reserva') return '🌱';
   if (regra === 'decimo') return '🎁';
   if (regra === 'nada-hoje') return '✏️';
   return '💡';
@@ -80,6 +82,27 @@ export function dicasDoMidas(e: Estado, hoje: string, vistas: Record<string, num
   return lista
     .filter((d) => agora - (vistas[d.id] ?? -1e15) >= d.espera)
     .sort((a, b) => b.prioridade - a.prioridade || a.texto.localeCompare(b.texto, 'pt-BR'));
+}
+
+/** Quais regras combinam com a tela em que a pessoa está: ao tocar no Midas, a dica de lá vem primeiro. */
+const DA_TELA: [RegExp, string[]][] = [
+  [/^\/pagar|^\/plano\/(calendario|assinaturas)/, ['conta-atrasada', 'conta-hoje', 'conta-amanha', 'semana-contas']],
+  [/^\/plano\/dividas|^\/plano\/emprestimos/, ['divida-sem-plano', 'divida-progresso']],
+  [/^\/guardar|^\/plano\/(reserva|extras)/, ['meta', 'sem-reserva']],
+  [/^\/plano\/orcamento/, ['orcamento-estouro', 'orcamento-ritmo', 'pico']],
+  [/^\/(lancamentos|gastos|mes|meu-mes)/, ['nada-hoje', 'pico', 'dias-dinheiro', 'pode-hoje']],
+];
+
+/** Todas as dicas, da mais útil para a tela atual à menos. Só ordena: não decide quando falar. */
+export function dicasParaTela(e: Estado, hoje: string, pathname = '/'): Dica[] {
+  const regras = DA_TELA.find(([re]) => re.test(pathname))?.[1] ?? [];
+  const peso = (d: Dica) => d.prioridade + (regras.includes(d.regra) ? 30 : 0);
+  return todasAsDicas(e, hoje).sort((a, b) => peso(b) - peso(a) || a.texto.localeCompare(b.texto, 'pt-BR'));
+}
+
+/** Tem algo que não pode esperar? Vira só um pontinho no Midas, sem balão. */
+export function temAvisoUrgente(e: Estado, hoje: string): boolean {
+  return todasAsDicas(e, hoje).some((d) => d.prioridade >= 84);
 }
 
 export function todasAsDicas(e: Estado, hoje: string): Dica[] {
@@ -164,6 +187,22 @@ export function todasAsDicas(e: Estado, hoje: string): Dica[] {
   const anotouHoje = e.lancamentos.some((l) => l.data === hoje);
   if (recentes && !anotouHoje && dia > 1) {
     lista.push(dica({ id: 'nada-hoje', regra: 'nada-hoje', prioridade: 52, texto: 'Você ainda não anotou nada hoje. Um gasto esquecido muda o que dá pra gastar.', rota: '/lancamentos', rotulo: 'Anotar gasto', espera: 8 * HORA }));
+  }
+
+  // O número do dia, para quem toca no Midas só para saber "e hoje?".
+  if (disp.porDia > 0 && disp.livre > 0) {
+    lista.push(dica({ id: `pode-hoje-${hoje}`, regra: 'pode-hoje', prioridade: 70, texto: `Hoje dá pra gastar até ${brl0(disp.porDia)} sem apertar o mês.`, rota: '/lancamentos', rotulo: 'Anotar gasto', espera: 3 * HORA }));
+  }
+
+  // Contas dos próximos dias, juntas: a semana pesada aparece antes de chegar.
+  const semana = contasDoMes(e, mes, hoje).filter((c) => c.estado !== 'paga' && c.dias >= 2 && c.dias <= 7);
+  if (semana.length >= 2) {
+    const total = semana.reduce((t, c) => t + c.valor, 0);
+    lista.push(dica({ id: `semana-${hoje}`, regra: 'semana-contas', prioridade: 74, texto: `Nos próximos 7 dias vencem ${semana.length} contas, ${brl0(total)} no total.`, rota: '/pagar', rotulo: 'Ver contas', espera: 12 * HORA }));
+  }
+
+  if (e.config.renda > 0 && patrimonioGuardado(e) <= 0 && e.metas.length === 0) {
+    lista.push(dica({ id: 'sem-reserva', regra: 'sem-reserva', prioridade: 48, texto: 'Você ainda não separou nada. Começar pequeno já conta.', rota: '/guardar', rotulo: 'Começar', espera: 24 * HORA }));
   }
 
   const mesNum = Number(mes.slice(5, 7));
