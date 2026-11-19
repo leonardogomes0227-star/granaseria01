@@ -14,6 +14,8 @@ import { confete, vibrar } from '../lib/celebrar';
 import { getEstado } from './store';
 import { capacidadeDePagamento } from './painelDividas';
 import { situacaoAtrasos } from './atrasosLogica';
+import { PiggyBank, ShieldCheck, Target } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Reserva de emergência como um jogo: fases até a meta, a missão do mês, sequência e conquistas ---------- */
 
@@ -64,6 +66,21 @@ export function Reserva() {
     <>
       <Titulo titulo="Reserva de emergência" sub="O que segura você se a renda parar." />
       <RespostaFerramenta id="reserva" />
+
+      {meta > 0 && (
+        <>
+          <FaixaKpis itens={[
+            { rotulo: 'Guardado', valor: Math.max(0, guardado), icone: PiggyBank, tom: guardado > 0 ? 'ok' : '', nota: `de ${brl0(meta)} da meta` },
+            { rotulo: 'Meses protegido', valor: Math.round(protegido * 10) / 10 < 10 ? `${fmt1(protegido)}` : `${Math.round(protegido)}`, icone: ShieldCheck, tom: protegido >= metaMeses ? 'ok' : protegido >= 1 ? 'aviso' : 'perigo', nota: `meta: ${metaMeses} meses` },
+            { rotulo: 'Missão do mês', valor: Math.max(0, plano), icone: Target, nota: missaoFeita ? 'cumprida' : `guardado: ${brl0(feito)}` },
+            { rotulo: 'Meses seguidos', valor: sequencia, formato: 'int', icone: Flame, tom: sequencia >= 2 ? 'ok' : '', nota: 'guardando' },
+          ]} />
+          {recentes.length > 0 && (
+            <GraficoBarras titulo="Seus últimos aportes" sub="mais recente à direita"
+              dados={[...recentes].reverse().map((a) => ({ rotulo: diaCurto(a.data), valor: Math.max(0, a.valor), tom: a.valor < 0 ? 'perigo' : 'ok', legenda: `${diaCurto(a.data)}${a.valor < 0 ? ' · saque' : ''}` }) as const)} />
+          )}
+        </>
+      )}
 
       {meta <= 0 ? (
         <section className="gs-card destaque">

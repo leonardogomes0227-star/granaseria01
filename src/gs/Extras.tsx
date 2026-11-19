@@ -11,6 +11,8 @@ import { brl0, hoje as hojeSP } from './datas';
 import { useHoje } from './useHoje';
 import { confete } from '../lib/celebrar';
 import { toast } from '../components/ui/Toast';
+import { Banknote, Landmark } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Dinheiro extra: 13º, bônus, freela. O app diz o rumo, do que mais pesa pro que pode render, e faz com 1 toque. ---------- */
 
@@ -62,6 +64,17 @@ export function Extras() {
       <Titulo titulo="Dinheiro extra" sub="13º, bônus ou dinheiro que caiu: o melhor destino." />
       <RespostaFerramenta id="extras" />
       {hist.length > 0 && <Heroi pct={Math.min(100, (hist.length / 3) * 100)} anel={`${hist.length}`} anelSub={hist.length === 1 ? 'extra' : 'extras'} rotulo="Você já deu destino a" grande={brl0(totalComDestino(hist))} sub="em dinheiro extra, sem deixar sumir" cor="var(--success)" />}
+      {hist.length > 0 && (
+        <>
+          <FaixaKpis itens={[
+            { rotulo: 'Extras com destino', valor: hist.length, formato: 'int', icone: Gift, tom: 'ok', nota: 'até agora' },
+            { rotulo: 'Total que caiu', valor: hist.reduce((t, h) => t + h.valor, 0), icone: Banknote, nota: 'somando todos' },
+            { rotulo: 'Foi pra dívida', valor: hist.reduce((t, h) => t + h.divida, 0), icone: Landmark, nota: 'e atraso' },
+            { rotulo: 'Foi pra reserva', valor: hist.reduce((t, h) => t + h.reserva, 0), icone: PiggyBank, tom: 'ok', nota: 'e investimentos' },
+          ]} />
+          <GraficoBarras titulo="Seus extras" sub="mais recente à direita" dados={[...hist].reverse().map((h) => ({ rotulo: h.origem, valor: h.valor, tom: 'ok', legenda: `${h.origem} · ${h.data.slice(8, 10)}/${h.data.slice(5, 7)}` }) as const)} />
+        </>
+      )}
       <Conquistas lista={conquistasExtras(hist)} />
 
       <section className="gs-card">

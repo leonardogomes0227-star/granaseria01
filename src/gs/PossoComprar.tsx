@@ -12,6 +12,8 @@ import { Anel } from './graficos';
 import { PiggyBank, ShoppingCart, Sprout, Target } from 'lucide-react';
 import { useHoje } from './useHoje';
 import { toast } from '../components/ui/Toast';
+import { Hand, Hourglass, ShoppingBag } from 'lucide-react';
+import { FaixaKpis } from './PainelUI';
 
 /* ---------- Posso comprar isso? Horas de trabalho, veredito e espera de 72 h (o fim vem de um carimbo) ---------- */
 
@@ -47,6 +49,14 @@ export function PossoComprar() {
       <Titulo titulo="Posso comprar isso?" sub="Veja se a compra cabe no seu mês." />
       {(resumo.desistiu + resumo.comprou > 0 || espera.length > 0) && (
         <Heroi pct={resumo.pctDesistiu} anel={`${Math.round(resumo.pctDesistiu)}%`} anelSub="desistências" rotulo="Você já economizou" grande={brl0(economizado)} sub={`${resumo.desistiu} ${resumo.desistiu === 1 ? 'compra evitada' : 'compras evitadas'}${espera.length ? ` · ${espera.length} em espera` : ''}`} cor="var(--success)" />
+      )}
+      {(resumo.desistiu + resumo.comprou > 0 || espera.length > 0) && (
+        <FaixaKpis itens={[
+          { rotulo: 'Você economizou', valor: economizado, icone: PiggyBank, tom: 'ok', nota: 'desistindo de compras' },
+          { rotulo: 'Desistências', valor: resumo.desistiu, formato: 'int', icone: Hand, tom: resumo.desistiu ? 'ok' : '', nota: `${Math.round(resumo.pctDesistiu)}% dos desejos` },
+          { rotulo: 'Comprou', valor: resumo.comprou, formato: 'int', icone: ShoppingBag, nota: 'depois de pensar' },
+          { rotulo: 'Na espera', valor: espera.length, formato: 'int', icone: Hourglass, tom: espera.length ? 'aviso' : '', nota: 'ainda pensando' },
+        ]} />
       )}
       <Conquistas lista={conquistasCompra(resumo)} />
       {e.config.renda <= 0 && (

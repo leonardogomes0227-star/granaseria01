@@ -14,6 +14,8 @@ import { gastoMensalMedio } from './selectores';
 import { maiorJuroMensal } from './dividas';
 import { brl0, mesDe, pct } from './datas';
 import { toast } from '../components/ui/Toast';
+import { CalendarClock, Flame, HandCoins, Wallet } from 'lucide-react';
+import { FaixaKpis } from './PainelUI';
 
 /* ---------- Empréstimos: quanto custa um empréstimo (juros, taxa ao mês e ao ano, por prazo) e comparar ofertas ---------- */
 
@@ -67,6 +69,14 @@ function QuantoCusta({ onComparar }: { onComparar: () => void }) {
   const pctRecebe = c ? (c.valor / c.total) * 100 : 100;
   return (
     <>
+      {c && (
+        <FaixaKpis itens={[
+          { rotulo: 'Você recebe', valor: c.valor, icone: HandCoins, tom: 'ok', nota: `em ${c.parcelas}x` },
+          { rotulo: 'Parcela', valor: c.parcela, icone: CalendarClock, nota: 'por mês' },
+          { rotulo: 'Você paga no total', valor: c.total, icone: Wallet, tom: 'aviso', nota: 'somando todas as parcelas' },
+          { rotulo: 'Só de juros', valor: c.juros, icone: Flame, tom: c.pctJuros > 50 ? 'perigo' : 'aviso', nota: `${Math.round(c.pctJuros)}% do que recebe` },
+        ]} />
+      )}
       <section className="gs-card">
         <CampoDinheiro rotulo="Quanto você quer pegar?" valor={valor} onChange={setValor} grande />
         <span className="gs-rotulo">Em quantas vezes?</span>

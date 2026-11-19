@@ -13,6 +13,8 @@ import { salvarConfig } from './acoes';
 import { degrausDeRenda, mesesAteMeta, rendimentoMensal } from './rendaLogica';
 import { prioridadeAntesDeInvestir } from './investir/calculos';
 import { lerCdiMensal } from './mercadoCache';
+import { CalendarClock, Target, TrendingUp, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Viver de renda: juntar um dinheiro tão grande que só o rendimento dele paga as suas contas. Em degraus. ---------- */
 
@@ -66,6 +68,14 @@ export function Renda() {
   return (
     <>
       <Titulo titulo="Viver de renda" sub="Quando o rendimento paga as suas contas." />
+
+      <FaixaKpis itens={[
+        { rotulo: 'Você gasta por mês', valor: alvoMensal, icone: Wallet, nota: 'o que o rendimento precisa pagar' },
+        { rotulo: 'Número final', valor: meta, icone: Target, nota: 'pra render isso sozinho' },
+        { rotulo: 'Rende hoje', valor: rende, icone: TrendingUp, tom: rende > 0 ? 'ok' : '', nota: `de ${brl0(guardado)} guardados` },
+        { rotulo: 'Falta', valor: mFinal === null ? '—' : mFinal >= 12 ? `${Math.floor(mFinal / 12)} anos` : `${mFinal} meses`, icone: CalendarClock, nota: `guardando ${brl0(aporte)} por mês` },
+      ]} />
+      <GraficoBarras titulo="O caminho até lá" sub="quanto você junta" dados={serie.map((v, k) => ({ rotulo: String(k), valor: v, tom: v >= meta ? 'ok' : '', legenda: `Etapa ${k + 1}` }) as const)} />
 
       <section className="gs-card destaque">
         <span className="gs-rotulo">A ideia em uma frase</span>

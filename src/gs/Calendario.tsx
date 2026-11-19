@@ -11,6 +11,8 @@ import { eventosDoMes, linhaDoCiclo, mesesEmDia, pedidoDeVencimento, vencemAntes
 import { salvarConfig } from './acoes';
 import { linkWhatsApp } from './dividas';
 import { toast } from '../components/ui/Toast';
+import { CalendarCheck, CalendarClock, Receipt, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Calendário de contas: do salário até o próximo salário, o que vence e quanto sobra depois de cada conta ---------- */
 
@@ -53,6 +55,15 @@ export function Calendario() {
           {linha.sobra >= 0 ? <>Depois delas, sobram <b>{brl0(linha.sobra)}</b> do salário.</> : <b>As contas passam o salário em {brl0(-linha.sobra)}.</b>}
         </p>
       </section>
+
+      <FaixaKpis itens={[
+        { rotulo: 'Faltam pagar', valor: Math.max(0, linha.falta), icone: Receipt, tom: linha.falta > 0 ? 'aviso' : 'ok', nota: 'até o próximo salário' },
+        { rotulo: 'Contas no período', valor: passos.length, formato: 'int', icone: CalendarClock, nota: `${brl0(linha.total)} no total` },
+        { rotulo: 'Já pago', valor: Math.max(0, linha.pago), icone: CalendarCheck, tom: 'ok', nota: 'neste período' },
+        { rotulo: linha.sobra >= 0 ? 'Sobra do salário' : 'Passa do salário', valor: Math.abs(linha.sobra), icone: Wallet, tom: linha.sobra >= 0 ? 'ok' : 'perigo', nota: 'depois de todas as contas' },
+      ]} />
+      <GraficoBarras titulo="Contas até o salário" sub={`até ${diaCurto(ciclo.proximo)}`}
+        dados={passos.map((p) => ({ rotulo: String(Number(p.data.slice(8, 10))), valor: p.valor, tom: p.paga ? 'ok' : p.dias < 0 ? 'perigo' : p.dias <= 3 ? 'aviso' : '', legenda: `${p.nome} · dia ${Number(p.data.slice(8, 10))}` }) as const)} />
 
       <Agora
         tom={atrasada ? 'perigo' : proxima && proxima.dias <= 3 ? 'aviso' : 'ok'}
