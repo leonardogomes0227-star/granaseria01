@@ -1,0 +1,88 @@
+// Efeitos do painel em todas as telas do app: pílula que desliza nas abas, título que se decifra e sons.
+// Mexe só no que a tela já desenhou (classes e um <i> de enfeite), sem tocar nos componentes de cada tela.
+import { tocar } from './sons';
+
+const GRUPOS = '.gs-seg, .seg, .cm-seg, .cm-abas';
+const ATIVO = '[aria-selected="true"], [aria-pressed="true"], [aria-current="page"], .on, .active, .ativo, .sel';
+const GLIFOS = 'abcdefghijklmnopqrstuvwxyz0123456789#%&';
+
+export const semMovimento = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+function posicionar(grupo: HTMLElement, som: boolean) {
+  let pl = grupo.querySelector<HTMLElement>(':scope > i.gl-pilula');
+  if (!pl) {
+    pl = document.createElement('i');
+    pl.className = 'gl-pilula';
+    pl.setAttribute('aria-hidden', 'true');
+    grupo.prepend(pl);
+  }
+  const btn = Array.from(grupo.children).find((c) => c !== pl && c.matches(ATIVO)) as HTMLElement | undefined;
+  if (!btn || btn.offsetWidth === 0) { pl.classList.remove('pronta'); return; }
+  const esq = btn.offsetLeft;
+  const antes = pl.dataset.esq === undefined ? null : Number(pl.dataset.esq);
+  const indo = antes === null || esq >= antes;
+  pl.style.setProperty('--pl-esq', `${esq}px`);
+  pl.style.setProperty('--pl-larg', `${btn.offsetWidth}px`);
+  pl.style.setProperty('--pl-alt', `${btn.offsetHeight}px`);
+  pl.style.setProperty('--pl-top', `${btn.offsetTop}px`);
+  pl.style.setProperty('--pl-t-esq', antes === null ? '0s' : indo ? '.5s' : '.3s');
+  pl.style.setProperty('--pl-t-larg', antes === null ? '0s' : indo ? '.3s' : '.5s');
+  pl.classList.add('pronta');
+  grupo.classList.add('gl-com-pilula');
+  if (antes !== null && antes !== esq && som) tocar('deslizar');
+  pl.dataset.esq = String(esq);
+}
+
+function decifrar(el: HTMLElement) {
+  const texto = el.textContent ?? '';
+  if (!texto.trim() || el.childNodes.length !== 1 || el.firstChild?.nodeType !== 3 || semMovimento()) return;
+  const t0 = performance.now();
+  const dur = 560;
+  const passo = (agora: number) => {
+    if (!el.isConnected) return;
+    const f = Math.min(1, (agora - t0) / dur);
+    const fixas = Math.floor(f * texto.length);
+    el.textContent = f < 1 ? texto.split('').map((c, i) => (i < fixas || c === ' ' ? c : GLIFOS[Math.floor(Math.random() * GLIFOS.length)])).join('') : texto;
+    if (f < 1) requestAnimationFrame(passo);
+  };
+  tocar('digitar');
+  requestAnimationFrame(passo);
+}
+
+/** Liga os efeitos na tela inteira. Devolve a função que desliga. */
+export function iniciarEfeitos(): () => void {
+  const todos = () => document.querySelectorAll<HTMLElement>(GRUPOS);
+  let agendado = 0;
+  const atualizar = (som: boolean) => {
+    window.cancelAnimationFrame(agendado);
+    agendado = window.requestAnimationFrame(() => todos().forEach((g) => posicionar(g, som)));
+  };
+  const obs = new MutationObserver((muts) => {
+    const mudou = muts.some((m) => m.type === 'attributes' || Array.from(m.addedNodes).some((n) => n instanceof HTMLElement && !(n as HTMLElement).classList.contains('gl-pilula')));
+    if (mudou) atualizar(true);
+  });
+  obs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'aria-selected', 'aria-current'] });
+  const redim = () => atualizar(false);
+  window.addEventListener('resize', redim);
+  atualizar(false);
+  return () => { obs.disconnect(); window.removeEventListener('resize', redim); window.cancelAnimationFrame(agendado); };
+}
+
+/** A cada tela nova: espera o título aparecer, decifra e devolve o texto (para o caminho no topo). */
+export function titulosDaTela(aoAchar: (titulo: string) => void): () => void {
+  let vivo = true;
+  let tentativas = 0;
+  const procurar = () => {
+    if (!vivo) return;
+    const h1 = document.querySelector<HTMLElement>('.gs-principal h1');
+    if (h1 && (h1.textContent ?? '').trim()) {
+      aoAchar((h1.textContent ?? '').trim());
+      decifrar(h1);
+      return;
+    }
+    if (++tentativas < 40) window.setTimeout(procurar, 50);
+    else aoAchar('');
+  };
+  procurar();
+  return () => { vivo = false; };
+}

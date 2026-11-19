@@ -1,10 +1,10 @@
-// Tema claro (creme e dourado) ou escuro: escolha da pessoa, guardada no aparelho. O padrão é o claro.
+// Tema claro (creme e dourado) ou escuro: escolha da pessoa, guardada no aparelho. O padrão é o escuro (vidro e dourado).
 import { useSyncExternalStore } from 'react';
 
 export type Tema = 'claro' | 'escuro';
 const CHAVE = 'gs-tema';
 const ouvintes = new Set<() => void>();
-const ler = (): Tema => { try { return localStorage.getItem(CHAVE) === 'escuro' ? 'escuro' : 'claro'; } catch { return 'claro'; } };
+const ler = (): Tema => { try { return localStorage.getItem(CHAVE) === 'claro' ? 'claro' : 'escuro'; } catch { return 'escuro'; } };
 let atual: Tema = ler();
 
 const aplicar = (t: Tema) => {
@@ -22,4 +22,4 @@ export function definirTema(t: Tema) {
   ouvintes.forEach((f) => f());
 }
 const assinar = (f: () => void) => { ouvintes.add(f); return () => { ouvintes.delete(f); }; };
-export const useTema = (): Tema => useSyncExternalStore(assinar, () => atual, () => 'claro');
+export const useTema = (): Tema => useSyncExternalStore(assinar, () => atual, () => 'escuro');
