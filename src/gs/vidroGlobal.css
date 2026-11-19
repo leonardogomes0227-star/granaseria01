@@ -172,7 +172,7 @@ html.gs-app[data-tema="escuro"] .cm-seg button[aria-pressed="true"], html.gs-app
 .pu-delta { display: inline-flex; align-items: baseline; gap: 5px; font: 750 13px/1 var(--cm-sans, inherit); font-variant-numeric: tabular-nums; color: var(--ink-muted); }
 .pu-delta small { font: 500 11.5px var(--cm-sans, inherit); text-transform: none; letter-spacing: 0; color: var(--ink-muted); display: inline; }
 .pu-delta.bom { color: #6FD39A; } .pu-delta.ruim { color: #F0AAA0; }
-.pu-spark { position: absolute; right: 12px; bottom: 14px; width: 74px; height: 26px; opacity: .95; }
+.pu-spark { position: absolute; right: 12px; bottom: 14px; width: 62px; height: 24px; opacity: .95; }
 .pu-spark-linha { fill: none; stroke: #E8D7A8; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: vd-traco 1s ease .2s forwards; }
 .pu-spark-area { fill: rgba(232, 215, 168, .12); }
 .pu-spark-ponto { fill: #E8D7A8; stroke: #1a1a19; stroke-width: 1.5; }
@@ -185,3 +185,59 @@ html.gs-app:not([data-tema="escuro"]) .pu-balao { background: #fff; }
 .pu-eixo.mes span { font-size: 11px; max-width: none; overflow: visible; text-overflow: clip; }
 @keyframes vd-traco { to { stroke-dashoffset: 0; } }
 .pu-kpi.com-spark .pu-delta small { display: none; }
+
+/* ======================================================================
+   Cor de destaque: azul-safira sóbrio (#5B84F0) para dados e estados ativos.
+   O dourado continua sendo a marca (botões, moeda). Validado no tema escuro.
+   ====================================================================== */
+html.gs-app { --acento: #5B84F0; --acento-claro: #9DB8FF; --acento-fundo: rgba(91, 132, 240, .16); --acento-brilho: rgba(91, 132, 240, .5); }
+
+/* luz ao fundo: dourado + safira */
+html.gs-app[data-tema="escuro"] .gs-casca::after { background: #3B63D9; opacity: .22; }
+
+/* pílula que desliza (abas, seletores, barra de baixo, painel do Início) */
+html.gs-app .gl-pilula, html.gs-app .vd-pilula-mov {
+  background: linear-gradient(180deg, rgba(122, 156, 255, .34), rgba(91, 132, 240, .16));
+  border: 1px solid rgba(157, 184, 255, .42);
+  box-shadow: 0 8px 22px -8px var(--acento-brilho), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+html.gs-app .cm-abas .gl-pilula { box-shadow: 0 6px 18px -6px var(--acento-brilho), inset 0 -2px 0 var(--acento); }
+
+/* números e ícones */
+html.gs-app .pu-ico { background: var(--acento-fundo); border-color: rgba(157, 184, 255, .35); color: var(--acento-claro); }
+html.gs-app .pu-kpi { background: linear-gradient(165deg, rgba(120, 150, 255, .10), rgba(255, 255, 255, .025) 55%); }
+html.gs-app .pu-kpi::before, html.gs-app .pu-vidro::before { content: ''; position: absolute; left: 14px; right: 14px; top: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(157, 184, 255, .65), transparent); pointer-events: none; z-index: 2; }
+html.gs-app a.pu-kpi:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 22px 44px -22px var(--acento-brilho); }
+html.gs-app .pu-spark-linha { stroke: var(--acento-claro); }
+html.gs-app .pu-spark-area { fill: rgba(91, 132, 240, .16); }
+html.gs-app .pu-spark-ponto { fill: var(--acento-claro); }
+
+/* gráficos: a série principal é safira; verde, âmbar e vermelho ficam para estado */
+html.gs-app .pu-barras i { background: linear-gradient(180deg, var(--acento-claro), rgba(91, 132, 240, .22)); }
+html.gs-app .pu-barras .ok i { background: linear-gradient(180deg, #7FDDB0, rgba(53, 170, 112, .28)); }
+html.gs-app .pu-barras .aviso i { background: linear-gradient(180deg, #F3D79A, rgba(215, 162, 74, .3)); }
+html.gs-app .pu-barras .perigo i { background: linear-gradient(180deg, #F0AAA0, rgba(196, 92, 80, .3)); }
+html.gs-app .pu-barras button:hover i, html.gs-app .pu-barras button.on i { filter: brightness(1.2) drop-shadow(0 0 8px var(--acento-brilho)); }
+html.gs-app .pu-media { border-top-color: rgba(232, 215, 168, .55); }
+html.gs-app .pu-media span { color: #E8D7A8; }
+html.gs-app .pu-cel { background: rgba(91, 132, 240, calc(.07 + var(--k, 0) * .8)); }
+html.gs-app .pu-cel.zero { background: rgba(255, 255, 255, .04); }
+html.gs-app .pu-cel:hover, html.gs-app .pu-cel.on { box-shadow: 0 0 0 2px var(--acento-claro), 0 8px 20px -6px var(--acento-brilho); }
+html.gs-app .pu-eixo span.on { color: var(--acento-claro); }
+
+/* painel do Início */
+html.gs-app .vd-barras i { background: linear-gradient(180deg, rgba(157, 184, 255, .8), rgba(91, 132, 240, .2)); }
+html.gs-app .vd-barras i.on { background: linear-gradient(180deg, #CFE0FF, rgba(91, 132, 240, .55)); }
+html.gs-app .vd-linha { stroke: #B7CBFF; }
+html.gs-app .vd-trilha i { background: linear-gradient(90deg, #4A72E8, #8FB0FF); }
+html.gs-app .vd-cat.aviso .vd-trilha i { background: #D7A24A; }
+html.gs-app .vd-cat.perigo .vd-trilha i, html.gs-app .vd-trilha.divida i { background: #C45C50; }
+html.gs-app .vd-calor button { background: rgba(91, 132, 240, calc(.08 + var(--forca, 0) * .78)); }
+html.gs-app .vd-calor button.on { outline-color: var(--acento-claro); }
+
+/* caminho no topo e detalhes */
+html.gs-app .gl-trilha { border-color: rgba(157, 184, 255, .22); }
+
+/* acabamento: borda de luz em todo cartão de vidro e sombra com profundidade */
+html.gs-app[data-tema="escuro"] .pu-vidro, html.gs-app[data-tema="escuro"] .pu-kpi { border-color: rgba(157, 184, 255, .18); box-shadow: inset 0 1px 0 rgba(200, 215, 255, .16), 0 24px 48px -30px rgba(10, 20, 70, .9), 0 2px 6px rgba(0, 0, 0, .35); }
+html.gs-app[data-tema="escuro"] .pu-vidro h2 { letter-spacing: -0.025em; }
