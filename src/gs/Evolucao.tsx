@@ -4,14 +4,14 @@ import { Link } from 'react-router-dom';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { brl0, mesCurto, mesDe } from './datas';
-import { compararMeses, evolucaoDividas, frasesDeEvolucao, gastosPorCategoria, patrimonioPorMes, planejadoXRealizado, serieMensal } from './evolucaoLogica';
+import { compararMeses, evolucaoDividas, frasesDeEvolucao, gastosPorCategoria, matrizCategorias, patrimonioPorMes, planejadoXRealizado, serieMensal } from './evolucaoLogica';
 import { Linha } from './graficos';
 import { corDe } from './categorias';
 import { Barra, Titulo, Vazio } from './ui';
 import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
 import { ArrowDownRight, ArrowUpRight, PiggyBank, Scale } from 'lucide-react';
-import { FaixaKpis, GraficoBarras, Rosca } from './PainelUI';
+import { FaixaKpis, GraficoBarras, GraficoLinha, Heatmap, Rosca } from './PainelUI';
 
 /* ---------- Evolução: cada gráfico responde uma pergunta. Sem dados suficientes, diz isso em vez de inventar. ---------- */
 
@@ -45,16 +45,25 @@ export function Evolucao() {
         const atual = serie.find((x) => x.mes === mes);
         if (!atual) return null;
         const sobra = atual.receitas - atual.despesas;
+        const ult = serie.slice(-6);
         return (
           <FaixaKpis itens={[
-            { rotulo: 'Receitas', valor: atual.receitas, icone: ArrowUpRight, tom: 'ok', nota: atual.receitaEstimada ? 'estimada pela renda' : 'no mês' },
-            { rotulo: 'Despesas', valor: atual.despesas, icone: ArrowDownRight, nota: 'dia a dia + contas pagas' },
-            { rotulo: 'Sobra', valor: sobra, icone: Scale, tom: sobra < 0 ? 'perigo' : 'ok', nota: sobra < 0 ? 'gastou mais do que entrou' : 'receitas menos despesas' },
-            { rotulo: 'Guardado', valor: atual.guardado, icone: PiggyBank, nota: 'no mês' },
+            { rotulo: 'Receitas', valor: atual.receitas, icone: ArrowUpRight, tom: 'ok', nota: atual.receitaEstimada ? 'estimada pela renda' : 'no mês', serie: ult.map((x) => x.receitas), bom: 'sobe' },
+            { rotulo: 'Despesas', valor: atual.despesas, icone: ArrowDownRight, nota: 'dia a dia + contas pagas', serie: ult.map((x) => x.despesas), bom: 'desce' },
+            { rotulo: 'Sobra', valor: sobra, icone: Scale, tom: sobra < 0 ? 'perigo' : 'ok', nota: sobra < 0 ? 'gastou mais do que entrou' : 'receitas menos despesas', serie: ult.map((x) => x.receitas - x.despesas), bom: 'sobe' },
+            { rotulo: 'Guardado', valor: atual.guardado, icone: PiggyBank, nota: 'no mês', serie: ult.map((x) => x.guardado), bom: 'sobe' },
           ]} />
         );
       })()}
-      <GraficoBarras titulo="Despesas mês a mês" sub="últimos meses" dados={serie.map((x) => ({ rotulo: mesCurto(x.mes), valor: x.despesas, legenda: mesCurto(x.mes), tom: x.mes === mes ? 'aviso' : '' }) as const)} />
+      {serie.length >= 2 && (
+        <GraficoLinha titulo="Receitas × despesas" sub="mês a mês" rotulos={serie.slice(-6).map((x) => mesCurto(x.mes))}
+          series={[{ nome: 'Receitas', valores: serie.slice(-6).map((x) => x.receitas), cor: '#35AA70' }, { nome: 'Despesas', valores: serie.slice(-6).map((x) => x.despesas), cor: '#D4742C' }]} />
+      )}
+      {(() => {
+        const meses = serie.slice(-6).map((x) => x.mes);
+        const m = matrizCategorias(e, meses);
+        return <Heatmap titulo="Onde o dinheiro mais vai" sub="categoria × mês" linhas={m.linhas} colunas={meses.map(mesCurto)} valores={m.valores} />;
+      })()}
       {cats.length > 0 && <Rosca titulo="Gastos por categoria" sub="este mês" fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))} centro={<>{brl0(cats.reduce((t, c) => t + c.valor, 0))}<small>no mês</small></>} />}
 
       {frases.length > 0 ? (
