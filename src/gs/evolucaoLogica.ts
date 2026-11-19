@@ -151,3 +151,15 @@ export function compararMeses(serie: MesSerie[], mes: string): ComparacaoMes | n
   const atual = serie[i], anterior = serie[i - 1];
   return { atual, anterior, dReceitas: varia(atual.receitas, anterior.receitas), dDespesas: varia(atual.despesas, anterior.despesas) };
 }
+
+
+/** Categorias × meses para o mapa de calor: as que mais pesam no período, e quanto foi em cada mês. */
+export function matrizCategorias(e: Estado, meses: string[], maximo = 7): { linhas: string[]; valores: number[][] } {
+  const porMes = meses.map((m) => Object.fromEntries(gastosPorCategoria(e, m).map((c) => [c.categoria, c.valor])) as Record<string, number>);
+  const linhas = [...new Set(porMes.flatMap((o) => Object.keys(o)))]
+    .map((n) => ({ n, t: porMes.reduce((t, o) => t + (o[n] ?? 0), 0) }))
+    .sort((a, b) => b.t - a.t)
+    .slice(0, maximo)
+    .map((x) => x.n);
+  return { linhas, valores: linhas.map((n) => porMes.map((o) => o[n] ?? 0)) };
+}

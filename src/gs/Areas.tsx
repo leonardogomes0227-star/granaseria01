@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Blocks, Flag, HeartPulse, NotebookPen, CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
-import { FaixaKpis, GraficoBarras, Rosca } from './PainelUI';
+import { FaixaKpis, GraficoBarras, Heatmap, Rosca } from './PainelUI';
+import { mesCurto } from './datas';
 import { atrasosAbertos } from './atrasosBase';
 import { FormConta } from './MeuMes';
 import { useEstado } from './store';
@@ -10,7 +11,7 @@ import { brl, brl0, diaCurto, diasNoMes, mesDe, nomeMes } from './datas';
 import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, sequenciaDeDias, totalVariaveis } from './selectores';
 import { saldoAtual } from './dividas';
 import { prioridades } from './prioridades';
-import { gastosPorCategoria } from './evolucaoLogica';
+import { gastosPorCategoria, matrizCategorias, patrimonioPorMes, serieMensal } from './evolucaoLogica';
 import { passosDoMes, type OrigemPasso, type Passo } from './passos';
 import { calcularCaminho, fraseDoMarco } from './caminho';
 import { FERRAMENTAS, GRUPOS, NOME_AREA, gradeDaArea, urgentesDaArea, type Area } from './registroFerramentas';
@@ -242,6 +243,8 @@ export function AreaGastos() {
   const disp = useMemo(() => detalheDisponivel(e, mes, hoje), [e, mes, hoje]);
   const cats = useMemo(() => gastosPorCategoria(e, mes), [e, mes]);
   const total = totalVariaveis(e, mes);
+  const meses6 = useMemo(() => serieMensal(e, hoje).filter((x) => x.temDados || x.mes === mes).slice(-6), [e, hoje, mes]);
+  const mapa = useMemo(() => matrizCategorias(e, meses6.map((x) => x.mes)), [e, meses6]);
   const ultimos = useMemo(() => [...e.lancamentos].filter((l) => mesDe(l.data) === mes).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5), [e.lancamentos, mes]);
   return (
     <>
@@ -259,13 +262,14 @@ export function AreaGastos() {
 
       <FaixaKpis mascara={m} itens={[
         { rotulo: 'Pode gastar hoje', valor: disp.modo === 'incompleto' ? '—' : Math.max(0, disp.porDia), icone: Wallet, tom: disp.livre < 0 ? 'perigo' : 'ok', nota: disp.modo === 'incompleto' ? 'informe sua renda' : disp.livre < 0 ? 'o mês já passou do limite' : 'sem apertar o mês' },
-        { rotulo: 'Gasto no mês', valor: total, icone: TrendingDown, nota: `${ultimos.length ? 'em ' : ''}${e.lancamentos.filter((l) => mesDe(l.data) === mes).length} lançamentos` },
+        { rotulo: 'Gasto no mês', valor: total, icone: TrendingDown, serie: meses6.map((x) => x.variaveis), bom: 'desce', nota: `${ultimos.length ? 'em ' : ''}${e.lancamentos.filter((l) => mesDe(l.data) === mes).length} lançamentos` },
         { rotulo: 'Média por dia', valor: Math.round(total / Math.max(1, Number(hoje.slice(8, 10)))), icone: Gauge, nota: 'desde o dia 1' },
         { rotulo: 'Maior categoria', valor: cats[0] ? cats[0].categoria : '—', icone: Flame, tom: cats[0] ? 'aviso' : '', nota: cats[0] ? m(brl0(cats[0].valor)) : 'ainda sem gastos' },
       ]} />
       <Rosca titulo="Para onde foi" sub={nomeMes(mes).split(' ')[0]} mascara={m}
         fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))}
         centro={<>{m(brl0(total))}<small>no mês</small></>} />
+      <Heatmap titulo="Mês a mês por categoria" sub="quanto mais forte, mais gasto" mascara={m} linhas={mapa.linhas} colunas={meses6.map((x) => mesCurto(x.mes))} valores={mapa.valores} />
       <h2 className="cm-h2">Detalhe por categoria<Link to="/relatorios">Ver relatórios</Link></h2>
       {cats.length === 0 ? <p className="cm-mudo">Nenhum gasto anotado neste mês. Anote o primeiro: leva 5 segundos.</p> : (
         <Card>
@@ -302,6 +306,7 @@ export function AreaGuardar() {
   const meta = reservaMeta(e, mes);
   const guardado = Math.max(0, patrimonioGuardado(e));
   const passos = useMemo(() => passosDoMes(e, hoje), [e, hoje]);
+  const patri = useMemo(() => patrimonioPorMes(e, hoje)?.slice(-6).map((x) => x.valor), [e, hoje]);
   const { executar, folhas } = useExecutarPasso(hoje);
   const prox = proximoDaArea(passos, ['guardar', 'meta']);
   const segurado = passos.find((p) => p.origem === 'guardar' && p.status === 'segurado');
@@ -325,7 +330,7 @@ export function AreaGuardar() {
         </div>
       </section>
       <FaixaKpis mascara={m} itens={[
-        { rotulo: 'Guardado', valor: guardado, icone: PiggyBank, tom: guardado > 0 ? 'ok' : '', nota: 'tudo que você separou' },
+        { rotulo: 'Guardado', valor: guardado, icone: PiggyBank, tom: guardado > 0 ? 'ok' : '', nota: 'tudo que você separou', serie: patri, bom: 'sobe' },
         { rotulo: 'Meta da reserva', valor: meta, icone: Target, nota: meta > 0 ? `${Math.round(Math.min(100, (guardado / meta) * 100))}% completa` : 'defina pelo Coach' },
         { rotulo: 'Guardado no mês', valor: guardadoNoMes(e, mes), icone: Landmark, nota: 'aportes deste mês' },
         { rotulo: 'Metas ativas', valor: e.metas.length, formato: 'int', icone: CalendarCheck, nota: e.metas.length ? 'em andamento' : 'crie a primeira' },
