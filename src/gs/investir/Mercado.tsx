@@ -4,6 +4,8 @@ import { Grafico, type Serie } from './Grafico';
 import { Esqueleto } from '../ui';
 import { brl, pct } from '../datas';
 import type { Item } from './tipos';
+import { Flame, Landmark, PiggyBank, TrendingUp } from 'lucide-react';
+import { FaixaKpis, GraficoBarras, type ItemKpi } from '../PainelUI';
 
 /* ---------- Mercado: dados reais, com fonte e "atualizado há X". Sem dado, aviso honesto. ---------- */
 
@@ -49,11 +51,13 @@ export function Mercado() {
   return (
     <>
       {erro && <p className="gs-banner" role="status">Não consegui atualizar agora. Mostrando o último dado disponível.</p>}
+      <FaixaKpis itens={([
+        dados.selic && { rotulo: 'Selic (meta)', valor: `${pct(dados.selic.valor, 2)} a.a.`, icone: Landmark, nota: `${dados.selic.fonte} · ${haQuanto(dados.selic.atualizadoEm)}` },
+        dados.cdi && { rotulo: 'CDI', valor: `${pct(dados.cdi.valor, 2)} a.a.`, icone: TrendingUp, tom: 'ok', nota: `${dados.cdi.fonte} · ${haQuanto(dados.cdi.atualizadoEm)}` },
+        dados.ipca12m && { rotulo: 'Inflação 12 meses', valor: pct(dados.ipca12m.valor, 2), icone: Flame, tom: 'aviso', nota: `${dados.ipca12m.fonte} · ${haQuanto(dados.ipca12m.atualizadoEm)}` },
+        dados.poupanca && { rotulo: 'Poupança', valor: `${pct(dados.poupanca.valor, 2)} a.a.`, icone: PiggyBank, nota: 'regra da Selic, sem a TR' },
+      ].filter(Boolean)) as ItemKpi[]} />
       <div className="gs-grade duas">
-        <Cartao rotulo="Selic (meta)" item={dados.selic} formato={(n) => `${pct(n, 2)} a.a.`} />
-        <Cartao rotulo="CDI" item={dados.cdi} formato={(n) => `${pct(n, 2)} a.a.`} />
-        <Cartao rotulo="Inflação (IPCA 12 meses)" item={dados.ipca12m} formato={(n) => pct(n, 2)} />
-        <Cartao rotulo="Poupança" item={dados.poupanca} formato={(n) => `${pct(n, 2)} a.a.`} extra="Calculada pela regra da Selic, sem a TR." />
         <Cartao rotulo="Dólar" item={dados.dolar} formato={(n) => brl(n)} />
         <Cartao rotulo="Bitcoin" item={dados.bitcoin} formato={(n) => brl(n)} extra={dados.bitcoin?.var24h != null ? `${dados.bitcoin.var24h.toLocaleString('pt-BR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })}% em 24 h` : undefined} />
         <Cartao rotulo="Ibovespa" item={dados.ibovespa} formato={(n) => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} pts`} extra={dados.ibovespa?.var24h != null ? `${dados.ibovespa.var24h.toLocaleString('pt-BR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })}% no dia` : undefined} />
@@ -72,6 +76,8 @@ export function Mercado() {
       )}
       {dados.ranking && dados.ranking.length > 0 && (
         <>
+          <GraficoBarras titulo="Quanto cada um rendeu" sub="últimos 12 meses" formato="pct"
+            dados={dados.ranking.map((r) => ({ rotulo: r.nome, valor: r.retorno12m, tom: r.retorno12m < 0 ? 'perigo' : 'ok', legenda: `${r.nome} · risco ${r.risco}` }) as const)} />
           <h2 className="gs-h2">Ranking dos últimos 12 meses</h2>
           <div className="gs-card">
             {dados.ranking.map((r) => (

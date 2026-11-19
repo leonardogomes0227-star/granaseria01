@@ -48,11 +48,11 @@ export function FaixaKpis({ itens, mascara }: { itens: ItemKpi[]; mascara?: (t: 
 export interface BarraDado { rotulo: string; valor: number; tom?: 'ok' | 'aviso' | 'perigo' | ''; legenda?: string }
 
 /** Barras que crescem, com a legenda do dia tocado. */
-export function GraficoBarras({ titulo, sub, dados, mascara, vazio, formato = 'brl' }: { titulo: string; sub?: string; dados: BarraDado[]; mascara?: (t: string) => string; vazio?: string; formato?: 'brl' | 'pontos' }) {
+export function GraficoBarras({ titulo, sub, dados, mascara, vazio, formato = 'brl' }: { titulo: string; sub?: string; dados: BarraDado[]; mascara?: (t: string) => string; vazio?: string; formato?: 'brl' | 'pontos' | 'pct' }) {
   const [i, setI] = useState<number | null>(null);
-  const max = Math.max(1, ...dados.map((d) => d.valor));
+  const max = Math.max(formato === 'pct' ? 0.1 : 1, ...dados.map((d) => Math.abs(d.valor)));
   const ativo = i === null ? null : dados[i];
-  const dinheiro = (n: number) => (formato === 'pontos' ? `${Math.round(n)} pontos` : mascara ? mascara(brl0(n)) : brl0(n));
+  const dinheiro = (n: number) => (formato === 'pct' ? `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1, signDisplay: 'exceptZero' })}%` : formato === 'pontos' ? `${Math.round(n)} pontos` : mascara ? mascara(brl0(n)) : brl0(n));
   return (
     <section className="pu-vidro" aria-label={titulo}>
       <header><h2>{titulo}</h2>{sub && <small>{sub}</small>}</header>
@@ -61,7 +61,7 @@ export function GraficoBarras({ titulo, sub, dados, mascara, vazio, formato = 'b
           <div className={`pu-barras${dados.length <= 8 ? " poucas" : ""}`} role="img" aria-label={titulo} onPointerLeave={() => setI(null)}>
             {dados.map((d, n) => (
               <button key={n} type="button" tabIndex={-1} className={`${d.tom ?? ''}${n === i ? ' on' : ''}`} onPointerEnter={() => setI(n)} onClick={() => { setI(n); tocar('pop'); }} aria-label={`${d.rotulo}: ${dinheiro(d.valor)}`}>
-                <i style={{ height: `${Math.max(d.valor > 0 ? 6 : 2, (d.valor / max) * 100)}%`, animationDelay: `${Math.min(n, 24) * 0.03}s` }} />
+                <i style={{ height: `${Math.max(d.valor !== 0 ? 6 : 2, (Math.abs(d.valor) / max) * 100)}%`, animationDelay: `${Math.min(n, 24) * 0.03}s` }} />
               </button>
             ))}
           </div>

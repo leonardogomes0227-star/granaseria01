@@ -5,6 +5,8 @@ import { ALAVANCAGEM_MAX, SALDO_INICIAL, avaliarPosicao, estatisticas, fechar } 
 import { brl, brl0, novoId } from '../datas';
 import { toast } from '../../components/ui/Toast';
 import type { Posicao } from '../tipos';
+import { Repeat, Target, TrendingUp, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from '../PainelUI';
 
 /* ---------- Mesa de treino: dinheiro de mentirinha, preço real ---------- */
 
@@ -84,6 +86,16 @@ export function Simulacao() {
   return (
     <>
       <p className="gs-banner" role="note" style={{ fontWeight: 600 }}>Simulação com dinheiro de mentirinha. No mercado futuro real, com alavancagem, dá para perder mais do que você colocou. Estudos com dados da B3 indicam que a grande maioria de quem faz day trade em futuros perde dinheiro.</p>
+      <FaixaKpis itens={[
+        { rotulo: 'Livre pra operar', valor: sim.saldoVirtual, icone: Wallet, nota: 'dinheiro de mentirinha' },
+        { rotulo: 'Operações', valor: st.total, formato: 'int', icone: Repeat, nota: `${sim.posicoes.length} abertas agora` },
+        { rotulo: 'Taxa de acerto', valor: st.taxaAcerto, formato: 'pct', icone: Target, tom: st.total ? (st.taxaAcerto >= 50 ? 'ok' : 'aviso') : '', nota: st.total ? 'operações no lucro' : 'faça a primeira' },
+        { rotulo: 'Resultado', valor: st.acumulado, icone: TrendingUp, tom: st.acumulado < 0 ? 'perigo' : st.acumulado > 0 ? 'ok' : '', nota: 'acumulado nas fechadas' },
+      ]} />
+      {sim.historico.length > 0 && (
+        <GraficoBarras titulo="Suas operações fechadas" sub="lucro ou prejuízo de cada uma"
+          dados={sim.historico.slice(-24).map((o, i) => ({ rotulo: String(i + 1), valor: Math.abs(o.resultado), tom: o.resultado < 0 ? 'perigo' : 'ok', legenda: `Operação ${i + 1} · ${o.resultado < 0 ? 'prejuízo' : 'lucro'}` }) as const)} />
+      )}
       <section className="gs-card destaque">
         <span className="gs-rotulo">Saldo virtual</span>
         <p className="gs-grande gs-tab" style={{ margin: '4px 0' }}>{brl(sim.saldoVirtual + sim.posicoes.reduce((t, p) => t + p.margem, 0) + lucroAberto)}</p>
