@@ -13,6 +13,8 @@ import { poupancaAnualPct } from '../../../server/mercado/calculos';
 import { atrasoNoMes } from '../selectores';
 import { toast } from '../../components/ui/Toast';
 import { addDays } from './util';
+import { CheckCheck, Flag, Route, TrendingUp } from 'lucide-react';
+import { FaixaKpis } from '../PainelUI';
 
 /* ---------- Meu caminho: um passo de cada vez até investir. O próximo passo fica em destaque, com uma ação. ---------- */
 
@@ -40,6 +42,12 @@ export function Caminho() {
 
   return (
     <>
+      <FaixaKpis itens={[
+        { rotulo: 'Passo atual', valor: n, formato: 'int', icone: Flag, nota: `de ${passos.length} até investir` },
+        { rotulo: 'Passos feitos', valor: passos.filter((p) => p.estado === 'feito').length, formato: 'int', icone: CheckCheck, tom: 'ok', nota: 'no caminho' },
+        { rotulo: 'Falta', valor: passos.filter((p) => p.estado !== 'feito').length, formato: 'int', icone: Route, tom: 'aviso', nota: 'passos' },
+        { rotulo: 'CDI', valor: cdiAnual != null ? `${pct(cdiAnual, 2)} a.a.` : '—', icone: TrendingUp, nota: cdiAnual != null ? 'o que a renda fixa rende' : 'sem dado agora' },
+      ]} />
       <section className="gs-card destaque">
         <span className="gs-rotulo">Seu próximo passo · {n} de {passos.length}</span>
         <p className="gs-grande" style={{ margin: '4px 0 6px', fontSize: 'clamp(24px, 7vw, 32px)' }}>{agora.titulo}</p>

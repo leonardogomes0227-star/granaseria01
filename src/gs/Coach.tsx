@@ -17,6 +17,8 @@ import { MontarPlano } from './MontarPlano';
 import { indicacoes, resumoDoPlano } from './planoPessoal';
 import { buscar, ferramenta } from './registroFerramentas';
 import { toast } from '../components/ui/Toast';
+import { Lightbulb, MessageCircleHeart, MessagesSquare, Wrench } from 'lucide-react';
+import { FaixaKpis } from './PainelUI';
 
 /* ---------- Coach: resolve um problema por vez, com os números da pessoa, e termina num passo no caminho ---------- */
 // Os 9 assuntos prontos funcionam por regras (coachFluxos.ts), sem IA. A conversa livre usa a IA quando está ativada
@@ -186,6 +188,15 @@ export function Coach() {
         <Moeda tamanho={52} />
         <div><h1 className="gs-titulo">Coach</h1><p className="gs-sub" style={{ margin: 0 }}>Um problema por vez, com os seus números.</p></div>
       </div>
+
+      {e.caminho.plano && !params.get('plano') && (
+        <FaixaKpis itens={[
+          { rotulo: 'Para olhar agora', valor: recs.filter((r) => r.id !== 'tudo-certo').length, formato: 'int', icone: Lightbulb, tom: recs.some((r) => r.id !== 'tudo-certo') ? 'aviso' : 'ok', nota: 'o Coach separou pra você' },
+          { rotulo: 'Combinados', valor: lembretes.length, formato: 'int', icone: MessageCircleHeart, tom: lembretes.length ? 'aviso' : '', nota: lembretes.length ? 'esperando seu retorno' : 'nada pendente' },
+          { rotulo: 'Conversas', valor: conversas.length, formato: 'int', icone: MessagesSquare, nota: 'guardadas neste aparelho' },
+          { rotulo: 'Ferramentas indicadas', valor: indicacoes(e, hoje).length, formato: 'int', icone: Wrench, nota: 'pra liberar' },
+        ]} />
+      )}
 
       {lembretes.map((p) => (
         <section key={p.id} className="cm-volta">
