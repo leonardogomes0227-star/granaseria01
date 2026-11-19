@@ -52,11 +52,11 @@ const primeiroNome = (n: string) => (n.trim().split(/\s+/)[0] ?? '');
 
 /** Uma chave nova, só das preferências do mascote. Não mistura com grana-seria:v1 nem com as outras. */
 const CHAVE_MIDAS = 'gs-midas-guia';
-type PrefMidas = { tour?: boolean; min?: boolean };
+type PrefMidas = { tour?: boolean; min?: boolean; auto?: boolean };
 const lerMidas = (): PrefMidas => {
   try {
     const j = JSON.parse(localStorage.getItem(CHAVE_MIDAS) || '{}') as PrefMidas;
-    return { tour: j.tour === true, min: j.min === true };
+    return { tour: j.tour === true, min: j.min === true, auto: j.auto === true };
   } catch { return {}; }
 };
 const gravarMidas = (p: PrefMidas) => {
@@ -200,6 +200,10 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   const hoje = useHoje();
   const reduz = useReduz();
   const [min, setMin] = useState(() => lerMidas().min === true);
+  // Calado por padrão: só fala quando a pessoa toca nele. "Dicas sozinho" é opção no menu dele.
+  const [auto, setAuto] = useState(() => lerMidas().auto === true);
+  const autoRef = useRef(auto);
+  autoRef.current = auto;
   const [pos, setPos] = useState(() => posMemoria ?? (typeof document === 'undefined' ? { x: 16, y: 16 } : casaAgora()));
   const [face, setFace] = useState(1);
   const [andando, setAndando] = useState(false);
@@ -301,7 +305,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
     setHumor(tipo);
     window.clearTimeout(humorTimer.current);
     humorTimer.current = window.setTimeout(() => { if (vivoRef.current) setHumor(''); }, 1700);
-    if (tourRef.current !== null && !pausadoRef.current) return;
+    if ((tourRef.current !== null && !pausadoRef.current) || !autoRef.current) return;
     setFala({ texto, modo: 'festa' });
     window.clearTimeout(festaTimer.current);
     festaTimer.current = window.setTimeout(() => {
@@ -397,14 +401,14 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   mostrarDicaRef.current = mostrarDica;
 
   useEffect(() => {
-    if (min || pausado || tour !== null || (fala && fala.modo === 'tour')) return;
+    if (!auto || min || pausado || tour !== null || (fala && fala.modo === 'tour')) return;
     if (pathname !== '/' && pathname !== '/inicio') return;
     const id = window.setTimeout(() => {
       if (tourRef.current !== null || pausadoRef.current || falaRef.current) return;
       mostrarDicaRef.current(false);
     }, 900);
     return () => window.clearTimeout(id);
-  }, [pathname, min, pausado, tour, hoje]);
+  }, [pathname, min, pausado, tour, hoje, auto]);
 
   useEffect(() => {
     if (tour === null || oculto || min || pausado) return;
@@ -477,7 +481,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   }, [tour, pathname, oculto, min, pausado, reduz]);
 
   useEffect(() => {
-    if ((tour !== null && !pausado) || min || oculto || dicasDaSessao.has(pathname)) return;
+    if (!auto || (tour !== null && !pausado) || min || oculto || dicasDaSessao.has(pathname)) return;
     const regra = DICAS_TELA.find((d) => d.teste(pathname));
     if (!regra) return;
     let falaTimer = 0;
@@ -508,7 +512,21 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       }
     }, 1500);
     return () => { window.clearTimeout(id); window.clearTimeout(falaTimer); window.clearTimeout(espera); };
-  }, [pathname, tour, pausado, min, oculto, reduz]);
+  }, [pathname, tour, pausado, min, oculto, reduz, auto]);
+
+  // Dica solta some sozinha e some ao tocar fora: ele não fica parado no meio da tela.
+  useEffect(() => {
+    if (!fala || fala.modo === 'tour') return;
+    const fechar = () => { setFala((a) => (a && a.modo !== 'tour' ? null : a)); setFoco(null); alvoRef.current = null; };
+    const tempo = window.setTimeout(fechar, fala.modo === 'festa' ? 2200 : 14000);
+    const fora = (ev: PointerEvent) => {
+      const alvo = ev.target instanceof Element ? ev.target : null;
+      if (alvo?.closest('.as-mascote')) return;
+      fechar();
+    };
+    window.addEventListener('pointerdown', fora, true);
+    return () => { window.clearTimeout(tempo); window.removeEventListener('pointerdown', fora, true); };
+  }, [fala]);
 
   useEffect(() => {
     if (!foco) return;
@@ -650,6 +668,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
         <div className={`as-menu${pos.y < 150 ? ' baixo' : ''}${pos.x > window.innerWidth - 196 ? ' direita' : ''}`} role="menu">
           <button type="button" role="menuitem" onClick={() => seguir(tourRef.current ?? 0)}>Me mostra o app</button>
           <button type="button" role="menuitem" onClick={() => { setMenu(false); onAbrir(); }}>Perguntar</button>
+          <button type="button" role="menuitem" aria-checked={auto} onClick={() => { const v = !auto; setAuto(v); gravarMidas({ auto: v }); setMenu(false); setFala(null); setFoco(null); }}>{auto ? 'Parar as dicas sozinho' : 'Dar dicas sozinho'}</button>
         </div>
       )}
       <button type="button" className="as-recolher" aria-pressed={min} aria-label={min ? `Mostrar o ${NOME_ASSISTENTE} passeando` : `Recolher o ${NOME_ASSISTENTE}`} onClick={alternarMin}>{min ? '+' : '–'}</button>
@@ -705,7 +724,7 @@ function AssistenteNoApp() {
   }, []);
   // o balão de apresentação aparece uma vez por visita, no Início
   useEffect(() => {
-    if (pathname !== '/' && pathname !== '/inicio') return setBalao(false);
+    if (!lerMidas().auto || (pathname !== '/' && pathname !== '/inicio')) return setBalao(false);
     let visto = false;
     try { visto = sessionStorage.getItem('gs-as-balao') === '1'; } catch { /* sem armazenamento */ }
     if (visto) return;
