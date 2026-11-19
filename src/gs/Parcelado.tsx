@@ -11,6 +11,8 @@ import { brl0, mesCurto, mesDe, pct, somaMes } from './datas';
 import { livreParaGastar } from './selectores';
 import { lerCdiMensal } from './mercadoCache';
 import { toast } from '../components/ui/Toast';
+import { CalendarClock, CreditCard, Scale, Wallet } from 'lucide-react';
+import { FaixaKpis } from './PainelUI';
 
 /* ---------- À vista ou parcelado? Um duelo: o total de cada lado, o juro escondido e quem ganha ---------- */
 
@@ -61,6 +63,12 @@ export function ParceladoTela() {
 
       {r && d && (
         <>
+          <FaixaKpis itens={[
+            { rotulo: 'À vista', valor: precoAvista, icone: Wallet, tom: d.vencedor === 'avista' ? 'ok' : '', nota: desc > 0 ? `com ${desc}% de desconto` : 'de uma vez' },
+            { rotulo: 'Parcelado', valor: r.total, icone: CreditCard, tom: d.vencedor === 'parcelado' ? 'ok' : 'aviso', nota: `${parcelas}x de ${brl0(parcela)}` },
+            { rotulo: 'Diferença', valor: Math.abs(r.total - precoAvista), icone: Scale, tom: r.total > precoAvista ? 'perigo' : 'ok', nota: r.total > precoAvista ? 'a mais no parcelado' : 'a menos no parcelado' },
+            { rotulo: 'Termina em', valor: mesCurto(fim), icone: CalendarClock, nota: 'a última parcela' },
+          ]} />
           <section key={`${avista}-${parcelas}-${parcela}-${desc}`} className="gs-duelo" aria-label="Comparação">
             <div className={`gs-lado ${d.vencedor === 'avista' ? 'vence' : ''}`}>
               {d.vencedor === 'avista' && <span className="gs-selo"><Crown size={14} /> Melhor escolha</span>}

@@ -12,6 +12,8 @@ import { faltaPagar, patrimonioGuardado } from './selectores';
 import { Agora, Aprende, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, MaisAjuda, Titulo } from './ui';
 import { CATEGORIAS_FIXAS } from './tipos';
 import { toast } from '../components/ui/Toast';
+import { CalendarCheck, PiggyBank, TriangleAlert, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Sair do atraso: o que ficou pra trás, o que pagar primeiro e quando tudo fica em dia ---------- */
 
@@ -70,6 +72,14 @@ export function Atrasos() {
           )}
         </p>
       </section>
+
+      <FaixaKpis itens={[
+        { rotulo: 'Contas atrasadas', valor: s.atrasos.length, formato: 'int', icone: TriangleAlert, tom: s.atrasos.length > 0 ? 'perigo' : 'ok', nota: 'com multa e juros' },
+        { rotulo: 'Separado pro atraso', valor: Math.max(0, s.separado), icone: PiggyBank, tom: s.separado > 0 ? 'ok' : '', nota: 'já guardado' },
+        { rotulo: 'Por mês', valor: Math.max(0, s.porMes), icone: Wallet, nota: s.confirmar ? 'confirme quanto sobra' : 'que dá pra tirar' },
+        { rotulo: 'Em dia em', valor: s.plano.emDiaEm ? nomeMes(s.plano.emDiaEm).split(' ')[0] : '—', icone: CalendarCheck, tom: s.plano.emDiaEm ? 'ok' : 'aviso', nota: s.plano.emDiaEm ? 'no ritmo atual' : 'ainda sem previsão' },
+      ]} />
+      {s.atrasos.length > 0 && <GraficoBarras titulo="O que está atrasado" sub="valor estimado com multa e juros" dados={s.atrasos.map((a) => ({ rotulo: a.nome, valor: a.valor, tom: 'perigo', legenda: a.nome }) as const)} />}
 
       {s.confirmar ? (
         <QuantoSobra folga={s.folga} />

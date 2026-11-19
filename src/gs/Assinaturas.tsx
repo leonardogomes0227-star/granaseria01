@@ -10,6 +10,8 @@ import { ImpactoNoCaminho } from './Impacto';
 import { toast } from '../components/ui/Toast';
 import { acaoAssinaturas, conquistasAssinaturas, resumoAssinaturas, revisada } from './assinaturasLogica';
 import type { Assinatura } from './tipos';
+import { CalendarClock, Percent, Repeat, Scissors } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Gastos escondidos: o que você paga todo mês, o que usa de verdade e quanto sobra se cortar ---------- */
 
@@ -47,6 +49,13 @@ export function Assinaturas() {
         {acao.tipo === 'vazio' && <button type="button" className="gs-btn" style={{ marginTop: 12 }} onClick={() => setNova(true)}>+ Adicionar assinatura</button>}
       </Agora>
       {acao.alvo && acao.tipo === 'cortar' && <ImpactoNoCaminho mudanca={{ tipo: 'corte', porMes: acao.alvo.valor }} passo={{ titulo: `Cancelar ${acao.alvo.nome}`, detalhe: `${brl0(acao.alvo.valor)} a menos por mês (${brl0(acao.alvo.valor * 12)} por ano).`, rota: '/plano/assinaturas', origem: 'assinaturas' }} />}
+      {ativas.length > 0 && <FaixaKpis itens={[
+        { rotulo: 'Por mês', valor: r.total, icone: Repeat, tom: r.total > 0 ? 'aviso' : '', nota: `${ativas.length} ${ativas.length === 1 ? 'assinatura' : 'assinaturas'}` },
+        { rotulo: 'Por ano', valor: r.anual, icone: CalendarClock, nota: 'se nada mudar' },
+        { rotulo: 'Já cortado', valor: r.cortado, icone: Scissors, tom: r.cortado > 0 ? 'ok' : '', nota: 'a menos por mês' },
+        { rotulo: 'Revisado', valor: Math.round(r.pctRevisado), formato: 'pct', icone: Percent, tom: r.pctRevisado >= 100 ? 'ok' : '', nota: 'você disse se usa' },
+      ]} />}
+      {ativas.length > 0 && <GraficoBarras titulo="Quanto cada uma custa" sub="por mês" dados={ativas.map((a) => ({ rotulo: a.nome, valor: a.valor, tom: a.uso === 'nao' ? 'perigo' : a.uso === 'pouco' ? 'aviso' : '', legenda: `${a.nome}${a.uso === 'nao' ? ' · não usa' : a.uso === 'pouco' ? ' · usa pouco' : ''}` }) as const)} />}
       <Conquistas lista={conquistasAssinaturas(e.assinaturas, mes)} />
 
       {ativas.length > 0 && (

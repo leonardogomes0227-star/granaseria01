@@ -9,6 +9,8 @@ import { iconeDe } from './categorias';
 import { Titulo, Vazio } from './ui';
 import { ImpactoNoCaminho } from './Impacto';
 import { mascarar, useOculto } from './privacidade';
+import { Flame, Repeat, Scissors, Wallet } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 
 /* ---------- Onde cortar: o que você paga todo mês, o que se repete e o que mais pesa, com a economia somada ---------- */
 
@@ -33,6 +35,13 @@ export function Cortar() {
         <Vazio titulo="Ainda não há o que mostrar" texto="Anote seus gastos e cadastre suas assinaturas. Eu mostro aqui o que mais pesa e o que se repete." acao="Cadastrar assinaturas" rota="/plano/assinaturas" avatar="gastos" />
       ) : (
         <>
+          <FaixaKpis mascara={m} itens={[
+            { rotulo: 'Dá pra economizar', valor: Math.round((base * pct) / 100), icone: Scissors, tom: 'ok', nota: `por mês, cortando ${pct}%` },
+            { rotulo: 'Gastos reduzíveis', valor: base, icone: Wallet, nota: 'supérfluos + assinaturas' },
+            { rotulo: 'Assinaturas', valor: corte.assinaturas.total, icone: Repeat, tom: corte.assinaturas.n ? 'aviso' : '', nota: `${corte.assinaturas.n} ativas` },
+            { rotulo: 'Se repetem', valor: recorrentes.length, formato: 'int', icone: Flame, nota: 'gastos que voltam todo mês' },
+          ]} />
+          {corte.categorias.length > 0 && <GraficoBarras titulo="O que mais pesa" sub="supérfluos do mês" mascara={m} dados={corte.categorias.map((c) => ({ rotulo: c.categoria, valor: c.valor, tom: 'aviso', legenda: c.categoria }) as const)} />}
           <section className="gs-card gs-plano-topo" aria-label="Economia possível">
             <span className="gs-rotulo">Se eu cortar {pct}%</span>
             <p className="gs-grande" style={{ margin: '2px 0' }}>{m(brl0((base * pct) / 100))}</p>

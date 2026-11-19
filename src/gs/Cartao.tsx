@@ -9,6 +9,8 @@ import { brl0 } from './datas';
 import { acaoCartao, comprometidoTotal, proximaData, usoDoLimite } from './cartaoLogica';
 import { toast } from '../components/ui/Toast';
 import { CartaoControle } from './CartaoControle';
+import { CalendarClock, CreditCard, Gauge, Wallet } from 'lucide-react';
+import { FaixaKpis } from './PainelUI';
 
 /* ---------- Cartão de crédito: a fatura, o que já está combinado pra frente e o melhor dia de comprar ---------- */
 
@@ -70,6 +72,12 @@ export function CartaoTela() {
   return (
     <>
       <Titulo titulo="Cartão de crédito" sub="Fatura, limite e parcelas." />
+      <FaixaKpis itens={[
+        { rotulo: 'Fatura atual', valor: c.usado, icone: CreditCard, tom: uso > 80 ? 'perigo' : uso > 30 ? 'aviso' : 'ok', nota: `vence em ${venc.dias} ${venc.dias === 1 ? 'dia' : 'dias'}` },
+        { rotulo: 'Limite', valor: c.limite, icone: Gauge, nota: `${Math.round(uso)}% usado` },
+        { rotulo: 'Disponível', valor: Math.max(0, c.limite - c.usado), icone: Wallet, tom: 'ok', nota: 'para comprar' },
+        { rotulo: 'Já combinado', valor: comprom, icone: CalendarClock, nota: 'fatura + parcelas futuras' },
+      ]} />
       <Heroi pct={uso} anel={`${Math.round(uso)}%`} anelSub="do limite" rotulo="Fatura atual" grande={brl0(c.usado)} sub={`Vence em ${venc.dias} ${venc.dias === 1 ? 'dia' : 'dias'} (dia ${c.venceDia}) · limite ${brl0(c.limite)}`} cor={cor} />
       <Agora tom={acao.tom} texto={acao.texto}>
         <div className="gs-acoes">
