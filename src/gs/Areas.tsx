@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { CalendarClock, CalendarDays, ChevronRight, FileText, LifeBuoy, Plus, Search } from 'lucide-react';
+import { CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
+import { FaixaKpis, GraficoBarras, Rosca } from './PainelUI';
 import { atrasosAbertos } from './atrasosBase';
 import { FormConta } from './MeuMes';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
-import { brl, brl0, diaCurto, mesDe, nomeMes } from './datas';
+import { brl, brl0, diaCurto, diasNoMes, mesDe, nomeMes } from './datas';
 import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado, reservaMeta, totalVariaveis } from './selectores';
 import { prioridades } from './prioridades';
 import { gastosPorCategoria } from './evolucaoLogica';
@@ -167,6 +168,28 @@ export function AreaPagar() {
         </div>
       </section>
 
+      {!vazio && (
+        <>
+          <FaixaKpis mascara={m} itens={[
+            { rotulo: 'Já pago', valor: Math.max(0, total - falta), icone: CalendarCheck, tom: 'ok', nota: total > 0 ? `${Math.round(pagoPct)}% das contas do mês` : undefined },
+            { rotulo: 'Em aberto', valor: abertasMes.length, formato: 'int', icone: Receipt, nota: abertasMes.length === 1 ? 'conta para pagar' : 'contas para pagar' },
+            { rotulo: 'Atrasadas', valor: atrasadas.length, formato: 'int', icone: TriangleAlert, tom: atrasadas.length ? 'perigo' : 'ok', nota: atrasadas.length ? 'resolva essas primeiro' : 'tudo em dia' },
+            { rotulo: 'Próxima a vencer', valor: (() => { const p = abertasMes.find((l) => l.estado !== 'atrasada'); return p ? diaCurto(p.data) : '—'; })(), icone: CalendarClock, nota: abertasMes.find((l) => l.estado !== 'atrasada')?.titulo ?? 'nada pendente' },
+          ]} />
+          <GraficoBarras
+            titulo="Vencimentos do mês" sub={nomeMes(mes).split(' ')[0]} mascara={m}
+            dados={Array.from({ length: diasNoMes(mes) }, (_, i) => {
+              const dia = i + 1;
+              const doDia = linhas.filter((l) => Number(l.data.slice(8, 10)) === dia && l.data.slice(0, 7) === mes);
+              const valor = doDia.reduce((t, l) => t + l.valor, 0);
+              const tom = doDia.some((l) => l.estado === 'atrasada') ? 'perigo' : doDia.some((l) => l.estado === 'vence-logo') ? 'aviso' : doDia.length && doDia.every((l) => l.estado === 'paga') ? 'ok' : '';
+              return { rotulo: String(dia), valor, tom, legenda: `Dia ${dia}${doDia.length ? ` · ${doDia.map((l) => l.titulo).join(', ')}` : ''}` };
+            })}
+            vazio="Nenhuma conta com vencimento neste mês."
+          />
+        </>
+      )}
+
       {vazio ? (
         <section className="cm-card" aria-label="Como começar">
           <h2 className="cm-h2" style={{ margin: '0 0 8px' }}>Comece pela conta maior</h2>
@@ -233,7 +256,16 @@ export function AreaGastos() {
         <AtalhoFerramentas area="gastos" />
       </section>
 
-      <h2 className="cm-h2">Para onde foi<Link to="/relatorios">Ver relatórios</Link></h2>
+      <FaixaKpis mascara={m} itens={[
+        { rotulo: 'Pode gastar hoje', valor: disp.modo === 'incompleto' ? '—' : Math.max(0, disp.porDia), icone: Wallet, tom: disp.livre < 0 ? 'perigo' : 'ok', nota: disp.modo === 'incompleto' ? 'informe sua renda' : disp.livre < 0 ? 'o mês já passou do limite' : 'sem apertar o mês' },
+        { rotulo: 'Gasto no mês', valor: total, icone: TrendingDown, nota: `${ultimos.length ? 'em ' : ''}${e.lancamentos.filter((l) => mesDe(l.data) === mes).length} lançamentos` },
+        { rotulo: 'Média por dia', valor: Math.round(total / Math.max(1, Number(hoje.slice(8, 10)))), icone: Gauge, nota: 'desde o dia 1' },
+        { rotulo: 'Maior categoria', valor: cats[0] ? cats[0].categoria : '—', icone: Flame, tom: cats[0] ? 'aviso' : '', nota: cats[0] ? m(brl0(cats[0].valor)) : 'ainda sem gastos' },
+      ]} />
+      <Rosca titulo="Para onde foi" sub={nomeMes(mes).split(' ')[0]} mascara={m}
+        fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))}
+        centro={<>{m(brl0(total))}<small>no mês</small></>} />
+      <h2 className="cm-h2">Detalhe por categoria<Link to="/relatorios">Ver relatórios</Link></h2>
       {cats.length === 0 ? <p className="cm-mudo">Nenhum gasto anotado neste mês. Anote o primeiro: leva 5 segundos.</p> : (
         <Card>
           {cats.slice(0, 6).map((c) => (
@@ -291,6 +323,16 @@ export function AreaGuardar() {
           <div><AtalhoFerramentas area="guardar" /></div>
         </div>
       </section>
+      <FaixaKpis mascara={m} itens={[
+        { rotulo: 'Guardado', valor: guardado, icone: PiggyBank, tom: guardado > 0 ? 'ok' : '', nota: 'tudo que você separou' },
+        { rotulo: 'Meta da reserva', valor: meta, icone: Target, nota: meta > 0 ? `${Math.round(Math.min(100, (guardado / meta) * 100))}% completa` : 'defina pelo Coach' },
+        { rotulo: 'Guardado no mês', valor: guardadoNoMes(e, mes), icone: Landmark, nota: 'aportes deste mês' },
+        { rotulo: 'Metas ativas', valor: e.metas.length, formato: 'int', icone: CalendarCheck, nota: e.metas.length ? 'em andamento' : 'crie a primeira' },
+      ]} />
+      {e.metas.length > 0 && (
+        <GraficoBarras titulo="Metas: quanto falta" sub="% do caminho" mascara={m}
+          dados={e.metas.map((mt) => { const g = mt.guardados.reduce((t, x) => t + x.valor, 0); return { rotulo: mt.nome, valor: g, tom: g >= mt.alvo ? 'ok' : '', legenda: `${mt.nome} · ${mt.alvo > 0 ? Math.round((g / mt.alvo) * 100) : 0}% de ${brl0(mt.alvo)}` } as const; })} />
+      )}
       <h2 className="cm-h2" id="metas">Suas metas</h2>
       <Metas />
       <GradeFerramentas area="guardar" />

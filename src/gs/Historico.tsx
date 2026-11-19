@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, ListOrdered, Scale, Search } from 'lucide-react';
+import { FaixaKpis, GraficoBarras } from './PainelUI';
 import { useEstado } from './store';
 import { filtrarMovimentos, intervalo, movimentosNoPeriodo, totaisMov, type FiltroMov, type Movimento, type Ordem, type Periodo } from './movimentos';
 import { ContasSheet } from './Contas';
 import { abrirAdicionar } from './AdicionarMov';
-import { brl, diaRelativo } from './datas';
+import { brl, diaRelativo, diasNoMes } from './datas';
 import { iconeDe } from './categorias';
 import { Vazio } from './ui';
 
@@ -36,13 +37,17 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
   };
   return (
     <>
-      <div className="gs-card">
-        <div className="gs-trio">
-          <div><span className="gs-rotulo">Entrou</span><b className="gs-tab" style={{ color: 'var(--success)' }}>{brl(t.entrou)}</b></div>
-          <div><span className="gs-rotulo">Saiu</span><b className="gs-tab">{brl(t.saiu)}</b></div>
-          <div><span className="gs-rotulo">Diferença</span><b className="gs-tab" style={{ color: t.saldo < 0 ? 'var(--danger)' : undefined }}>{brl(t.saldo)}</b></div>
-        </div>
-      </div>
+      <FaixaKpis itens={[
+        { rotulo: 'Entrou', valor: t.entrou, icone: ArrowUpRight, tom: 'ok', nota: 'receitas no período' },
+        { rotulo: 'Saiu', valor: t.saiu, icone: ArrowDownRight, nota: 'gastos no período' },
+        { rotulo: 'Diferença', valor: t.saldo, icone: Scale, tom: t.saldo < 0 ? 'perigo' : 'ok', nota: t.saldo < 0 ? 'saiu mais do que entrou' : 'sobrou no período' },
+        { rotulo: 'Movimentos', valor: lista.length, formato: 'int', icone: ListOrdered, nota: 'na lista abaixo' },
+      ]} />
+      {periodo === 'mes' && (
+        <GraficoBarras titulo="Saídas por dia" sub={mes.slice(5, 7) + '/' + mes.slice(0, 4)}
+          dados={Array.from({ length: diasNoMes(mes) }, (_, i) => { const d = i + 1; const v = lista.filter((x) => x.tipo === 'despesa' && Number(x.data.slice(8, 10)) === d).reduce((a, x) => a + x.valor, 0); return { rotulo: String(d), valor: v, legenda: `Dia ${d}` }; })}
+          vazio="Nenhum gasto neste mês." />
+      )}
       <label className="gs-busca">
         <Search size={18} aria-hidden="true" />
         <input type="search" value={f.busca} onChange={(ev) => setF({ ...f, busca: ev.target.value })} placeholder="Buscar por descrição ou categoria" aria-label="Buscar movimentações" />
