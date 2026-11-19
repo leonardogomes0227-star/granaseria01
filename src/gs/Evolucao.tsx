@@ -11,7 +11,7 @@ import { Barra, Titulo, Vazio } from './ui';
 import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
 import { ArrowDownRight, ArrowUpRight, PiggyBank, Scale } from 'lucide-react';
-import { FaixaKpis, GraficoBarras, GraficoLinha, Heatmap, Rosca } from './PainelUI';
+import { FaixaKpis, GraficoLinha, Heatmap, Rosca } from './PainelUI';
 
 /* ---------- Evolução: cada gráfico responde uma pergunta. Sem dados suficientes, diz isso em vez de inventar. ---------- */
 
