@@ -304,3 +304,9 @@ html.gs-app[data-tema="escuro"] .pn.pn-v2 .pn-palco::after { display: none; }
 /* avatar e topo no tema escuro: discretos, sem a faixa branca */
 html.gs-app[data-tema="escuro"] .cm-avatar { background: rgba(198, 161, 90, .16); color: #E8D7A8; border: 1px solid rgba(232, 215, 168, .35); box-shadow: none; }
 @media (min-width: 900px) { html.gs-app[data-tema="escuro"] .cm-topo { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+/* Tema claro: o painel do Início continua legível (texto claro sobre o vidro escuro dele) */
+html.gs-app .vd-cabeca h2.vd-grande, html.gs-app .vd-cabeca p { color: var(--vd-tinta, #F7F4EE); }
+html.gs-app .vd-cabeca p { color: var(--vd-mudo, #C9C2B6); }
+html.gs-app:not([data-tema="escuro"]) .vd-fundo { inset: -4px; border-radius: 28px; }
+html.gs-app:not([data-tema="escuro"]) .vd { padding: 18px 14px 14px; }
