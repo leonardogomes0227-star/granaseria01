@@ -457,3 +457,15 @@ html.gs-app[data-tema="escuro"] .as-fala { background: rgba(20, 18, 14, .96); co
 .as-orb-btn.tem-aviso::after { content: ''; position: absolute; top: 6px; right: 6px; width: 13px; height: 13px; border-radius: 50%; background: #E0604F; border: 2px solid #1B1915; box-shadow: 0 0 0 0 rgba(224, 96, 79, .6); animation: as-aviso 2.2s ease-out infinite; }
 @keyframes as-aviso { 70% { box-shadow: 0 0 0 9px rgba(224, 96, 79, 0); } 100% { box-shadow: 0 0 0 0 rgba(224, 96, 79, 0); } }
 @media (prefers-reduced-motion: reduce) { .as-orb-btn.tem-aviso::after { animation: none; } }
+
+/* Midas que age: cartão "pra agora", exemplos para anotar e botão de desfazer */
+.as-agora { margin-top: 14px; padding: 12px 14px; border-radius: 16px; text-align: left; background: rgba(198, 161, 90, .14); border: 1px solid rgba(198, 161, 90, .35); }
+.as-agora small { display: block; margin-bottom: 4px; font: 700 11.5px var(--cm-sans, inherit); letter-spacing: .08em; text-transform: uppercase; color: var(--gold-texto, #8A6508); }
+.as-agora b { display: block; font: 650 15.5px/1.35 var(--cm-sans, inherit); }
+.as-agora a { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; font: 700 14px var(--cm-sans, inherit); color: var(--gold-texto, #8A6508); text-decoration: none; }
+.as-agora.perigo { background: rgba(196, 92, 80, .13); border-color: rgba(196, 92, 80, .4); }
+.as-agora.aviso { background: rgba(215, 162, 74, .15); }
+.as-sugestoes.anotar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.as-sugestoes.anotar > span { font: 700 12.5px var(--cm-sans, inherit); color: var(--ink-muted, #6B6253); margin-right: 2px; }
+.as-desfazer { margin-top: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong, rgba(0,0,0,.2)); background: transparent; color: inherit; font: 700 13px var(--cm-sans, inherit); cursor: pointer; }
+.as-desfazer:disabled { opacity: .5; cursor: default; }

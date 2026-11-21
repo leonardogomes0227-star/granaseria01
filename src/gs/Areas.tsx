@@ -454,7 +454,7 @@ export function Perfil() {
 
       <h2 className="cm-h2">Aparência</h2>
       <Segmented rotulo="Tema" valor={tema} onChange={definirTema} opcoes={[{ id: 'claro', nome: 'Claro' }, { id: 'escuro', nome: 'Escuro' }]} />
-      <p className="cm-mudo" style={{ marginTop: -6 }}>O escuro (vidro e dourado) é o padrão. O claro fica aqui para quem prefere.</p>
+      <p className="cm-mudo" style={{ marginTop: -6 }}>O claro (areia e dourado) é o padrão. O escuro fica aqui para quem prefere.</p>
 
       <h2 className="cm-h2">Sons</h2>
       <Segmented rotulo="Sons da interface" valor={sons ? 'on' : 'off'} onChange={(id) => { const ligar = id === 'on'; definirSons(ligar); if (ligar) tocar('sucesso'); }} opcoes={[{ id: 'on', nome: 'Ligados' }, { id: 'off', nome: 'Silêncio' }]} />
