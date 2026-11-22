@@ -169,7 +169,7 @@ function PainelAba({ aba, dir, children }: { aba: string; dir: 'dir' | 'esq'; ch
   return <div key={aba} className={`vd-painel ${dir}`} role="tabpanel">{children}</div>;
 }
 
-export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void; onRenda: () => void; onPagar: (id: string) => void }) {
+export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { onSaldo: () => void; onRenda: () => void; onPagar: (id: string) => void; carteira?: boolean }) {
   const e = useEstado();
   const hoje = useHoje();
   const oculto = useOculto();
@@ -261,12 +261,18 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
         onPointerLeave={soltar}
       >
         <header>
-          <div>
+          {carteira ? (
+            <div className="vd-mov">
+              <small>Movimento do mês</small>
+              <em>{saldo.valor === null ? saldo.vazio : saldo.extra ?? saldo.nota}</em>
+              {saldo.valor !== null && <Seta delta={saldo.delta} bom={saldo.bomQuando} />}
+            </div>
+          ) : (<div>
             <small>Saldo do mês</small>
             <b>{saldo.valor === null ? '—' : oculto ? m(brl0(saldo.valor)) : <Numero valor={saldo.valor} ms={1100} />}</b>
             <em>{saldo.valor === null ? saldo.vazio : saldo.extra ?? saldo.nota}</em>
             {saldo.valor !== null && <Seta delta={saldo.delta} bom={saldo.bomQuando} />}
-          </div>
+          </div>)}
           <div className="vd-modo" role="group" aria-label="O que o gráfico mostra" ref={gModo}>
             <i className="vd-pilula-mov" ref={plModo as React.RefObject<HTMLElement>} aria-hidden="true" />
             <button type="button" data-ativo={modo === 'despesa'} className={modo === 'despesa' ? 'on' : ''} aria-pressed={modo === 'despesa'} onClick={() => trocarModo('despesa')}>Despesa</button>
@@ -274,7 +280,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void
           </div>
         </header>
         <button type="button" className="vd-hero-acao" onClick={saldo.valor === null ? onRenda : onSaldo}>
-          {saldo.valor === null ? 'Informar renda' : 'Ver a conta'}
+          {saldo.valor === null ? 'Informar renda' : carteira ? 'Como calculei' : 'Ver a conta'}
         </button>
         {semSerie ? <p className="vd-vazio">Quando entrar receita ou gasto, o mês desenha aqui.</p> : <Grafico key={modo} dias={p.dias} modo={modo} />}
       </section>

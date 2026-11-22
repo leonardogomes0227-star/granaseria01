@@ -1,0 +1,57 @@
+/* Carteira de luxo: couro escuro, costura dourada, cartões aparecendo por trás. Vale nos dois temas (é uma "joia" sobre a página). */
+.cl { position: relative; margin: 6px 0 22px; padding-top: 0; perspective: 1000px; --rx: 0deg; --ry: 0deg; --bx: 50%; }
+.cl-cartoes { position: absolute; left: 14px; right: 14px; top: 0; height: 180px; cursor: pointer; z-index: 1; }
+.cl-cartao {
+  position: absolute; left: calc(var(--i) * 0px); right: 0; height: 150px; padding: 14px 22px; border-radius: 34px 34px 0 0;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  top: calc(var(--i) * 42px); font: 700 17px/1.2 var(--cm-sans, inherit);
+  box-shadow: 0 -6px 18px -10px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 255, 255, .28);
+  transition: transform .5s cubic-bezier(.16, 1, .3, 1);
+  animation: cl-sobe .8s cubic-bezier(.16, 1, .3, 1) backwards;
+}
+.cl-cartao b { max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
+.cl-cartao span { font-variant-numeric: tabular-nums; opacity: .9; }
+.cl-cartao.ouro { background: linear-gradient(110deg, #F6E2A6, #D6A84E 55%, #B8862E); color: #3B2A0A; }
+.cl-cartao.onix { background: linear-gradient(110deg, #2B2825, #151413); color: #EBDDB4; border-top: 1px solid rgba(232, 199, 122, .25); }
+.cl-cartao.vinho { background: linear-gradient(110deg, #7A2038, #3A0B1C); color: #F8DCE2; }
+.cl.aberta .cl-cartao { transform: translateY(calc(var(--i) * -10px - 10px)); }
+@keyframes cl-sobe { from { opacity: 0; transform: translateY(44px); } to { opacity: 1; transform: none; } }
+
+.cl-bolsa {
+  position: relative; z-index: 2; margin-top: 138px; overflow: hidden; padding: 20px 20px 18px; border-radius: 36px; color: #F8F1E2;
+  background:
+    radial-gradient(120% 80% at var(--bx) -10%, rgba(232, 199, 122, .22), transparent 55%),
+    linear-gradient(170deg, #3E2C1E 0%, #24180F 48%, #110B07 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 230, 170, .25), inset 0 -18px 30px -18px rgba(0, 0, 0, .7), 0 30px 50px -26px rgba(40, 24, 6, .75), 0 2px 6px rgba(0, 0, 0, .4);
+  transform: rotateX(var(--rx)) rotateY(var(--ry)); transition: transform .25s ease-out;
+  animation: cl-entra .9s cubic-bezier(.16, 1, .3, 1) .05s backwards;
+}
+@keyframes cl-entra { from { opacity: 0; transform: translateY(34px) scale(.97); } to { opacity: 1; } }
+/* grão do couro */
+.cl-bolsa::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .7 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); }
+/* costura dourada */
+.cl-bolsa::after { content: ''; position: absolute; inset: 9px; border-radius: 28px; border: 1.6px dashed rgba(232, 199, 122, .75); pointer-events: none; }
+/* brilho que passa de vez em quando */
+.cl-brilho { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(112deg, transparent 38%, rgba(255, 236, 190, .2) 50%, transparent 62%); transform: translateX(-130%); animation: cl-brilha 7s ease-in-out 1.2s infinite; }
+@keyframes cl-brilha { 0%, 55% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+.cl-bolsa > * { position: relative; z-index: 1; }
+.cl-topo { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 0; }
+.cl-topo small { display: inline-flex; align-items: center; gap: 8px; font: 600 15px var(--cm-sans, inherit); color: rgba(248, 241, 226, .85); }
+.cl-topo small svg { color: #E8C77A; }
+.cl-mes { padding: 4px 12px; border-radius: 999px; background: rgba(232, 199, 122, .14); border: 1px solid rgba(232, 199, 122, .4); color: #F0D690; font: 700 13px var(--cm-sans, inherit); text-transform: capitalize; }
+.cl-meio { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 8px 8px 0; }
+.cl-saldo { font: 750 clamp(38px, 11.5vw, 54px)/1 var(--cm-sans, inherit); font-variant-numeric: tabular-nums; letter-spacing: -0.045em; background: linear-gradient(180deg, #FFF6DC, #E8C77A 80%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 8px rgba(0, 0, 0, .4)); }
+.cl-chips { display: flex; flex-direction: column; gap: 8px; }
+.cl-chips span { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(232, 199, 122, .28); font: 700 15px var(--cm-sans, inherit); font-variant-numeric: tabular-nums; }
+.cl-chips span i { font-style: normal; color: #F0AAA0; }
+.cl-chips span.verde i { color: #7FDDB0; }
+.cl-chips span em { font: 500 12px var(--cm-sans, inherit); font-style: normal; color: rgba(248, 241, 226, .6); }
+.cl-acoes { display: flex; align-items: center; gap: 10px; padding: 16px 8px 4px; }
+.cl-principal { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 22px 0 16px; margin-right: auto; border-radius: 999px; border: 1px solid rgba(255, 224, 150, .5); background: linear-gradient(180deg, #E3B85A, #B8862E); color: #2B1D07; font: 750 16px var(--cm-sans, inherit); cursor: pointer; box-shadow: 0 10px 22px -10px rgba(232, 199, 122, .7), inset 0 1px 0 rgba(255, 255, 255, .5); }
+.cl-redondo { display: inline-grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; border: 1px solid rgba(232, 199, 122, .4); background: rgba(255, 255, 255, .07); color: #F0D690; cursor: pointer; text-decoration: none; transition: transform .2s, background .2s; }
+.cl-redondo:hover { transform: translateY(-2px); background: rgba(255, 255, 255, .14); }
+.cl-redondo.ouro { background: linear-gradient(180deg, rgba(232, 199, 122, .35), rgba(232, 199, 122, .12)); border-color: rgba(255, 224, 150, .7); color: #FFF2C8; }
+.cl-redondo:disabled { opacity: .6; cursor: wait; }
+@media (min-width: 900px) { .cl { max-width: 760px; } .cl-cartao { font-size: 18px; } }
+@media (prefers-reduced-motion: reduce) { .cl-cartao, .cl-bolsa, .cl-brilho { animation: none !important; } .cl-bolsa { transform: none; } }

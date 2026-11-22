@@ -20,6 +20,7 @@ import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
 import { ICONES } from './base';
 import { PainelVidro } from './PainelVidro';
+import { CarteiraLuxo } from './CarteiraLuxo';
 
 /* ---------- Início: o painel ---------- */
 // Saudação, o número do dia, o mês e as ferramentas que a pessoa mais usa — cada uma com a pergunta que responde.
@@ -159,7 +160,8 @@ export function Caderno() {
         <BarraPerguntar />
         <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
       </header>
-      <PainelVidro onSaldo={() => setCalc(true)} onRenda={() => setRenda(true)} onPagar={(id) => setBaixa(id)} />
+      <CarteiraLuxo />
+      <PainelVidro carteira onSaldo={() => setCalc(true)} onRenda={() => setRenda(true)} onPagar={(id) => setBaixa(id)} />
       </div>
 
       <nav className="pn-acoes" aria-label="Ações rápidas">
