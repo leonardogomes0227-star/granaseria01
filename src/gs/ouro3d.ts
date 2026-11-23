@@ -182,10 +182,10 @@ export function criarCena(host: HTMLElement): CenaOuro {
 
   const enquadrar = () => {
     const alt = Math.max(2.2, Math.min(30, pilha.moedas) * (T + 0.004) + 1.2);
-    const dist = 9.2 + alt * 0.5;
+    const dist = 10.8 + alt * 0.5;
     camera.aspect = largura / altura;
     camera.position.set(-0.1, alt * 0.5 + 2.6, dist);
-    camera.lookAt(-0.55, alt * 0.38, 0);
+    camera.lookAt(-0.35, alt * 0.38, 0);
     camera.updateProjectionMatrix();
   };
 

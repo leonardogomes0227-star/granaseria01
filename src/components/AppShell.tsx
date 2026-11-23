@@ -95,6 +95,7 @@ function Casca({ children }: { children: ReactNode }) {
         </header>
         <main className="gs-principal">{children}</main>
       </div>
+      <i className="esm-carrega" key={pathname} aria-hidden="true" />
       <nav className="cm-abas" aria-label="Seções">
         {NAV.slice(0, 2).map(item)}
         <button type="button" className="cm-mais" onClick={() => abrirMenuAdicionar()} aria-label="Adicionar: gasto, conta, dívida, fatura"><Plus size={30} strokeWidth={2.25} aria-hidden="true" /></button>

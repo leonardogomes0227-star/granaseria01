@@ -325,6 +325,12 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   useEffect(() => { posRef.current = pos; }, [pos]);
   useEffect(() => { const id = window.setTimeout(() => setChega(false), 700); return () => window.clearTimeout(id); }, []);
   useEffect(() => { setApertada(false); }, [fala?.id]);
+  // ao trocar de tela o Midas "lê" a página: dá uma balançada curta, como se reagisse aos números novos
+  useEffect(() => {
+    setMexe(true);
+    const id = window.setTimeout(() => setMexe(false), 520);
+    return () => window.clearTimeout(id);
+  }, [pathname]);
   useEffect(() => { if (!fala) passoDica.current = 0; }, [fala]);
   const urgente = useMemo(() => temAvisoUrgente(e, hoje), [e, hoje]);
   useEffect(() => () => {

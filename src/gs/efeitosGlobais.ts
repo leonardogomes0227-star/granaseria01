@@ -2,7 +2,7 @@
 // Mexe só no que a tela já desenhou (classes e um <i> de enfeite), sem tocar nos componentes de cada tela.
 import { tocar } from './sons';
 
-const GRUPOS = '.gs-seg, .seg, .cm-seg, .cm-abas';
+const GRUPOS = '.gs-seg, .seg, .cm-seg, .cm-abas, .cm-lateral';
 const ATIVO = '[aria-selected="true"], [aria-pressed="true"], [aria-current="page"], .on, .active, .ativo, .sel';
 
 export const semMovimento = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
