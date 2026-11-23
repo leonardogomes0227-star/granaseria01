@@ -247,3 +247,36 @@ html.gs-app .vd-hero .vd-tip { color: #FFF3CF; }
 html.gs-app .vd-hero .vd-delta.bom { color: #7FE0B0; } html.gs-app .vd-hero .vd-delta.ruim { color: #FFB1A5; }
 html.gs-app .vd-hero .vd-vazio { color: rgba(246, 241, 228, .75); }
 @media (prefers-reduced-motion: reduce) { html.gs-app .vd-hero::after { animation: none; } }
+
+/* ======================================================================
+   Refeito: o saldo do mês como cartão premium (metal esmeralda, borda de ouro, guilhochê e a moeda da marca)
+   ====================================================================== */
+html.gs-app .vd-hero {
+  isolation: isolate; border: 2px solid transparent; border-radius: 30px; padding: 26px 22px 18px;
+  background:
+    linear-gradient(160deg, #135F47 0%, #0B3A2C 52%, #072A20 100%) padding-box,
+    linear-gradient(135deg, #F6E3A6 0%, #C79A3E 28%, #7A5A1C 52%, #E9CB7E 78%, #FFF3CF 100%) border-box;
+  box-shadow: 0 34px 56px -30px rgba(7, 42, 32, .9), 0 4px 10px rgba(7, 42, 32, .25), inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+/* guilhochê: círculos finos que só aparecem como textura de cédula */
+html.gs-app .vd-hero::before {
+  display: block; content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; border-radius: inherit; opacity: .55;
+  background:
+    radial-gradient(circle at 92% 8%, transparent 0 38px, rgba(240, 215, 143, .35) 39px 40px, transparent 41px 52px, rgba(240, 215, 143, .25) 53px 54px, transparent 55px 66px, rgba(240, 215, 143, .2) 67px 68px, transparent 69px 80px, rgba(240, 215, 143, .15) 81px 82px, transparent 83px),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 7px);
+}
+/* a moeda da marca no canto, como o chip de um cartão */
+html.gs-app .vd-hero > header::after {
+  content: 'G'; position: absolute; right: 0; top: -4px; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%;
+  font: 700 22px 'Cormorant Garamond', Georgia, serif; color: #4A3206; background: radial-gradient(circle at 35% 30%, #FFF1BF, #D9A63F 62%, #8A5F14); box-shadow: 0 6px 14px -4px rgba(0, 0, 0, .55), inset 0 0 0 3px rgba(255, 240, 190, .35);
+}
+html.gs-app .vd-hero > header { position: relative; padding-right: 0; }
+html.gs-app .vd-hero .vd-modo { margin-top: 16px; }
+html.gs-app .vd-hero > header { flex-wrap: wrap; }
+
+/* ---------- Midas com vida: flutua parado, pisca e olha ---------- */
+@keyframes midas-flutua { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes midas-pisca { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+html.gs-app .as-figura:not(.andando) .as-orb-btn { animation: midas-flutua 3.4s ease-in-out infinite; }
+html.gs-app .as-orbe i, html.gs-app .as-orbe .olho, html.gs-app .as-orb-btn svg rect { transform-origin: center; animation: midas-pisca 5.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { html.gs-app .as-figura .as-orb-btn, html.gs-app .as-orbe i { animation: none !important; } }
