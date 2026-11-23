@@ -13,7 +13,7 @@ import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { abrirAdicionar } from './AdicionarMov';
 import { compartilharMes } from './cartaoDoMes';
-import { marcaDaConta, resumoDasContas } from './contasBancarias';
+import { objetivosDaPessoa } from './objetivos';
 import { tocar } from './sons';
 import { toast } from '../components/ui/Toast';
 import type { CartaoBolsa, CenaBolsa } from './bolsa3d';
@@ -46,17 +46,17 @@ export function BolsaHero() {
   const palco = useRef<HTMLDivElement>(null);
   const cena = useRef<CenaBolsa | null>(null);
 
-  // cartões: as contas bancárias da pessoa (as de maior saldo); sem contas, o que ela tem de mais relevante
+  // cartões que aparecem por trás: os objetivos da pessoa (reserva, meta, dívida ou liberdade financeira)
   const cartoes = useMemo<CartaoBolsa[]>(() => {
-    const contas = resumoDasContas(e, hoje).sort((a, b) => Math.abs(b.saldo) - Math.abs(a.saldo)).slice(0, 3);
-    if (contas.length) return contas.map((c) => { const m = marcaDaConta(c.nome); return { rotulo: c.nome, valor: oculto ? mascarar(brl0(c.saldo), true) : brl0(c.saldo), cor: m.cor, corTexto: m.corTexto }; });
-    const lista: CartaoBolsa[] = [];
-    if (guardado > 0) lista.push({ rotulo: 'Guardado', valor: oculto ? mascarar(brl0(guardado), true) : brl0(guardado), cor: '#B88A2E', corTexto: '#2B1D07' });
-    const m = p.metas[0]; if (m) lista.push({ rotulo: m.nome, valor: `${m.pct}%`, cor: '#1D1B19', corTexto: '#EBCF8B' });
-    const d = p.dividas[0]; if (d) lista.push({ rotulo: d.nome, valor: oculto ? mascarar(brl0(d.saldo), true) : brl0(d.saldo), cor: '#6A1B31', corTexto: '#F8DCE2' });
-    const c = p.contas[0]; if (c && lista.length < 3) lista.push({ rotulo: c.nome, valor: oculto ? mascarar(brl0(c.valor), true) : brl0(c.valor), cor: '#0F4A37', corTexto: '#CFF3E3' });
-    return lista.slice(0, 3);
-  }, [e, hoje, oculto, guardado, p.metas, p.dividas, p.contas]);
+    const cores: Record<string, [string, string]> = { reserva: ['#C99A3A', '#2B1D07'], meta: ['#E9DCC0', '#3B2A0A'], divida: ['#26211A', '#EBCF8B'], liberdade: ['#16503E', '#E4F4EC'] };
+    const todos = objetivosDaPessoa(e, hoje);
+    const escolhidos = [todos.find((o) => o.tipo === 'reserva'), todos.find((o) => o.tipo === 'meta'), todos.find((o) => o.tipo === 'divida') ?? todos.find((o) => o.tipo === 'liberdade')].filter(Boolean) as typeof todos;
+    return escolhidos.map((o) => ({
+      rotulo: o.tipo === 'reserva' ? 'Reserva' : o.nome,
+      valor: o.formato === 'pct' ? `${Math.round(o.valor)}%` : o.tipo === 'meta' ? `${Math.round(o.pct)}%` : oculto ? mascarar(brl0(o.valor), true) : brl0(o.valor),
+      cor: cores[o.tipo][0], corTexto: cores[o.tipo][1],
+    }));
+  }, [e, hoje, oculto]);
   const cartoesRef = useRef(cartoes); cartoesRef.current = cartoes;
   const abertaRef = useRef(aberta); abertaRef.current = aberta;
 

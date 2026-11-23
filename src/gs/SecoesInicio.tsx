@@ -1,19 +1,17 @@
 // Seções do Início logo abaixo da carteira, como na referência: Contas Bancárias (com mini-gráfico), Meta de Gastos e Últimas Transações.
 // Cada uma leva para a tela completa: o Início resume tudo, as outras telas completam.
-import { useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Compass, Landmark, PiggyBank, Target } from 'lucide-react';
 import { brl, brl0, diaCurto, mesDe } from './datas';
 import { iconeDe } from './categorias';
-import { marcaDaConta, resumoDasContas } from './contasBancarias';
+import { objetivosDaPessoa } from './objetivos';
 import { movimentosDoMes } from './movimentos';
 import { mascarar, useOculto } from './privacidade';
 import { detalheDisponivel, totalVariaveis } from './selectores';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { useContagem } from './base';
-import { ContasSheet } from './Contas';
-import { tocar } from './sons';
 import { ReservaOuro } from './ReservaOuro';
 
 function Linha({ serie, bom }: { serie: number[]; bom: boolean }) {
@@ -34,7 +32,11 @@ function Linha({ serie, bom }: { serie: number[]; bom: boolean }) {
 
 function Saldo({ v, oculto }: { v: number; oculto: boolean }) {
   const n = useContagem(v, 800);
-  return <>{oculto ? mascarar(brl(v), true) : brl(n)}</>;
+  return <>{oculto ? mascarar(brl0(v), true) : brl0(n)}</>;
+}
+function Pct({ v }: { v: number }) {
+  const n = useContagem(v, 800);
+  return <>{Math.round(n)}%</>;
 }
 
 export function SecoesInicio() {
@@ -42,9 +44,7 @@ export function SecoesInicio() {
   const hoje = useHoje();
   const mes = mesDe(hoje);
   const oculto = useOculto();
-  const [contasAbertas, setContasAbertas] = useState(false);
-  const faixa = useRef<HTMLDivElement>(null);
-  const contas = useMemo(() => resumoDasContas(e, hoje), [e, hoje]);
+  const objetivos = useMemo(() => objetivosDaPessoa(e, hoje), [e, hoje]);
   const disp = useMemo(() => detalheDisponivel(e, mes, hoje), [e, mes, hoje]);
   const gasto = totalVariaveis(e, mes);
   const limites = Object.values(e.limites).reduce((t, v) => t + (v > 0 ? v : 0), 0);
@@ -55,26 +55,25 @@ export function SecoesInicio() {
 
   return (
     <div className="si">
-      <section aria-label="Contas bancárias">
-        <header className="si-cab"><h2>Contas bancárias</h2><button type="button" onClick={() => setContasAbertas(true)}>Gerenciar<ChevronRight size={16} aria-hidden="true" /></button></header>
-        {contas.length === 0 ? (
-          <button type="button" className="si-vazio" onClick={() => setContasAbertas(true)}><Plus size={18} aria-hidden="true" /><span><b>Adicione suas contas</b><small>Nubank, Inter, carteira… e veja o saldo de cada uma aqui.</small></span></button>
-        ) : (
-          <div className="si-faixa" ref={faixa}>
-            {contas.map((c, i) => {
-              const mc = marcaDaConta(c.nome);
-              const sobe = c.serie[c.serie.length - 1] >= c.serie[0];
-              return (
-                <Link key={c.id} to={`/lancamentos?conta=${c.id}`} className="si-conta" style={{ animationDelay: `${i * 0.07}s` }}>
-                  <i className="si-logo" style={{ background: mc.cor, color: mc.corTexto }}>{mc.sigla}</i>
-                  <div className="si-conta-meio"><Linha serie={c.serie} bom={sobe} /><span className={sobe ? 'bom' : 'ruim'}><small>Saldo</small><b><Saldo v={c.saldo} oculto={oculto} /></b></span></div>
-                  <em>{c.nome}</em>
-                </Link>
-              );
-            })}
-            <button type="button" className="si-add" onClick={() => setContasAbertas(true)} aria-label="Adicionar conta"><Plus size={20} aria-hidden="true" /></button>
-          </div>
-        )}
+      <section aria-label="Meus objetivos">
+        <header className="si-cab"><h2>Meus objetivos</h2><Link to="/guardar">Ver todos<ChevronRight size={16} aria-hidden="true" /></Link></header>
+        <div className="si-faixa">
+          {objetivos.map((o, i) => {
+            const Icone = o.tipo === 'reserva' ? PiggyBank : o.tipo === 'meta' ? Target : o.tipo === 'divida' ? Landmark : Compass;
+            const sobe = o.serie.length < 2 || o.serie[o.serie.length - 1] >= o.serie[0];
+            return (
+              <Link key={o.id} to={o.rota} className={`si-obj ${o.tipo}`} style={{ animationDelay: `${i * 0.07}s` }}>
+                <div className="si-obj-topo"><i aria-hidden="true"><Icone size={18} /></i><span>{o.nome}</span></div>
+                <div className="si-obj-meio">
+                  <b>{o.formato === 'pct' ? <Pct v={o.valor} /> : <Saldo v={o.valor} oculto={oculto} />}</b>
+                  <Linha serie={o.serie} bom={o.tipo === 'divida' ? true : sobe} />
+                </div>
+                <div className="si-obj-barra" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(o.pct)} aria-label={`${o.nome}: ${Math.round(o.pct)}%`}><i style={{ width: `${Math.max(3, o.pct)}%` }} /></div>
+                <small>{Math.round(o.pct)}% {o.tipo === 'divida' ? 'já pago' : o.tipo === 'liberdade' ? 'do caminho' : 'do caminho'} · {o.nota}</small>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <section className="si-meta" aria-label="Meta de gastos">
@@ -107,7 +106,6 @@ export function SecoesInicio() {
           </ul>
         )}
       </section>
-      <ContasSheet aberta={contasAbertas} onFechar={() => { setContasAbertas(false); tocar('pop'); }} />
     </div>
   );
 }
