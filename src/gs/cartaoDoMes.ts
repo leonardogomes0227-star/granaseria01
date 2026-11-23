@@ -27,6 +27,7 @@ function moeda(x: CanvasRenderingContext2D, cx: number, cy: number, rx: number, 
 
 export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasElement> {
   await ensureFonts();
+  await Promise.race([Promise.allSettled([document.fonts.load('500 200px Fraunces'), document.fonts.load('600 36px "Plus Jakarta Sans"')]), new Promise((r) => setTimeout(r, 1500))]);
   const c = document.createElement('canvas');
   c.width = STORY_W; c.height = STORY_H;
   const x = c.getContext('2d')!;
@@ -41,17 +42,17 @@ export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasEl
   x.fillStyle = ouroLuz; x.fillRect(0, 700, STORY_W, 1100);
 
   x.textAlign = 'center';
-  x.fillStyle = '#EBCF8B'; x.font = '600 36px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = '#EBCF8B'; x.font = '600 36px "Plus Jakarta Sans", system-ui, sans-serif';
   x.fillText('GRANA SÉRIA', STORY_W / 2, 170);
-  x.fillStyle = 'rgba(243, 239, 227, .7)'; x.font = '500 40px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = 'rgba(243, 239, 227, .7)'; x.font = '500 40px "Plus Jakarta Sans", system-ui, sans-serif';
   x.fillText(d.mes, STORY_W / 2, 236);
 
   const grande = d.sobraPct === null ? '—' : d.sobraPct >= 0 ? `${d.sobraPct}%` : 'Apertado';
   const g = x.createLinearGradient(0, 330, 0, 560);
   g.addColorStop(0, '#FFF3CF'); g.addColorStop(1, '#E1B861');
-  x.fillStyle = g; x.font = '800 230px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = g; x.font = '500 250px Fraunces, Georgia, serif';
   x.fillText(grande, STORY_W / 2, 520);
-  x.fillStyle = '#F3EFE3'; x.font = '600 52px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = '#F3EFE3'; x.font = '600 52px "Plus Jakarta Sans", system-ui, sans-serif';
   x.fillText(d.sobraPct === null ? 'comecei a anotar meu dinheiro' : d.sobraPct >= 0 ? 'da minha renda sobrou este mês' : 'mas anotei cada gasto', STORY_W / 2, 610);
 
   // a pilha de ouro (a altura mostra a reserva)
@@ -68,7 +69,7 @@ export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasEl
   if (d.reservaPct !== null) chips.push(`Reserva ${d.reservaPct}%`);
   if (d.dias > 0) chips.push(`${d.dias} ${d.dias === 1 ? 'dia' : 'dias'} anotando`);
   if (d.saude !== null) chips.push(`Saúde ${d.saude}/100`);
-  x.font = '650 34px "IBM Plex Sans", system-ui, sans-serif';
+  x.font = '650 34px "Plus Jakarta Sans", system-ui, sans-serif';
   const larguras = chips.map((t) => x.measureText(t).width + 52);
   const total = larguras.reduce((a, b) => a + b, 0) + (chips.length - 1) * 14;
   let cx = (STORY_W - total) / 2;
@@ -79,9 +80,9 @@ export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasEl
     cx += larguras[i] + 14;
   });
 
-  x.fillStyle = 'rgba(243, 239, 227, .6)'; x.font = '500 36px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = 'rgba(243, 239, 227, .6)'; x.font = '500 36px "Plus Jakarta Sans", system-ui, sans-serif';
   x.fillText('Organize seu dinheiro sem complicar', STORY_W / 2, 1700);
-  x.fillStyle = '#EBCF8B'; x.font = '700 46px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillStyle = '#EBCF8B'; x.font = '700 46px "Plus Jakarta Sans", system-ui, sans-serif';
   x.fillText('granaseria.com.br', STORY_W / 2, 1772);
   return c;
 }

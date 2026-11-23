@@ -332,3 +332,36 @@ html.gs-app[data-tema="escuro"] .pu-funil-barra.falta { background: linear-gradi
   html.gs-app[data-tema="escuro"] .cm-lateral .gs-btn { width: 100%; height: 48px; margin: 14px 0; justify-content: center; gap: 10px; border-radius: 14px; }
   html.gs-app[data-tema="escuro"] .cm-lateral hr { margin: 14px 0; border-color: var(--linha); }
 }
+
+/* ==========================================================================
+   Tipografia: Fraunces (títulos e números, elegante) + Plus Jakarta Sans (texto e rótulos, limpa)
+   Pesos leves e espaçamento aberto: o luxo vem da calma, não do negrito.
+   ========================================================================== */
+html.gs-app[data-tema="escuro"] {
+  --tit: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
+  --txt: 'Plus Jakarta Sans', 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cm-serif: var(--tit); --cm-sans: var(--txt); --serif: var(--tit); --sans: var(--txt);
+}
+html.gs-app[data-tema="escuro"] body, html.gs-app[data-tema="escuro"] .gs-casca { font-family: var(--txt); font-size: 16px; line-height: 1.55; letter-spacing: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+/* títulos */
+html.gs-app[data-tema="escuro"] :is(h1, .gs-titulo) { font-family: var(--tit) !important; font-weight: 500 !important; font-size: clamp(32px, 8.6vw, 42px) !important; letter-spacing: -0.02em !important; line-height: 1.1; font-variation-settings: "opsz" 96; }
+html.gs-app[data-tema="escuro"] :is(h2, h3, .gs-h2, .cm-h2, .vd-vidro h2, .pu-vidro h2) { font-family: var(--tit) !important; font-weight: 500 !important; letter-spacing: -0.012em !important; font-variation-settings: "opsz" 48; }
+html.gs-app[data-tema="escuro"] :is(.cm-h2) { font-size: 25px !important; }
+html.gs-app[data-tema="escuro"] :is(.vd-vidro h2, .pu-vidro h2) { font-size: 20px !important; }
+html.gs-app[data-tema="escuro"] .vd-cabeca h2.vd-grande { font-size: clamp(30px, 8vw, 40px) !important; font-weight: 500 !important; }
+/* números grandes: serifa elegante, algarismos alinhados, peso médio */
+html.gs-app[data-tema="escuro"] :is(.oh-saldo, .pu-kpi b, .vd-hero b, .vd-kpi b, .cm-num, .ini-valor, .gs-grande, .gs-medio, .gs-dinheiro, .pu-centro, .vd-patrimonio b, .vd-cat p strong, .vd-passo b) { font-family: var(--tit) !important; font-weight: 500 !important; font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum" 1, "tnum" 1; letter-spacing: -0.02em; font-variation-settings: "opsz" 72; }
+html.gs-app[data-tema="escuro"] .oh-saldo { font-size: clamp(36px, 10.4vw, 54px); font-weight: 500 !important; }
+html.gs-app[data-tema="escuro"] .pu-kpi b { font-size: clamp(24px, 6.6vw, 32px); }
+html.gs-app[data-tema="escuro"] .pu-centro { font-size: 21px; }
+/* rótulos pequenos: caixa alta aberta, discretos */
+html.gs-app[data-tema="escuro"] :is(.cm-eyebrow, .gs-rotulo, .pu-kpi small, .oh-topo small, .oh-reserva small, .vd-hero small, .vd-kpi small, .vd-mov small) { font-family: var(--txt) !important; font-weight: 600 !important; font-size: 11.5px !important; letter-spacing: .14em !important; text-transform: uppercase; color: var(--mudo); }
+html.gs-app[data-tema="escuro"] .cm-eyebrow { color: var(--ouro-claro); }
+/* texto corrido e controles */
+html.gs-app[data-tema="escuro"] :is(p, li, .gs-sub, .cm-mudo, .pu-kpi em, .oh-reserva b, .pu-legenda li) { font-family: var(--txt); }
+html.gs-app[data-tema="escuro"] :is(.gs-btn, button, .cm-item, .cm-abas a, .gs-chip, .cm-chip, .pu-tip, .oh-chips span, .oh-principal) { font-family: var(--txt); font-weight: 600; letter-spacing: 0; }
+html.gs-app[data-tema="escuro"] .pu-delta { font-weight: 700; }
+html.gs-app[data-tema="escuro"] :is(.cm-marca, .gs-marca) { font-family: 'Cormorant Garamond', Georgia, serif !important; font-weight: 600; letter-spacing: .01em; }
+/* o texto do Midas e das respostas também */
+html.gs-app[data-tema="escuro"] :is(.as-painel, .as-fala, .as-msg, .as-campo input) { font-family: var(--txt); }
+html.gs-app[data-tema="escuro"] .gs-principal h1 + p, html.gs-app[data-tema="escuro"] .gs-sub { font-size: 15.5px; color: var(--mudo); }
