@@ -1,7 +1,7 @@
 // A carteira do Início: couro escuro, costura dourada, cartões aparecendo por trás e o saldo do mês em destaque.
 // Tudo vem dos números que o app já calcula. O botão de compartilhar gera uma imagem sem valores em reais.
 
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Eye, EyeOff, House, Plus, Share2 } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
@@ -16,6 +16,7 @@ import { abrirAdicionar } from './AdicionarMov';
 import { compartilharMes } from './cartaoDoMes';
 import { tocar } from './sons';
 import { toast } from '../components/ui/Toast';
+import type { CenaCarteira } from './carteira3d';
 import './carteira.css';
 
 function Dinheiro({ valor, oculto }: { valor: number; oculto: boolean }) {
@@ -31,6 +32,11 @@ export function CarteiraLuxo() {
   const p = useMemo(() => painelVidro(e, hoje), [e, hoje]);
   const [aberta, setAberta] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [tresD, setTresD] = useState(false);
+  const raiz = useRef<HTMLElement>(null);
+  const bolsaRef = useRef<HTMLDivElement>(null);
+  const palco = useRef<HTMLDivElement>(null);
+  const cena = useRef<CenaCarteira | null>(null);
   const kpi = (id: string) => p.kpis.find((k) => k.id === id);
   const saldo = kpi('saldo')?.valor ?? null;
   const receitas = kpi('receitas')?.valor ?? null;
@@ -50,6 +56,38 @@ export function CarteiraLuxo() {
     return lista.slice(0, 3);
   }, [guardado, p.metas, p.dividas, p.contas]);
 
+  const sincronizar = useCallback(() => {
+    const r = raiz.current; const b = bolsaRef.current;
+    if (!cena.current || !r || !b || r.offsetWidth < 50) return;
+    cena.current.atualizar(
+      { largura: r.offsetWidth, altura: r.offsetHeight, bolsa: { x: b.offsetLeft, y: b.offsetTop, w: b.offsetWidth, h: b.offsetHeight }, cartoes: { x: 14, w: r.offsetWidth - 28, topo: cartoes.map((_, i) => i * 42) } },
+      cartoes.map((c) => ({ rotulo: c.rotulo, valor: oculto ? mascarar(c.valor, true) : c.valor, tom: c.tom })),
+      aberta,
+    );
+  }, [cartoes, aberta, oculto]);
+  const sincRef = useRef(sincronizar);
+  sincRef.current = sincronizar;
+
+  // a cena 3D carrega só aqui, sob demanda; sem WebGL (ou com erro) fica a carteira em CSS
+  useEffect(() => {
+    let cancelado = false;
+    void import('./carteira3d').then((m) => {
+      if (cancelado || !palco.current || !m.webglDisponivel()) return;
+      try {
+        cena.current = m.criarCena(palco.current);
+        setTresD(true);
+        sincRef.current();
+      } catch {
+        cena.current = null;
+      }
+    }).catch(() => undefined);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => sincRef.current()) : null;
+    if (raiz.current) ro?.observe(raiz.current);
+    if (bolsaRef.current) ro?.observe(bolsaRef.current);
+    return () => { cancelado = true; ro?.disconnect(); cena.current?.destruir(); cena.current = null; setTresD(false); };
+  }, []);
+  useEffect(() => { sincronizar(); }, [sincronizar, tresD]);
+
   const inclinar = (ev: ReactPointerEvent<HTMLElement>) => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const r = ev.currentTarget.getBoundingClientRect();
@@ -58,8 +96,9 @@ export function CarteiraLuxo() {
     ev.currentTarget.style.setProperty('--rx', `${((0.5 - py) * 6).toFixed(2)}deg`);
     ev.currentTarget.style.setProperty('--ry', `${((px - 0.5) * 8).toFixed(2)}deg`);
     ev.currentTarget.style.setProperty('--bx', `${(px * 100).toFixed(1)}%`);
+    cena.current?.inclinar(px, py);
   };
-  const soltar = (ev: ReactPointerEvent<HTMLElement>) => { ev.currentTarget.style.setProperty('--rx', '0deg'); ev.currentTarget.style.setProperty('--ry', '0deg'); };
+  const soltar = (ev: ReactPointerEvent<HTMLElement>) => { ev.currentTarget.style.setProperty('--rx', '0deg'); ev.currentTarget.style.setProperty('--ry', '0deg'); cena.current?.inclinar(0.5, 0.5); };
 
   const compartilhar = async () => {
     if (enviando) return;
@@ -84,7 +123,8 @@ export function CarteiraLuxo() {
   };
 
   return (
-    <section className={`cl${aberta ? ' aberta' : ''}`} aria-label="Sua carteira do mês" onPointerMove={inclinar} onPointerLeave={soltar}>
+    <section ref={raiz} className={`cl${aberta ? ' aberta' : ''}${tresD ? ' cl-3d' : ''}`} aria-label="Sua carteira do mês" onPointerMove={inclinar} onPointerLeave={soltar}>
+      <div className="cl-palco" ref={palco} aria-hidden="true" />
       <div className="cl-cartoes" onClick={() => { setAberta((a) => !a); tocar('pop'); }} role="button" tabIndex={0} aria-label="Mostrar ou recolher os cartões" onKeyDown={(ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setAberta((a) => !a); } }}>
         {cartoes.map((c, i) => (
           <div key={c.rotulo} className={`cl-cartao ${c.tom}`} style={{ ['--i' as string]: String(i), animationDelay: `${0.1 + i * 0.12}s` }}>
@@ -92,7 +132,7 @@ export function CarteiraLuxo() {
           </div>
         ))}
       </div>
-      <div className="cl-bolsa">
+      <div className="cl-bolsa" ref={bolsaRef}>
         <div className="cl-brilho" aria-hidden="true" />
         <div className="cl-topo">
           <small><House size={15} aria-hidden="true" />Saldo do mês</small>
