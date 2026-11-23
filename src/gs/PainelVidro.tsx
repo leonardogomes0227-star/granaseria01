@@ -243,11 +243,6 @@ export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { o
       <div className="vd-fundo" aria-hidden="true"><i className="vd-blob ouro" /><i className="vd-blob ambar" /><i className="vd-blob violeta" /></div>
       <div className="vd-ondas" aria-hidden="true" />
 
-      <div className="vd-topo">
-        <span className="vd-trilha-nav">Início <b aria-hidden="true">›</b> <em>{ABAS.find((a) => a.id === aba)?.nome}</em></span>
-        <span className="vd-ao-vivo"><i aria-hidden="true" />Ao vivo</span>
-      </div>
-
       <div className="vd-cabeca">
         <Titulo texto={ABAS.find((a) => a.id === aba)?.nome ?? ''} grande />
         <p key={aba}>{SUBTITULO[aba]}</p>

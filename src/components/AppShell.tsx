@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
@@ -7,7 +7,7 @@ import { Resolver } from '../gs/Resolver';
 import { getName, painelToken } from '../painel';
 import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
-import { iniciarEfeitos, titulosDaTela } from '../gs/efeitosGlobais';
+import { iniciarEfeitos } from '../gs/efeitosGlobais';
 import { tocar } from '../gs/sons';
 import { abrirResolver } from '../gs/Resolver';
 import { Moeda } from './ui/Moeda';
@@ -58,7 +58,6 @@ function Casca({ children }: { children: ReactNode }) {
   const nome = e.config.nome || getName() || '';
   const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
   const pronto = e.config.onboardingFeito;
-  const [tituloTela, setTituloTela] = useState('');
   const primeira = useRef(true);
   useEffect(() => iniciarEfeitos(), []);
   useEffect(() => {
@@ -71,8 +70,6 @@ function Casca({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!primeira.current) tocar('navegar');
     primeira.current = false;
-    setTituloTela('');
-    return titulosDaTela(setTituloTela);
   }, [pathname]);
   const item = ([to, label, Icon]: (typeof NAV)[number]) => (
     <NavLink key={to} to={to} end={to === '/'} className={() => (aba === to ? 'on' : '')} aria-current={aba === to ? 'page' : undefined} aria-label={to === '/pagar' && atrasada ? `${label}, tem conta atrasada` : label}>
@@ -93,15 +90,9 @@ function Casca({ children }: { children: ReactNode }) {
       <div className="gs-coluna">
         <header className="cm-topo">
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
+          <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
-        {pathname !== '/' && pathname !== '/inicio' && tituloTela && (
-          <div className="gl-trilha" key={pathname}>
-            <span><Link to="/">Início</Link> <b aria-hidden="true">›</b> <em>{tituloTela}</em></span>
-            <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
-            <span className="gl-vivo"><i aria-hidden="true" />Ao vivo</span>
-          </div>
-        )}
         <main className="gs-principal">{children}</main>
       </div>
       <nav className="cm-abas" aria-label="Seções">

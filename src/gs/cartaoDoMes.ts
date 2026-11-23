@@ -1,4 +1,4 @@
-// A imagem do mês para postar (1080×1920), no estilo da carteira de luxo. Por padrão NÃO mostra valores em reais:
+// A imagem do mês para postar (1080×1920): esmeralda e ouro, com a pilha de moedas. Por padrão NÃO mostra valores em reais:
 // só porcentagens e contagens, para a pessoa poder postar sem expor quanto ganha ou deve.
 
 import { ensureFonts, roundRect, shareOrDownload, STORY_H, STORY_W } from '../storyCard';
@@ -8,116 +8,81 @@ export interface DadosCartaoMes {
   sobraPct: number | null; // % da renda que sobrou (negativo = passou)
   dias: number; // dias seguidos anotando
   saude: number | null; // nota 0 a 100
-  cartoes: { rotulo: string; valor: string }[]; // até 3, já sem valores em reais
+  reservaPct: number | null; // % da reserva de emergência
+  moedas: number; // altura da pilha de ouro
 }
 
-const OURO = ['#F3DB9C', '#D2A24A', '#8A6320'] as const;
+function moeda(x: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, esp: number) {
+  const lado = x.createLinearGradient(cx - rx, 0, cx + rx, 0);
+  lado.addColorStop(0, '#7A5614'); lado.addColorStop(0.3, '#E8C46A'); lado.addColorStop(0.55, '#B98625'); lado.addColorStop(1, '#6A4A0E');
+  x.fillStyle = lado;
+  x.beginPath(); x.ellipse(cx, cy + esp, rx, ry, 0, 0, Math.PI); x.lineTo(cx - rx, cy); x.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, true); x.closePath(); x.fill();
+  const topo = x.createRadialGradient(cx - rx * 0.3, cy - ry * 0.4, 4, cx, cy, rx);
+  topo.addColorStop(0, '#FFF1BF'); topo.addColorStop(0.55, '#E2B24A'); topo.addColorStop(1, '#A87820');
+  x.fillStyle = topo;
+  x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.fill();
+  x.strokeStyle = 'rgba(255, 238, 170, .65)'; x.lineWidth = 3;
+  x.beginPath(); x.ellipse(cx, cy, rx * 0.84, ry * 0.84, 0, 0, Math.PI * 2); x.stroke();
+}
 
 export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasElement> {
   await ensureFonts();
   const c = document.createElement('canvas');
-  c.width = STORY_W;
-  c.height = STORY_H;
+  c.width = STORY_W; c.height = STORY_H;
   const x = c.getContext('2d')!;
-  // fundo: preto quente com luz dourada
   const bg = x.createLinearGradient(0, 0, 0, STORY_H);
-  bg.addColorStop(0, '#1E1710');
-  bg.addColorStop(1, '#09070A');
-  x.fillStyle = bg;
-  x.fillRect(0, 0, STORY_W, STORY_H);
-  const luz = x.createRadialGradient(240, 220, 20, 240, 220, 760);
-  luz.addColorStop(0, 'rgba(210,162,74,.38)');
-  luz.addColorStop(1, 'rgba(210,162,74,0)');
-  x.fillStyle = luz;
-  x.fillRect(0, 0, STORY_W, STORY_H);
+  bg.addColorStop(0, '#0A2A21'); bg.addColorStop(0.55, '#05160F'); bg.addColorStop(1, '#030D09');
+  x.fillStyle = bg; x.fillRect(0, 0, STORY_W, STORY_H);
+  const luz = x.createRadialGradient(260, 260, 20, 260, 260, 820);
+  luz.addColorStop(0, 'rgba(46, 170, 124, .38)'); luz.addColorStop(1, 'rgba(46, 170, 124, 0)');
+  x.fillStyle = luz; x.fillRect(0, 0, STORY_W, STORY_H);
+  const ouroLuz = x.createRadialGradient(540, 1320, 10, 540, 1320, 620);
+  ouroLuz.addColorStop(0, 'rgba(232, 196, 106, .28)'); ouroLuz.addColorStop(1, 'rgba(232, 196, 106, 0)');
+  x.fillStyle = ouroLuz; x.fillRect(0, 700, STORY_W, 1100);
 
   x.textAlign = 'center';
-  x.fillStyle = '#E8D7A8';
-  x.font = '600 34px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText('GRANA SÉRIA', STORY_W / 2, 150);
-  x.fillStyle = 'rgba(248,241,226,.7)';
-  x.font = '500 38px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText(d.mes, STORY_W / 2, 214);
+  x.fillStyle = '#EBCF8B'; x.font = '600 36px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText('GRANA SÉRIA', STORY_W / 2, 170);
+  x.fillStyle = 'rgba(243, 239, 227, .7)'; x.font = '500 40px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText(d.mes, STORY_W / 2, 236);
 
-  // cartões que aparecem atrás da carteira
-  const cores: [string, string, string][] = [[OURO[0], OURO[1], '#3B2A0A'], ['#2A2724', '#141311', '#E8D7A8'], ['#6A1B31', '#33091A', '#F6D9DF']];
-  const cx = 130;
-  const larg = STORY_W - 260;
-  d.cartoes.slice(0, 3).forEach((k, i) => {
-    const y = 470 + i * 96;
-    const g = x.createLinearGradient(cx, y, cx + larg, y + 120);
-    g.addColorStop(0, cores[i][0]);
-    g.addColorStop(1, cores[i][1]);
-    x.fillStyle = g;
-    roundRect(x, cx - i * 0, y, larg, 280, 64);
-    x.fill();
-    x.fillStyle = cores[i][2];
-    x.textAlign = 'left';
-    x.font = '700 40px "IBM Plex Sans", system-ui, sans-serif';
-    x.fillText(k.rotulo, cx + 56, y + 64);
-    x.textAlign = 'right';
-    x.fillText(k.valor, cx + larg - 56, y + 64);
-  });
-
-  // a carteira (couro escuro, costura dourada)
-  const by = 720;
-  const bh = 760;
-  const bw = STORY_W - 120;
-  const cou = x.createLinearGradient(60, by, 60, by + bh);
-  cou.addColorStop(0, '#3A2A1C');
-  cou.addColorStop(0.5, '#21170F');
-  cou.addColorStop(1, '#120C07');
-  x.fillStyle = cou;
-  x.shadowColor = 'rgba(0,0,0,.6)';
-  x.shadowBlur = 60;
-  x.shadowOffsetY = 30;
-  roundRect(x, 60, by, bw, bh, 90);
-  x.fill();
-  x.shadowColor = 'transparent';
-  x.strokeStyle = 'rgba(232,199,122,.85)';
-  x.lineWidth = 4;
-  x.setLineDash([16, 14]);
-  roundRect(x, 92, by + 32, bw - 64, bh - 64, 66);
-  x.stroke();
-  x.setLineDash([]);
-
-  x.textAlign = 'left';
-  x.fillStyle = 'rgba(248,241,226,.78)';
-  x.font = '600 40px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText('Meu mês', 150, by + 140);
-  x.fillStyle = '#F8F1E2';
-  x.font = '700 150px "IBM Plex Sans", system-ui, sans-serif';
   const grande = d.sobraPct === null ? '—' : d.sobraPct >= 0 ? `${d.sobraPct}%` : 'Apertado';
-  x.fillText(grande, 144, by + 320);
-  x.fillStyle = '#E8C77A';
-  x.font = '600 46px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText(d.sobraPct === null ? 'comecei a anotar' : d.sobraPct >= 0 ? 'da minha renda sobrou' : 'mas anotei tudo', 150, by + 390);
+  const g = x.createLinearGradient(0, 330, 0, 560);
+  g.addColorStop(0, '#FFF3CF'); g.addColorStop(1, '#E1B861');
+  x.fillStyle = g; x.font = '800 230px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText(grande, STORY_W / 2, 520);
+  x.fillStyle = '#F3EFE3'; x.font = '600 52px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText(d.sobraPct === null ? 'comecei a anotar meu dinheiro' : d.sobraPct >= 0 ? 'da minha renda sobrou este mês' : 'mas anotei cada gasto', STORY_W / 2, 610);
 
+  // a pilha de ouro (a altura mostra a reserva)
+  const n = Math.max(4, Math.min(22, d.moedas));
+  const base = 1450; const rx = 190; const ry = 56; const esp = 26;
+  x.fillStyle = 'rgba(0, 0, 0, .45)';
+  x.beginPath(); x.ellipse(STORY_W / 2, base + esp + 14, rx * 1.35, ry * 0.9, 0, 0, Math.PI * 2); x.fill();
+  for (let i = 0; i < n; i++) moeda(x, STORY_W / 2 + ((i * 7) % 5 - 2) * 2, base - i * (esp - 2), rx, ry, esp);
+  moeda(x, STORY_W / 2 - 330, base + 14, rx * 0.62, ry * 0.62, esp * 0.7);
+  moeda(x, STORY_W / 2 + 340, base + 22, rx * 0.62, ry * 0.62, esp * 0.7);
+
+  // faixas com os números
   const chips: string[] = [];
+  if (d.reservaPct !== null) chips.push(`Reserva ${d.reservaPct}%`);
   if (d.dias > 0) chips.push(`${d.dias} ${d.dias === 1 ? 'dia' : 'dias'} anotando`);
   if (d.saude !== null) chips.push(`Saúde ${d.saude}/100`);
+  x.font = '650 34px "IBM Plex Sans", system-ui, sans-serif';
+  const larguras = chips.map((t) => x.measureText(t).width + 52);
+  const total = larguras.reduce((a, b) => a + b, 0) + (chips.length - 1) * 14;
+  let cx = (STORY_W - total) / 2;
   chips.forEach((t, i) => {
-    const w = 440;
-    const y = by + 470 + i * 110;
-    x.fillStyle = 'rgba(232,199,122,.14)';
-    roundRect(x, 150, y, w, 84, 42);
-    x.fill();
-    x.strokeStyle = 'rgba(232,199,122,.5)';
-    x.lineWidth = 2;
-    roundRect(x, 150, y, w, 84, 42);
-    x.stroke();
-    x.fillStyle = '#F8F1E2';
-    x.font = '600 38px "IBM Plex Sans", system-ui, sans-serif';
-    x.fillText(t, 190, y + 56);
+    x.fillStyle = 'rgba(216, 178, 90, .14)'; roundRect(x, cx, 720, larguras[i], 86, 43); x.fill();
+    x.strokeStyle = 'rgba(235, 207, 139, .55)'; x.lineWidth = 2; roundRect(x, cx, 720, larguras[i], 86, 43); x.stroke();
+    x.fillStyle = '#F3EFE3'; x.fillText(t, cx + larguras[i] / 2, 775);
+    cx += larguras[i] + 14;
   });
 
-  x.textAlign = 'center';
-  x.fillStyle = 'rgba(248,241,226,.6)';
-  x.font = '500 36px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText('Organize seu dinheiro sem complicar', STORY_W / 2, 1640);
-  x.fillStyle = '#E8D7A8';
-  x.font = '700 44px "IBM Plex Sans", system-ui, sans-serif';
-  x.fillText('granaseria.com.br', STORY_W / 2, 1720);
+  x.fillStyle = 'rgba(243, 239, 227, .6)'; x.font = '500 36px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText('Organize seu dinheiro sem complicar', STORY_W / 2, 1700);
+  x.fillStyle = '#EBCF8B'; x.font = '700 46px "IBM Plex Sans", system-ui, sans-serif';
+  x.fillText('granaseria.com.br', STORY_W / 2, 1772);
   return c;
 }
 
