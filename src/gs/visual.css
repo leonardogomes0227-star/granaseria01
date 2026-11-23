@@ -280,3 +280,36 @@ html.gs-app .vd-hero > header { flex-wrap: wrap; }
 html.gs-app .as-figura:not(.andando) .as-orb-btn { animation: midas-flutua 3.4s ease-in-out infinite; }
 html.gs-app .as-orbe i, html.gs-app .as-orbe .olho, html.gs-app .as-orb-btn svg rect { transform-origin: center; animation: midas-pisca 5.5s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { html.gs-app .as-figura .as-orb-btn, html.gs-app .as-orbe i { animation: none !important; } }
+
+/* ======================================================================
+   O mesmo cartão premium nos destaques das outras telas (Contas, Gastos, Guardar, Dívidas, ferramentas)
+   ====================================================================== */
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) {
+  position: relative; isolation: isolate; overflow: hidden; color: #F6F1E4; border: 2px solid transparent; border-radius: 28px;
+  background:
+    linear-gradient(160deg, #135F47 0%, #0B3A2C 52%, #072A20 100%) padding-box,
+    linear-gradient(135deg, #F6E3A6 0%, #C79A3E 28%, #7A5A1C 52%, #E9CB7E 78%, #FFF3CF 100%) border-box;
+  box-shadow: 0 30px 50px -30px rgba(7, 42, 32, .85), 0 3px 8px rgba(7, 42, 32, .22), inset 0 1px 0 rgba(255, 255, 255, .18);
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::before {
+  display: block; content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; border-radius: inherit; opacity: .5; height: auto; width: auto; top: 0; left: 0; right: 0;
+  background:
+    radial-gradient(circle at 94% 6%, transparent 0 34px, rgba(240, 215, 143, .32) 35px 36px, transparent 37px 48px, rgba(240, 215, 143, .22) 49px 50px, transparent 51px 62px, rgba(240, 215, 143, .16) 63px 64px, transparent 65px),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 7px);
+}
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::after { display: block; content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; width: auto; height: auto; right: auto; top: 0; background: linear-gradient(115deg, transparent 38%, rgba(255, 244, 205, .13) 50%, transparent 62%); transform: translateX(-130%); animation: vd-brilho 8s ease-in-out 1.5s infinite; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) > * { position: relative; z-index: 1; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(p, small, span, .cm-mudo, .gs-sub, .gs-mudo, .gs-rotulo, .cm-eyebrow, .ini-sobra) { color: rgba(246, 241, 228, .82); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(.cm-eyebrow, .gs-rotulo) { color: #F0D78F; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(b, strong, .ini-valor, .cm-num, .gs-grande, .gs-medio, h1, h2, h3) { color: #FFF3CF; text-shadow: 0 2px 10px rgba(0, 0, 0, .3); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) a:not(.gs-btn) { color: #F0D78F; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-btn.link, html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-btn.sec { color: #F6F1E4; background: rgba(255, 255, 255, .1); border-color: rgba(240, 215, 143, .4); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .cm-prog, html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-barra { background: rgba(255, 255, 255, .14); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(input, select) { background: rgba(255, 255, 255, .1); color: #FFF3CF; border-color: rgba(240, 215, 143, .35); }
+@media (prefers-reduced-motion: reduce) { html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::after { animation: none; } }
+
+/* botão principal sempre em ouro */
+html.gs-app .gs-btn:not(.sec):not(.link):not(.perigo):not(.pequeno.sec) { background: linear-gradient(180deg, #EBCF8B, #C79A3E) !important; color: #2B1D07 !important; border: 1px solid rgba(138, 101, 8, .45) !important; box-shadow: 0 12px 22px -12px rgba(138, 101, 8, .7), inset 0 1px 0 rgba(255, 255, 255, .55) !important; }
+html.gs-app .gs-btn.sec { background: #fff; color: var(--tinta); border: 1px solid var(--linha); }
+html.gs-app .cm-lateral .gs-btn { background: linear-gradient(180deg, #EBCF8B, #C79A3E) !important; }
