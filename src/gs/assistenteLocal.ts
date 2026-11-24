@@ -11,13 +11,15 @@ import { planoDeQuitacao } from './caminho.js';
 import { gastosPorCategoria } from './evolucaoLogica.js';
 import { buscar } from './registroFerramentas.js';
 import type { Estado } from './tipos.js';
+import { agirPorFrase } from './midasAcoes';
 
 export const NOME_ASSISTENTE = 'Midas';
 
 export interface LinkAssistente { titulo: string; rota: string }
-export interface RespostaAssistente { texto: string; links?: LinkAssistente[] }
-export interface MensagemAssistente { de: 'voce' | 'assistente'; texto: string; links?: LinkAssistente[] }
+export interface RespostaAssistente { texto: string; links?: LinkAssistente[]; desfazer?: () => void }
+export interface MensagemAssistente { de: 'voce' | 'assistente'; texto: string; links?: LinkAssistente[]; desfazer?: () => void; desfeito?: boolean }
 
+export const EXEMPLOS_ANOTAR = ['mercado 35', 'uber 18,50', 'almoço 30 ontem', 'recebi 200 de extra'];
 export const SUGESTOES = ['O que eu pago primeiro?', 'Quanto posso gastar hoje?', 'Quando fico livre das dívidas?', 'Para onde foi meu dinheiro?', 'Quanto já guardei?'];
 
 const tem = (t: string, ...palavras: string[]) => palavras.some((p) => t.includes(p));
@@ -75,5 +77,8 @@ export function responderLocal(pergunta: string, e: Estado, hoje: string): Respo
 /** O único ponto que a tela chama. Hoje responde localmente; é aqui que a API entra. */
 export async function perguntarAoAssistente(pergunta: string, e: Estado, hoje: string, _historico: MensagemAssistente[] = []): Promise<RespostaAssistente> {
   void _historico;
+  // primeiro vê se é um comando ("mercado 35", "recebi 3000"): aí o Midas anota de verdade, com Desfazer
+  const feito = agirPorFrase(pergunta, hoje);
+  if (feito) return feito;
   return responderLocal(pergunta, e, hoje);
 }

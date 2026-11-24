@@ -13,7 +13,7 @@ function FraseDica({ texto }: { texto: string }) {
 }
 import { rotaDoApp } from './visual';
 import { aoLadoDoAlvo, casaDoMidas, cruza, lugarSemCobrir, type Caixa } from './midasPosicao';
-import { NOME_ASSISTENTE, SUGESTOES, perguntarAoAssistente, type MensagemAssistente } from './assistenteLocal';
+import { EXEMPLOS_ANOTAR, NOME_ASSISTENTE, SUGESTOES, perguntarAoAssistente, type MensagemAssistente } from './assistenteLocal';
 
 /* ---------- O assistente: a bolinha dourada que flutua, a barra "pergunte" e o painel de conversa ---------- */
 // As respostas vêm de assistenteLocal.ts (é lá que a API entra depois). Aqui é só a tela.
@@ -325,6 +325,12 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
   useEffect(() => { posRef.current = pos; }, [pos]);
   useEffect(() => { const id = window.setTimeout(() => setChega(false), 700); return () => window.clearTimeout(id); }, []);
   useEffect(() => { setApertada(false); }, [fala?.id]);
+  // ao trocar de tela o Midas "lê" a página: dá uma balançada curta, como se reagisse aos números novos
+  useEffect(() => {
+    setMexe(true);
+    const id = window.setTimeout(() => setMexe(false), 520);
+    return () => window.clearTimeout(id);
+  }, [pathname]);
   useEffect(() => { if (!fala) passoDica.current = 0; }, [fala]);
   const urgente = useMemo(() => temAvisoUrgente(e, hoje), [e, hoje]);
   useEffect(() => () => {
@@ -630,7 +636,7 @@ function Mascote({ oculto, onAbrir }: { oculto: boolean; onAbrir: () => void }) 
       style={{ transform: `translate3d(${Math.round(pos.x)}px, ${Math.round(pos.y)}px, 0)` }}
     >
       <div className={`as-figura${face < 0 ? ' esq' : ''}${andando ? ' andando' : ''}${chega ? ' chega' : ''}`}>
-        <button type="button" className={`as-orb-btn${mexe ? ' toque' : ''}${urgente && !fala ? ' tem-aviso' : ''}`} onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 520); if (tourRef.current !== null && !pausadoRef.current) onAbrir(); else mostrarDicaRef.current(true); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
+        <button type="button" className={`as-orb-btn${mexe ? ' toque' : ''}${urgente && !fala ? ' tem-aviso' : ''}`} onClick={() => { setMexe(true); window.setTimeout(() => setMexe(false), 520); onAbrir(); }} aria-label={`Próxima dica do ${NOME_ASSISTENTE}`}>
           <Orbe tamanho={min ? 40 : 52} />
           <i className="as-faisca" aria-hidden="true" /><i className="as-faisca" aria-hidden="true" /><i className="as-moeda" aria-hidden="true" />
         </button>
@@ -694,6 +700,8 @@ function AssistenteNoApp() {
   estado.current = { e, hoje, msgs };
   const nome = primeiroNome(e.config.nome || getName() || '');
   const noApp = e.config.onboardingFeito;
+  // o que mais importa agora, para quem abre o Midas sem saber o que perguntar
+  const agora = useMemo(() => dicasParaTela(e, hoje, pathname)[0] ?? null, [e, hoje, pathname]);
 
   const enviar = async (pergunta: string) => {
     const p = pergunta.trim();
@@ -704,7 +712,7 @@ function AssistenteNoApp() {
     setPensando(true);
     try {
       const [r] = await Promise.all([perguntarAoAssistente(p, estado.current.e, estado.current.hoje, antes), new Promise((ok) => setTimeout(ok, 450))]);
-      setMsgs((m) => [...m, { de: 'assistente', texto: r.texto, links: r.links }]);
+      setMsgs((m) => [...m, { de: 'assistente', texto: r.texto, links: r.links, desfazer: r.desfazer }]);
     } catch {
       setMsgs((m) => [...m, { de: 'assistente', texto: 'Não consegui responder agora. Tente de novo em instantes.' }]);
     } finally {
@@ -764,23 +772,37 @@ function AssistenteNoApp() {
             <div className="as-ola">
               <Orbe tamanho={72} />
               <b>{nome ? `Oi, ${nome}. ` : 'Oi. '}Sou o {NOME_ASSISTENTE}</b>
-              <p>Olho os seus números e respondo na hora: contas, dívidas, gastos e o que você guardou.</p>
+              <p>Anoto seus gastos por frase e respondo com os seus números.</p>
+              {agora && (
+                <div className={`as-agora ${agora.tom}`}>
+                  <small>Pra agora</small>
+                  <b>{agora.texto}</b>
+                  <Link to={agora.rota} onClick={() => setAberto(false)}>{agora.rotulo}<ChevronRight size={14} aria-hidden="true" /></Link>
+                </div>
+              )}
             </div>
           )}
           {msgs.map((m, i) => (
             <div key={i} className={`as-msg ${m.de}`}>
               <p>{m.texto}</p>
+              {m.desfazer && (
+                <button type="button" className="as-desfazer" disabled={m.desfeito} onClick={() => { m.desfazer?.(); setMsgs((l) => l.map((x, j) => (j === i ? { ...x, desfeito: true } : x))); }}>{m.desfeito ? 'Desfeito' : 'Desfazer'}</button>
+              )}
               {m.links && <div className="as-links">{m.links.map((l) => <Link key={l.rota + l.titulo} to={l.rota}>{l.titulo}<ChevronRight size={14} aria-hidden="true" /></Link>)}</div>}
             </div>
           ))}
           {pensando && <div className="as-msg assistente as-digitando" aria-label="Pensando"><i /><i /><i /></div>}
           <div ref={fim} />
         </div>
+        <div className="as-sugestoes anotar" role="group" aria-label="Anotar por frase">
+          <span>Anote falando:</span>
+          {EXEMPLOS_ANOTAR.map((s) => <button key={s} type="button" onClick={() => { setTexto(s); campo.current?.focus(); }}>{s}</button>)}
+        </div>
         <div className="as-sugestoes" role="group" aria-label="Perguntas sugeridas">
           {SUGESTOES.map((s) => <button key={s} type="button" onClick={() => void enviar(s)}>{s}</button>)}
         </div>
         <form className="as-campo" onSubmit={(ev) => { ev.preventDefault(); void enviar(texto); }}>
-          <input ref={campo} value={texto} onChange={(ev) => setTexto(ev.target.value)} placeholder="Pergunte sobre suas contas, dívidas…" aria-label={`Pergunta para o ${NOME_ASSISTENTE}`} maxLength={300} tabIndex={aberto ? 0 : -1} />
+          <input ref={campo} value={texto} onChange={(ev) => setTexto(ev.target.value)} placeholder="Anote (mercado 35) ou pergunte…" aria-label={`Pergunta para o ${NOME_ASSISTENTE}`} maxLength={300} tabIndex={aberto ? 0 : -1} />
           <button type="submit" aria-label="Enviar" disabled={!texto.trim() || pensando} tabIndex={aberto ? 0 : -1}><ArrowUp size={18} aria-hidden="true" /></button>
         </form>
       </aside>

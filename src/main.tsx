@@ -13,7 +13,7 @@ import './gs/caminho.css';
 import './gs/painelVisual.css';
 import './gs/sistema.css';
 import './gs/movimento.css';
-import './gs/vidroGlobal.css';
+import './gs/visual.css';
 import './gs/tema';
 import { initAnalytics } from './analytics';
 

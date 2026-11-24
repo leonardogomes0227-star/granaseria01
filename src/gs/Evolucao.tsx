@@ -57,7 +57,7 @@ export function Evolucao() {
       })()}
       {serie.length >= 2 && (
         <GraficoLinha titulo="Receitas × despesas" sub="mês a mês" rotulos={serie.slice(-6).map((x) => mesCurto(x.mes))}
-          series={[{ nome: 'Receitas', valores: serie.slice(-6).map((x) => x.receitas), cor: '#35AA70' }, { nome: 'Despesas', valores: serie.slice(-6).map((x) => x.despesas), cor: '#D4742C' }]} />
+          series={[{ nome: 'Receitas', valores: serie.slice(-6).map((x) => x.receitas), cor: '#1C8A5E' }, { nome: 'Despesas', valores: serie.slice(-6).map((x) => x.despesas), cor: '#C2570F' }]} />
       )}
       {(() => {
         const meses = serie.slice(-6).map((x) => x.mes);

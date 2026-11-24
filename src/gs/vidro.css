@@ -235,3 +235,6 @@
 .vd-kpi { transition: transform .25s cubic-bezier(.16, 1, .3, 1), box-shadow .25s; }
 .vd-kpi:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2), 0 22px 44px -22px rgba(198, 161, 90, .55); }
 @media (prefers-reduced-motion: reduce) { .vd-topo, .vd-cabeca p, .vd-ao-vivo i { animation: none !important; } }
+.vd-mov small { display: block; color: var(--vd-mudo); font: 650 14px/1 var(--cm-sans, inherit); letter-spacing: .08em; text-transform: uppercase; }
+.vd-mov em { display: block; margin-top: 8px; max-width: 28ch; color: var(--vd-mudo); font: 500 15px/1.35 var(--cm-sans, inherit); font-style: normal; }
+.vd-hero:has(.vd-mov) { min-height: 0; }
