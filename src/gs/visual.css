@@ -313,3 +313,74 @@ html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(i
 html.gs-app .gs-btn:not(.sec):not(.link):not(.perigo):not(.pequeno.sec) { background: linear-gradient(180deg, #EBCF8B, #C79A3E) !important; color: #2B1D07 !important; border: 1px solid rgba(138, 101, 8, .45) !important; box-shadow: 0 12px 22px -12px rgba(138, 101, 8, .7), inset 0 1px 0 rgba(255, 255, 255, .55) !important; }
 html.gs-app .gs-btn.sec { background: #fff; color: var(--tinta); border: 1px solid var(--linha); }
 html.gs-app .cm-lateral .gs-btn { background: linear-gradient(180deg, #EBCF8B, #C79A3E) !important; }
+
+/* ======================================================================
+   IDEIA D (aprovada): cartão de ouro escovado no saldo, cartão preto e ouro no patrimônio, luxo no resto do app
+   ====================================================================== */
+html.gs-app body {
+  background:
+    radial-gradient(520px 340px at 0 -4%, rgba(214, 170, 80, .34), transparent 70%),
+    radial-gradient(420px 300px at 110% 14%, rgba(28, 107, 80, .14), transparent 70%),
+    linear-gradient(180deg, #F7F1E4, #EEE5D1) fixed !important;
+}
+/* o metal dourado: base de todos os destaques */
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) {
+  color: #5C3C06; border: 0; border-radius: 28px;
+  background:
+    repeating-linear-gradient(100deg, rgba(255, 255, 255, .12) 0 1px, transparent 1px 4px),
+    conic-gradient(from 200deg at 72% 22%, #FBEBB8, #E0B759, #A67A26, #F5DE9C, #CFA24A, #FFF4D2, #DDB257, #9C7020, #F7E4A8, #FBEBB8);
+  box-shadow: 0 34px 44px -24px rgba(92, 62, 10, .72), 0 4px 8px rgba(92, 62, 10, .22), inset 0 1.5px 0 rgba(255, 255, 255, .85), inset 0 -2px 4px rgba(120, 80, 10, .35);
+}
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::before {
+  opacity: .55; background: radial-gradient(circle at 94% 6%, transparent 0 34px, rgba(110, 74, 12, .38) 35px 36px, transparent 37px 48px, rgba(110, 74, 12, .28) 49px 50px, transparent 51px 62px, rgba(110, 74, 12, .2) 63px 64px, transparent 65px 76px, rgba(110, 74, 12, .14) 77px 78px, transparent 79px);
+}
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::after { background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, .55) 50%, transparent 62%); }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(p, small, span, em, .cm-mudo, .gs-sub, .gs-mudo, .gs-rotulo, .ini-sobra) { color: #7A5516; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(.cm-eyebrow, .gs-rotulo, small) { color: #7A5516; text-shadow: 0 1px 0 rgba(255, 255, 255, .6); }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(b, strong, .ini-valor, .cm-num, .gs-grande, .gs-medio, h1, h2, h3) { color: #5C3C06; text-shadow: 0 1px 0 rgba(255, 255, 255, .7), 0 -1px 0 rgba(90, 60, 5, .3); }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) a:not(.gs-btn), html.gs-app .vd-hero .vd-hero-acao { color: #6E4A0C; font-weight: 700; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-btn.link, html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-btn.sec { color: #4A3206; background: rgba(255, 255, 255, .5); border-color: rgba(110, 74, 12, .35); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-btn:not(.sec):not(.link) { background: linear-gradient(180deg, #3A2A0E, #1C1405) !important; color: #F6E3A6 !important; border: 1px solid rgba(255, 233, 170, .4) !important; box-shadow: 0 12px 20px -10px rgba(40, 26, 4, .8) !important; }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .cm-prog, html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) .gs-barra { background: rgba(110, 74, 12, .2); }
+html.gs-app :is(.ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(input, select) { background: rgba(255, 255, 255, .55); color: #4A3206; border-color: rgba(110, 74, 12, .35); }
+/* hero do Início: marca, chip e rodapé como num cartão */
+html.gs-app .vd-hero { padding: 20px 22px 16px; }
+html.gs-app .vd-marca { display: flex; justify-content: space-between; align-items: center; }
+html.gs-app .vd-marca span { font: 700 12px var(--txt); letter-spacing: .28em; color: #6E4A0C; text-shadow: 0 1px 0 rgba(255, 255, 255, .7); }
+html.gs-app .vd-marca i { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; font: 700 19px 'Cormorant Garamond', Georgia, serif; font-style: normal; color: #4A3206; background: radial-gradient(circle at 35% 30%, #FFF1BF, #D9A63F 62%, #8A5F14); box-shadow: 0 4px 8px rgba(80, 50, 5, .4); }
+html.gs-app .vd-chip { width: 46px; height: 34px; margin: 12px 0 8px; border-radius: 8px; background: linear-gradient(135deg, #FFF3CF, #C79A3E); box-shadow: inset 0 0 0 1px rgba(110, 74, 12, .4); position: relative; }
+html.gs-app .vd-chip::before { content: ''; position: absolute; inset: 6px 10px; border: 1px solid rgba(110, 74, 12, .45); border-radius: 4px; }
+html.gs-app .vd-hero b { color: #5C3C06; font-size: clamp(36px, 10.5vw, 46px); text-shadow: 0 1px 0 rgba(255, 255, 255, .7), 0 -1px 0 rgba(90, 60, 5, .3); }
+html.gs-app .vd-hero .vd-modo { background: rgba(255, 255, 255, .45); border-color: rgba(110, 74, 12, .3); margin-top: 12px; }
+html.gs-app .vd-hero .vd-modo button { color: #7A5516; } html.gs-app .vd-hero .vd-modo button.on { color: #3A2506; }
+html.gs-app .vd-hero .vd-pilula-mov { background: linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, .4)); border-color: rgba(110, 74, 12, .35); box-shadow: 0 6px 12px -6px rgba(90, 60, 5, .5); }
+html.gs-app .vd-hero .vd-barras i { background: linear-gradient(180deg, #7A5516, rgba(122, 85, 22, .25)); }
+html.gs-app .vd-hero .vd-barras i.on { background: linear-gradient(180deg, #3A2506, rgba(58, 37, 6, .6)); }
+html.gs-app .vd-hero .vd-barras i.futuro { background: rgba(110, 74, 12, .18); }
+html.gs-app .vd-hero .vd-linha { stroke: #4A3206; }
+html.gs-app .vd-hero .vd-tip { color: #4A3206; }
+html.gs-app .vd-hero .vd-delta.bom { color: #1F6B49; } html.gs-app .vd-hero .vd-delta.ruim { color: #8F2D22; }
+html.gs-app .vd-rodape { display: flex; justify-content: space-between; margin-top: 12px; font: 700 11px var(--txt); letter-spacing: .16em; color: #6E4A0C; text-shadow: 0 1px 0 rgba(255, 255, 255, .6); }
+/* cartão preto e ouro do patrimônio */
+html.gs-app .vd-pat { position: relative; isolation: isolate; overflow: hidden; color: #F6F1E4; border: 2px solid transparent; border-radius: 26px; padding: 18px; margin: 4px 0; background: linear-gradient(160deg, #16171A, #08090A) padding-box, linear-gradient(135deg, #F6E3A6, #C79A3E 30%, #6B4C14 55%, #FFF3CF) border-box; box-shadow: 0 30px 44px -26px rgba(0, 0, 0, .8); }
+html.gs-app .vd-pat::before { content: ''; position: absolute; z-index: -1; inset: 0; background: radial-gradient(110% 80% at 100% 0, rgba(230, 199, 122, .3), transparent 55%); }
+.vd-pat-topo { display: flex; justify-content: space-between; align-items: center; }
+.vd-pat-topo span { font: 600 11px var(--txt); letter-spacing: .14em; text-transform: uppercase; color: rgba(246, 241, 228, .7); }
+html.gs-app .vd-pat-topo a { color: #F0D78F; font: 700 13px var(--txt); text-decoration: none; }
+html.gs-app .vd-pat > b { display: block; margin: 6px 0 2px; font: 500 38px/1.05 var(--tit); letter-spacing: -.02em; color: #FFF3CF; font-variant-numeric: lining-nums tabular-nums; }
+html.gs-app .vd-pat > em { font: 600 12.5px var(--txt); font-style: normal; color: #7FE0B0; }
+.vd-pat svg { display: block; width: 100%; height: 64px; margin-top: 8px; }
+.vd-pat-area { fill: rgba(230, 199, 122, .22); }
+.vd-pat-linha { fill: none; stroke: #FFF3CF; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: vd-traco 1.2s ease .2s forwards; }
+.vd-compartilha { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; height: 52px; margin: 6px 0; border-radius: 999px; border: 1px solid rgba(138, 101, 8, .45); background: linear-gradient(180deg, #EBCF8B, #C79A3E); color: #2B1D07; font: 700 15px var(--txt); cursor: pointer; box-shadow: 0 14px 24px -14px rgba(138, 101, 8, .75), inset 0 1px 0 rgba(255, 255, 255, .55); }
+.vd-compartilha:disabled { opacity: .6; cursor: wait; }
+/* luxo no resto: cartões com brilho de vidro, menu com ouro, números com relevo */
+html.gs-app :is(.pu-kpi, .pu-vidro, .vd-vidro:not(.vd-hero), .cm-card, .gs-card:not(.destaque), .cm-lista, .ms-lista) { background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(251, 247, 238, .88)); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 1px 2px rgba(28, 25, 20, .05), 0 22px 34px -26px rgba(92, 66, 18, .42); }
+html.gs-app .cm-abas { background: rgba(255, 252, 245, .86); border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 18px 36px -16px rgba(92, 66, 18, .4); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+html.gs-app .cm-mais { background: linear-gradient(180deg, #F6E3A6, #C79A3E 60%, #A67A26); color: #2B1D07; box-shadow: 0 14px 26px -10px rgba(138, 101, 8, .75), inset 0 1px 0 rgba(255, 255, 255, .7); }
+html.gs-app :is(h1, .gs-titulo) { text-shadow: 0 1px 0 rgba(255, 255, 255, .8); }
+html.gs-app .pu-kpi b, html.gs-app .vd-kpi b { text-shadow: 0 1px 0 rgba(255, 255, 255, .8); }
+@media (prefers-reduced-motion: reduce) { .vd-pat-linha { animation: none; stroke-dashoffset: 0; } }
+
+html.gs-app .vd-hero > header::after { content: none !important; display: none; }
+html.gs-app .vd-hero > header { padding-right: 0; }

@@ -1,6 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowUpRight, Landmark, PiggyBank } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Landmark, PiggyBank, Share2 } from 'lucide-react';
+import { compartilharMes } from './cartaoDoMes';
+import { patrimonioGuardado, reservaMeta, sequenciaDeDias } from './selectores';
+import { saudeFinanceira } from './saude';
+import { toast } from '../components/ui/Toast';
+import { mesDe as mesDeData, nomeMes } from './datas';
 import { brl0, diaCurto } from './datas';
 import { painelVidro, type Delta, type DiaCalor, type Kpi } from './painelVidro';
 import { mascarar, useOculto } from './privacidade';
@@ -169,7 +174,7 @@ function PainelAba({ aba, dir, children }: { aba: string; dir: 'dir' | 'esq'; ch
   return <div key={aba} className={`vd-painel ${dir}`} role="tabpanel">{children}</div>;
 }
 
-export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { onSaldo: () => void; onRenda: () => void; onPagar: (id: string) => void; carteira?: boolean }) {
+export function PainelVidro({ onSaldo, onRenda, onPagar }: { onSaldo: () => void; onRenda: () => void; onPagar: (id: string) => void }) {
   const e = useEstado();
   const hoje = useHoje();
   const oculto = useOculto();
@@ -179,6 +184,7 @@ export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { o
   const [aba, setAba] = useState<Aba>('categorias');
   const [dir, setDir] = useState<'dir' | 'esq'>('dir');
   const [dia, setDia] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
   const raiz = useRef<HTMLDivElement>(null);
   const gAbas = useRef<HTMLDivElement>(null);
   const gModo = useRef<HTMLDivElement>(null);
@@ -187,6 +193,19 @@ export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { o
   const saldo = p.kpis.find((k) => k.id === 'saldo')!;
   const faixa = FAIXA.map((id) => p.kpis.find((k) => k.id === id)!);
   const patrimonio = p.kpis.find((k) => k.id === 'patrimonio')!;
+  const compartilhar = async () => {
+    if (enviando) return;
+    setEnviando(true);
+    tocar('pop');
+    try {
+      const mesAtual = mesDeData(hoje);
+      const rec = p.kpis.find((k) => k.id === 'receitas')?.valor ?? null;
+      const sobraPct = rec && rec > 0 && saldo.valor !== null ? Math.round((saldo.valor / rec) * 100) : null;
+      const meta = reservaMeta(e, mesAtual);
+      const r = await compartilharMes({ mes: nomeMes(mesAtual).replace(/^./, (c) => c.toLocaleUpperCase('pt-BR')), sobraPct, dias: sequenciaDeDias(e, hoje), saude: e.config.renda > 0 ? saudeFinanceira(e, mesAtual, hoje).nota : null, reservaPct: meta > 0 ? Math.round(Math.min(1, Math.max(0, patrimonioGuardado(e)) / meta) * 100) : null, moedas: 12 });
+      if (r === 'downloaded') toast('Imagem salva. É só postar.');
+    } catch { toast('Não consegui gerar a imagem agora.'); } finally { setEnviando(false); }
+  };
   const escolhido: DiaCalor | null = p.calor.find((d) => d.data === dia) ?? null;
   const maxCalor = Math.max(1, ...p.calor.map((d) => d.valor));
   const semSerie = p.dias.every((d) => d.despesa === 0 && d.receita === 0);
@@ -255,19 +274,15 @@ export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { o
         onPointerMove={inclinar}
         onPointerLeave={soltar}
       >
+        <div className="vd-marca"><span>GRANA SÉRIA</span><i aria-hidden="true">G</i></div>
+        <div className="vd-chip" aria-hidden="true" />
         <header>
-          {carteira ? (
-            <div className="vd-mov">
-              <small>Movimento do mês</small>
-              <em>{saldo.valor === null ? saldo.vazio : saldo.extra ?? saldo.nota}</em>
-              {saldo.valor !== null && <Seta delta={saldo.delta} bom={saldo.bomQuando} />}
-            </div>
-          ) : (<div>
+          <div>
             <small>Saldo do mês</small>
             <b>{saldo.valor === null ? '—' : oculto ? m(brl0(saldo.valor)) : <Numero valor={saldo.valor} ms={1100} />}</b>
             <em>{saldo.valor === null ? saldo.vazio : saldo.extra ?? saldo.nota}</em>
             {saldo.valor !== null && <Seta delta={saldo.delta} bom={saldo.bomQuando} />}
-          </div>)}
+          </div>
           <div className="vd-modo" role="group" aria-label="O que o gráfico mostra" ref={gModo}>
             <i className="vd-pilula-mov" ref={plModo as React.RefObject<HTMLElement>} aria-hidden="true" />
             <button type="button" data-ativo={modo === 'despesa'} className={modo === 'despesa' ? 'on' : ''} aria-pressed={modo === 'despesa'} onClick={() => trocarModo('despesa')}>Despesa</button>
@@ -275,10 +290,22 @@ export function PainelVidro({ onSaldo, onRenda, onPagar, carteira = false }: { o
           </div>
         </header>
         <button type="button" className="vd-hero-acao" onClick={saldo.valor === null ? onRenda : onSaldo}>
-          {saldo.valor === null ? 'Informar renda' : carteira ? 'Como calculei' : 'Ver a conta'}
+          {saldo.valor === null ? 'Informar renda' : 'Ver a conta'}
         </button>
         {semSerie ? <p className="vd-vazio">Quando entrar receita ou gasto, o mês desenha aqui.</p> : <Grafico key={modo} dias={p.dias} modo={modo} />}
+        <div className="vd-rodape"><span>{(e.config.nome || 'Você').toUpperCase()}</span><span>MEMBRO {hoje.slice(0, 4)}</span></div>
       </section>
+
+      {patrimonio.valor !== null && patrimonio.valor > 0 && (
+        <section className="vd-pat" aria-label="Patrimônio guardado">
+          <div className="vd-pat-topo"><span>Patrimônio guardado</span><Link to="/guardar">Guardar ›</Link></div>
+          <b>{oculto ? m(brl0(patrimonio.valor)) : <Numero valor={patrimonio.valor} ms={1000} />}</b>
+          {patrimonio.delta && patrimonio.delta.sentido !== 'igual' && <em>{patrimonio.delta.sentido === 'sobe' ? '▲' : '▼'} {patrimonio.nota ?? 'neste mês'}</em>}
+          {patrimonio.serie.length > 1 && (() => { const v = patrimonio.serie.map((x) => x.valor); const mn = Math.min(...v); const mx = Math.max(...v); const sp = mx - mn || 1; const pts = v.map((y, i) => `${((i / (v.length - 1)) * 320).toFixed(1)} ${(56 - ((y - mn) / sp) * 48).toFixed(1)}`); const d = 'M' + pts.join(' L'); return <svg viewBox="0 0 320 64" preserveAspectRatio="none" aria-hidden="true"><path d={`${d} L320 64 L0 64Z`} className="vd-pat-area" /><path d={d} className="vd-pat-linha" pathLength={1} /></svg>; })()}
+        </section>
+      )}
+
+      <button type="button" className="vd-compartilha" onClick={() => void compartilhar()} disabled={enviando}><Share2 size={17} aria-hidden="true" />Compartilhar meu mês</button>
 
       <div className="vd-kpis" aria-label="Números do mês">
         {faixa.map((k, n) => kpi(k, n))}
