@@ -384,3 +384,5 @@ html.gs-app .pu-kpi b, html.gs-app .vd-kpi b { text-shadow: 0 1px 0 rgba(255, 25
 
 html.gs-app .vd-hero > header::after { content: none !important; display: none; }
 html.gs-app .vd-hero > header { padding-right: 0; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(.cm-eyebrow, .gs-rotulo, small, .vd-marca span, .vd-rodape span) { color: #4A3206 !important; text-shadow: none; font-weight: 700; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(p, em, .cm-mudo, .gs-sub, .gs-mudo, .ini-sobra) { color: #55390A !important; font-weight: 500; }
