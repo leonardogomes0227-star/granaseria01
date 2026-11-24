@@ -386,3 +386,17 @@ html.gs-app .vd-hero > header::after { content: none !important; display: none; 
 html.gs-app .vd-hero > header { padding-right: 0; }
 html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(.cm-eyebrow, .gs-rotulo, small, .vd-marca span, .vd-rodape span) { color: #4A3206 !important; text-shadow: none; font-weight: 700; }
 html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero) :is(p, em, .cm-mudo, .gs-sub, .gs-mudo, .ini-sobra) { color: #55390A !important; font-weight: 500; }
+
+/* usabilidade: item ativo da barra legível; formulários ficam em cartão claro (o ouro é só para mostrar números) */
+html.gs-app .cm-abas a.on, html.gs-app .cm-abas a.on span { color: #3A2506 !important; font-weight: 800; }
+html.gs-app .cm-abas a.on svg { color: #6E4A0C !important; }
+html.gs-app .cm-lateral a.cm-item.on span { color: var(--tinta) !important; }
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea) {
+  color: var(--tinta); background: var(--sup); border: 1px solid var(--linha); box-shadow: var(--sombra-card);
+}
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea)::before,
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea)::after { display: none; }
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea) :is(p, small, span, em, .gs-sub, .gs-mudo, .gs-rotulo, .cm-eyebrow) { color: var(--mudo) !important; text-shadow: none; }
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea) :is(b, strong, h1, h2, h3, .gs-grande) { color: var(--tinta); text-shadow: none; }
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea) :is(input, select, textarea) { background: #fff; color: var(--tinta); border-color: rgba(28, 25, 20, .18); }
+html.gs-app :is(.gs-card.destaque, .ini-destaque, .cm-topo-area):has(input, select, textarea) .gs-btn:not(.sec):not(.link) { background: linear-gradient(180deg, #EBCF8B, #C79A3E) !important; color: #2B1D07 !important; }
