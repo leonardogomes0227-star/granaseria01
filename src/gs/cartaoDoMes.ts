@@ -12,19 +12,6 @@ export interface DadosCartaoMes {
   moedas: number; // altura da pilha de ouro
 }
 
-function moeda(x: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, esp: number) {
-  const lado = x.createLinearGradient(cx - rx, 0, cx + rx, 0);
-  lado.addColorStop(0, '#7A5614'); lado.addColorStop(0.3, '#E8C46A'); lado.addColorStop(0.55, '#B98625'); lado.addColorStop(1, '#6A4A0E');
-  x.fillStyle = lado;
-  x.beginPath(); x.ellipse(cx, cy + esp, rx, ry, 0, 0, Math.PI); x.lineTo(cx - rx, cy); x.ellipse(cx, cy, rx, ry, 0, Math.PI, 0, true); x.closePath(); x.fill();
-  const topo = x.createRadialGradient(cx - rx * 0.3, cy - ry * 0.4, 4, cx, cy, rx);
-  topo.addColorStop(0, '#FFF1BF'); topo.addColorStop(0.55, '#E2B24A'); topo.addColorStop(1, '#A87820');
-  x.fillStyle = topo;
-  x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); x.fill();
-  x.strokeStyle = 'rgba(255, 238, 170, .65)'; x.lineWidth = 3;
-  x.beginPath(); x.ellipse(cx, cy, rx * 0.84, ry * 0.84, 0, 0, Math.PI * 2); x.stroke();
-}
-
 export async function desenharCartaoMes(d: DadosCartaoMes): Promise<HTMLCanvasElement> {
   await ensureFonts();
   await Promise.race([Promise.allSettled([document.fonts.load('500 200px Fraunces'), document.fonts.load('600 36px "Plus Jakarta Sans"')]), new Promise((r) => setTimeout(r, 1500))]);
