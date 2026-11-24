@@ -19,7 +19,11 @@ import { NOME_ASSISTENTE } from './assistenteLocal';
 import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
 import { ICONES } from './base';
-import { PainelVidro } from './PainelVidro';
+import { PainelVideo } from './PainelVideo';
+import { compartilharMes } from './cartaoDoMes';
+import { patrimonioGuardado, reservaMeta } from './selectores';
+import { painelVidro } from './painelVidro';
+import { toast } from '../components/ui/Toast';
 
 /* ---------- Início: o painel ---------- */
 // Saudação, o número do dia, o mês e as ferramentas que a pessoa mais usa — cada uma com a pergunta que responde.
@@ -107,6 +111,16 @@ export function Caderno() {
   const sequencia = useMemo(() => sequenciaDeDias(e, hoje), [e, hoje]);
   const semContas = e.gastosFixos.length === 0;
   const mesNome = nomeMes(mes);
+  const compartilhar = async () => {
+    try {
+      const k = painelVidro(e, hoje).kpis;
+      const rec = k.find((x) => x.id === 'receitas')?.valor ?? null;
+      const sal = k.find((x) => x.id === 'saldo')?.valor ?? null;
+      const meta = reservaMeta(e, mes);
+      const r = await compartilharMes({ mes: mesNome.replace(/^./, (c) => c.toLocaleUpperCase('pt-BR')), sobraPct: rec && rec > 0 && sal !== null ? Math.round((sal / rec) * 100) : null, dias: sequencia, saude: saude ? saude.nota : null, reservaPct: meta > 0 ? Math.round(Math.min(1, Math.max(0, patrimonioGuardado(e)) / meta) * 100) : null, moedas: 12 });
+      if (r === 'downloaded') toast('Imagem salva. É só postar.');
+    } catch { toast('Não consegui gerar a imagem agora.'); }
+  };
 
   // primeiros passos: somem sozinhos quando renda e contas estão cadastradas
   const passos = [
@@ -159,7 +173,7 @@ export function Caderno() {
         <BarraPerguntar />
         <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
       </header>
-      <PainelVidro onSaldo={() => setCalc(true)} onRenda={() => setRenda(true)} onPagar={(id) => setBaixa(id)} />
+      <PainelVideo onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} />
       </div>
 
       <nav className="pn-acoes" aria-label="Ações rápidas">

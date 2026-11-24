@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 
 export const CHAVE_SONS = 'gs-sons';
-export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop' | 'deslizar' | 'digitar';
+export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop' | 'deslizar' | 'digitar' | 'tique' | 'tique2';
 
 const ouvintes = new Set<() => void>();
 let gesto = false;
@@ -82,51 +82,34 @@ function emitir(ctxAtual: AudioContext, tipo: TipoSom) {
     nota(ctxAtual, master, 784, agora, 0.055, 'sine', 0.045);
     return;
   }
-  if (tipo === 'navegar') {
-    const amostras = Math.floor(ctxAtual.sampleRate * 0.16);
-    const buffer = ctxAtual.createBuffer(1, amostras, ctxAtual.sampleRate);
-    const dados = buffer.getChannelData(0);
-    for (let i = 0; i < dados.length; i++) dados[i] = (Math.random() * 2 - 1) * (1 - i / dados.length) ** 2;
-    const src = ctxAtual.createBufferSource();
-    src.buffer = buffer;
-    const filtro = ctxAtual.createBiquadFilter();
-    filtro.type = 'bandpass';
-    filtro.Q.setValueAtTime(0.6, agora);
-    filtro.frequency.setValueAtTime(420, agora);
-    filtro.frequency.exponentialRampToValueAtTime(1600, agora + 0.14);
-    const g = ctxAtual.createGain();
-    g.gain.setValueAtTime(0.03, agora);
-    g.gain.exponentialRampToValueAtTime(0.0001, agora + 0.16);
-    src.connect(filtro);
-    filtro.connect(g);
-    g.connect(master);
-    src.start(agora);
-    src.stop(agora + 0.17);
-    return;
-  }
   if (tipo === 'sucesso') {
     nota(ctxAtual, master, 523.25, agora, 0.11, 'sine', 0.04);
     nota(ctxAtual, master, 659.25, agora + 0.07, 0.16, 'sine', 0.035);
     nota(ctxAtual, master, 783.99, agora + 0.14, 0.2, 'triangle', 0.02);
     return;
   }
-  if (tipo === 'deslizar') {
-    const o = ctxAtual.createOscillator();
-    const g = ctxAtual.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(380, agora);
-    o.frequency.exponentialRampToValueAtTime(1240, agora + 0.17);
-    g.gain.setValueAtTime(0.0001, agora);
-    g.gain.exponentialRampToValueAtTime(0.04, agora + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, agora + 0.2);
-    o.connect(g);
-    g.connect(master);
-    o.start(agora);
-    o.stop(agora + 0.22);
-    nota(ctxAtual, master, 1568, agora + 0.15, 0.09, 'triangle', 0.016);
+  if (tipo === 'tique' || tipo === 'tique2' || tipo === 'navegar' || tipo === 'deslizar') {
+    // os cliques do vídeo de referência: um "tique-tique" seco em ~1050 Hz (duas batidas) e uma batida mais aguda em ~1550 Hz
+    const batida = (quando: number, freq: number, pico: number) => {
+      nota(ctxAtual, master, freq, quando, 0.045, 'sine', pico);
+      nota(ctxAtual, master, freq * 2, quando, 0.02, 'triangle', pico * 0.35);
+      const amostras = Math.floor(ctxAtual.sampleRate * 0.02);
+      const buffer = ctxAtual.createBuffer(1, amostras, ctxAtual.sampleRate);
+      const dados = buffer.getChannelData(0);
+      for (let i = 0; i < dados.length; i++) dados[i] = (Math.random() * 2 - 1) * (1 - i / dados.length) ** 3;
+      const src = ctxAtual.createBufferSource();
+      src.buffer = buffer;
+      const f = ctxAtual.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 2.2;
+      const g = ctxAtual.createGain(); g.gain.value = pico * 1.6;
+      src.connect(f); f.connect(g); g.connect(master); src.start(quando); src.stop(quando + 0.03);
+    };
+    if (tipo === 'tique2') batida(agora, 1550, 0.05);
+    else { batida(agora, 1050, 0.05); batida(agora + 0.06, 1050, 0.04); }
     return;
   }
   if (tipo === 'digitar') {
+    return;
     for (let i = 0; i < 5; i++) nota(ctxAtual, master, 1800 + (i % 2) * 260, agora + i * 0.085, 0.022, 'square', 0.006);
     return;
   }
