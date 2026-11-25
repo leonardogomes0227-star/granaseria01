@@ -134,18 +134,25 @@ html.gs-app body .rv .rv-total > b { font-size: clamp(34px, 7vw, 48px) !importan
 
 /* a janela: moldura arredondada de vidro, com luz por dentro */
 @media (min-width: 900px) {
-  .rv { padding: 26px 28px 30px; border-radius: 32px; border: 1px solid rgba(255, 255, 255, .8); background: linear-gradient(160deg, rgba(255, 255, 255, .42), rgba(255, 236, 190, .18) 55%, rgba(255, 255, 255, .26)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 80px rgba(255, 214, 120, .22), 0 40px 80px -40px rgba(120, 76, 8, .55); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .rv { padding: 26px 28px 30px; border-radius: 32px; border: 1px solid rgba(255, 255, 255, .9); background: linear-gradient(160deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .28)); box-shadow: inset 0 1px 0 #fff, 0 40px 80px -48px rgba(60, 50, 30, .35); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
 }
-/* fundo mais fundo e luminoso, para o vidro aparecer */
+/* fundo claro e neutro (as cores do app ficam; só a estrutura vem do vídeo) */
 html.gs-app:not([data-tema="escuro"]) body {
   background:
-    radial-gradient(800px 560px at 4% -8%, rgba(224, 160, 50, .85), transparent 68%),
-    radial-gradient(700px 600px at 100% 8%, rgba(235, 120, 60, .5), transparent 70%),
-    radial-gradient(900px 640px at 50% 118%, rgba(190, 130, 40, .6), transparent 70%),
-    radial-gradient(520px 420px at 34% 40%, rgba(255, 246, 220, .9), transparent 72%),
-    linear-gradient(180deg, #F2E3BF, #DDBE7E) fixed !important;
+    radial-gradient(640px 420px at 8% -6%, rgba(236, 214, 160, .55), transparent 70%),
+    radial-gradient(560px 460px at 100% 20%, rgba(255, 255, 255, .9), transparent 70%),
+    linear-gradient(180deg, #F4F1EA, #E9E5DB) fixed !important;
 }
+html.gs-app:not([data-tema="escuro"]) .pv-halo { background: radial-gradient(closest-side, rgba(217, 174, 85, .16), transparent) !important; }
 /* colunas do funil com brilho */
-.pv-col .box i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 0 40px -4px rgba(226, 160, 50, .75), 0 18px 30px -16px rgba(120, 76, 8, .7); }
+.pv-col .box i { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 0 30px -8px rgba(217, 174, 85, .6), 0 16px 26px -16px rgba(120, 84, 18, .5); }
 .pv-col .box { background: linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .15)); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-color: rgba(255, 255, 255, .9); }
-.pv-col.on .box { background: repeating-linear-gradient(135deg, rgba(120, 76, 8, .16) 0 5px, transparent 5px 10px), rgba(255, 255, 255, .35); border-color: rgba(185, 120, 30, .8); box-shadow: 0 0 0 3px rgba(226, 160, 50, .2), 0 0 44px -6px rgba(226, 160, 50, .6); }
+.pv-col.on .box { background: repeating-linear-gradient(135deg, rgba(120, 84, 18, .12) 0 5px, transparent 5px 10px), rgba(255, 255, 255, .35); border-color: rgba(185, 120, 30, .8); box-shadow: 0 0 0 3px rgba(185, 138, 45, .14), 0 0 30px -8px rgba(185, 138, 45, .45); }
+
+/* barras dentro do cartão da conta, como as de "Opened / Clicked" dos cartões do vídeo */
+.rv-conta .bar { display: grid; grid-template-columns: 62px 1fr 34px; gap: 8px; align-items: center; margin-top: 8px; font-size: 10.5px; color: #7A7366; }
+.rv-conta .bar:first-of-type { margin-top: 11px; }
+.rv-conta .bar span { height: 5px; border-radius: 4px; background: rgba(28, 25, 20, .08); overflow: hidden; } .rv-conta .bar span i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #D9AE55, #B98A2D); transform-origin: left; animation: pv-lado 1s cubic-bezier(.16, 1, .3, 1) .3s backwards; }
+.rv-conta .bar:nth-of-type(2) span i { background: linear-gradient(90deg, #8FB7A5, #4F8F78); }
+.rv-conta .bar b { text-align: right; font-weight: 700; color: #17150F; font-variant-numeric: tabular-nums; }
+.rv-conta .bar { grid-template-columns: 66px 1fr 34px; } .rv-conta .bar small { white-space: nowrap; font-size: 10.5px !important; }

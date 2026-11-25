@@ -355,6 +355,8 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
                         <div className="t"><span><Receipt size={13} aria-hidden="true" />{cap(c.gasto.categoria || 'conta')}</span><MoreHorizontal size={16} aria-hidden="true" /></div>
                         <h3>{c.gasto.nome}</h3>
                         <p>{m(brl0(c.valor))} · todo dia {c.gasto.diaVencimento}</p>
+                        <div className="bar"><small>Da renda</small><span><i style={{ width: `${Math.min(100, Math.round((c.valor / Math.max(1, e.config.renda)) * 100))}%` }} /></span><b>{Math.round((c.valor / Math.max(1, e.config.renda)) * 100)}%</b></div>
+                        <div className="bar"><small>Das contas</small><span><i style={{ width: `${Math.min(100, Math.round((c.valor / Math.max(1, contas.reduce((t, x) => t + x.valor, 0))) * 100))}%` }} /></span><b>{Math.round((c.valor / Math.max(1, contas.reduce((t, x) => t + x.valor, 0))) * 100)}%</b></div>
                         <div className="d"><CalendarDays size={13} aria-hidden="true" />{dataCurta(c.vencimento)} · {c.estado === 'paga' ? 'paga' : c.dias < 0 ? `atrasada há ${-c.dias} ${-c.dias === 1 ? 'dia' : 'dias'}` : c.dias === 0 ? 'vence hoje' : c.dias === 1 ? 'vence amanhã' : `vence em ${c.dias} dias`}</div>
                         <div className="b"><span className="av" aria-hidden="true">{c.gasto.nome.slice(0, 2).toLocaleUpperCase('pt-BR')}</span>{c.estado !== 'paga' ? <button type="button" onClick={() => { tocar('tique'); onPagar(c.gasto.id); }}>Pagar</button> : <small>Paga</small>}</div>
                       </article>
