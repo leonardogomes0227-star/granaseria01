@@ -5,11 +5,11 @@
 // A pílula das abas estica e desliza como no vídeo; o título embaralha; o conteúdo entra com desfoque, cartão por cartão.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as PE } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, Filter, Flame, Grid3x3, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, Eye, EyeOff, Filter, Flame, Grid3x3, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, type LucideIcon } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
 import { useContagem } from './base';
 import { painelVidro } from './painelVidro';
-import { mascarar, useOculto } from './privacidade';
+import { definirOculto, mascarar, useOculto } from './privacidade';
 import { contasDoMes, detalheDisponivel, patrimonioGuardado, reservaMeta } from './selectores';
 import { useEstado } from './store';
 import { useHoje } from './useHoje';
@@ -106,7 +106,7 @@ function Colunas({ passos, sel, onSel, m, comparar, rotuloPct }: { passos: Passo
   );
 }
 
-export function PainelVideo({ onCompartilhar, onSaldo, onPagar }: { onCompartilhar: () => void; onSaldo: () => void; onPagar: (id: string) => void }) {
+export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?: string; onCompartilhar: () => void; onSaldo: () => void; onPagar: (id: string) => void }) {
   const e = useEstado();
   const hoje = useHoje();
   const oculto = useOculto();
@@ -255,10 +255,12 @@ export function PainelVideo({ onCompartilhar, onSaldo, onPagar }: { onCompartilh
 
       <div className="pv-ph">
         <div>
+          {nome && <small className="rv-ola">Olá, {nome}</small>}
           <h1 className="rv-titulo">{titulo}</h1>
           <p>{subtitulo}</p>
         </div>
         <div className="pv-acoes">
+          <button type="button" className="rv-olho" onClick={() => { definirOculto(!oculto); tocar('tique2'); }} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}</button>
           {vista === 'funil' && <><button type="button" className="pv-b2" onClick={() => { tocar('tique'); onCompartilhar(); }}><Share2 size={15} aria-hidden="true" />Compartilhar</button><button type="button" className="rv-ouro" onClick={() => { tocar('tique'); onSaldo(); }}>Como calculei</button></>}
           {vista === 'contas' && <Link to="/pagar?nova=1" className="rv-ouro" onClick={() => tocar('tique')}><Plus size={15} aria-hidden="true" />Nova conta</Link>}
           {vista === 'mapa' && <button type="button" className="rv-ouro" onClick={() => { tocar('tique'); abrirAdicionar(); }}><Plus size={15} aria-hidden="true" />Anotar gasto</button>}

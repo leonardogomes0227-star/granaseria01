@@ -173,7 +173,7 @@ export function Caderno() {
         <BarraPerguntar />
         <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
       </header>
-      <PainelVideo onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} onPagar={(id) => setBaixa(id)} />
+      <PainelVideo nome={nome} onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} onPagar={(id) => setBaixa(id)} />
       </div>
 
       <nav className="pn-acoes" aria-label="Ações rápidas">
