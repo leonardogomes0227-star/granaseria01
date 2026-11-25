@@ -1,0 +1,46 @@
+/* Estilo do vídeo em TODAS as telas: Inter, cartões de vidro branco, destaque dourado suave, barras hachuradas, tudo entrando animado. */
+html.gs-app { --ouro-v: #B98A2D; --fio-v: rgba(28, 25, 20, .09); }
+html.gs-app, html.gs-app body, html.gs-app .gs-casca { font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif !important; }
+html.gs-app :is(h1, h2, h3, h4, .gs-titulo, .gs-h2, .cm-h2, .cm-num, .ini-valor, .gs-grande, .gs-medio, .gs-dinheiro, .vd-hero b, .vd-kpi b, .oh-saldo, .pu-kpi b, .cm-marca span) { font-family: 'Inter', system-ui, sans-serif !important; font-variant-numeric: tabular-nums; }
+html.gs-app :is(h1, .gs-titulo) { font-weight: 600 !important; letter-spacing: -.028em !important; font-size: clamp(26px, 7vw, 34px) !important; line-height: 1.1 !important; text-shadow: none !important; }
+html.gs-app :is(h2, h3, .gs-h2, .cm-h2) { font-weight: 600 !important; letter-spacing: -.012em !important; font-size: clamp(16px, 4vw, 19px); }
+html.gs-app :is(.cm-num, .ini-valor, .gs-grande, .gs-dinheiro, .oh-saldo) { font-weight: 600 !important; letter-spacing: -.035em !important; }
+html.gs-app :is(.cm-eyebrow, .gs-rotulo) { font-family: 'Inter', sans-serif !important; font-size: 10.5px !important; letter-spacing: .1em !important; font-weight: 600 !important; }
+html.gs-app .cm-marca span { font-weight: 700 !important; letter-spacing: -.02em !important; font-size: 18px !important; }
+/* cartões: vidro branco, borda fina, sombra quente */
+html.gs-app :is(.gs-card, .cm-card, .vd-kpi, .pu-vidro, .ini-config, .ms-lista, .ms-perfil, .ad-acao, .cm-lista) { border-radius: 18px !important; background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(251, 247, 238, .9)) !important; border: 1px solid rgba(255, 255, 255, .95) !important; box-shadow: 0 1px 2px rgba(28, 25, 20, .05), 0 22px 34px -26px rgba(92, 66, 18, .4) !important; }
+/* destaque dourado: gradiente suave com brilho passando (sem metal escovado) */
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) { border-radius: 20px !important; border: 1px solid rgba(255, 244, 205, .9) !important; color: #2A1E06; background: linear-gradient(135deg, #F3DC9C 0%, #D9AE55 48%, #B98A2D 100%) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 26px 40px -24px rgba(140, 100, 24, .7) !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::before { display: none !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::after { background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .45) 50%, transparent 65%) !important; animation: v-brilho 4.5s 1s ease-in-out infinite !important; }
+@keyframes v-brilho { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(p, small, span, em, .cm-eyebrow, .gs-rotulo) { color: rgba(40, 28, 6, .78) !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(b, strong, h1, h2, h3, .cm-num, .ini-valor, .gs-grande) { color: #1E1604 !important; text-shadow: none !important; }
+/* barras de progresso: trilho hachurado e dourado que cresce */
+html.gs-app :is(.cm-prog, .gs-prog, .cm-barra) { height: 9px !important; border-radius: 6px !important; background: repeating-linear-gradient(135deg, rgba(28, 25, 20, .07) 0 5px, transparent 5px 10px) !important; overflow: hidden; }
+html.gs-app :is(.cm-prog, .gs-prog, .cm-barra) > * { border-radius: 6px !important; background: linear-gradient(90deg, #D9AE55, #B98A2D) !important; transform-origin: left; animation: v-lado 1s cubic-bezier(.16, 1, .3, 1) backwards; }
+@keyframes v-lado { from { transform: scaleX(0); } }
+/* campos e botões */
+html.gs-app :is(input, select, textarea):not([type=checkbox]):not([type=radio]) { border-radius: 11px !important; font-family: 'Inter', sans-serif !important; }
+html.gs-app :is(.gs-btn, .cm-chip, .gs-chip) { border-radius: 11px; font-family: 'Inter', sans-serif; font-weight: 600; }
+/* tudo entra animado, em sequência */
+html.gs-app .gs-principal > * > :is(.gs-card, .cm-card, .vd-kpi, .cm-lista, .cm-topo-area, .ini-destaque, .dv-hero, section, article) { animation: v-sobe .55s cubic-bezier(.16, 1, .3, 1) backwards; }
+html.gs-app .gs-principal > * > :nth-child(2) { animation-delay: .06s; } html.gs-app .gs-principal > * > :nth-child(3) { animation-delay: .12s; } html.gs-app .gs-principal > * > :nth-child(4) { animation-delay: .18s; } html.gs-app .gs-principal > * > :nth-child(n+5) { animation-delay: .24s; }
+@keyframes v-sobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+html.gs-app :is(.gs-card, .cm-card, a.cm-card, .ms-lista a) { transition: transform .25s, box-shadow .25s; }
+html.gs-app :is(a.gs-card, a.cm-card):hover { transform: translateY(-3px); }
+@media (prefers-reduced-motion: reduce) { html.gs-app * { animation-duration: .01ms !important; } }
+/* barra do topo */
+html.gs-app .cm-cam { display: none; align-items: center; gap: 8px; margin-right: auto; margin-left: 14px; font: 500 13px 'Inter', sans-serif; color: #7A7366; }
+html.gs-app .cm-cam b { color: #17150F; font-weight: 600; } html.gs-app .cm-cam u { text-decoration: none; opacity: .5; } html.gs-app .cm-cam i { font-style: normal; }
+html.gs-app .cm-vivo { display: none; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 99px; background: rgba(255, 255, 255, .8); border: 1px solid rgba(28, 25, 20, .08); font: 600 12px 'Inter', sans-serif; color: #1F8A5B; }
+html.gs-app .cm-vivo i { width: 7px; height: 7px; border-radius: 50%; background: #1F8A5B; animation: pv-pulsa 1.8s infinite; }
+@keyframes pv-pulsa { 0% { box-shadow: 0 0 0 0 rgba(31, 138, 91, .5); } 100% { box-shadow: 0 0 0 9px rgba(31, 138, 91, 0); } }
+html.gs-app .cm-novo { display: none; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 11px; background: linear-gradient(180deg, #EBCF8B, #C79A3E); color: #1E1604; font: 700 12.5px 'Inter', sans-serif; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 10px 18px -10px rgba(140, 100, 24, .7); }
+@media (min-width: 900px) { html.gs-app .cm-cam, html.gs-app .cm-vivo, html.gs-app .cm-novo { display: inline-flex; } html.gs-app .cm-topo { gap: 10px; } html.gs-app .cm-topo .cm-marca { display: none; } }
+
+
+@media (min-width: 900px) { .cm-casca:has(.pn) .cm-topo { display: flex; } }
+html.gs-app body :is(*, *::before, *::after):not(svg):not(svg *):not(code):not(kbd):not(pre) { font-family: 'Inter', system-ui, sans-serif !important; }
+html.gs-app :is(.dv-resposta, .dv-resposta *) { font-weight: 600 !important; letter-spacing: -.02em !important; }
+html.gs-app.gs-app body :is(.ini-valor, .cm-eyebrow, .cm-num, [class*="valor"], [class*="num"]):not(svg *) { font-family: 'Inter', system-ui, sans-serif !important; font-weight: 600 !important; }

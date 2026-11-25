@@ -95,12 +95,3 @@
 .pv-catl .tr i.perigo { background: linear-gradient(90deg, #E0806F, #C2493A); } .pv-catl .tr i.aviso { background: linear-gradient(90deg, #E8B25A, #C98A2A); }
 @keyframes pv-lado { from { transform: scaleX(0); } }
 .pv-catl .v { font: 700 13px 'Inter', sans-serif; font-variant-numeric: tabular-nums; }
-/* barra do topo */
-html.gs-app .cm-cam { display: none; align-items: center; gap: 8px; margin-right: auto; margin-left: 14px; font: 500 13px 'Inter', sans-serif; color: #7A7366; }
-html.gs-app .cm-cam b { color: #17150F; font-weight: 600; } html.gs-app .cm-cam u { text-decoration: none; opacity: .5; } html.gs-app .cm-cam i { font-style: normal; }
-html.gs-app .cm-vivo { display: none; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 99px; background: rgba(255, 255, 255, .8); border: 1px solid rgba(28, 25, 20, .08); font: 600 12px 'Inter', sans-serif; color: #1F8A5B; }
-html.gs-app .cm-vivo i { width: 7px; height: 7px; border-radius: 50%; background: #1F8A5B; animation: pv-pulsa 1.8s infinite; }
-@keyframes pv-pulsa { 0% { box-shadow: 0 0 0 0 rgba(31, 138, 91, .5); } 100% { box-shadow: 0 0 0 9px rgba(31, 138, 91, 0); } }
-html.gs-app .cm-novo { display: none; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 11px; background: linear-gradient(180deg, #EBCF8B, #C79A3E); color: #1E1604; font: 700 12.5px 'Inter', sans-serif; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 10px 18px -10px rgba(140, 100, 24, .7); }
-@media (min-width: 900px) { html.gs-app .cm-cam, html.gs-app .cm-vivo, html.gs-app .cm-novo { display: inline-flex; } html.gs-app .cm-topo { gap: 10px; } html.gs-app .cm-topo .cm-marca { display: none; } }
-@media (min-width: 900px) { .cm-casca:has(.pn) .cm-topo { display: flex; } }
