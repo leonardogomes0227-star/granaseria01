@@ -13,7 +13,7 @@ const aplicar = (t: Tema) => {
   if (typeof document === 'undefined') return;
   if (t === 'escuro') document.documentElement.dataset.tema = 'escuro';
   else delete document.documentElement.dataset.tema;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#F6F0E4');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#F4EEE0');
 };
 aplicar(atual); // já no carregamento, para não piscar o tema errado
 

@@ -93,7 +93,7 @@ function Casca({ children }: { children: ReactNode }) {
     <div className={`gs-casca gs-app2 cm-casca${pronto ? '' : ' cm-sem-menu'}`}>
       <aside className="cm-lateral" aria-label="Menu principal" ref={lateral}>
         {pilula && <i className="cm-pill" aria-hidden="true" style={{ top: pilula.t, bottom: pilula.b, transition: pilula.desce ? `top .55s cubic-bezier(.65, 0, .35, 1), bottom .36s cubic-bezier(.215, .61, .355, 1)` : `top .36s cubic-bezier(.215, .61, .355, 1), bottom .55s cubic-bezier(.65, 0, .35, 1)` }} />}
-        <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span>Grana Séria</span></Link>
+        <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span className="nome-marca">Grana <em>Séria</em></span></Link>
         {NAV.map(([to, label, Icon]) => (
           <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span></Link>
         ))}
@@ -103,7 +103,7 @@ function Casca({ children }: { children: ReactNode }) {
       </aside>
       <div className="gs-coluna">
         <header className="cm-topo">
-          <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
+          <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span className="nome-marca">Grana <em>Séria</em></span></Link>
           <span className="cm-cam" aria-hidden="true"><i>Grana Séria</i><u>/</u><b>{TITULO_ROTA(pathname)}</b></span>
           <span className="cm-vivo" aria-label="Dados ao vivo"><i />Ao vivo</span>
           <Link to="/pagar" className="cm-sino" aria-label={urgentes ? `${urgentes} ${urgentes === 1 ? 'aviso' : 'avisos'} de contas` : 'Nenhum aviso de contas'} onClick={() => tocar('tique')}><Bell size={17} aria-hidden="true" />{urgentes > 0 && <b>{urgentes}</b>}</Link>
@@ -207,7 +207,7 @@ function CascaPublica({ children }: { children: ReactNode }) {
         <div className="gs-topo-in">
           <Link to="/" className="gs-marca" aria-label="Grana Séria, início">
             <Moeda tamanho={30} />
-            <span>Grana Séria</span>
+            <span className="nome-marca">Grana <em>Séria</em></span>
           </Link>
           <nav className="gs-abas-topo" aria-label="Seções" style={{ display: 'flex' }}>
             <NavLink to="/guias">Guias</NavLink>

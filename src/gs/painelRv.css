@@ -156,3 +156,6 @@ html.gs-app:not([data-tema="escuro"]) .pv-halo { background: radial-gradient(clo
 .rv-conta .bar:nth-of-type(2) span i { background: linear-gradient(90deg, #8FB7A5, #4F8F78); }
 .rv-conta .bar b { text-align: right; font-weight: 700; color: #17150F; font-variant-numeric: tabular-nums; }
 .rv-conta .bar { grid-template-columns: 66px 1fr 34px; } .rv-conta .bar small { white-space: nowrap; font-size: 10.5px !important; }
+
+/* o nome da marca combina com a logo: "Grana" na tinta, "Séria" em ouro */
+.nome-marca em, .nome-seria, .logo .nome-seria, .logo em { font-style: normal !important; background: linear-gradient(180deg, #E8C770, #B98A2D); -webkit-background-clip: text; background-clip: text; color: transparent !important; -webkit-text-fill-color: transparent; }

@@ -104,7 +104,7 @@ export function SiteHeader({
         <nav className="site-nav">
           <a href="#topo" className="brand" aria-label="Grana Séria — início">
             <BrandMark />
-            <span className="logo">Grana Séria</span>
+            <span className="logo">Grana <em className="nome-seria">Séria</em></span>
           </a>
 
           <div className="navlinks">
@@ -153,7 +153,7 @@ export function SiteHeader({
             <div className="drawer-head">
               <span className="brand">
                 <BrandMark />
-                <span className="logo">Grana Séria</span>
+                <span className="logo">Grana <em className="nome-seria">Séria</em></span>
               </span>
               <button type="button" className="menu-btn" style={{ display: 'inline-flex' }} aria-label="Fechar menu" onClick={() => setDrawerOpen(false)}>
                 <X size={20} />
@@ -190,7 +190,7 @@ export function AppBar({ onHome }: { onHome: () => void }) {
       <nav className="site-nav">
         <button type="button" className="brand" onClick={onHome} aria-label="Voltar ao início">
           <BrandMark />
-          <span className="logo">Grana Séria</span>
+          <span className="logo">Grana <em className="nome-seria">Séria</em></span>
         </button>
         <div className="nav-right">
           <Link className="btn-ghost" to="/painel">
@@ -212,7 +212,7 @@ export function SiteFooter({ onStart, onOpenTool }: { onStart: () => void; onOpe
         <div className="foot-brand">
           <div className="brand">
             <BrandMark />
-            <div className="logo">Grana Séria</div>
+            <div className="logo">Grana <em className="nome-seria">Séria</em></div>
           </div>
           <p>Um diagnóstico financeiro baseado nos princípios de O Homem Mais Rico da Babilônia.</p>
         </div>
