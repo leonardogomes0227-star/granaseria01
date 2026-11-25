@@ -31,7 +31,7 @@ function N({ v, oculto }: { v: number; oculto: boolean }) {
 }
 
 /** Título que embaralha as letras e se resolve da esquerda para a direita, como no vídeo. */
-function useEmbaralhar(texto: string): string {
+export function useEmbaralhar(texto: string): string {
   const [t, setT] = useState(texto);
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { setT(texto); return; }
@@ -49,7 +49,7 @@ function useEmbaralhar(texto: string): string {
 }
 
 /** Abas com a pílula que estica: a borda da frente corre rápido e a de trás vem depois (o slidePill do vídeo). */
-function Abas<T extends string>({ itens, valor, onMudar, pequeno }: { itens: { id: T; rotulo: string; Icone?: LucideIcon; n?: number }[]; valor: T; onMudar: (v: T) => void; pequeno?: boolean }) {
+export function Abas<T extends string>({ itens, valor, onMudar, pequeno }: { itens: { id: T; rotulo: string; Icone?: LucideIcon; n?: number }[]; valor: T; onMudar: (v: T) => void; pequeno?: boolean }) {
   const caixa = useRef<HTMLDivElement>(null);
   const antes = useRef(0);
   const [p, setP] = useState<{ l: number; r: number; fwd: boolean } | null>(null);

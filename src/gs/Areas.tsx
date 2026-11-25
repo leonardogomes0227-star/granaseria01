@@ -33,6 +33,7 @@ import { definirSons, tocar, useSonsLigados } from './sons';
 import { mascarar, useOculto } from './privacidade';
 import { getName } from '../painel';
 import { waLink } from '../whatsapp';
+import { JanelaArea } from './JanelaArea';
 
 /** A grade de ferramentas de uma área: só as que o plano liberou; as outras ficam recolhidas, com "Liberar". */
 export function GradeFerramentas({ area, todas = false }: { area: Area; todas?: boolean }) {
@@ -158,8 +159,9 @@ export function AreaPagar() {
   const vazio = linhas.length === 0 && antigas.length === 0;
   const TOM_LINHA = { paga: 'ok', atrasada: 'perigo', 'vence-logo': 'aviso', 'em-dia': '' } as const;
   return (
-    <>
-      <h1 className="gs-titulo">Contas</h1>
+    <JanelaArea titulo="Contas" sub={<>{m(brl0(falta))} para pagar em {nomeMes(mes).split(' ')[0]}{atrasadas.length ? ` · ${atrasadas.length} ${atrasadas.length === 1 ? 'atrasada' : 'atrasadas'}` : ''}</>} abas={[{ id: 'resumo', rotulo: 'Resumo' }, { id: 'contas', rotulo: 'Contas', n: abertasMes.length }, { id: 'atalhos', rotulo: 'Atalhos' }]} acoes={<button type="button" className="rv-ouro" onClick={() => setNova(true)}><Plus size={15} aria-hidden="true" />Nova conta</button>}>
+      {(aba) => (<>
+      {aba === 'resumo' && (<>
       <section className="ini-destaque" aria-label="O que falta pagar">
         <span className="cm-eyebrow">Falta pagar em {nomeMes(mes).split(' ')[0]}</span>
         <b className="ini-valor">{m(brl0(falta))}</b>
@@ -192,6 +194,8 @@ export function AreaPagar() {
         </>
       )}
 
+      </>)}
+      {aba === 'contas' && (<>
       {vazio ? (
         <section className="cm-card" aria-label="Como começar">
           <h2 className="cm-h2" style={{ margin: '0 0 8px' }}>Comece pela conta maior</h2>
@@ -214,6 +218,8 @@ export function AreaPagar() {
         </>
       )}
 
+      </>)}
+      {aba === 'atalhos' && (<>
       <h2 className="cm-h2">Atalhos de contas</h2>
       <div className="ini-cards compacto">
         <Link to="/plano/calendario"><i><CalendarDays size={22} aria-hidden="true" /></i><b>Calendário</b><small>O que vence antes do salário</small></Link>
@@ -226,9 +232,11 @@ export function AreaPagar() {
         <summary>Todas as ferramentas de contas, dívidas e cartão</summary>
         <GradeFerramentas area="pagar" />
       </details>
+      </>)}
       <BaixaSheet gasto={e.gastosFixos.find((g) => g.id === baixa) ?? null} mes={mes} onFechar={() => setBaixa(null)} />
       <FormConta valor={nova ? 'novo' : null} onFechar={() => setNova(false)} onExcluir={() => setNova(false)} />
-    </>
+      </>)}
+    </JanelaArea>
   );
 }
 
@@ -248,8 +256,9 @@ export function AreaGastos() {
   const mapa = useMemo(() => matrizCategorias(e, meses6.map((x) => x.mes)), [e, meses6]);
   const ultimos = useMemo(() => [...e.lancamentos].filter((l) => mesDe(l.data) === mes).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5), [e.lancamentos, mes]);
   return (
-    <>
-      <h1 className="gs-titulo">Gastos</h1>
+    <JanelaArea titulo="Gastos" sub={<>{m(brl0(total))} no mês · {e.lancamentos.filter((l) => mesDe(l.data) === mes).length} lançamentos</>} abas={[{ id: 'resumo', rotulo: 'Resumo' }, { id: 'categorias', rotulo: 'Categorias' }, { id: 'lancamentos', rotulo: 'Lançamentos' }, { id: 'ferramentas', rotulo: 'Ferramentas' }]} acoes={<button type="button" className="rv-ouro" onClick={() => abrirAdicionar()}><Plus size={15} aria-hidden="true" />Anotar gasto</button>}>
+      {(aba) => (<>
+      {aba === 'resumo' && (<>
       <section className="cm-topo-area" aria-label="Quanto dá para gastar">
         <Eyebrow>{disp.modo === 'incompleto' ? 'Gasto anotado no mês' : 'Dá para gastar hoje'}</Eyebrow>
         <span className="cm-num">{disp.modo === 'incompleto' ? m(brl(total)) : m(brl(disp.porDia))}</span>
@@ -268,6 +277,8 @@ export function AreaGastos() {
         { rotulo: 'Maior categoria', valor: cats[0] ? cats[0].categoria : '—', icone: Flame, tom: cats[0] ? 'aviso' : '', nota: cats[0] ? m(brl0(cats[0].valor)) : 'ainda sem gastos' },
       ]} />
       {funil && <FunilVidro titulo="Da renda até o que sobrou" sub={nomeMes(mes).split(' ')[0]} mascara={m} passos={funil.passos} segue={funil.segue} />}
+      </>)}
+      {aba === 'categorias' && (<>
       <Rosca titulo="Para onde foi" sub={nomeMes(mes).split(' ')[0]} mascara={m}
         fatias={cats.slice(0, 6).map((c) => ({ nome: c.categoria, valor: c.valor, cor: corDe(c.categoria) }))}
         centro={<>{m(brl0(total))}<small>no mês</small></>} />
@@ -284,6 +295,9 @@ export function AreaGastos() {
         </Card>
       )}
 
+      </>)}
+      {aba === 'lancamentos' && (<>
+      {ultimos.length === 0 && <p className="cm-mudo">Nenhum lançamento neste mês. Toque em “Anotar gasto”: leva 5 segundos.</p>}
       {ultimos.length > 0 && (
         <>
           <h2 className="cm-h2">Últimos lançamentos<Link to="/lancamentos">Ver todos</Link></h2>
@@ -292,9 +306,11 @@ export function AreaGastos() {
           </Lista>
         </>
       )}
-      <GradeFerramentas area="gastos" />
+      </>)}
+      {aba === 'ferramentas' && <GradeFerramentas area="gastos" />}
       <ComoCalculei aberta={calc} onFechar={() => setCalc(false)} d={disp} />
-    </>
+      </>)}
+    </JanelaArea>
   );
 }
 
@@ -315,8 +331,9 @@ export function AreaGuardar() {
   const marco = useMemo(() => calcularCaminho(e, hoje).find((x) => x.id === 'reserva'), [e, hoje]);
   const f = marco ? fraseDoMarco(marco) : null;
   return (
-    <>
-      <h1 className="gs-titulo">Guardar</h1>
+    <JanelaArea titulo="Guardar" sub={<>{m(brl0(guardado))} guardados{meta > 0 ? <> · {Math.round(Math.min(100, (guardado / meta) * 100))}% da reserva</> : null}</>} abas={[{ id: 'reserva', rotulo: 'Reserva' }, { id: 'metas', rotulo: 'Metas', n: e.metas.length }, { id: 'ferramentas', rotulo: 'Ferramentas' }]}>
+      {(aba) => (<>
+      {aba === 'reserva' && (<>
       <section className="cm-topo-area" aria-label="Sua reserva" style={{ display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
         <ProgressRing pct={meta > 0 ? (guardado / meta) * 100 : 0} rotulo="Reserva de emergência"><Moeda tamanho={58} /></ProgressRing>
         <div style={{ flex: 1, minWidth: 200 }}>
@@ -337,15 +354,19 @@ export function AreaGuardar() {
         { rotulo: 'Guardado no mês', valor: guardadoNoMes(e, mes), icone: Landmark, nota: 'aportes deste mês' },
         { rotulo: 'Metas ativas', valor: e.metas.length, formato: 'int', icone: CalendarCheck, nota: e.metas.length ? 'em andamento' : 'crie a primeira' },
       ]} />
+      </>)}
+      {aba === 'metas' && (<>
       {e.metas.length > 0 && (
         <GraficoBarras titulo="Metas: quanto falta" sub="% do caminho" mascara={m}
           dados={e.metas.map((mt) => { const g = mt.guardados.reduce((t, x) => t + x.valor, 0); return { rotulo: mt.nome, valor: g, tom: g >= mt.alvo ? 'ok' : '', legenda: `${mt.nome} · ${mt.alvo > 0 ? Math.round((g / mt.alvo) * 100) : 0}% de ${brl0(mt.alvo)}` } as const; })} />
       )}
       <h2 className="cm-h2" id="metas">Suas metas</h2>
       <Metas />
-      <GradeFerramentas area="guardar" />
+      </>)}
+      {aba === 'ferramentas' && <GradeFerramentas area="guardar" />}
       {folhas}
-    </>
+      </>)}
+    </JanelaArea>
   );
 }
 

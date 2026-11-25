@@ -1,3 +1,4 @@
+import { JanelaArea } from './JanelaArea';
 import { useEffect, useMemo, useState } from 'react';
 import { RespostaFerramenta } from './RespostaFerramenta';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -8,7 +9,7 @@ import { brl0, mesAtual, mesCurto, somaMes, hoje as hojeSP, pct, mesDe, diasEntr
 import { compararEstrategias, jurosDoMes, linkWhatsApp, ordenar, mensagemParaOBanco, PEDIDOS, type Pedido, paraSim, saldoAtual, simular } from './dividas';
 import { desfazerPagamentoDivida, pagarDivida, removerDivida, restaurarDivida, salvarDivida, salvarPlanoDividas } from './acoes';
 import { NovaDividaSheet } from './NovaDivida';
-import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Titulo, Vazio } from './ui';
+import { Barra, Campo, CampoDinheiro, CampoNumero, Deslizante, Dica, Folha, Vazio } from './ui';
 import { Anel, LinhaDoTempo } from './graficos';
 import { gastoMensalMedio } from './selectores';
 import { evolucaoDividas } from './evolucaoLogica';
@@ -41,11 +42,8 @@ export function Dividas() {
   const [festa, setFesta] = useState<Quitada | null>(null);
   const tem = e.dividas.length > 0;
   return (
-    <>
-      <div className="dv-cab">
-        <Titulo titulo="Dívidas" sub={tem ? 'Seu caminho até ficar livre, com o que pagar este mês.' : 'Descubra quando você fica livre delas.'} />
-        {tem && <button type="button" className="gs-btn pequeno" onClick={() => setSimples(true)}>+ Nova dívida</button>}
-      </div>
+    <JanelaArea titulo="Dívidas" sub={tem ? 'Seu caminho até ficar livre, com o que pagar este mês.' : 'Descubra quando você fica livre delas.'} abas={[{ id: 'tudo', rotulo: 'Dívidas' }]} acoes={tem ? <button type="button" className="rv-ouro" onClick={() => setSimples(true)}>+ Nova dívida</button> : undefined}>
+      {() => (<>
       <RespostaFerramenta id="dividas" />
       {tem ? (
         <Painel onNova={() => setSimples(true)} onEditar={setEditando} onQuitou={setFesta} />
@@ -61,7 +59,8 @@ export function Dividas() {
       <NovaDividaSheet aberta={simples} tipoInicial={tipoPedido} onFechar={() => { setSimples(false); setTipoPedido(undefined); }} onCompleto={() => setEditando('nova')} />
       <FormDivida valor={editando} onFechar={() => setEditando(null)} />
       <FestaQuitou quitada={festa} onFechar={() => setFesta(null)} />
-    </>
+      </>)}
+    </JanelaArea>
   );
 }
 

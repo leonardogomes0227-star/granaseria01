@@ -10,6 +10,7 @@ import { corDe } from './categorias';
 import { Barra, Titulo, Vazio } from './ui';
 import { GraficoPeriodo } from './GraficoPeriodo';
 import { abrirAdicionar } from './AdicionarMov';
+import { JanelaArea } from './JanelaArea';
 import { ArrowDownRight, ArrowUpRight, PiggyBank, Scale } from 'lucide-react';
 import { FaixaKpis, GraficoLinha, Heatmap, Rosca } from './PainelUI';
 
@@ -38,9 +39,9 @@ export function Evolucao() {
     );
 
   return (
-    <>
-      <Titulo titulo="Relatórios" />
-
+    <JanelaArea titulo="Relatórios" sub="Como seu dinheiro está mudando, mês a mês" abas={[{ id: 'resumo', rotulo: 'Resumo' }, { id: 'periodo', rotulo: 'Mês a mês' }, { id: 'categorias', rotulo: 'Categorias' }, { id: 'patrimonio', rotulo: 'Dívidas e guardado' }]}>
+      {(aba) => (<>
+      {aba === 'resumo' && (<>
       {(() => {
         const atual = serie.find((x) => x.mes === mes);
         if (!atual) return null;
@@ -75,6 +76,8 @@ export function Evolucao() {
         <p className="gs-nota">Comparações aparecem depois do primeiro mês completo.</p>
       )}
 
+      </>)}
+      {aba === 'periodo' && (<>
       <h2 className="gs-h2">Receitas e despesas</h2>
       <GraficoPeriodo hoje={hoje} />
       {comp && (
@@ -88,6 +91,8 @@ export function Evolucao() {
         </>
       )}
 
+      </>)}
+      {aba === 'categorias' && (<>
       <h2 className="gs-h2">Gastos por categoria</h2>
       {cats.length > 0 ? (
         <div className="gs-card">
@@ -118,6 +123,8 @@ export function Evolucao() {
         <p className="gs-nota">Sem limites definidos. <Link to="/plano/orcamento">Definir limites</Link></p>
       )}
 
+      </>)}
+      {aba === 'patrimonio' && (<>
       {dividas && (
         <>
           <h2 className="gs-h2">Dívidas</h2>
@@ -138,7 +145,8 @@ export function Evolucao() {
           <div className="gs-card"><Linha serie={patri.map((p) => p.valor)} fim={brl0(patri[patri.length - 1].valor)} rotulo="Valor guardado ao fim de cada mês" /></div>
         </>
       )}
-
-    </>
+      </>)}
+      </>)}
+    </JanelaArea>
   );
 }
