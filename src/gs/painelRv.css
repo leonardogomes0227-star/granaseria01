@@ -185,3 +185,54 @@ html.gs-app:not([data-tema="escuro"]) .rv-moldura :is(.gs-card, .cm-card, .pu-vi
   .rv-ferr-lista .rv-funil { flex: none; width: 190px; margin-top: 0; scroll-snap-align: start; border-color: rgba(28, 25, 20, .08); background: rgba(255, 255, 255, .5); }
   .rv-ferr-painel { padding: 14px; }
 }
+
+/* ===== arrumação das ferramentas: texto pequeno, tudo no lugar, nada vazando ===== */
+html.gs-app .rv-moldura { --rv-corpo: 13.5px; }
+html.gs-app body .rv-ferr-painel, html.gs-app body .rv-ferr-painel * { min-width: 0; }
+html.gs-app body .rv-ferr-painel { overflow: hidden; overflow-wrap: anywhere; }
+html.gs-app body .rv-ferr-painel h1, html.gs-app body .rv-ferr-painel .gs-titulo { font-size: clamp(26px, 5.4vw, 32px) !important; margin: 0 0 4px !important; }
+html.gs-app body .rv-ferr-painel :is(h2, h3, .gs-h2, .cm-h2) { font-size: 15px !important; font-weight: 600 !important; letter-spacing: -.005em !important; margin: 18px 0 8px !important; line-height: 1.3 !important; }
+html.gs-app body .rv-ferr-painel :is(p, li, label, .gs-sub, .gs-nota) { font-size: var(--rv-corpo); line-height: 1.5; }
+html.gs-app body .rv-ferr-painel :is(small) { font-size: 11.5px !important; line-height: 1.35; }
+/* números: grandes só o bastante */
+html.gs-app body .rv-ferr-painel :is(.gs-grande, .cm-num, .ini-valor, .oh-saldo, .gs-medio, .gs-dinheiro) { font-size: clamp(24px, 5vw, 30px) !important; line-height: 1.1 !important; font-weight: 600 !important; }
+html.gs-app body .rv-ferr-painel .pu-kpis { gap: 10px; margin: 8px 0 14px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+html.gs-app body .rv-ferr-painel .pu-kpi { min-height: 0 !important; padding: 13px 14px 12px !important; gap: 4px !important; border-radius: 16px !important; }
+html.gs-app body .rv-ferr-painel .pu-kpi b { font-size: clamp(20px, 4.6vw, 25px) !important; line-height: 1.1 !important; font-weight: 600 !important; letter-spacing: -.02em !important; }
+html.gs-app body .rv-ferr-painel .pu-kpi > :is(span, div, header):first-child, html.gs-app body .rv-ferr-painel .pu-kpi small:first-of-type { max-width: 100%; }
+html.gs-app body .rv-ferr-painel .pu-kpi :is(.pu-rot, .pu-kpi-rot, header) { gap: 6px; }
+html.gs-app body .rv-ferr-painel .pu-kpi :is(.pu-rot, .pu-kpi-rot, header, header *) { font-size: 10px !important; letter-spacing: .05em !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.gs-app body .rv-ferr-painel :is(.gs-rotulo, .cm-eyebrow, [class*="rotulo"]) { font-size: 10px !important; letter-spacing: .06em !important; }
+/* a "resposta" e os cartões de destaque: uma frase curta, não um parágrafo gigante */
+html.gs-app body .rv-ferr-painel :is(.dv-resposta, .dv-resposta *) { font-size: 17px !important; line-height: 1.35 !important; font-weight: 500 !important; letter-spacing: -.01em !important; }
+html.gs-app body .rv-ferr-painel :is(.ini-destaque, .gs-card.destaque, .dv-hero, .cm-topo-area) { padding: 14px 16px !important; }
+html.gs-app body .rv-ferr-painel :is(.ini-destaque, .gs-card.destaque, .dv-hero, .cm-topo-area) :is(b, strong):not(.ini-valor):not(.cm-num) { font-size: 15px !important; }
+html.gs-app body .rv-ferr-painel :is(.gs-card, .cm-card, .pu-vidro, .ini-destaque) { padding: 14px 16px !important; border-radius: 16px !important; margin-bottom: 10px; }
+html.gs-app body .rv-ferr-painel :is(.gs-btn, button.gs-btn) { min-height: 40px; font-size: 14px; padding: 0 16px; }
+html.gs-app body .rv-ferr-painel :is(.gs-btn.pequeno) { min-height: 34px; font-size: 13px; }
+html.gs-app body .rv-ferr-painel .gs-acoes { gap: 8px; flex-wrap: wrap; }
+html.gs-app body .rv-ferr-painel :is(input, select, textarea) { max-width: 100%; font-size: 15px; }
+html.gs-app body .rv-ferr-painel :is(img, svg, table, canvas) { max-width: 100%; }
+html.gs-app body .rv-ferr-painel table { display: block; overflow-x: auto; }
+html.gs-app body .rv-ferr-painel :is(.cm-lista, .ms-lista) > * { padding-top: 10px; padding-bottom: 10px; }
+html.gs-app body .rv-ferr-painel :is(.cm-item-lista) { min-height: 52px; }
+/* o mesmo cuidado nas telas que usam a janela direto (Contas, Gastos, Guardar, Relatórios) */
+html.gs-app body .rv-area :is(.gs-grande, .cm-num, .ini-valor) { font-size: clamp(24px, 5vw, 30px) !important; }
+html.gs-app body .rv-area .pu-kpi b { font-size: clamp(20px, 4.6vw, 26px) !important; }
+html.gs-app body .rv-area :is(.pu-kpi small, .pu-kpi header, .pu-kpi header *) { letter-spacing: .05em !important; }
+html.gs-app body .rv-area :is(h2, .cm-h2, .gs-h2) { font-size: 15px !important; margin: 16px 0 8px !important; }
+html.gs-app body .rv-area .pu-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+html.gs-app body .rv-area .pu-kpi { min-height: 0 !important; padding: 13px 14px 12px !important; }
+/* lista lateral das ferramentas: compacta */
+html.gs-app body .rv-ferr-lista .rv-funil { padding: 10px 11px; margin-top: 4px; }
+html.gs-app body .rv-ferr-lista .rv-funil b { font-size: 13px; } html.gs-app body .rv-ferr-lista .rv-st { font-size: 11px !important; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+@media (max-width: 899px) { html.gs-app body .rv-ferr-lista .rv-funil { width: 170px; } .rv-moldura { margin-inline: -2px; } }
+
+html.gs-app body .rv-ferr-painel :is(.cm-resposta b, .cm-resposta p b) { font-size: 17px !important; line-height: 1.4 !important; font-weight: 500 !important; letter-spacing: -.01em !important; }
+html.gs-app body .rv-ferr-painel .cm-resposta { padding: 12px 16px !important; }
+html.gs-app body .rv-ferr-painel :is(.gs-medio, .gs-grande, p.gs-grande, p.gs-medio) { font-size: clamp(22px, 4.6vw, 26px) !important; letter-spacing: -.02em !important; line-height: 1.15 !important; }
+html.gs-app body .rv-ferr-painel .pu-kpi small:first-of-type, html.gs-app body .rv-area .pu-kpi small:first-of-type { display: flex; align-items: center; gap: 7px; font-size: 10.5px !important; letter-spacing: .04em !important; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html.gs-app body .rv-ferr-painel .pu-kpi small:not(:first-of-type), html.gs-app body .rv-area .pu-kpi small:not(:first-of-type) { font-size: 11.5px !important; letter-spacing: 0 !important; text-transform: none; }
+html.gs-app body .rv-ferr-painel :is(.gs-card, .cm-resposta, .ini-destaque) { margin-bottom: 10px; }
+html.gs-app body :is(.rv-ferr-painel, .rv-area) .pu-ico { width: 22px; height: 22px; border-radius: 8px; flex: none; }
+html.gs-app body :is(.rv-ferr-painel, .rv-area) .pu-ico svg { width: 13px; height: 13px; }
