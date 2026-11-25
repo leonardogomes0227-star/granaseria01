@@ -2,7 +2,7 @@
 // gasto por dia e agenda. Tudo vem do que o app já calcula, e tudo se mexe: barras crescem, números contam, cada toque faz um tique.
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Share2 } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Share2 } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
 import { useContagem } from './base';
 import { painelVidro } from './painelVidro';
@@ -16,6 +16,21 @@ import './painelVideo.css';
 function N({ v, oculto }: { v: number; oculto: boolean }) {
   const n = useContagem(v, 900);
   return <>{oculto ? mascarar(brl0(v), true) : brl0(n)}</>;
+}
+
+function Linha({ pts, cor }: { pts: number[]; cor: string }) {
+  if (pts.length < 2) return <svg className="pv-spk" viewBox="0 0 100 32" aria-hidden="true" />;
+  const mn = Math.min(...pts), mx = Math.max(...pts), sp = mx - mn || 1;
+  const xy = pts.map((v, i) => [(i / (pts.length - 1)) * 100, 28 - ((v - mn) / sp) * 24] as const);
+  const d = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const id = `g${cor.replace(/\W/g, '')}`;
+  return (
+    <svg className="pv-spk" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+      <defs><linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={cor} stopOpacity=".35" /><stop offset="1" stopColor={cor} stopOpacity="0" /></linearGradient></defs>
+      <path d={`${d} L100 32 L0 32 Z`} fill={`url(#${id})`} />
+      <path className="lin" d={d} fill="none" stroke={cor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" pathLength={1} />
+    </svg>
+  );
 }
 
 export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () => void; onSaldo: () => void }) {
@@ -45,6 +60,18 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
     ? <Link key={rotulo} to={rota} onClick={() => tocar('tique2')}>{rotulo}{n ? <em>{n}</em> : null}</Link>
     : <span key={rotulo} className="on" aria-current="page">{rotulo}</span>);
   const abertas = p.contas.length;
+  const serieDe = (k: (typeof p.kpis)[number]) => {
+    const h = k.serie.map((x) => x.valor);
+    if (h.length >= 3) return h;
+    const dd = p.dias.filter((d) => !d.futuro);
+    let a = 0;
+    const acum = (f: (d: (typeof dd)[number]) => number) => dd.map((d) => (a += f(d)));
+    a = 0;
+    if (k.id === 'despesas') return acum((d) => d.despesa);
+    if (k.id === 'receitas') return acum((d) => d.receita);
+    if (k.id === 'saldo') return acum((d) => d.receita - d.despesa);
+    return [];
+  };
 
   return (
     <div className="pv">
@@ -60,6 +87,20 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
       <nav className="pv-abas" aria-label="Áreas">
         {aba('Visão geral', null)}{aba('Contas', '/pagar', abertas)}{aba('Gastos', '/gastos')}{aba('Dívidas', '/plano/dividas', p.dividas.length)}{aba('Guardar', '/guardar')}
       </nav>
+
+      <div className="pv-kpis">
+        {p.kpis.filter((k) => k.id !== 'patrimonio').slice(0, 4).map((k, i) => {
+          const bom = k.delta ? (k.bomQuando === 'sobe' ? k.delta.sentido === 'sobe' : k.delta.sentido === 'desce') : true;
+          return (
+            <div key={k.id} className={`pv-kpi${i === 0 ? ' ouro' : ''}`} style={{ animationDelay: `${i * 0.08}s` }}>
+              <span className="pv-lab">{k.rotulo}</span>
+              <b>{k.valor === null ? '—' : <N v={k.valor} oculto={oculto} />}</b>
+              {k.delta && k.delta.sentido !== 'igual' ? <em className={bom ? 'bom' : 'ruim'}>{k.delta.sentido === 'sobe' ? <ArrowUpRight size={12} aria-hidden="true" /> : <ArrowDownRight size={12} aria-hidden="true" />}{k.delta.pct === null ? '' : `${Math.abs(Math.round(k.delta.pct))}%`} <small>{k.deltaRotulo}</small></em> : <em><small>{k.nota ?? ' '}</small></em>}
+              <Linha pts={serieDe(k)} cor={i === 0 ? '#B98A2D' : k.id === 'despesas' ? '#C2493A' : k.id === 'divida' ? '#9A6A1F' : '#1F8A5B'} />
+            </div>
+          );
+        })}
+      </div>
 
       <div className="pv-grade">
         <section className="pv-p pv-metas" aria-label="Suas metas">
@@ -124,6 +165,23 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
           </div>
         </section>
       </div>
+      {p.categorias.length > 0 && (
+        <section className="pv-p pv-cat" aria-label="Para onde vai">
+          <h2>Para onde vai o dinheiro</h2><p className="s">Categorias do mês, com o limite de cada uma</p>
+          <div className="pv-catl">
+            {p.categorias.slice(0, 6).map((c, i) => {
+              const tot = Math.max(1, ...p.categorias.map((x) => x.gasto));
+              return (
+                <Link key={c.categoria} to="/gastos" onClick={() => tocar('tique')} style={{ animationDelay: `${0.1 + i * 0.06}s` }}>
+                  <span className="n"><b>{c.categoria}</b><small className={c.tom}>{c.pilula}</small></span>
+                  <span className="tr"><i className={c.tom} style={{ width: `${Math.max(3, (c.gasto / tot) * 100)}%`, animationDelay: `${0.2 + i * 0.07}s` }} /></span>
+                  <span className="v">{m(brl0(c.gasto))}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
