@@ -2,7 +2,7 @@
 // gasto por dia e agenda. Tudo vem do que o app já calcula, e tudo se mexe: barras crescem, números contam, cada toque faz um tique.
 import { useEffect, useMemo, useState, type PointerEvent as PE } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowUpRight, Share2 } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, PiggyBank, Receipt, Share2, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
 import { useContagem } from './base';
 import { painelVidro } from './painelVidro';
@@ -12,6 +12,8 @@ import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { tocar } from './sons';
 import './painelVideo.css';
+
+const ICONE_KPI: Record<string, LucideIcon> = { saldo: Wallet, receitas: TrendingUp, despesas: Receipt, divida: Receipt, guardado: PiggyBank };
 
 function N({ v, oculto }: { v: number; oculto: boolean }) {
   const n = useContagem(v, 900);
@@ -97,7 +99,7 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
 
   return (
     <div className="pv" onPointerMove={seguir}>
-      <i className="pv-halo" aria-hidden="true" />
+      <i className="pv-halo" aria-hidden="true" /><i className="pv-halo b" aria-hidden="true" />
       <div className="pv-ph">
         <div>
           <h1>Seu mês</h1>
@@ -116,7 +118,7 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
           const bom = k.delta ? (k.bomQuando === 'sobe' ? k.delta.sentido === 'sobe' : k.delta.sentido === 'desce') : true;
           return (
             <div key={k.id} className={`pv-kpi${i === 0 ? ' ouro' : ''}`} style={{ animationDelay: `${i * 0.08}s` }}>
-              <span className="pv-lab">{k.rotulo}</span>
+              <span className="pv-lab">{(() => { const I = ICONE_KPI[k.id] ?? Wallet; return <I size={14} aria-hidden="true" />; })()}{k.rotulo}</span>
               <b>{k.valor === null ? '—' : <N v={k.valor} oculto={oculto} />}</b>
               {k.delta && k.delta.sentido !== 'igual' ? <em className={bom ? 'bom' : 'ruim'}>{k.delta.sentido === 'sobe' ? <ArrowUpRight size={12} aria-hidden="true" /> : <ArrowDownRight size={12} aria-hidden="true" />}{k.delta.pct === null ? '' : `${Math.abs(Math.round(k.delta.pct))}%`} <small>{k.deltaRotulo}</small></em> : <em><small>{k.nota ?? ' '}</small></em>}
               <Linha pts={serieDe(k)} cor={i === 0 ? '#B98A2D' : k.id === 'despesas' ? '#C2493A' : k.id === 'divida' ? '#9A6A1F' : '#1F8A5B'} />

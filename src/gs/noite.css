@@ -152,3 +152,36 @@ html.gs-app:not([data-tema="escuro"]) .pv-mapa button.vz { background: rgba(28, 
 html.gs-app:not([data-tema="escuro"]) .pv-mapa-esc i { background: linear-gradient(90deg, rgba(201, 154, 62, .12), rgba(185, 138, 45, .9)); }
 .pv-ag .dt small { font-size: 8px !important; letter-spacing: .04em !important; }
 .pv-ag .dt { overflow: hidden; }
+
+/* ===== vidro de verdade, em areia e dourado (as 4 camadas: frosted, translúcido, borda de luz, profundidade) ===== */
+/* o vidro só aparece com algo luminoso atrás: o fundo ganha luz dourada, âmbar e creme */
+html.gs-app:not([data-tema="escuro"]) body {
+  background:
+    radial-gradient(700px 520px at 6% -6%, rgba(232, 190, 96, .65), transparent 70%),
+    radial-gradient(640px 560px at 100% 12%, rgba(240, 160, 90, .38), transparent 70%),
+    radial-gradient(760px 600px at 55% 112%, rgba(214, 170, 80, .42), transparent 70%),
+    radial-gradient(500px 400px at 30% 45%, rgba(255, 244, 214, .9), transparent 70%),
+    linear-gradient(180deg, #F7F0DF, #EADFC6) fixed !important;
+}
+html.gs-app:not([data-tema="escuro"]) .pv-halo { background: radial-gradient(closest-side, rgba(226, 170, 70, .45), transparent); }
+html.gs-app .pv-halo.b { inset: auto auto -25% -15%; animation-duration: 13s; animation-direction: alternate-reverse; background: radial-gradient(closest-side, rgba(240, 150, 80, .30), transparent) !important; }
+html.gs-app:not([data-tema="escuro"]) :is(.pv-p, .pv-kpi:not(.ouro)) {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .72), rgba(255, 252, 244, .38) 70%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, .85) !important;
+  border-radius: 20px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 -1px 0 rgba(140, 100, 24, .08), 0 24px 44px -26px rgba(120, 84, 18, .45) !important;
+}
+html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro { border-radius: 20px !important; }
+.pv-kpi .pv-lab { display: inline-flex; align-items: center; gap: 7px; }
+.pv-kpi .pv-lab svg { padding: 4px; width: 24px; height: 24px; border-radius: 8px; background: rgba(185, 138, 45, .14); color: #9A6F1C; box-sizing: border-box; }
+html.gs-app[data-tema="escuro"] .pv-kpi .pv-lab svg { background: rgba(226, 188, 99, .14); color: #E2BC63; }
+.pv-kpi.ouro .pv-lab svg { background: rgba(255, 255, 255, .4); color: #3a2a08; }
+/* ferramentas guardadas num bloco que abre */
+.pv-mais { margin-top: 14px; }
+.pv-mais > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-radius: 16px; font: 600 14px 'Inter', sans-serif; background: rgba(255, 255, 255, .6); border: 1px solid rgba(255, 255, 255, .85); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: inset 0 1px 0 #fff, 0 18px 30px -24px rgba(120, 84, 18, .5); }
+.pv-mais > summary::-webkit-details-marker { display: none; }
+.pv-mais > summary::after { content: '+'; font-size: 20px; color: #B98A2D; transition: transform .25s; }
+.pv-mais[open] > summary::after { transform: rotate(45deg); }
+.pv-mais[open] > summary { margin-bottom: 14px; }
+.pv-kpi { min-height: 150px !important; padding-bottom: 46px; } .pv-kpi .pv-spk { height: 38px; opacity: .9; }

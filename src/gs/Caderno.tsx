@@ -203,7 +203,10 @@ export function Caderno() {
         <button type="button" className="pn-card pn-voce" onClick={() => setRenda(true)}>{nota}</button>
       )}
 
-      <FerramentasDoPainel />
+      <details className="pv-mais">
+        <summary>Todas as ferramentas</summary>
+        <FerramentasDoPainel />
+      </details>
 
       <Secao titulo="Ajuda" sub="Pergunte ao Midas ou anote pelo WhatsApp. As contas do mês estão no painel.">
         <div className="pn-bloco dois">
