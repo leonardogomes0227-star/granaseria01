@@ -1,7 +1,7 @@
 // Service worker simples: guarda só o "casco" do app (páginas e arquivos estáticos). NUNCA mexe em /api.
-const VERSAO = 'gs-v2';
+const VERSAO = 'gs-v3';
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(['/', '/moeda.svg', '/manifest.webmanifest'])).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSAO).then((c) => c.addAll(['/', '/moeda.svg', '/logo-icone-160.png', '/manifest.webmanifest'])).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSAO).map((k) => caches.delete(k)))).then(() => self.clients.claim()));

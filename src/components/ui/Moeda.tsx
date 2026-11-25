@@ -1,20 +1,16 @@
-import type { CSSProperties } from 'react';
+/* ---------- A marca do Grana Séria: o "G" dourado com as barras e a seta, em quadrado arredondado preto. ----------
+   Mantém o nome e as propriedades antigas (tamanho, className, girar) para as telas não mudarem. */
 
-/* ---------- A moeda da marca, em 3D de CSS: 9 discos empilhados, "G" na frente e "S" no verso. ----------
-   Gira devagar (8s) e para sozinha para quem pediu menos movimento (src/gs/caminho.css). */
-
-const DISCOS = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
-
-export function Moeda({ tamanho = 28, className = '', girar = true }: { tamanho?: number; className?: string; girar?: boolean }) {
+export function Moeda({ tamanho = 28, className = '' }: { tamanho?: number; className?: string; girar?: boolean }) {
   return (
-    <span className={`cm-moeda${girar ? ' gira' : ''} ${className}`} style={{ '--t': `${tamanho}px` } as CSSProperties} role="img" aria-label="Grana Séria">
-      <span className="cm-moeda-giro" aria-hidden="true">
-        {DISCOS.map((z) => (
-          <i key={z} style={{ '--z': z } as CSSProperties} />
-        ))}
-        <b className="frente">G</b>
-        <b className="verso">S</b>
-      </span>
-    </span>
+    <img
+      src={tamanho > 80 ? '/logo-icone.png' : '/logo-icone-160.png'}
+      width={tamanho}
+      height={tamanho}
+      alt="Grana Séria"
+      className={`cm-logo ${className}`}
+      style={{ width: tamanho, height: tamanho, borderRadius: Math.round(tamanho * 0.22), display: 'inline-block', flex: 'none', objectFit: 'contain' }}
+      draggable={false}
+    />
   );
 }

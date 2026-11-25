@@ -80,7 +80,7 @@ interface Passo { id: string; rotulo: string; valor: number; nota?: string | nul
 interface Funil { id: string; nome: string; resumo: string; desc: string; pct: number; delta?: { pct: number; bom: boolean } | null; passos: Passo[] }
 
 function Colunas({ passos, sel, onSel, m, comparar, rotuloPct }: { passos: Passo[]; sel: number; onSel: (i: number) => void; m: (t: string) => string; comparar: boolean; rotuloPct: (p: Passo) => string }) {
-  const base = Math.max(1, passos[0]?.valor ?? 1);
+  const base = Math.max(1, ...passos.map((x) => Math.abs(x.valor)));
   return (
     <div className="pv-cols" style={{ gridTemplateColumns: `repeat(${passos.length}, minmax(0, 1fr))` }}>
       {passos.map((ps, i) => {
@@ -146,13 +146,14 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
   const funis: Funil[] = useMemo(() => {
     const lista: Funil[] = [];
     if (f) {
+      const semRenda = f.passos[0].valor <= 0;
       const rec = Math.max(1, f.passos[0].valor);
       const sobrou = f.passos[3].valor;
       const dSaldo = kpi('saldo')?.delta;
       lista.push({
-        id: 'mes', nome: 'Este mês', resumo: `4 etapas · ${mesNome}`, desc: `Para onde foi cada real que entrou em ${mesNome}`,
-        pct: Math.round((sobrou / rec) * 100),
-        delta: dSaldo && dSaldo.pct !== null && dSaldo.sentido !== 'igual' ? { pct: Math.abs(Math.round(dSaldo.pct)), bom: dSaldo.sentido === 'sobe' } : null,
+        id: 'mes', nome: 'Este mês', resumo: `4 etapas · ${mesNome}`, desc: semRenda ? 'Conte quanto você ganha para ver o funil completo' : `Para onde foi cada real que entrou em ${mesNome}`,
+        pct: semRenda ? 0 : Math.round((sobrou / rec) * 100),
+        delta: !semRenda && dSaldo && dSaldo.pct !== null && dSaldo.sentido !== 'igual' ? { pct: Math.abs(Math.round(dSaldo.pct)), bom: dSaldo.sentido === 'sobe' } : null,
         passos: f.passos.map((ps, i) => ({ id: ps.id, rotulo: ps.rotulo, valor: ps.valor, nota: ps.nota, tom: i === 3 ? 'verde' as const : undefined, ref: ps.id === 'receita' ? anteriorDe('receitas') : ps.id === 'variaveis' ? anteriorDe('despesas') : null })),
       });
     }
@@ -304,9 +305,9 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
                     ))}
                   </div>
                 )}
-                <Colunas passos={atual.passos} sel={Math.min(sel, atual.passos.length - 1)} onSel={setSel} m={m} comparar={comparar && atual.id === 'mes'} rotuloPct={(ps) => atual.id === 'mes' ? `${Math.round((ps.valor / recBase) * 100)}% da renda` : `${Math.round((ps.valor / Math.max(1, atual.passos[0].valor)) * 100)}% do início`} />
+                <Colunas passos={atual.passos} sel={Math.min(sel, atual.passos.length - 1)} onSel={setSel} m={m} comparar={comparar && atual.id === 'mes'} rotuloPct={(ps) => atual.id === 'mes' ? ((f?.passos[0].valor ?? 0) <= 0 ? 'sem renda informada' : `${Math.round((ps.valor / recBase) * 100)}% da renda`) : `${Math.round((ps.valor / Math.max(1, atual.passos[0].valor)) * 100)}% do início`} />
                 <div className="pv-pe">
-                  <span><b>Geral</b> {atual.pct}% {atual.id === 'mes' ? 'da renda sobrou' : atual.id === 'fixas' ? 'já pago' : atual.id === 'dividas' ? 'já quitado' : 'da meta'}{atual.id === 'mes' && comparar ? ' · Tracejado: mês passado' : ''}</span>
+                  <span><b>Geral</b> {atual.id === 'mes' && (f?.passos[0].valor ?? 0) <= 0 ? 'informe sua renda para calcular' : <>{atual.pct}% {atual.id === 'mes' ? 'da renda sobrou' : atual.id === 'fixas' ? 'já pago' : atual.id === 'dividas' ? 'já quitado' : 'da meta'}</>}{atual.id === 'mes' && comparar ? ' · Tracejado: mês passado' : ''}</span>
                   <span>{atual.passos[Math.min(sel, atual.passos.length - 1)].rotulo}: <b>{m(brl0(atual.passos[Math.min(sel, atual.passos.length - 1)].valor))}</b>{atual.passos[Math.min(sel, atual.passos.length - 1)].nota ? ` · ${atual.passos[Math.min(sel, atual.passos.length - 1)].nota}` : ''}</span>
                 </div>
               </section>
