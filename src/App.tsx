@@ -1,3 +1,4 @@
+import { FerramentaLayout } from './gs/FerramentaLayout';
 import { useState, useEffect, lazy, Suspense, ReactNode } from 'react';
 import { flushSync } from 'react-dom';
 import { importarComRetry } from './gs/importar';
@@ -419,7 +420,7 @@ function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: st
         ) : (
           <LoginGate what={o}>
             <ErroGlobal>
-              <Porteiro><div className="rv-moldura"><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></div></Porteiro>
+              <Porteiro><div className="rv-moldura"><FerramentaLayout><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></FerramentaLayout></div></Porteiro>
             </ErroGlobal>
           </LoginGate>
         )}

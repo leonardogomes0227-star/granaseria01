@@ -170,3 +170,18 @@ html.gs-app body .rv-moldura h1, html.gs-app body .rv-moldura .gs-titulo { font-
 html.gs-app:not([data-tema="escuro"]) .rv-moldura :is(.gs-card, .cm-card, .pu-vidro) { background: linear-gradient(160deg, rgba(255, 255, 255, .78), rgba(255, 252, 244, .45)) !important; }
 .pv-kpis .pv-kpi { min-height: 110px !important; padding-bottom: 14px; }
 .rv-barras .n small { display: block; font-size: 10.5px; color: #7A7366; font-weight: 500; } .rv-barras .n small.perigo { color: #C2493A; font-weight: 700; } .rv-barras .n small.aviso { color: #B26B0B; font-weight: 700; }
+
+/* ===== ferramentas no jeito do Funil: lista à esquerda, painel grande à direita ===== */
+.rv-ferr { display: grid; gap: 14px; align-items: start; }
+@media (min-width: 900px) { .rv-ferr { grid-template-columns: 270px minmax(0, 1fr); } .rv-ferr-lista { position: sticky; top: 14px; } }
+.rv-funil { text-decoration: none; }
+.rv-st { color: #7A7366; font-size: 11px; line-height: 1.35; }
+.rv-st.perigo { color: #C2493A; font-weight: 700; } .rv-st.aviso { color: #B26B0B; font-weight: 700; } .rv-st.ok { color: #1F8A5B; font-weight: 700; }
+.rv-ferr-painel { padding: 20px 22px; }
+.rv-ferr-painel > :first-child { margin-top: 0; }
+@media (max-width: 899px) {
+  .rv-ferr-lista { display: flex; gap: 8px; overflow-x: auto; padding: 10px; scroll-snap-type: x proximity; scrollbar-width: none; }
+  .rv-ferr-lista .pv-lab { display: none; }
+  .rv-ferr-lista .rv-funil { flex: none; width: 190px; margin-top: 0; scroll-snap-align: start; border-color: rgba(28, 25, 20, .08); background: rgba(255, 255, 255, .5); }
+  .rv-ferr-painel { padding: 14px; }
+}
