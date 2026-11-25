@@ -62,16 +62,6 @@ html.gs-app .gs-principal :is(h1, .gs-titulo) { animation: esm-titulo .7s cubic-
 
 /* ---------- menu lateral (computador): menu completo com nomes ---------- */
 @media (min-width: 900px) {
-  html.gs-app .cm-lateral { width: 244px; height: 100dvh; margin: 0; padding: 26px 16px 22px; align-items: stretch; border-radius: 0; background: rgba(255, 252, 245, .78); border: 0; border-right: 1px solid var(--linha); box-shadow: none; gap: 4px; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
-  html.gs-app .cm-lateral .cm-marca { margin: 0 8px 22px; gap: 12px; }
-  html.gs-app .cm-lateral .cm-marca span { display: inline; font-size: 21px; }
-  html.gs-app .cm-lateral a.cm-item { position: relative; width: auto; min-height: 48px; padding: 0 14px; justify-content: flex-start; gap: 14px; border-radius: 14px; color: var(--mudo); background: none; }
-  html.gs-app .cm-lateral a.cm-item span, html.gs-app .cm-lateral .gs-btn span { position: static; transform: none; padding: 0; border-radius: 0; background: none; color: inherit; box-shadow: none; opacity: 1; font: 650 15.5px var(--txt, inherit); white-space: nowrap; pointer-events: auto; }
-  html.gs-app .cm-lateral a.cm-item:hover { background: rgba(28, 25, 20, .05); color: var(--tinta); }
-  html.gs-app .cm-lateral a.cm-item.on { background: transparent; color: var(--tinta); font-weight: 700; }
-  html.gs-app .cm-lateral a.cm-item.on svg { color: var(--ouro-texto); }
-  html.gs-app .cm-lateral .gs-btn { width: 100%; height: 48px; margin: 14px 0; justify-content: center; gap: 10px; border-radius: 14px; }
-  html.gs-app .cm-lateral hr { margin: 14px 0; border-color: var(--linha); }
   html.gs-app .cm-topo { background: transparent; border: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 14px 40px 0; }
   html.gs-app .gs-app2.cm-casca .gs-principal { max-width: 1240px; width: 100%; padding: 8px 40px 72px; margin: 0 auto; }
 }

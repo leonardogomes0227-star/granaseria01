@@ -90,7 +90,10 @@ function Casca({ children }: { children: ReactNode }) {
       <div className="gs-coluna">
         <header className="cm-topo">
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
+          <span className="cm-cam" aria-hidden="true"><i>Grana Séria</i><u>/</u><b>{TITULO_ROTA(pathname)}</b></span>
+          <span className="cm-vivo" aria-label="Dados ao vivo"><i />Ao vivo</span>
           <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
+          <button type="button" className="cm-novo" onClick={() => abrirMenuAdicionar()}><Plus size={14} aria-hidden="true" />Novo</button>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
         <main className="gs-principal">{children}</main>
@@ -108,6 +111,8 @@ function Casca({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+const TITULO_ROTA = (p: string) => (p.startsWith('/pagar') ? 'Contas' : p.startsWith('/gastos') ? 'Gastos' : p.startsWith('/plano/dividas') ? 'Dívidas' : p.startsWith('/guardar') ? 'Guardar' : p.startsWith('/mais') ? 'Mais' : 'Início');
 
 /** Puxar o topo da tela dá um refresco visual (os cartões entram de novo). Não recarrega a rede. */
 function PuxarParaAtualizar() {
