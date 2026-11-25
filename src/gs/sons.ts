@@ -163,7 +163,7 @@ export function tocar(tipo: TipoSom) {
     const agora = Date.now();
     if (agora - ultimoDigitar < 400) return;
     ultimoDigitar = agora;
-  } else vibrar(tipo === 'sucesso' ? [8, 30, 12] : tipo === 'erro' ? [14, 40, 14] : 8);
+  } else if (gesto) vibrar(tipo === 'sucesso' ? [8, 30, 12] : tipo === 'erro' ? [14, 40, 14] : 8);
   const ctxAtual = contexto();
   if (!ctxAtual) return;
   const play = () => { if (ctxAtual.state === 'running' && sonsLigados()) emitir(ctxAtual, tipo); };
