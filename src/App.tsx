@@ -419,7 +419,7 @@ function Pagina({ titulo, o, children, aberto = false }: { titulo: string; o: st
         ) : (
           <LoginGate what={o}>
             <ErroGlobal>
-              <Porteiro><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></Porteiro>
+              <Porteiro><div className="rv-moldura"><Suspense fallback={<EsqueletoTela />}>{children}</Suspense></div></Porteiro>
             </ErroGlobal>
           </LoginGate>
         )}

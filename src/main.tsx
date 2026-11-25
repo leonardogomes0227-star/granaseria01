@@ -16,6 +16,8 @@ import './gs/movimento.css';
 import './gs/visual.css';
 import './gs/video.css';
 import './gs/noite.css';
+import './gs/painelVideo.css';
+import './gs/painelRv.css';
 import './gs/tema';
 import { initAnalytics } from './analytics';
 

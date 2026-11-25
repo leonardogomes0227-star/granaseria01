@@ -127,7 +127,21 @@ function Casca({ children }: { children: ReactNode }) {
   );
 }
 
-const TITULO_ROTA = (p: string) => (p.startsWith('/pagar') ? 'Contas' : p.startsWith('/gastos') ? 'Gastos' : p.startsWith('/plano/dividas') ? 'Dívidas' : p.startsWith('/guardar') ? 'Guardar' : p.startsWith('/mais') ? 'Mais' : 'Início');
+const TITULO_ROTA = (p: string) => {
+  if (p === '/' || p.startsWith('/inicio')) return 'Início';
+  if (p.startsWith('/pagar')) return 'Contas';
+  if (p.startsWith('/gastos')) return 'Gastos';
+  if (p.startsWith('/plano/dividas')) return 'Dívidas';
+  if (p.startsWith('/guardar')) return 'Guardar';
+  if (p.startsWith('/mais')) return 'Mais';
+  if (p.startsWith('/coach')) return 'Coach';
+  if (p.startsWith('/caminho')) return 'Seu caminho';
+  if (p.startsWith('/relatorios') || p.startsWith('/evolucao')) return 'Relatórios';
+  if (p.startsWith('/perfil')) return 'Perfil';
+  if (p.startsWith('/lancamentos') || p.startsWith('/mes') || p.startsWith('/meu-mes')) return 'Lançamentos';
+  const f = FERRAMENTAS.find((x) => x.rota.split(/[?#]/)[0] === p);
+  return f ? f.titulo : 'Início';
+};
 
 /** Puxar o topo da tela dá um refresco visual (os cartões entram de novo). Não recarrega a rede. */
 function PuxarParaAtualizar() {

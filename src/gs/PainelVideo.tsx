@@ -5,7 +5,7 @@
 // A pílula das abas estica e desliza como no vídeo; o título embaralha; o conteúdo entra com desfoque, cartão por cartão.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as PE } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, Eye, EyeOff, Filter, Flame, Grid3x3, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, type LucideIcon } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, Eye, EyeOff, Filter, Flame, Grid3x3, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
 import { useContagem } from './base';
 import { painelVidro } from './painelVidro';
@@ -24,6 +24,8 @@ const DIAS_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 const DIAS_SEM_LONGO = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
 const dataCurta = (iso: string) => `${Number(iso.slice(8, 10))} ${MESES[Number(iso.slice(5, 7)) - 1]}`;
 const cap = (t: string) => t.charAt(0).toLocaleUpperCase('pt-BR') + t.slice(1);
+
+const ICONE_KPI: Record<string, LucideIcon> = { saldo: Wallet, receitas: TrendingUp, despesas: Receipt, divida: Receipt, guardado: PiggyBank };
 
 function N({ v, oculto }: { v: number; oculto: boolean }) {
   const n = useContagem(v, 900);
@@ -196,6 +198,15 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
         ],
       });
     }
+    p.metas.slice(0, 3).forEach((mt) => lista.push({
+      id: `meta-${mt.id}`, nome: mt.nome, resumo: 'Meta', desc: `Quanto você já guardou para “${mt.nome}” e quanto falta`,
+      pct: Math.min(100, Math.round(mt.pct)),
+      passos: [
+        { id: 'alvo', rotulo: 'Meta', valor: mt.alvo },
+        { id: 'guard', rotulo: 'Guardado', valor: mt.guardado, tom: 'verde' },
+        { id: 'falta', rotulo: 'Falta guardar', valor: Math.max(0, mt.alvo - mt.guardado) },
+      ],
+    }));
     return lista;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tudo vem de p, contas, guardado e metaReserva
   }, [p, contas, guardado, metaReserva, mesNome]);
@@ -276,6 +287,19 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
           <section className="pv-p rv-card"><p className="pv-vazio">O funil abre quando houver renda ou gasto neste mês.</p></section>
         ) : (
           <>
+            <div className="pv-kpis">
+              {p.kpis.filter((k) => k.id !== 'patrimonio').slice(0, 4).map((k, i) => {
+                const bom = k.delta ? (k.bomQuando === 'sobe' ? k.delta.sentido === 'sobe' : k.delta.sentido === 'desce') : true;
+                const I = ICONE_KPI[k.id] ?? Wallet;
+                return (
+                  <div key={k.id} className={`pv-kpi rv-card${i === 0 ? ' ouro' : ''}`} style={{ ['--i' as string]: i }}>
+                    <span className="pv-lab"><I size={14} aria-hidden="true" />{k.rotulo}</span>
+                    <b>{k.valor === null ? '—' : <N v={k.valor} oculto={oculto} />}</b>
+                    {k.delta && k.delta.sentido !== 'igual' ? <em className={bom ? 'bom' : 'ruim'}>{k.delta.sentido === 'sobe' ? <ArrowUpRight size={12} aria-hidden="true" /> : <ArrowDownRight size={12} aria-hidden="true" />}{k.delta.pct === null ? '' : `${Math.abs(Math.round(k.delta.pct))}%`} <small>{k.deltaRotulo}</small></em> : <em><small>{k.nota ?? ' '}</small></em>}
+                  </div>
+                );
+              })}
+            </div>
             <div className="pv-grade">
               <section className="pv-p pv-metas rv-card" style={{ ['--i' as string]: 0 }} aria-label="Funis salvos">
                 <span className="pv-lab">Funis salvos</span>
@@ -320,7 +344,7 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
                   <div className="rv-barras">
                     {cat.slice(0, 6).map((c, i) => (
                       <Link key={c.categoria} to="/gastos" className={chip === c.categoria ? 'on' : ''} onClick={() => tocar('tique')} style={{ animationDelay: `${0.2 + i * 0.07}s` }}>
-                        <span className="n">{cap(c.categoria)}</span>
+                        <span className="n">{cap(c.categoria)}<small className={c.tom}>{c.pilula}</small></span>
                         <span className="tr"><i className={c.tom} style={{ width: `${Math.max(3, (c.gasto / totCat) * 100)}%`, animationDelay: `${0.3 + i * 0.07}s` }} /></span>
                         <span className="v">{m(brl0(c.gasto))}</span>
                       </Link>
