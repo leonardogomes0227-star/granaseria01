@@ -173,7 +173,7 @@ export function Caderno() {
         <BarraPerguntar />
         <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
       </header>
-      <PainelVideo onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} />
+      <PainelVideo onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} onPagar={(id) => setBaixa(id)} />
       </div>
 
       <nav className="pn-acoes" aria-label="Ações rápidas">
@@ -197,16 +197,15 @@ export function Caderno() {
         </Link>
       </nav>
 
+      <details className="pv-mais">
+        <summary>Ferramentas, sua nota e ajuda</summary>
       {saude ? (
         <Link to="/perfil#saude" className="pn-card pn-voce">{nota}</Link>
       ) : (
         <button type="button" className="pn-card pn-voce" onClick={() => setRenda(true)}>{nota}</button>
       )}
 
-      <details className="pv-mais">
-        <summary>Todas as ferramentas</summary>
-        <FerramentasDoPainel />
-      </details>
+      <FerramentasDoPainel />
 
       <Secao titulo="Ajuda" sub="Pergunte ao Midas ou anote pelo WhatsApp. As contas do mês estão no painel.">
         <div className="pn-bloco dois">
@@ -229,6 +228,8 @@ export function Caderno() {
           </section>
         </div>
       </Secao>
+
+      </details>
 
       <BaixaSheet gasto={e.gastosFixos.find((g) => g.id === baixa) ?? null} mes={mes} onFechar={() => setBaixa(null)} />
       <ComoCalculei aberta={calc} onFechar={() => setCalc(false)} d={disp} />

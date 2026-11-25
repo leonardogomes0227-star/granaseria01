@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
@@ -58,6 +58,10 @@ function Casca({ children }: { children: ReactNode }) {
   const nome = e.config.nome || getName() || '';
   const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
   const pronto = e.config.onboardingFeito;
+  // a pílula dourada do menu lateral desliza esticando: a borda da frente corre e a de trás vem depois
+  const lateral = useRef<HTMLElement>(null);
+  const antesTopo = useRef(0);
+  const [pilula, setPilula] = useState<{ t: number; b: number; desce: boolean } | null>(null);
   const primeira = useRef(true);
   useEffect(() => iniciarEfeitos(), []);
   useEffect(() => {
@@ -76,9 +80,18 @@ function Casca({ children }: { children: ReactNode }) {
       <em><Icon size={23} strokeWidth={1.75} aria-hidden="true" />{to === '/pagar' && atrasada && <i aria-hidden="true" />}</em><span>{label}</span>
     </NavLink>
   );
+  useLayoutEffect(() => {
+    const box = lateral.current;
+    const el = box?.querySelector<HTMLElement>('a.cm-item.on');
+    if (!box || !el) { setPilula(null); return; }
+    const t = el.offsetTop;
+    setPilula({ t, b: box.offsetHeight - (t + el.offsetHeight), desce: t >= antesTopo.current });
+    antesTopo.current = t;
+  }, [pathname, pronto]);
   return (
     <div className={`gs-casca gs-app2 cm-casca${pronto ? '' : ' cm-sem-menu'}`}>
-      <aside className="cm-lateral" aria-label="Menu principal">
+      <aside className="cm-lateral" aria-label="Menu principal" ref={lateral}>
+        {pilula && <i className="cm-pill" aria-hidden="true" style={{ top: pilula.t, bottom: pilula.b, transition: pilula.desce ? `top .55s cubic-bezier(.65, 0, .35, 1), bottom .36s cubic-bezier(.215, .61, .355, 1)` : `top .36s cubic-bezier(.215, .61, .355, 1), bottom .55s cubic-bezier(.65, 0, .35, 1)` }} />}
         <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span>Grana Séria</span></Link>
         {NAV.map(([to, label, Icon]) => (
           <Link key={to} to={to} className={`cm-item${aba === to ? ' on' : ''}`} aria-current={aba === to ? 'page' : undefined}><Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span></Link>
