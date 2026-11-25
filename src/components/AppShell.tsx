@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
+import { Bell, House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
@@ -56,7 +56,8 @@ function Casca({ children }: { children: ReactNode }) {
   const { pathname, search } = useLocation();
   const aba = abaDaRota(pathname, search);
   const nome = e.config.nome || getName() || '';
-  const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
+  const urgentes = useMemo(() => urgentesDaArea('pagar', e, hoje).length, [e, hoje]);
+  const atrasada = urgentes > 0;
   const pronto = e.config.onboardingFeito;
   // a pílula dourada do menu lateral desliza esticando: a borda da frente corre e a de trás vem depois
   const lateral = useRef<HTMLElement>(null);
@@ -105,6 +106,7 @@ function Casca({ children }: { children: ReactNode }) {
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
           <span className="cm-cam" aria-hidden="true"><i>Grana Séria</i><u>/</u><b>{TITULO_ROTA(pathname)}</b></span>
           <span className="cm-vivo" aria-label="Dados ao vivo"><i />Ao vivo</span>
+          <Link to="/pagar" className="cm-sino" aria-label={urgentes ? `${urgentes} ${urgentes === 1 ? 'aviso' : 'avisos'} de contas` : 'Nenhum aviso de contas'} onClick={() => tocar('tique')}><Bell size={17} aria-hidden="true" />{urgentes > 0 && <b>{urgentes}</b>}</Link>
           <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
           <button type="button" className="cm-novo" onClick={() => abrirMenuAdicionar()}><Plus size={14} aria-hidden="true" />Novo</button>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
