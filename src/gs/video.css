@@ -44,3 +44,10 @@ html.gs-app .cm-novo { display: none; align-items: center; gap: 6px; height: 36p
 html.gs-app body :is(*, *::before, *::after):not(svg):not(svg *):not(code):not(kbd):not(pre) { font-family: 'Inter', system-ui, sans-serif !important; }
 html.gs-app :is(.dv-resposta, .dv-resposta *) { font-weight: 600 !important; letter-spacing: -.02em !important; }
 html.gs-app.gs-app body :is(.ini-valor, .cm-eyebrow, .cm-num, [class*="valor"], [class*="num"]):not(svg *) { font-family: 'Inter', system-ui, sans-serif !important; font-weight: 600 !important; }
+/* versão simples: destaque vira cartão claro com faixa dourada, sem bloco dourado grande nem brilho */
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) { background: linear-gradient(180deg, #fff, #FBF7EE) !important; color: #17150F; border: 1px solid rgba(255, 255, 255, .95) !important; box-shadow: inset 4px 0 0 #C99A3E, 0 1px 2px rgba(28, 25, 20, .05), 0 22px 34px -26px rgba(92, 66, 18, .4) !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero)::after { display: none !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(p, small, span, em, .cm-eyebrow, .gs-rotulo) { color: #7A7366 !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(b, strong, h1, h2, h3, .cm-num, .ini-valor, .gs-grande) { color: #17150F !important; }
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) a:not(.gs-btn) { color: #8A6418 !important; }
+html.gs-app, html.gs-app body, html.gs-app .gs-casca { --tit: 'Inter', system-ui, sans-serif; --txt: 'Inter', system-ui, sans-serif; --cm-serif: 'Inter', system-ui, sans-serif; --cm-sans: 'Inter', system-ui, sans-serif; --serif: 'Inter', system-ui, sans-serif; --sans: 'Inter', system-ui, sans-serif; }
