@@ -24,7 +24,13 @@ import { initAnalytics } from './analytics';
 initAnalytics();
 
 // PWA: guarda só o casco do app; nunca mexe em /api (public/sw.js)
-if ('serviceWorker' in navigator && import.meta.env.PROD) window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => undefined));
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  // se já havia uma versão guardada no aparelho, assim que a nova assume a página recarrega uma vez para mostrar a nova
+  const havia = Boolean(navigator.serviceWorker.controller);
+  let recarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (havia && !recarregou) { recarregou = true; window.location.reload(); } });
+  window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').then((r) => r.update()).catch(() => undefined));
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

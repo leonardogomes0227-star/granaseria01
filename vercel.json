@@ -31,6 +31,12 @@
   ],
   "headers": [
     {
+      "source": "/(sw.js|manifest.webmanifest|favicon-v3.ico|favicon-v3.svg|favicon.ico|favicon.svg|logo-icone.png|logo-icone-160.png|logo-completa.png|moeda.svg|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|og-image.png)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
