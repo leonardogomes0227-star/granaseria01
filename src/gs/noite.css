@@ -1,0 +1,140 @@
+/* Tema escuro do painel do Início: grafite, brilho dourado e vidro, no jeito do painel de referência.
+   Carrega por último. O claro continua valendo quando a pessoa troca no botão de sol e lua. */
+
+/* ----- luz ambiente que respira atrás de tudo ----- */
+html.gs-app[data-tema="escuro"] body {
+  background:
+    radial-gradient(900px 520px at 8% -8%, rgba(217, 180, 94, .20), transparent 70%),
+    radial-gradient(760px 520px at 100% 18%, rgba(70, 130, 170, .10), transparent 70%),
+    radial-gradient(700px 520px at 40% 115%, rgba(201, 140, 60, .12), transparent 70%),
+    #0A0A0C fixed !important;
+}
+html.gs-app[data-tema="escuro"]:has(.pv) body::before { background: none !important; }
+html.gs-app[data-tema="escuro"] .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 180, 94, .13), transparent); filter: blur(30px); animation: nt-resp 9s ease-in-out infinite alternate; }
+@keyframes nt-resp { from { transform: translate3d(0, 0, 0) scale(1); opacity: .7; } to { transform: translate3d(-6%, 8%, 0) scale(1.15); opacity: 1; } }
+
+/* ----- variáveis do painel ----- */
+html.gs-app[data-tema="escuro"] .pv { --t: #F4EEE2; --m: #A29A89; --fio: rgba(255, 255, 255, .09); --ouro: #E2BC63; --ouro2: #F0D18A; --bom: #4FCB93; --ruim: #F0806E; position: relative; z-index: 1; }
+
+/* ----- vidro: todos os cartões do painel ----- */
+html.gs-app[data-tema="escuro"] .pv-p,
+html.gs-app[data-tema="escuro"] .pv-kpi {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025) 60%);
+  border: 1px solid rgba(255, 255, 255, .10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 24px 44px -26px rgba(0, 0, 0, .9);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+}
+html.gs-app[data-tema="escuro"] .pv-kpi:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 0 0 1px rgba(226, 188, 99, .35), 0 30px 50px -24px rgba(0, 0, 0, .95), 0 0 40px -12px rgba(226, 188, 99, .35); }
+html.gs-app[data-tema="escuro"] .pv-kpi.ouro { background: linear-gradient(135deg, #F3DC9C 0%, #D9AE55 45%, #B98A2D 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 60px -14px rgba(226, 188, 99, .55), 0 26px 40px -24px rgba(0, 0, 0, .8); }
+html.gs-app[data-tema="escuro"] .pv-kpi.ouro .pv-spk path:last-child { stroke: #3a2a08 !important; }
+
+/* foco de luz que segue o cursor (o brilho do painel de referência) */
+.pv-p::before, .pv-kpi::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(226, 188, 99, .16), transparent 65%); }
+.pv-p:hover::before, .pv-kpi:hover::before { opacity: 1; }
+html.gs-app:not([data-tema="escuro"]) .pv-p::before, html.gs-app:not([data-tema="escuro"]) .pv-kpi::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(185, 138, 45, .12), transparent 65%); }
+
+html.gs-app[data-tema="escuro"] .pv-b2, html.gs-app[data-tema="escuro"] .pv-chip, html.gs-app[data-tema="escuro"] .pv-abas em { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .12); color: var(--t); }
+html.gs-app[data-tema="escuro"] .pv-b2:hover { box-shadow: 0 0 24px -8px rgba(226, 188, 99, .6); }
+html.gs-app[data-tema="escuro"] .pv-metas a.on, html.gs-app[data-tema="escuro"] .pv-metas a:hover { background: rgba(255, 255, 255, .07); box-shadow: inset 0 0 0 1px rgba(226, 188, 99, .35), 0 0 28px -12px rgba(226, 188, 99, .5); }
+html.gs-app[data-tema="escuro"] .pv-metas .mb i.z { background: rgba(255, 255, 255, .09); }
+html.gs-app[data-tema="escuro"] .pv-col .box { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .06) 0 6px, transparent 6px 12px), rgba(255, 255, 255, .02); }
+html.gs-app[data-tema="escuro"] .pv-col .box u { background: #1A1814; color: var(--t); border-color: rgba(255, 255, 255, .15); }
+html.gs-app[data-tema="escuro"] .pv-col:hover .box, html.gs-app[data-tema="escuro"] .pv-col.on .box { border-color: rgba(226, 188, 99, .75); box-shadow: 0 0 0 3px rgba(226, 188, 99, .14), 0 0 34px -8px rgba(226, 188, 99, .45); }
+html.gs-app[data-tema="escuro"] .pv-dias button.f i { background: rgba(255, 255, 255, .07); }
+html.gs-app[data-tema="escuro"] .pv-dias .tip { background: #F4EEE2; color: #17150F; } html.gs-app[data-tema="escuro"] .pv-dias .tip b { color: #5d554a; }
+html.gs-app[data-tema="escuro"] .pv-ag .dt { background: rgba(226, 188, 99, .13); }
+html.gs-app[data-tema="escuro"] .pv-ag .dt.perigo { background: rgba(240, 128, 110, .14); } html.gs-app[data-tema="escuro"] .pv-ag .dt.ok { background: rgba(79, 203, 147, .13); }
+html.gs-app[data-tema="escuro"] .pv-catl .tr { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .07) 0 5px, transparent 5px 10px); }
+html.gs-app[data-tema="escuro"] .pv-catl small.aviso { color: #E8B25A; }
+
+/* ----- mapa do mês (a grade de calor do painel de referência) ----- */
+.pv-mapa { margin-top: 14px; display: grid; gap: 6px; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); align-items: center; }
+.pv-mapa > span { font-size: 10.5px; color: var(--m); text-align: center; letter-spacing: .04em; }
+.pv-mapa > span.sem { text-align: left; }
+.pv-mapa button { position: relative; height: 38px; border-radius: 9px; border: 1px solid rgba(226, 188, 99, calc(.1 + var(--k, 0) * .5)); background: rgba(226, 188, 99, calc(.05 + var(--k, 0) * .55)); color: var(--t); font: 600 11px 'Inter', sans-serif; font-variant-numeric: tabular-nums; cursor: pointer; padding: 0; animation: pv-pop .5s cubic-bezier(.16, 1, .3, 1) backwards; transition: transform .18s, box-shadow .2s; }
+.pv-mapa button:hover, .pv-mapa button.on { transform: translateY(-2px) scale(1.05); box-shadow: 0 0 22px -4px rgba(226, 188, 99, .8); z-index: 2; }
+.pv-mapa button.vz { background: rgba(255, 255, 255, .03); border-color: rgba(255, 255, 255, .06); color: transparent; cursor: default; }
+.pv-mapa button.fu { opacity: .35; }
+html.gs-app:not([data-tema="escuro"]) .pv-mapa button { color: #3a2a08; }
+@keyframes pv-pop { from { opacity: 0; transform: scale(.6); } }
+.pv-mapa-pe { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11.5px; color: var(--m); }
+.pv-mapa-pe b { color: var(--t); } .pv-mapa-esc { display: inline-flex; align-items: center; gap: 8px; } .pv-mapa-esc i { width: 90px; height: 5px; border-radius: 4px; background: linear-gradient(90deg, rgba(226, 188, 99, .1), rgba(226, 188, 99, .85)); }
+
+/* ----- selo "ao vivo" e botão de tema ----- */
+.cm-tema { width: 38px; height: 38px; flex: none; display: inline-grid; place-items: center; border-radius: 12px; border: 1px solid var(--cm-linha); background: var(--gl-vidro, rgba(255, 255, 255, .06)); color: var(--cm-tinta); cursor: pointer; transition: transform .2s, box-shadow .2s; }
+.cm-tema:hover { box-shadow: 0 0 22px -6px rgba(226, 188, 99, .7); transform: rotate(18deg); }
+.cm-tema svg { animation: nt-gira .5s cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes nt-gira { from { transform: rotate(-90deg) scale(.4); opacity: 0; } }
+
+/* ----- o resto do Início no escuro (herói, ações, ferramentas, assistente) ----- */
+html.gs-app[data-tema="escuro"] .pn-redondo, html.gs-app[data-tema="escuro"] .pn.pn-v2 .pn-redondo { background: rgba(255, 255, 255, .07); color: var(--cm-ouro-texto); box-shadow: none; border: 1px solid rgba(255, 255, 255, .1); }
+html.gs-app[data-tema="escuro"] .pn-ola h1, html.gs-app[data-tema="escuro"] .pv-ph h1 { color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] .pn-ola p { color: #A29A89; }
+html.gs-app[data-tema="escuro"] .pn-pergunta, html.gs-app[data-tema="escuro"] .pn-barra, html.gs-app[data-tema="escuro"] [class*="barra-perguntar"] { background: rgba(255, 255, 255, .07) !important; color: #F4EEE2 !important; border: 1px solid rgba(255, 255, 255, .12) !important; }
+html.gs-app[data-tema="escuro"] .gl-busca { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .12); color: #D5CCBA; }
+html.gs-app[data-tema="escuro"] .gl-busca kbd { background: rgba(255, 255, 255, .08); color: #A29A89; }
+html.gs-app[data-tema="escuro"] .cm-vivo { background: rgba(79, 203, 147, .12); }
+html.gs-app[data-tema="escuro"] .cm-avatar { background: rgba(255, 255, 255, .08); color: #F4EEE2; }
+
+/* ===== o escuro vence o "claro simples" do video.css em todas as telas ===== */
+html.gs-app[data-tema="escuro"] .gs-principal { color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] .gs-principal :is(small, .cm-mudo, .gs-sub) { color: #A29A89 !important; }
+html.gs-app[data-tema="escuro"] .gs-principal :is(.cm-eyebrow, .gs-rotulo, [class*="rotulo"], .pv-lab) { color: #A29A89 !important; }
+html.gs-app[data-tema="escuro"] :is(.gs-card, .cm-card, .vd-kpi, .pu-vidro, .ini-config, .ms-lista, .ms-perfil, .ad-acao, .cm-lista, .pv-p, .pv-kpi) {
+  background: linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025) 60%) !important;
+  border: 1px solid rgba(255, 255, 255, .10) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), 0 24px 44px -26px rgba(0, 0, 0, .9) !important;
+  color: #F4EEE2;
+}
+html.gs-app[data-tema="escuro"] :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) {
+  background: linear-gradient(135deg, rgba(226, 188, 99, .20), rgba(226, 188, 99, .05) 55%, rgba(255, 255, 255, .03)) !important;
+  border: 1px solid rgba(226, 188, 99, .35) !important;
+  box-shadow: inset 4px 0 0 #E2BC63, 0 0 60px -22px rgba(226, 188, 99, .55) !important;
+  color: #F4EEE2;
+}
+html.gs-app[data-tema="escuro"] :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(p, small, span, em, .cm-eyebrow, .gs-rotulo) { color: #B9B09D !important; }
+html.gs-app[data-tema="escuro"] :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) :is(b, strong, h1, h2, h3, .cm-num, .ini-valor, .gs-grande) { color: #F7F1E4 !important; }
+html.gs-app[data-tema="escuro"] :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero):not(:has(input, select, textarea)) a:not(.gs-btn) { color: #E2BC63 !important; }
+/* o KPI dourado do painel segue ouro de verdade, com brilho passando */
+html.gs-app[data-tema="escuro"] .pv-kpi.ouro:not(:has(input, select, textarea)) { background: linear-gradient(135deg, #F3DC9C 0%, #D9AE55 45%, #B98A2D 100%) !important; border: 1px solid rgba(255, 244, 205, .9) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 60px -14px rgba(226, 188, 99, .6), 0 26px 40px -24px rgba(0, 0, 0, .8) !important; }
+html.gs-app[data-tema="escuro"] .pv-kpi.ouro .pv-lab, html.gs-app[data-tema="escuro"] .pv-kpi.ouro > em, html.gs-app[data-tema="escuro"] .pv-kpi.ouro > em small { color: rgba(40, 28, 6, .78) !important; }
+html.gs-app[data-tema="escuro"] .pv-kpi.ouro > b { color: #1E1604 !important; }
+html.gs-app .pv-kpi .lin { animation: pv-traco 1.4s .3s cubic-bezier(.4, 0, .2, 1) forwards !important; }
+html.gs-app .pv-kpi.ouro::after { display: block !important; animation: pv-brilho 4.5s 1s ease-in-out infinite !important; }
+html.gs-app :is(a.gs-card, a.cm-card, .pv-kpi):hover { transform: translateY(-3px); }
+html.gs-app[data-tema="escuro"] :is(.cm-prog, .gs-prog, .cm-barra), html.gs-app[data-tema="escuro"] .pv-metas .mb i.z { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, .08) 0 5px, transparent 5px 10px) !important; }
+html.gs-app[data-tema="escuro"] .cm-cam { color: #A29A89; } html.gs-app[data-tema="escuro"] .cm-cam b { color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] .cm-vivo { background: rgba(79, 203, 147, .12); border-color: rgba(79, 203, 147, .3); color: #4FCB93; }
+html.gs-app[data-tema="escuro"] .cm-vivo i { background: #4FCB93; }
+html.gs-app[data-tema="escuro"] .pv-p h2, html.gs-app[data-tema="escuro"] .pv-col b, html.gs-app[data-tema="escuro"] .pv-kpi > b { color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] .pv-col small, html.gs-app[data-tema="escuro"] .pv-col em, html.gs-app[data-tema="escuro"] .pv-metas small { color: #A29A89 !important; }
+html.gs-app[data-tema="escuro"] .pv-kpi:not(.ouro) .pv-lab { color: #A29A89 !important; }
+html.gs-app[data-tema="escuro"] .pv-kpi:not(.ouro) > em { color: #A29A89; } html.gs-app[data-tema="escuro"] .pv-kpi:not(.ouro) > em.bom { color: #4FCB93; } html.gs-app[data-tema="escuro"] .pv-kpi:not(.ouro) > em.ruim { color: #F0806E; }
+html.gs-app[data-tema="escuro"] .pv-kpi:not(.ouro) > em small { color: #A29A89; }
+html.gs-app[data-tema="escuro"] h1, html.gs-app[data-tema="escuro"] .pn-ola h1 { color: #F7F1E4 !important; }
+html.gs-app[data-tema="escuro"] .as-barra { background: rgba(255, 255, 255, .07) !important; border: 1px solid rgba(255, 255, 255, .13) !important; color: #D5CCBA !important; box-shadow: 0 0 40px -16px rgba(226, 188, 99, .5) !important; }
+html.gs-app[data-tema="escuro"] .as-barra * { color: inherit; }
+.pv-mapa { grid-template-columns: 74px repeat(7, minmax(0, 1fr)); }
+.pv-mapa > span.sem { white-space: nowrap; }
+.pv-ag a { grid-template-columns: 54px 1fr auto; }
+.pv-ag .dt small { font-size: 7.5px; white-space: nowrap; }
+.pv-dias { height: 170px; }
+html.gs-app[data-tema="escuro"] { --areia: #0A0A0C; --papel: #1A1815; --papel-2: #201D18; --tinta: #F4EEE2; --mudo: #A29A89; --linha: rgba(255, 255, 255, .1); }
+html.gs-app[data-tema="escuro"] .pn-acao { background: linear-gradient(160deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03)) !important; border: 1px solid rgba(255, 255, 255, .1) !important; color: #F4EEE2 !important; box-shadow: none !important; transition: transform .2s, box-shadow .25s; }
+html.gs-app[data-tema="escuro"] .pn-acao:hover { transform: translateY(-2px); box-shadow: 0 0 30px -10px rgba(226, 188, 99, .55) !important; }
+html.gs-app[data-tema="escuro"] .pn-acao small { color: #A29A89 !important; }
+html.gs-app[data-tema="escuro"] .pn-acao i { background: rgba(226, 188, 99, .14) !important; color: #E2BC63 !important; }
+html.gs-app[data-tema="escuro"] .pn-acao.forte { background: linear-gradient(135deg, #F3DC9C, #C99A3E) !important; color: #1E1604 !important; border-color: rgba(255, 244, 205, .8) !important; }
+html.gs-app[data-tema="escuro"] .pn-acao.forte small { color: rgba(40, 28, 6, .75) !important; } html.gs-app[data-tema="escuro"] .pn-acao.forte i { background: rgba(255, 255, 255, .35) !important; color: #1E1604 !important; }
+html.gs-app[data-tema="escuro"] .cm-abas { background: rgba(20, 18, 15, .78) !important; border-color: rgba(255, 255, 255, .12) !important; }
+html.gs-app[data-tema="escuro"] { --sup: linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025) 60%); --sombra-card: 0 24px 44px -26px rgba(0, 0, 0, .9); }
+html.gs-app[data-tema="escuro"] .pu-kpi, html.gs-app[data-tema="escuro"] .pu-vidro { border-color: rgba(255, 255, 255, .10); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+html.gs-app[data-tema="escuro"] a.pu-kpi:hover { box-shadow: 0 0 0 1px rgba(226, 188, 99, .35), 0 0 40px -12px rgba(226, 188, 99, .4); }
+html.gs-app[data-tema="escuro"] .gs-btn.sec { background: rgba(255, 255, 255, .07); color: #F4EEE2; border: 1px solid rgba(255, 255, 255, .14); }
+html.gs-app[data-tema="escuro"] .gs-btn.sec:hover { box-shadow: 0 0 24px -8px rgba(226, 188, 99, .6); }
+html.gs-app[data-tema="escuro"] .cm-seg, html.gs-app[data-tema="escuro"] .gs-seg { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); }
+html.gs-app[data-tema="escuro"] .cm-seg button[aria-pressed="true"], html.gs-app[data-tema="escuro"] .gs-seg button.on { background: linear-gradient(135deg, #F3DC9C, #C99A3E); color: #1E1604; box-shadow: 0 0 22px -6px rgba(226, 188, 99, .7); }
+html.gs-app[data-tema="escuro"] .cm-seg button, html.gs-app[data-tema="escuro"] .gs-seg button { color: #A29A89; }
+html.gs-app[data-tema="escuro"] .pu-kpi b, html.gs-app[data-tema="escuro"] .pu-vidro h2 { color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] :is(.pu-kpi, .pu-vidro, .dv-card, .ini-grafico, .ini-vazio) { background: linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025) 60%) !important; color: #F4EEE2; }
+html.gs-app[data-tema="escuro"] .pu-kpi small, html.gs-app[data-tema="escuro"] .pu-kpi .pu-rot { color: #A29A89 !important; }

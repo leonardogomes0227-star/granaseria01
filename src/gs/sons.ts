@@ -6,7 +6,7 @@
 import { useSyncExternalStore } from 'react';
 
 export const CHAVE_SONS = 'gs-sons';
-export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop' | 'deslizar' | 'digitar' | 'tique' | 'tique2';
+export type TipoSom = 'toque' | 'navegar' | 'sucesso' | 'erro' | 'pop' | 'deslizar' | 'digitar' | 'tique' | 'tique2' | 'subir' | 'brilho' | 'sol' | 'lua' | 'celula';
 
 const ouvintes = new Set<() => void>();
 let gesto = false;
@@ -106,6 +106,31 @@ function emitir(ctxAtual: AudioContext, tipo: TipoSom) {
     };
     if (tipo === 'tique2') batida(agora, 1550, 0.05);
     else { batida(agora, 1050, 0.05); batida(agora + 0.06, 1050, 0.04); }
+    return;
+  }
+  if (tipo === 'subir') {
+    // o painel abrindo: um sopro que sobe e três notas de brilho, bem baixinho
+    const o = ctxAtual.createOscillator(); const g = ctxAtual.createGain(); const f = ctxAtual.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(110, agora); o.frequency.exponentialRampToValueAtTime(880, agora + 0.5);
+    f.type = 'lowpass'; f.frequency.setValueAtTime(300, agora); f.frequency.exponentialRampToValueAtTime(3200, agora + 0.5);
+    g.gain.setValueAtTime(0.0001, agora); g.gain.exponentialRampToValueAtTime(0.03, agora + 0.25); g.gain.exponentialRampToValueAtTime(0.0001, agora + 0.6);
+    o.connect(f); f.connect(g); g.connect(master); o.start(agora); o.stop(agora + 0.65);
+    [1046.5, 1318.5, 1568].forEach((fq, i) => nota(ctxAtual, master, fq, agora + 0.34 + i * 0.07, 0.22, 'sine', 0.018));
+    return;
+  }
+  if (tipo === 'brilho') {
+    nota(ctxAtual, master, 1568, agora, 0.28, 'sine', 0.022);
+    nota(ctxAtual, master, 2093, agora + 0.05, 0.3, 'sine', 0.014);
+    return;
+  }
+  if (tipo === 'sol' || tipo === 'lua') {
+    const subindo = tipo === 'sol';
+    nota(ctxAtual, master, subindo ? 523.25 : 784, agora, 0.12, 'sine', 0.04);
+    nota(ctxAtual, master, subindo ? 784 : 523.25, agora + 0.08, 0.2, 'triangle', 0.03);
+    return;
+  }
+  if (tipo === 'celula') {
+    nota(ctxAtual, master, 1400, agora, 0.03, 'sine', 0.025);
     return;
   }
   if (tipo === 'digitar') {

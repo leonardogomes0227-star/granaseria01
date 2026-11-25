@@ -1,6 +1,6 @@
 // O painel do Início no estilo do vídeo de referência (nas cores da Grana Séria): abas, metas à esquerda, funil "da renda ao que sobrou",
 // gasto por dia e agenda. Tudo vem do que o app já calcula, e tudo se mexe: barras crescem, números contam, cada toque faz um tique.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type PointerEvent as PE } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowUpRight, Share2 } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
@@ -54,6 +54,28 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
     ...p.dividas.map((d) => ({ id: d.id, nome: d.nome, pct: Math.round(d.pctPago), sub: `${brl0(d.saldo)} em aberto · já pago`, rota: '/plano/dividas' })),
   ].slice(0, 5);
   const m = (t: string) => (oculto ? mascarar(t, oculto) : t);
+  const [cel, setCel] = useState<[number, number] | null>(null);
+  // o painel abre com um sopro que sobe e um brilho; só toca depois do primeiro gesto da pessoa
+  useEffect(() => { const t = setTimeout(() => tocar('subir'), 120); const t2 = setTimeout(() => tocar('brilho'), 1000); return () => { clearTimeout(t); clearTimeout(t2); }; }, []);
+  // o foco de luz dourado segue o cursor dentro de cada cartão
+  const seguir = (ev: PE<HTMLDivElement>) => {
+    const el = (ev.target as HTMLElement).closest<HTMLElement>('.pv-p, .pv-kpi');
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', `${ev.clientX - r.left}px`);
+    el.style.setProperty('--my', `${ev.clientY - r.top}px`);
+  };
+  // mapa do mês: semanas nas linhas, dias da semana nas colunas
+  const mapa = useMemo(() => {
+    const semanas: { dia: number; v: number; fut: boolean }[][] = [];
+    p.dias.forEach((d) => {
+      const dow = new Date(`${d.data}T12:00:00`).getDay();
+      if (semanas.length === 0 || dow === 0) semanas.push(Array.from({ length: 7 }, () => ({ dia: 0, v: 0, fut: false })));
+      semanas[semanas.length - 1][dow] = { dia: d.dia, v: d.despesa, fut: d.futuro };
+    });
+    return semanas;
+  }, [p.dias]);
+  const maxCel = Math.max(1, ...mapa.flat().map((c) => c.v));
   const maxDia = Math.max(1, ...p.dias.map((d) => d.despesa));
   const media = (() => { const v = p.dias.filter((d) => !d.futuro); return v.length ? Math.round(v.reduce((t, d) => t + d.despesa, 0) / v.length) : 0; })();
   const aba = (rotulo: string, rota: string | null, n?: number) => (rota
@@ -74,7 +96,8 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
   };
 
   return (
-    <div className="pv">
+    <div className="pv" onPointerMove={seguir}>
+      <i className="pv-halo" aria-hidden="true" />
       <div className="pv-ph">
         <div>
           <h1>Seu mês</h1>
@@ -165,6 +188,28 @@ export function PainelVideo({ onCompartilhar, onSaldo }: { onCompartilhar: () =>
           </div>
         </section>
       </div>
+      {!p.dias.every((d) => d.despesa === 0) && (
+        <section className="pv-p pv-cat" aria-label="Mapa do mês">
+          <h2>Mapa do mês</h2><p className="s">Cada quadradinho é um dia. Quanto mais dourado, mais você gastou. Toque para ver.</p>
+          <div className="pv-mapa" role="table" aria-label="Gasto por dia da semana">
+            <span />{['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'].map((d) => <span key={d} role="columnheader">{d}</span>)}
+            {mapa.map((sem, a) => (
+              <div key={a} style={{ display: 'contents' }} role="row">
+                <span className="sem" role="rowheader">Semana {a + 1}</span>
+                {sem.map((c, b) => (
+                  <button key={b} type="button" role="cell" tabIndex={-1} className={`${c.dia === 0 || c.v === 0 ? 'vz' : ''}${c.fut ? ' fu' : ''}${cel && cel[0] === a && cel[1] === b ? ' on' : ''}`} style={{ ['--k' as string]: (c.v / maxCel).toFixed(3), animationDelay: `${(a * 7 + b) * 0.018}s` }} onPointerEnter={() => { if (c.v > 0) { setCel([a, b]); tocar('celula'); } }} onClick={() => { if (c.v > 0) { setCel([a, b]); tocar('tique2'); } }} aria-label={c.dia ? `Dia ${c.dia}: ${brl0(c.v)}` : ''}>
+                    {c.v > 0 ? (c.v >= 1000 ? `${(c.v / 1000).toFixed(1).replace('.', ',')}k` : Math.round(c.v)) : ''}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="pv-mapa-pe">
+            <span>{cel ? <><b>Dia {mapa[cel[0]][cel[1]].dia}</b> · {m(brl0(mapa[cel[0]][cel[1]].v))}</> : 'Passe o dedo ou o mouse sobre um dia.'}</span>
+            <span className="pv-mapa-esc">menos <i /> mais</span>
+          </div>
+        </section>
+      )}
       {p.categorias.length > 0 && (
         <section className="pv-p pv-cat" aria-label="Para onde vai">
           <h2>Para onde vai o dinheiro</h2><p className="s">Categorias do mês, com o limite de cada uma</p>

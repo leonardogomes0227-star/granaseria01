@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { House, Landmark, Menu, Plus, Receipt, Search, UserRound, type LucideIcon } from 'lucide-react';
+import { House, Landmark, Menu, Moon, Plus, Receipt, Search, Sun, UserRound, type LucideIcon } from 'lucide-react';
 import { AdicionarMov } from '../gs/AdicionarMov';
 import { MenuAdicionar, abrirMenuAdicionar } from '../gs/MenuAdicionar';
 import { Resolver } from '../gs/Resolver';
@@ -9,6 +9,7 @@ import { useSession } from '../account';
 import { useVisualDoApp } from '../gs/visual';
 import { iniciarEfeitos } from '../gs/efeitosGlobais';
 import { tocar } from '../gs/sons';
+import { definirTema, useTema } from '../gs/tema';
 import { abrirResolver } from '../gs/Resolver';
 import { Moeda } from './ui/Moeda';
 import { useEstado } from '../gs/store';
@@ -58,6 +59,7 @@ function Casca({ children }: { children: ReactNode }) {
   const nome = e.config.nome || getName() || '';
   const atrasada = useMemo(() => urgentesDaArea('pagar', e, hoje).length > 0, [e, hoje]);
   const pronto = e.config.onboardingFeito;
+  const tema = useTema();
   const primeira = useRef(true);
   useEffect(() => iniciarEfeitos(), []);
   useEffect(() => {
@@ -92,6 +94,7 @@ function Casca({ children }: { children: ReactNode }) {
           <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={32} girar={false} /><span>Grana Séria</span></Link>
           <span className="cm-cam" aria-hidden="true"><i>Grana Séria</i><u>/</u><b>{TITULO_ROTA(pathname)}</b></span>
           <span className="cm-vivo" aria-label="Dados ao vivo"><i />Ao vivo</span>
+          <button type="button" className="cm-tema" onClick={() => { const novo = tema === 'escuro' ? 'claro' : 'escuro'; definirTema(novo); tocar(novo === 'escuro' ? 'lua' : 'sol'); }} aria-label={tema === 'escuro' ? 'Mudar para o tema claro' : 'Mudar para o tema escuro'}>{tema === 'escuro' ? <Sun size={17} aria-hidden="true" key="s" /> : <Moon size={17} aria-hidden="true" key="m" />}</button>
           <button type="button" className="gl-busca" onClick={() => abrirResolver()} aria-label="Buscar no app"><Search size={15} aria-hidden="true" /><span>Buscar…</span><kbd>Ctrl K</kbd></button>
           <button type="button" className="cm-novo" onClick={() => abrirMenuAdicionar()}><Plus size={14} aria-hidden="true" />Novo</button>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
