@@ -138,3 +138,17 @@ html.gs-app[data-tema="escuro"] .cm-seg button, html.gs-app[data-tema="escuro"] 
 html.gs-app[data-tema="escuro"] .pu-kpi b, html.gs-app[data-tema="escuro"] .pu-vidro h2 { color: #F4EEE2; }
 html.gs-app[data-tema="escuro"] :is(.pu-kpi, .pu-vidro, .dv-card, .ini-grafico, .ini-vazio) { background: linear-gradient(160deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, .025) 60%) !important; color: #F4EEE2; }
 html.gs-app[data-tema="escuro"] .pu-kpi small, html.gs-app[data-tema="escuro"] .pu-kpi .pu-rot { color: #A29A89 !important; }
+
+/* ===== claro (o visual do app): areia e dourado, com o mesmo movimento ===== */
+html.gs-app:not([data-tema="escuro"]) .pv { position: relative; z-index: 1; }
+html.gs-app:not([data-tema="escuro"]) .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 174, 85, .28), transparent); filter: blur(30px); animation: nt-resp 9s ease-in-out infinite alternate; }
+html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro:not(:has(input, select, textarea)) { background: linear-gradient(135deg, #F3DC9C 0%, #D9AE55 45%, #B98A2D 100%) !important; border: 1px solid rgba(255, 244, 205, .9) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 26px 40px -24px rgba(140, 100, 24, .7) !important; }
+html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro .pv-lab, html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > em, html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > em small { color: rgba(40, 28, 6, .78) !important; }
+html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > b { color: #1E1604 !important; }
+html.gs-app:not([data-tema="escuro"]) .pv-p:hover, html.gs-app:not([data-tema="escuro"]) .pv-kpi:not(.ouro):hover { box-shadow: 0 0 0 1px rgba(185, 138, 45, .3), 0 24px 40px -24px rgba(140, 100, 24, .45) !important; }
+.pv-mapa button { transition: transform .18s, box-shadow .2s; }
+html.gs-app:not([data-tema="escuro"]) .pv-mapa button { background: rgba(201, 154, 62, calc(.06 + var(--k, 0) * .7)); border-color: rgba(185, 138, 45, calc(.15 + var(--k, 0) * .5)); }
+html.gs-app:not([data-tema="escuro"]) .pv-mapa button.vz { background: rgba(28, 25, 20, .04); border-color: rgba(28, 25, 20, .06); }
+html.gs-app:not([data-tema="escuro"]) .pv-mapa-esc i { background: linear-gradient(90deg, rgba(201, 154, 62, .12), rgba(185, 138, 45, .9)); }
+.pv-ag .dt small { font-size: 8px !important; letter-spacing: .04em !important; }
+.pv-ag .dt { overflow: hidden; }
