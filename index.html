@@ -34,12 +34,13 @@
     <meta name="twitter:title" content="Grana Séria | Diagnóstico financeiro" />
     <meta name="twitter:description" content="Descubra onde está sua vida financeira e receba um plano de ação baseado nos princípios de O Homem Mais Rico da Babilônia." />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@200;300;400;500&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fontes do próprio site (Inter e Outfit, só o alfabeto latino que o português usa): nada de terceiros travando a primeira tela -->
+    <link rel="preload" href="/fonts/inter-variavel.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/outfit-variavel.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      @font-face { font-family: 'Inter'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('/fonts/inter-variavel.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+      @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 200 500; font-display: swap; src: url('/fonts/outfit-variavel.woff2') format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+    </style>
   </head>
   <body>
     <noscript>A Grana Séria precisa do JavaScript ativado para funcionar.</noscript>
