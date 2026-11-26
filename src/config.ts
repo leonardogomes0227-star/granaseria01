@@ -6,10 +6,10 @@ export const PRICE_LABEL = 'R$ 30/mês';
 // Planos pagos. Troque os preços aqui (e só aqui): a página /planos e a capa leem estas constantes.
 export const PRECO_MENSAL = 30;
 export const PRECO_ANUAL = 300; // 10 meses: dois meses de graça
-// Um link de pagamento por plano (Cakto, Kiwify, Hotmart, Mercado Pago…). O mensal já está na Cakto; o anual ainda vai ser criado. Enquanto estiver com "SEU-LINK-AQUI",
+// Um link de pagamento por plano (Cakto, Kiwify, Hotmart, Mercado Pago…). Mensal e anual já estão na Cakto. Enquanto estiver com "SEU-LINK-AQUI",
 // os cartões mostram "Quero ser avisado" (WhatsApp) em vez de um botão de compra que levaria a uma página quebrada.
 export const CHECKOUT_MENSAL = 'https://pay.cakto.com.br/dkukzez_1373243';
-export const CHECKOUT_ANUAL = 'https://pay.kiwify.com.br/SEU-LINK-AQUI';
+export const CHECKOUT_ANUAL = 'https://pay.cakto.com.br/32p9p4s';
 export const checkoutPronto = (url: string) => !url.includes('SEU-LINK-AQUI');
 // Enquanto o link de pagamento não for configurado, o plano aparece liberado —
 // melhor do que mostrar um botão de compra que leva pra uma página quebrada.
