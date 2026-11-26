@@ -15,6 +15,12 @@ export const checkoutPronto = (url: string) => !url.includes('SEU-LINK-AQUI');
 // melhor do que mostrar um botão de compra que leva pra uma página quebrada.
 export const CHECKOUT_READY = !CHECKOUT_URL.includes('SEU-LINK-AQUI');
 
+// Preço de fundador: para quem já usava o Grana Séria antes do lançamento e ajudou o projeto. Troque os valores aqui se mudar na Cakto.
+export const PRECO_FUNDADOR_MENSAL = 20;
+export const PRECO_FUNDADOR_ANUAL = 200;
+export const CHECKOUT_FUNDADOR_MENSAL = 'https://pay.cakto.com.br/hquo3d7';
+export const CHECKOUT_FUNDADOR_ANUAL = 'https://pay.cakto.com.br/3dj7dj5';
+
 const UNLOCK_KEY = 'selos-unlocked';
 
 export function isUnlocked(): boolean {

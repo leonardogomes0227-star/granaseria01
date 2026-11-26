@@ -178,3 +178,24 @@ html.gs-app body .lx .lx-fim p { font-size: 17px; color: #B9B09D; }
 html.gs-app body .lx .lx-chat-in .b { font-size: 14.5px; }
 html.gs-app body .lx .lx-eyebrow { font-size: 12px !important; }
 html.gs-app body .lx .lx-planos .gs-plano h3 { font-size: 26px !important; font-weight: 400 !important; }
+
+/* fila de espera */
+.lx-fila { max-width: 640px; margin: 40px auto 0; padding: 30px 28px; border-radius: 26px; background: linear-gradient(160deg, rgba(255, 255, 255, .09), rgba(255, 255, 255, .03)); border: 1px solid rgba(226, 188, 99, .28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 0 70px -24px rgba(226, 188, 99, .35); }
+html.gs-app body .lx .lx-fila h3 { margin: 4px 0 10px !important; font-size: 28px !important; line-height: 1.15 !important; font-weight: 300 !important; color: #F4EEE2; }
+.lx-fila p { color: #B9B09D; font-size: 15px; line-height: 1.6; }
+.lx-fila-campos { display: grid; gap: 14px; margin: 22px 0 18px; }
+@media (min-width: 620px) { .lx-fila-campos { grid-template-columns: 1fr 1fr; } }
+.lx-fila label { display: grid; gap: 6px; font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: #B9B09D; }
+.lx-fila input { height: 50px; padding: 0 16px; border-radius: 13px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); color: #F4EEE2; font: 500 16px 'Inter', sans-serif; outline: none; transition: border-color .2s, box-shadow .2s; }
+.lx-fila input:focus { border-color: #E2BC63; box-shadow: 0 0 0 3px rgba(226, 188, 99, .2); }
+.lx-fila .lx-btn { width: 100%; } .lx-fila .lx-btn:disabled { opacity: .6; cursor: progress; }
+.lx-fila small { display: block; margin-top: 14px; font-size: 12px; color: #8F8672; text-align: center; }
+.lx-fila-erro { margin: 0 0 14px; padding: 10px 14px; border-radius: 11px; background: rgba(240, 128, 110, .14); color: #F4A99B !important; font-size: 13.5px !important; }
+.lx-pos { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 6px 0 14px; }
+.lx-pos small { flex-basis: 100%; margin: 0; text-align: left; letter-spacing: .1em; text-transform: uppercase; font-size: 11px; }
+.lx-pos b { font: 300 clamp(56px, 12vw, 84px) 'Outfit', sans-serif; line-height: 1; letter-spacing: -.04em; background: linear-gradient(180deg, #F3DC9C, #D9AE55); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.lx-pos span { color: #B9B09D; font-size: 16px; }
+.lx-ind { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding: 14px 16px; border-radius: 15px; background: rgba(226, 188, 99, .1); border: 1px solid rgba(226, 188, 99, .25); }
+.lx-ind span { font-size: 13.5px; color: #E8DFC9; max-width: 320px; line-height: 1.45; }
+.lx-ind button { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 11px; border: 0; background: linear-gradient(180deg, #F0D58F, #C99A3E); color: #1E1604; font: 700 13.5px 'Inter', sans-serif; cursor: pointer; }
+.lx-planos .lp-btn.vazio { display: flex; justify-content: center; text-align: center; min-height: 48px; align-items: center; border: 1px solid rgba(28, 25, 20, .22); border-radius: 13px; background: rgba(255, 255, 255, .5); color: #17150F; font-weight: 600; text-decoration: none; padding: 10px 14px; }

@@ -35,14 +35,15 @@ const CARTOES: Cartao[] = [
   { id: 'anual', nome: 'Anual', preco: brl0(PRECO_ANUAL), detalhe: `por ano (${mensalNoAnual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} por mês)`, destaque: `Melhor valor: ${Math.round((PRECO_MENSAL * 12 - PRECO_ANUAL) / PRECO_MENSAL)} meses de graça`, itens: NO_PAGO, breve: EM_BREVE },
 ];
 
-function Botao({ c }: { c: Cartao }) {
+function Botao({ c, travado }: { c: Cartao; travado?: boolean }) {
+  if (travado) return <a href="#fila" className="lp-btn vazio" style={{ width: '100%' }}>Entrar na fila para receber o convite</a>;
   const url = c.id === 'mensal' ? CHECKOUT_MENSAL : CHECKOUT_ANUAL;
   if (checkoutPronto(url)) return <a href={url} target="_blank" rel="noopener noreferrer" className="lp-btn ouro" style={{ width: '100%' }}>Assinar {c.nome.toLowerCase()}</a>;
   return <a href={waLink(`Oi! Quero entrar na lista de acesso do plano ${c.nome.toLowerCase()} da Grana Séria.`)} target="_blank" rel="noopener noreferrer" className="lp-btn ouro" style={{ width: '100%' }}>Entrar na lista de acesso</a>;
 }
 
 /** Os três cartões. Usado na página /planos e na capa. */
-export function CartoesPlanos({ semNota = false }: { semNota?: boolean }) {
+export function CartoesPlanos({ semNota = false, travado = false }: { semNota?: boolean; travado?: boolean }) {
   const aberto = CARTOES.some((c) => checkoutPronto(c.id === 'mensal' ? CHECKOUT_MENSAL : CHECKOUT_ANUAL));
   return (
     <>
@@ -56,7 +57,7 @@ export function CartoesPlanos({ semNota = false }: { semNota?: boolean }) {
               {c.itens.map((t) => <li key={t}><Check size={16} aria-hidden="true" /><span>{t}</span></li>)}
               {c.breve?.map((t) => <li key={t} className="breve"><Check size={16} aria-hidden="true" /><span>{t} <em>(em breve)</em></span></li>)}
             </ul>
-            <Botao c={c} />
+            <Botao c={c} travado={travado} />
           </article>
         ))}
       </div>

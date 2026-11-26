@@ -12,6 +12,7 @@ import { accountsConfigured, listUsers, saveState } from '../server/account/db.j
 import { auditarDados, restaurarMaiorCopia, type ContaGuardada } from '../server/admin/dados.js';
 import { mesmoSegredo } from '../server/segredo.js';
 import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
+import { rotaAcesso, rotaCakto, rotaFilaGet, rotaFilaPost } from '../server/acesso/rotas.js';
 
 const PAGE = 1000;
 const MAX_ROWS = 100_000;
@@ -87,6 +88,10 @@ async function contasGuardadas(): Promise<(ContaGuardada & { gravar: (state: Rec
 }
 
 export async function GET(request: Request): Promise<Response> {
+  // rotas públicas de acesso (/api/fila e /api/acesso): têm a própria proteção; ver server/acesso/rotas.ts
+  const rotaPublica = new URL(request.url).searchParams.get('rota');
+  if (rotaPublica === 'fila') return rotaFilaGet(request);
+  if (rotaPublica === 'acesso') return rotaAcesso(request);
   const status = acesso(request);
   if (status !== 200) {
     return new Response(status === 429 ? 'Muitas tentativas' : 'Unauthorized', { status, headers: { 'Cache-Control': 'no-store' } });
@@ -116,6 +121,9 @@ export async function GET(request: Request): Promise<Response> {
  * Cada pessoa recebe uma vez só; quem recebe não vê o aviso de novo no chat.
  */
 export async function POST(request: Request): Promise<Response> {
+  const rotaPublica = new URL(request.url).searchParams.get('rota');
+  if (rotaPublica === 'fila') return rotaFilaPost(request);
+  if (rotaPublica === 'cakto') return rotaCakto(request);
   const status = acesso(request);
   if (status !== 200) return new Response(status === 429 ? 'Muitas tentativas' : 'Unauthorized', { status });
   // ?acao=restaurar: devolve a maior cópia para quem perdeu dados (todas, ou só os ids do corpo). O estado de agora vira cópia.
