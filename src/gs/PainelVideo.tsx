@@ -18,6 +18,7 @@ import { abrirAdicionar } from './AdicionarMov';
 import { BarraPerguntar } from './Assistente';
 import { FERRAMENTAS, GRUPOS, NOME_AREA, type Area } from './registroFerramentas';
 import { ICONES } from './base';
+import { ehGastoDeCorte } from './gastosDeCorte';
 import './painelVideo.css';
 import './painelRv.css';
 
@@ -135,13 +136,21 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
   useEffect(() => { const t = setTimeout(() => tocar('subir'), 120); const t2 = setTimeout(() => tocar('brilho'), 1000); return () => { clearTimeout(t); clearTimeout(t2); }; }, []);
   useEffect(() => { setSel(0); }, [funilId]);
   // o foco de luz dourado segue o cursor dentro de cada cartão
+  const quadro = useRef(0);
   const seguir = (ev: PE<HTMLDivElement>) => {
-    const el = (ev.target as HTMLElement).closest<HTMLElement>('.pv-p, .pv-kpi, .rv-card');
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    el.style.setProperty('--mx', `${ev.clientX - r.left}px`);
-    el.style.setProperty('--my', `${ev.clientY - r.top}px`);
+    if (ev.pointerType !== 'mouse' || quadro.current) return;
+    const { clientX, clientY } = ev;
+    const alvo = ev.target as HTMLElement;
+    quadro.current = requestAnimationFrame(() => {
+      quadro.current = 0;
+      const el = alvo.closest<HTMLElement>('.pv-p, .pv-kpi, .rv-card, .pu-kpi, .pu-vidro, .cm-card, .gs-card');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${clientX - r.left}px`);
+      el.style.setProperty('--my', `${clientY - r.top}px`);
+    });
   };
+
 
   // ---------- dados ----------
   const kpi = (id: string) => p.kpis.find((k) => k.id === id);
@@ -265,7 +274,15 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
   const cat = p.categorias;
   const topCat = cat[0];
   const totCat = Math.max(1, ...cat.map((c) => c.gasto));
+  const totCatTotal = cat.reduce((t, c) => t + c.gasto, 0);
   const recBase = Math.max(1, f?.passos[0].valor ?? 1);
+  // o que dá para segurar neste mês (lazer, compras, assinaturas, delivery…), com o que mais pesou
+  const corte = useMemo(() => {
+    const doMes = e.lancamentos.filter((l) => mesDe(l.data) === mes && ehGastoDeCorte({ category: l.categoria, description: l.descricao }));
+    const por = new Map<string, number>();
+    for (const l of doMes) { const k = (l.descricao || l.categoria).trim().toLocaleLowerCase('pt-BR').slice(0, 24); por.set(k, (por.get(k) ?? 0) + l.valor); }
+    return { total: doMes.reduce((t, l) => t + l.valor, 0), top: [...por.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3) };
+  }, [e.lancamentos, mes]);
 
   return (
     <div className="pv rv" onPointerMove={seguir}>
@@ -371,6 +388,13 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
                   <b>{cap(topCat.categoria)}</b>
                   <strong>{m(brl0(topCat.gasto))}</strong>
                   <small>{Math.round((topCat.gasto / recBase) * 100)}% da renda do mês{topCat.limite ? ` · limite ${m(brl0(topCat.limite))}` : ' · sem limite definido'}</small>
+                  {corte.total > 0 && (
+                    <div className="rv-segurar">
+                      <span className="pv-lab">Dá pra segurar</span>
+                      <strong>{m(brl0(corte.total))}</strong>
+                      <small>{Math.round((corte.total / Math.max(1, totCatTotal)) * 100)}% do que saiu · {corte.top.map(([n, v]) => `${n} ${m(brl0(v))}`).join(' · ')}</small>
+                    </div>
+                  )}
                   <Link to="/plano/cortar" className="rv-link" onClick={() => tocar('tique')}>Ver onde cortar</Link>
                 </section>
               </div>

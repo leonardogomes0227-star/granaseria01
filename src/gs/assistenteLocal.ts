@@ -12,6 +12,7 @@ import { gastosPorCategoria } from './evolucaoLogica.js';
 import type { Estado } from './tipos.js';
 import { agirPorFrase } from './midasAcoes';
 import { acharDestinos, pedidoDeIr } from './destinos.js';
+import { acharProblema } from './problemas.js';
 
 export const NOME_ASSISTENTE = 'Midas';
 
@@ -20,7 +21,7 @@ export interface RespostaAssistente { texto: string; links?: LinkAssistente[]; d
 export interface MensagemAssistente { de: 'voce' | 'assistente'; texto: string; links?: LinkAssistente[]; desfazer?: () => void; desfeito?: boolean }
 
 export const EXEMPLOS_ANOTAR = ['mercado 35', 'uber 18,50', 'almoço 30 ontem', 'recebi 200 de extra'];
-export const SUGESTOES = ['O que eu pago primeiro?', 'Quanto posso gastar hoje?', 'Quando fico livre das dívidas?', 'Onde fica o orçamento?', 'Abrir minhas contas', 'Quanto já guardei?'];
+export const SUGESTOES = ['Meu dinheiro acaba antes do fim do mês', 'Estou com conta atrasada', 'Quero sair das dívidas', 'Quero começar a guardar', 'Vou fazer uma compra grande', 'Pago coisa que nem uso', 'Quanto posso gastar hoje?'];
 
 const tem = (t: string, ...palavras: string[]) => palavras.some((p) => t.includes(p));
 
@@ -34,6 +35,15 @@ export function responderLocal(pergunta: string, e: Estado, hoje: string): Respo
     const d = acharDestinos(pergunta);
     if (d.length === 1) return { texto: `Te levo para ${d[0].titulo}.`, links: d, ir: d[0].rota };
     if (d.length > 1) return { texto: 'Achei estes lugares. Toque no que você procura:', links: d };
+  }
+
+  // o trabalho principal do Midas: a pessoa conta o problema e ele aponta a ferramenta. Perguntas de número ("quanto…", "quando…") seguem abaixo.
+  if (!/^(quanto|quando|qual o total|o que (eu )?pago primeiro|para onde|pra onde)\b/.test(t)) {
+    const achado = acharProblema(pergunta, 1)[0];
+    if (achado) {
+      const lista = achado.passos.map((p, i) => `${i + 1}. ${p.ferramenta.titulo}: ${p.porque}`).join('\n');
+      return { texto: `${achado.problema.abertura}\n\n${lista}\n\nComece pela primeira.`, links: achado.passos.map((p) => ({ titulo: p.ferramenta.titulo, rota: p.ferramenta.rota })) };
+    }
   }
 
   if (tem(t, 'divida', 'devo', 'livre', 'quitar', 'juros')) {
@@ -78,7 +88,7 @@ export function responderLocal(pergunta: string, e: Estado, hoje: string): Respo
 
   const achados = acharDestinos(pergunta, 3);
   if (achados.length) return { texto: achados.length === 1 ? `Acho que é aqui: ${achados[0].titulo}.` : 'Achei isto no app para você:', links: achados };
-  return { texto: 'Não achei essa. Diga o que você quer resolver (por exemplo: pagar uma conta, ver dívidas, guardar dinheiro) e eu te levo até a tela certa.', links: [{ titulo: 'Ver todas as ferramentas', rota: '/ferramentas' }] };
+  return { texto: 'Me conta o seu problema com as suas palavras, por exemplo: "meu dinheiro acaba antes do fim do mês", "estou com conta atrasada" ou "quero começar a guardar". Eu te mostro a ferramenta certa.', links: [{ titulo: 'Ver todas as ferramentas', rota: '/ferramentas' }] };
 }
 
 /** O único ponto que a tela chama. Hoje responde localmente; é aqui que a API entra. */

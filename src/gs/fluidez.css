@@ -1,0 +1,46 @@
+/* Fluidez: o mesmo visual, mas só com o que a placa de vídeo faz de graça (opacidade e movimento).
+   Carrega por último. Regras: sem desfoque de vidro nos cartões, sem fundo "fixo" redesenhado a cada rolagem,
+   sem animação infinita que pinta (sombra, filtro), e sombras menores. */
+
+/* ----- fundo: uma camada fixa própria (não redesenha ao rolar) em vez de body com "fixed" ----- */
+html.gs-app { background-color: #F1EDE3; }
+html.gs-app body { background: none !important; }
+html.gs-app:not([data-tema="escuro"])::after {
+  content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none; transform: translateZ(0);
+  background:
+    radial-gradient(640px 420px at 8% -6%, rgba(236, 214, 160, .55), transparent 70%),
+    radial-gradient(560px 460px at 100% 20%, rgba(255, 255, 255, .9), transparent 70%),
+    linear-gradient(180deg, #F4F1EA, #E9E5DB);
+}
+
+/* ----- vidro: o desfoque só fica onde a coisa flutua sobre o conteúdo (topo, barra de baixo, painéis e folhas) ----- */
+html.gs-app body *:not(.cm-topo):not(.cm-abas):not(.gs-topo):not(.as-painel):not(.as-fundo):not(.gs-fundo):not(.gs-folha):not(.cm-folha),
+html.gs-app body *:not(.cm-topo):not(.cm-abas)::before,
+html.gs-app body *::after {
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+/* sem o desfoque, o fundo do cartão fica um pouco mais cheio para continuar legível e com cara de vidro */
+html.gs-app:not([data-tema="escuro"]) :is(.pv-p, .pv-kpi:not(.ouro), .rv-col, .pu-kpi, .pu-vidro, .rv-ftile, .rv-abas, .pv-mais > summary, .lx-cartao, .lx-jan, .lx-area) { background-color: rgba(255, 255, 255, .78); }
+html.gs-app:not([data-tema="escuro"]) .rv, html.gs-app:not([data-tema="escuro"]) .rv-moldura { background: rgba(255, 255, 255, .5) !important; }
+
+/* ----- animações infinitas: só as que usam transform/opacity; as que pintam ficam paradas ou rodam poucas vezes ----- */
+.pv-halo { animation: none !important; filter: none !important; will-change: auto; }
+.pv-kpi.ouro::after { animation-iteration-count: 3 !important; }
+.cm-vivo i, .rv-vivo i, .cm-sino b { animation-iteration-count: 4 !important; } /* o pulso muda a sombra, que repinta */
+.lx-flut { animation: none !important; }
+
+/* ----- sombras: menores e mais baratas de pintar ----- */
+html.gs-app :is(.pv-p, .pv-kpi, .rv-card, .rv-col, .rv-conta, .pu-kpi, .pu-vidro, .rv-ftile, .lx-cartao, .lx-ganho, .lx-area, .gs-plano) { box-shadow: 0 1px 2px rgba(60, 45, 15, .06), 0 8px 18px -14px rgba(100, 70, 12, .35) !important; }
+html.gs-app .pv-kpi.ouro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 10px 22px -14px rgba(140, 100, 24, .6) !important; }
+.lx-jan { box-shadow: inset 0 1px 0 #fff, 0 24px 44px -28px rgba(100, 70, 12, .45) !important; }
+
+/* ----- o foco de luz que segue o mouse só existe onde há mouse ----- */
+@media (hover: none) { .pv-p::before, .pv-kpi::before, .rv-conta::before { display: none !important; } }
+
+/* ----- só pinta o que está na tela ----- */
+.rv-ftile, .rv-conta, .lx-cartao, .lx-ganho, .lx-area { contain: layout paint; }
+.lx-fim, .lx-sec.estreita { contain: layout paint; }
+img { content-visibility: auto; }
+
+@media (prefers-reduced-motion: reduce) { .pv-kpi.ouro::after { display: none; } }
+.as-msg p { white-space: pre-line; }

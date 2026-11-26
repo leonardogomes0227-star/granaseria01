@@ -10,7 +10,7 @@ html.gs-app[data-tema="escuro"] body {
     #0A0A0C fixed !important;
 }
 html.gs-app[data-tema="escuro"]:has(.pv) body::before { background: none !important; }
-html.gs-app[data-tema="escuro"] .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 180, 94, .13), transparent); filter: blur(30px); animation: nt-resp 9s ease-in-out infinite alternate; }
+html.gs-app[data-tema="escuro"] .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 180, 94, .13), transparent);  }
 @keyframes nt-resp { from { transform: translate3d(0, 0, 0) scale(1); opacity: .7; } to { transform: translate3d(-6%, 8%, 0) scale(1.15); opacity: 1; } }
 
 /* ----- variáveis do painel ----- */
@@ -141,7 +141,7 @@ html.gs-app[data-tema="escuro"] .pu-kpi small, html.gs-app[data-tema="escuro"] .
 
 /* ===== claro (o visual do app): areia e dourado, com o mesmo movimento ===== */
 html.gs-app:not([data-tema="escuro"]) .pv { position: relative; z-index: 1; }
-html.gs-app:not([data-tema="escuro"]) .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 174, 85, .28), transparent); filter: blur(30px); animation: nt-resp 9s ease-in-out infinite alternate; }
+html.gs-app:not([data-tema="escuro"]) .pv-halo { position: fixed; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; pointer-events: none; z-index: 0; background: radial-gradient(closest-side, rgba(217, 174, 85, .28), transparent);  }
 html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro:not(:has(input, select, textarea)) { background: linear-gradient(135deg, #F3DC9C 0%, #D9AE55 45%, #B98A2D 100%) !important; border: 1px solid rgba(255, 244, 205, .9) !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 26px 40px -24px rgba(140, 100, 24, .7) !important; }
 html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro .pv-lab, html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > em, html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > em small { color: rgba(40, 28, 6, .78) !important; }
 html.gs-app:not([data-tema="escuro"]) .pv-kpi.ouro > b { color: #1E1604 !important; }
@@ -164,7 +164,7 @@ html.gs-app:not([data-tema="escuro"]) body {
     linear-gradient(180deg, #F7F0DF, #EADFC6) fixed !important;
 }
 html.gs-app:not([data-tema="escuro"]) .pv-halo { background: radial-gradient(closest-side, rgba(226, 170, 70, .45), transparent); }
-html.gs-app .pv-halo.b { inset: auto auto -25% -15%; animation-duration: 13s; animation-direction: alternate-reverse; background: radial-gradient(closest-side, rgba(240, 150, 80, .30), transparent) !important; }
+html.gs-app .pv-halo.b { inset: auto auto -25% -15%; background: radial-gradient(closest-side, rgba(240, 150, 80, .30), transparent) !important; }
 html.gs-app:not([data-tema="escuro"]) :is(.pv-p, .pv-kpi:not(.ouro)) {
   background: linear-gradient(160deg, rgba(255, 255, 255, .72), rgba(255, 252, 244, .38) 70%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(170%); backdrop-filter: blur(20px) saturate(170%);

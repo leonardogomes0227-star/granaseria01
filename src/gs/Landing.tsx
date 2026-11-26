@@ -246,21 +246,21 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         <div className="lx-duo">
           <Revela className="lx-duo-txt">
             <span className="lx-eyebrow">Midas, o assistente</span>
-            <h2>Não sabe onde fica? <em>Pergunte e ele te leva.</em></h2>
-            <p>São {FERRAMENTAS.length} ferramentas, mas você nunca precisa procurar. Diga o que quer resolver e o Midas abre a tela certa, com os seus números já preenchidos.</p>
+            <h2>Conte o problema. <em>Ele acha a ferramenta.</em></h2>
+            <p>São {FERRAMENTAS.length} ferramentas, mas você nunca precisa procurar. Descreva o que está acontecendo com as suas palavras e o Midas aponta a ferramenta certa para aquilo.</p>
             <ul className="lx-pontos">
-              <li><MessageCircle size={16} aria-hidden="true" />Responde com os seus dados, em uma frase</li>
-              <li><Compass size={16} aria-hidden="true" />Leva direto para a aba que resolve</li>
+              <li><MessageCircle size={16} aria-hidden="true" />Entende o problema como você conta</li>
+              <li><Compass size={16} aria-hidden="true" />Aponta a ferramenta e leva direto até ela</li>
               <li><Wallet size={16} aria-hidden="true" />Anota gastos pelo WhatsApp: “mercado 35”</li>
             </ul>
           </Revela>
           <Revela atraso={120} className="lx-chat" >
             <div className="lx-chat-in" role="img" aria-label="Exemplo de conversa com o Midas">
-              <div className="b voce">quero pagar o aluguel</div>
-              <div className="b midas"><Moeda tamanho={22} /><span>O aluguel de R$ 1.400 vence dia 10. Te levo para as Contas.</span></div>
-              <div className="lx-chat-link">Abrir Contas <ArrowRight size={14} aria-hidden="true" /></div>
-              <div className="b voce">quando fico livre das dívidas?</div>
-              <div className="b midas"><Moeda tamanho={22} /><span>Pagando R$ 2.000 por mês, em janeiro de 2027.</span></div>
+              <div className="b voce">meu dinheiro acaba antes do fim do mês</div>
+              <div className="b midas"><Moeda tamanho={22} /><span>Então o primeiro passo é dar um limite para cada gasto. Comece pelo Orçamento.</span></div>
+              <div className="lx-chat-link">Abrir Orçamento <ArrowRight size={14} aria-hidden="true" /></div>
+              <div className="b voce">tenho conta atrasada</div>
+              <div className="b midas"><Moeda tamanho={22} /><span>A ordem do que pagar primeiro faz diferença. Te levo para Sair do atraso.</span></div>
               <small>Exemplo ilustrativo</small>
             </div>
           </Revela>

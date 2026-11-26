@@ -43,7 +43,7 @@
   ],
   "headers": [
     {
-      "source": "/(sw.js|manifest.webmanifest|favicon-v3.ico|favicon-v3.svg|favicon.ico|favicon.svg|logo-icone.png|logo-icone-160.png|logo-completa.png|moeda.svg|icon-192.png|icon-512.png|icon-maskable-512.png|apple-touch-icon.png|og-image.png)",
+      "source": "/(sw.js|manifest.webmanifest|favicon[^/]*|icon-[^/]*|apple-touch-icon[^/]*|logo-[^/]*|moeda.svg|og-image.png)",
       "headers": [
         {
           "key": "Cache-Control",

@@ -774,7 +774,7 @@ function AssistenteNoApp() {
             <div className="as-ola">
               <Orbe tamanho={72} />
               <b>{nome ? `Oi, ${nome}. ` : 'Oi. '}Sou o {NOME_ASSISTENTE}</b>
-              <p>Anoto seus gastos por frase e respondo com os seus números.</p>
+              <p>Me conta o seu problema com as suas palavras e eu te levo até a ferramenta certa. Também anoto gastos: escreva “mercado 35”.</p>
               {agora && (
                 <div className={`as-agora ${agora.tom}`}>
                   <small>Pra agora</small>
@@ -804,7 +804,7 @@ function AssistenteNoApp() {
           {SUGESTOES.map((s) => <button key={s} type="button" onClick={() => void enviar(s)}>{s}</button>)}
         </div>
         <form className="as-campo" onSubmit={(ev) => { ev.preventDefault(); void enviar(texto); }}>
-          <input ref={campo} value={texto} onChange={(ev) => setTexto(ev.target.value)} placeholder="Anote (mercado 35) ou pergunte…" aria-label={`Pergunta para o ${NOME_ASSISTENTE}`} maxLength={300} tabIndex={aberto ? 0 : -1} />
+          <input ref={campo} value={texto} onChange={(ev) => setTexto(ev.target.value)} placeholder="Conte o problema ou anote (mercado 35)…" aria-label={`Pergunta para o ${NOME_ASSISTENTE}`} maxLength={300} tabIndex={aberto ? 0 : -1} />
           <button type="submit" aria-label="Enviar" disabled={!texto.trim() || pensando} tabIndex={aberto ? 0 : -1}><ArrowUp size={18} aria-hidden="true" /></button>
         </form>
       </aside>

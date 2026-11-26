@@ -17,9 +17,9 @@
 
 /* ----- entrada da página: desfoque, subida e cascata ----- */
 .rv-pagina { animation: rv-pg .6s cubic-bezier(.16, 1, .3, 1) both; }
-@keyframes rv-pg { from { opacity: 0; filter: blur(10px); transform: translateY(10px); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes rv-pg { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .rv-card { animation: rv-card .65s cubic-bezier(.16, 1, .3, 1) backwards; animation-delay: calc(var(--i, 0) * 70ms + 60ms); }
-@keyframes rv-card { from { opacity: 0; filter: blur(8px); transform: translateY(16px) scale(.98); } to { opacity: 1; filter: none; transform: none; } }
+@keyframes rv-card { from { opacity: 0; transform: translateY(16px) scale(.98); } to { opacity: 1; transform: none; } }
 .pv-p.rv-card, .pv-kpi.rv-card { animation-name: rv-card; }
 
 /* ----- lista de funis salvos ----- */
@@ -105,7 +105,7 @@
 .rv-mh { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .pv-mapa > span.sem.on { color: #1E1604; font-weight: 700; }
 .pv-mapa button { animation: rv-cel .6s cubic-bezier(.16, 1, .3, 1) backwards; }
-@keyframes rv-cel { from { opacity: 0; transform: scale(.55); filter: blur(4px); } }
+@keyframes rv-cel { from { opacity: 0; transform: scale(.55); } }
 @media (prefers-reduced-motion: reduce) { .rv-pagina, .rv-card, .rv-col, .rv-funil, .pv-col { animation: none !important; } }
 
 /* ----- pílula do menu lateral: a borda da frente corre e a de trás vem depois (o slidePill do vídeo) ----- */
@@ -273,3 +273,5 @@ html.gs-app body :is(.rv-ferr-painel, .rv-area) .pu-ico svg { width: 13px; heigh
 .ac-tela p { margin: 0 0 20px; font-size: 15px; line-height: 1.6; color: #6F6858; }
 .ac-tela .ac-ofertas { justify-content: center; }
 .ac-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-top: 22px; font-size: 13.5px; } .ac-links a { display: inline-flex; align-items: center; gap: 7px; color: #8A6418; font-weight: 600; }
+.rv-segurar { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: rgba(185, 138, 45, .1); border: 1px solid rgba(185, 138, 45, .25); }
+.rv-segurar strong { font: 600 22px 'Outfit', sans-serif; letter-spacing: -.02em; color: #8A6418; } .rv-segurar small { font-size: 11.5px; color: #6F6858; line-height: 1.4; }

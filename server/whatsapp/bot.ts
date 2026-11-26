@@ -2,6 +2,7 @@ import { parseMessage, categoryEmoji, detectIncomeSource, detectCategory, normal
 import type { Expense, Income } from './db.js';
 import { SUMMARY_OFFER, type Offer } from './offers.js';
 import { weeklySummary } from './summary.js';
+import { dashboardDoMes } from './dashboard.js';
 import { needsSmart, type SmartContext, type SmartResult } from './smart.js';
 import { siteLink } from './site.js';
 
@@ -171,7 +172,7 @@ export const HELP_TEXT = [
   '• *hoje* — gastos de hoje',
   '• *ontem* — gastos de ontem',
   '• *semana* — total da semana',
-  '• *mês* — resumo do mês por categoria',
+  '• *mês* — seu painel do mês: entrou, saiu, para onde foi e o que dá pra segurar',
   '• *últimos* — os últimos gastos anotados',
   '• *entradas* — o dinheiro que entrou no mês',
   '• *saldo* — o que entrou menos o que saiu',
@@ -388,6 +389,10 @@ export async function handleText(
     case 'month': {
       const rows = await deps.listExpensesSince(msg.phone, startOfMonthBRT(now));
       if (rows.length === 0) return 'Nenhum gasto registrado neste mês ainda.';
+      // a "dashboardzinha": entrou, saiu, para onde foi, o que mais pesou e o que dá pra segurar
+      const entradas = await deps.listIncomesSince?.(msg.phone, startOfMonthBRT(now)).catch(() => [] as Income[]);
+      const painel = dashboardDoMes({ expenses: rows, incomes: entradas ?? [], now });
+      if (painel) return painel;
       return [
         `📊 *Mês*: ${brl(sum(rows))} em ${rows.length} registro(s)`,
         '',

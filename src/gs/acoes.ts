@@ -6,7 +6,8 @@ import { aplicarCompra, aplicarPagamento } from './cartaoLogica';
 import { cfgAtrasos, deOndeSai, type Atraso } from './atrasosLogica';
 import type { Estado, OutroCartao, Meta, Receita, Transferencia, ContaBancaria, Aporte, AtrasoManual, AtrasosCfg, AgenteCustom, Assinatura, Desejo, Divida, GastoFixo, Lancamento, OrigemAporte, PlanoDividas } from './tipos';
 import { terminoDaEspera } from './ferramentas';
-import { apagarNoServidor, restaurarNoServidor } from './servidor';
+import { apagarNoServidor, editarNoServidor, enviarAoServidor, restaurarNoServidor } from './servidor';
+import { categoriaDoSite, categoriaDoWhatsApp, ehCategoriaDoWhatsApp } from './categoriasWa';
 
 const ok = (n: number) => Number.isFinite(n) && n > 0;
 /** Corta por caractere (emoji conta 1) e não deixa um pedaço de emoji no fim. */
@@ -39,11 +40,22 @@ export const desfazerBaixa = (id: string, mes: string) =>
 /* ---------- dia a dia ---------- */
 export function salvarLancamento(l: Omit<Lancamento, 'id'> & { id?: string }): boolean {
   if (!ok(l.valor) || !l.categoria || !/^\d{4}-\d{2}-\d{2}$/.test(l.data) || l.data > hojeSP()) return false;
+  const novoLocal = l.id ? null : novoId('l');
+  const antes = l.id ? getEstado().lancamentos.find((x) => x.id === l.id) : undefined;
   atualizar((e) => {
     // forma e conta entram sempre: na edição, tirar "Pix" ou "Sem conta" precisa apagar o que estava salvo
-    const dados = { descricao: cortar(l.descricao, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, forma: l.forma ? cortar(l.forma, 20) : undefined, contaId: l.contaId || undefined };
-    return l.id ? { ...e, lancamentos: e.lancamentos.map((x) => (x.id === l.id ? { ...x, ...dados } : x)) } : { ...e, lancamentos: [...e.lancamentos, { id: novoId('l'), ...dados }] };
+    const dados = { descricao: cortar(l.descricao, 80) || l.categoria, valor: arred(l.valor), data: l.data, categoria: l.categoria, forma: l.forma ? cortar(l.forma, 20) : undefined, contaId: l.contaId };
+    return l.id ? { ...e, lancamentos: e.lancamentos.map((x) => (x.id === l.id ? { ...x, ...dados } : x)) } : { ...e, lancamentos: [...e.lancamentos, { id: novoLocal as string, ...dados }] };
   });
+  // o mesmo gasto aparece no WhatsApp: novo vai para lá (e volta com o id de lá); editado corrige lá
+  const nome = cortar(l.descricao, 80) || l.categoria;
+  if (novoLocal) {
+    void enviarAoServidor('out', { valor: arred(l.valor), categoria: categoriaDoWhatsApp(l.categoria), descricao: nome, data: l.data, forma: l.forma }).then((serverId) => {
+      if (serverId !== null) atualizar((e) => ({ ...e, lancamentos: e.lancamentos.map((x) => (x.id === novoLocal ? { ...x, serverId } : x)) }));
+    });
+  } else if (antes?.serverId) {
+    editarNoServidor('out', antes.serverId, { valor: arred(l.valor), categoria: categoriaDoWhatsApp(l.categoria), descricao: nome, data: l.data });
+  }
   return true;
 }
 export function removerLancamento(id: string) {
@@ -63,15 +75,35 @@ export function importarDoServidor(entradas: { id: number; kind: 'out' | 'in'; a
   atualizar((e) => {
     const vistosL = new Set(e.lancamentos.map((l) => l.serverId));
     const vistosA = new Set(e.aportes.map((a) => a.id));
-    const novos: Lancamento[] = saidas
-      .filter((x) => !vistosL.has(x.id))
-      .map((x) => ({ id: `srv-${x.id}`, serverId: x.id, descricao: x.description || x.category, valor: arred(x.amount), data: x.created_at.slice(0, 10), categoria: x.category }));
+    // o gasto que o próprio site acabou de mandar volta na lista: em vez de duplicar, ele só ganha o id de lá
+    const sem = e.lancamentos.filter((l) => l.serverId === undefined);
+    const adotados = new Map<string, number>(); // id local -> id do servidor
+    const novos: Lancamento[] = [];
+    for (const x of saidas) {
+      if (vistosL.has(x.id)) continue;
+      const data = x.created_at.slice(0, 10);
+      const categoria = categoriaDoSite(x.category, x.description);
+      const ja = sem.find((l) => !adotados.has(l.id) && l.data === data && arred(l.valor) === arred(x.amount) && categoriaDoWhatsApp(l.categoria) === x.category && (l.descricao || l.categoria) === (x.description || x.category));
+      if (ja) { adotados.set(ja.id, x.id); continue; }
+      novos.push({ id: `srv-${x.id}`, serverId: x.id, descricao: x.description || x.category, valor: arred(x.amount), data, categoria });
+    }
     const vistosR = new Set(e.receitas.map((r) => r.serverId));
-    const receitas: Receita[] = entradas
-      .filter((x) => x.kind === 'in' && x.amount > 0 && !vistosR.has(x.id))
-      .map((x) => ({ id: `srv-in-${x.id}`, serverId: x.id, descricao: x.description || x.category || 'Receita', valor: arred(x.amount), data: x.created_at.slice(0, 10), tipo: /sal[aá]rio|holerite|pagamento mensal/i.test(`${x.description} ${x.category}`) ? ('salario' as const) : ('extra' as const) }));
-    const aportes: Aporte[] = guardados.filter((x) => !vistosA.has(`srv-${x.id}`)).map((x) => ({ id: `srv-${x.id}`, data: x.created_at.slice(0, 10), valor: arred(x.amount), origem: 'manual' }));
-    return novos.length || aportes.length || receitas.length ? { ...e, lancamentos: [...e.lancamentos, ...novos], aportes: [...e.aportes, ...aportes], receitas: [...e.receitas, ...receitas] } : e;
+    const semR = e.receitas.filter((r) => r.serverId === undefined);
+    const adotadosR = new Map<string, number>();
+    const receitas: Receita[] = [];
+    for (const x of entradas.filter((y) => y.kind === 'in' && y.amount > 0 && !vistosR.has(y.id))) {
+      const data = x.created_at.slice(0, 10);
+      const ja = semR.find((r) => !adotadosR.has(r.id) && r.data === data && arred(r.valor) === arred(x.amount));
+      if (ja) { adotadosR.set(ja.id, x.id); continue; }
+      receitas.push({ id: `srv-in-${x.id}`, serverId: x.id, descricao: x.description || x.category || 'Receita', valor: arred(x.amount), data, tipo: /sal[aá]rio|holerite|pagamento mensal/i.test(`${x.description} ${x.category}`) ? ('salario' as const) : ('extra' as const) });
+    }
+    const aportes: Aporte[] = guardados.filter((x) => !vistosA.has(`srv-${x.id}`)).map((x) => ({ id: `srv-${x.id}`, data: x.created_at.slice(0, 10), valor: arred(x.amount), origem: 'manual' as OrigemAporte }));
+    // o que já veio antes com nome do WhatsApp (Alimentação, Moradia) passa a usar o nome do site, para somar com o que foi anotado aqui
+    const traduz = (l: Lancamento): Lancamento => (l.serverId !== undefined && ehCategoriaDoWhatsApp(l.categoria) ? { ...l, categoria: categoriaDoSite(l.categoria, l.descricao) } : l);
+    const lancamentos = [...e.lancamentos.map((l) => { const id = adotados.get(l.id); return traduz(id !== undefined ? { ...l, serverId: id } : l); }), ...novos];
+    const receitasTodas = [...e.receitas.map((r) => { const id = adotadosR.get(r.id); return id !== undefined ? { ...r, serverId: id } : r; }), ...receitas];
+    const mudou = novos.length || aportes.length || receitas.length || adotados.size || adotadosR.size || lancamentos.some((l, i) => i < e.lancamentos.length && l !== e.lancamentos[i]);
+    return mudou ? { ...e, lancamentos, receitas: receitasTodas, aportes: [...e.aportes, ...aportes] } : e;
   });
 }
 
@@ -337,14 +369,32 @@ export const voltarAtraso = (chave: string) => atualizar((e) => comAtrasos(e, (c
 /* ---------- receitas, saldo e metas ---------- */
 export function salvarReceita(r: Omit<Receita, 'id'> & { id?: string }): boolean {
   if (!ok(r.valor) || !/^\d{4}-\d{2}-\d{2}$/.test(r.data) || r.data > hojeSP()) return false;
+  const novoLocal = r.id ? null : novoId('r');
+  const antes = r.id ? getEstado().receitas.find((x) => x.id === r.id) : undefined;
+  const descricao = cortar(r.descricao, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita');
   atualizar((e) => {
-    const dados = { descricao: cortar(r.descricao, 80) || (r.tipo === 'salario' ? 'Salário' : 'Receita'), valor: arred(r.valor), data: r.data, tipo: r.tipo, contaId: r.contaId || undefined };
-    return r.id ? { ...e, receitas: e.receitas.map((x) => (x.id === r.id ? { ...x, ...dados } : x)) } : { ...e, receitas: [...e.receitas, { id: novoId('r'), ...dados }] };
+    const dados = { descricao, valor: arred(r.valor), data: r.data, tipo: r.tipo, contaId: r.contaId };
+    return r.id ? { ...e, receitas: e.receitas.map((x) => (x.id === r.id ? { ...x, ...dados } : x)) } : { ...e, receitas: [...e.receitas, { id: novoLocal as string, ...dados }] };
   });
+  // a entrada também vai para o WhatsApp, que usa o salário para calcular quanto sobra
+  if (novoLocal) {
+    void enviarAoServidor('in', { valor: arred(r.valor), categoria: r.tipo === 'salario' ? 'Salário' : 'Extra', descricao, data: r.data }).then((serverId) => {
+      if (serverId !== null) atualizar((e) => ({ ...e, receitas: e.receitas.map((x) => (x.id === novoLocal ? { ...x, serverId } : x)) }));
+    });
+  } else if (antes?.serverId) {
+    editarNoServidor('in', antes.serverId, { valor: arred(r.valor), descricao, data: r.data });
+  }
   return true;
 }
-export const removerReceita = (id: string) => atualizar((e) => ({ ...e, receitas: e.receitas.filter((x) => x.id !== id) }));
-export const restaurarReceita = (r: Receita) => atualizar((e) => (e.receitas.some((x) => x.id === r.id) ? e : { ...e, receitas: [...e.receitas, r] }));
+export function removerReceita(id: string) {
+  const r = getEstado().receitas.find((x) => x.id === id);
+  if (r?.serverId) apagarNoServidor(r.serverId, 'in');
+  atualizar((e) => ({ ...e, receitas: e.receitas.filter((x) => x.id !== id) }));
+}
+export function restaurarReceita(r: Receita) {
+  if (r.serverId) restaurarNoServidor(r.serverId, 'in');
+  atualizar((e) => (e.receitas.some((x) => x.id === r.id) ? e : { ...e, receitas: [...e.receitas, r] }));
+}
 
 /** "Quanto você tem na conta agora?" — a base confirmada do "pode gastar". undefined apaga. */
 export const informarSaldo = (valor: number | undefined, data = hojeSP()) =>
