@@ -1,0 +1,14 @@
+/* planos: os mesmos cartões na capa e em /planos, em creme e ouro, legíveis e sem espremer */
+.gs-planos { display: grid; gap: 18px; grid-template-columns: 1fr; max-width: 860px; margin-inline: auto; }
+@media (min-width: 760px) { .gs-planos { grid-template-columns: 1fr 1fr; } }
+html.gs-app body .gs-plano { background: linear-gradient(160deg, #FFFDF8, #F6EEDB) !important; color: #17150F !important; border: 1px solid rgba(255, 255, 255, .9) !important; border-radius: 24px; padding: 26px 24px; box-shadow: 0 30px 50px -34px rgba(100, 70, 12, .5); }
+html.gs-app body .gs-plano.dest { box-shadow: 0 0 0 2px #D9AE55, 0 0 50px -12px rgba(217, 174, 85, .5), 0 30px 50px -34px rgba(100, 70, 12, .5); }
+html.gs-app body .gs-plano * { color: inherit; }
+html.gs-app body .gs-plano h3 { font: 400 24px 'Outfit', sans-serif !important; margin: 0 0 6px !important; }
+html.gs-app body .gs-plano-preco { margin: 4px 0 16px; } html.gs-app body .gs-plano-preco b { font: 300 42px 'Outfit', sans-serif; letter-spacing: -.03em; } html.gs-app body .gs-plano-preco small { display: block; color: #6F6858; font-size: 12.5px; }
+html.gs-app body .gs-plano ul { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 10px; } html.gs-app body .gs-plano li { display: flex; gap: 10px; font-size: 14px; line-height: 1.5; } html.gs-app body .gs-plano li svg { flex: none; margin-top: 3px; color: #B98A2D; }
+html.gs-app body .gs-plano .gs-plano-selo { display: inline-block; margin-bottom: 12px; padding: 5px 12px; border-radius: 99px; background: linear-gradient(180deg, #F3DC9C, #D9AE55); color: #1E1604; font: 700 12px 'Inter', sans-serif; }
+.gs-plano .lp-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 14px; border-radius: 13px; font: 700 14.5px 'Inter', sans-serif; text-decoration: none; text-align: center; width: 100%; box-sizing: border-box; }
+.gs-plano .lp-btn.ouro { background: linear-gradient(180deg, #F0D58F, #C99A3E); color: #1E1604 !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 12px 24px -12px rgba(140, 100, 24, .8); }
+.gs-plano .lp-btn.vazio { background: rgba(255, 255, 255, .6); border: 1px solid rgba(28, 25, 20, .22); color: #17150F; }
+.pl-pagina { max-width: 920px; margin: 0 auto; }

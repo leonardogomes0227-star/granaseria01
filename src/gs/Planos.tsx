@@ -4,6 +4,7 @@ import { CHECKOUT_ANUAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_MENSAL, checkoutPro
 import { waLink } from '../whatsapp';
 import { brl0 } from './datas';
 import { Titulo } from './ui';
+import { useConvite } from './convite';
 
 /* ---------- Planos: grátis, mensal e anual. Os preços e os links de pagamento ficam em src/config.ts ---------- */
 
@@ -67,11 +68,13 @@ export function CartoesPlanos({ semNota = false, travado = false }: { semNota?: 
 }
 
 export function Planos() {
+  const convite = useConvite();
   return (
-    <>
-      <Titulo titulo="Planos" sub={`Acesso completo ao Grana Séria: ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.`} />
-      <CartoesPlanos />
+    <div className="pl-pagina">
+      <Titulo titulo="Planos" sub={convite.valido ? `Seu convite está liberado. Acesso completo ao Grana Séria: ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.` : 'O Grana Séria abre vagas por convite, em ondas.'} />
+      {!convite.valido && <p className="gs-nota">Entre na fila de espera e, quando chegar a sua vez, o convite vai para o seu WhatsApp. <a href="/#fila">Entrar na fila</a></p>}
+      <CartoesPlanos semNota travado={!convite.valido} />
       <p className="gs-nota">Conteúdo educativo, não é consultoria financeira. Veja os <Link to="/termos-de-uso">termos de uso</Link> e a <Link to="/politica-de-privacidade">política de privacidade</Link>.</p>
-    </>
+    </div>
   );
 }

@@ -9,7 +9,6 @@ import { contasDoMes, detalheDisponivel, guardadoNoMes, patrimonioGuardado } fro
 import { paraSim, saldoAtual, simular } from './dividas.js';
 import { planoDeQuitacao } from './caminho.js';
 import { gastosPorCategoria } from './evolucaoLogica.js';
-import { buscar } from './registroFerramentas.js';
 import type { Estado } from './tipos.js';
 import { agirPorFrase } from './midasAcoes';
 import { acharDestinos, pedidoDeIr } from './destinos.js';

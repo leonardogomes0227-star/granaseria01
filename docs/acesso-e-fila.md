@@ -11,6 +11,7 @@ Supabase → SQL Editor → cole e rode `supabase/acesso.sql`. Cria `fila_espera
 | `CAKTO_WEBHOOK_SECRET` | segredo do aviso de pagamento da Cakto (você escolhe; o mesmo vai no passo 3) |
 | `ADMIN_SECRET` | já existe; protege a lista da fila e o botão de chamar os próximos |
 | `ACESSO_CORTE` | data limite de quem já usava, em ISO. Ex.: `2026-12-10T23:59:00-03:00` |
+| `ACESSO_NOVOS_DESDE` | **quem chega depois não ganha o prazo**: contas criadas depois dessa data precisam de convite e assinatura. Use o dia em que ligar o `ACESSO_MODO`. Ex.: `2026-11-30T00:00:00-03:00`. Vale só para contas por e-mail; contas só de WhatsApp contam como antigas |
 | `ACESSO_MODO` | **só quando estiver pronto**: `convite`. Sem ela (ou com outro valor), ninguém é cortado |
 
 ## 3. Aviso de pagamento (Cakto)
@@ -23,7 +24,8 @@ Faça uma compra de teste e olhe os logs da Vercel (`cakto: ...`): confirma que 
 
 ## 4. Como funciona para a pessoa
 - **Quem já usava** (modo `convite`): vê um aviso com o prazo e os dois links de fundador (mensal e anual). Até `ACESSO_CORTE` o acesso segue. Depois, sem assinatura, o app mostra "acesso encerrado", com os links, **Baixar os meus dados** e o contato.
-- **Quem chega agora:** entra na fila na página inicial (nome + WhatsApp). A posição é real e sobe 5 lugares por indicação.
+- **Quem chega agora:** entra na fila na página inicial (nome + WhatsApp). A posição é real e sobe 5 lugares por indicação. Se criar conta sem convite (depois de `ACESSO_NOVOS_DESDE`), vê "O Grana Séria é por convite", com o botão da fila, e não o preço de fundador.
+- **/planos:** os botões de assinar também só abrem para quem tem convite válido.
 - **Convite:** você chama os próximos (passo 5). A pessoa recebe `https://www.granaseria.com.br/?convite=CÓDIGO` e, com o convite válido, os botões de assinar se abrem.
 
 ## 5. Chamar a próxima onda
@@ -51,6 +53,6 @@ Enquanto os modelos não estão aprovados, o bot só responde a quem escreveu na
 ## 7. Lançar com segurança
 1. Rode o passo 1 e teste a fila na página pública.
 2. Configure o webhook (passo 3) e faça uma compra de teste.
-3. Defina `ACESSO_CORTE` com uma data **a pelo menos 10 dias**.
+3. Defina `ACESSO_CORTE` com uma data **a pelo menos 10 dias** e `ACESSO_NOVOS_DESDE` com a data de hoje.
 4. Só então coloque `ACESSO_MODO=convite`. Para desfazer na hora: apague a variável.
 5. Em qualquer erro do servidor de acesso o app **libera**: cortar só acontece quando o servidor tem certeza.

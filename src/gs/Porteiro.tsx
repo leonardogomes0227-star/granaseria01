@@ -16,7 +16,7 @@ export function Porteiro({ children }: { children: ReactNode }) {
   const acesso = useAcesso();
   if (!e.config.onboardingFeito && pathname !== '/dados') return <Onboarding />;
   // sem acesso (só quando o servidor tem certeza): o app não abre, mas "Meus dados" e "Perfil" ficam abertos para levar os dados
-  if (acesso?.estado === 'bloqueado' && !['/dados', '/perfil', '/entrar'].includes(pathname)) return <TelaAcesso />;
+  if (acesso?.estado === 'bloqueado' && !['/dados', '/perfil', '/entrar'].includes(pathname)) return <TelaAcesso novo={acesso.novo} />;
   return (
     <>
       <NotificadorAvisos />

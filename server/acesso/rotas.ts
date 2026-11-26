@@ -6,6 +6,7 @@
 
 import { acessoDe, convidarProximos, conviteValido, entrarNaFila, gravarAcesso, normalizarFone, situacaoDe, totalNaFila } from './db.js';
 import { interpretarAviso } from './cakto.js';
+import { decidirAcesso } from './decisao.js';
 import { accountsConfigured, findUserById } from '../account/db.js';
 import { phoneFromWebLink } from '../whatsapp/hubdb.js';
 import { mesmoSegredo } from '../segredo.js';
@@ -27,6 +28,13 @@ export async function rotaFilaGet(request: Request): Promise<Response> {
   if (!accountsConfigured()) return jsonFila({ error: 'A fila ainda não está ligada.' }, 503);
   const q = new URL(request.url).searchParams;
   try {
+    const consulta = q.get('codigo') || q.get('convite');
+    if (consulta) {
+      // consultar códigos um a um para descobrir os que valem: no máximo 60 por hora por pessoa
+      const ip = ipDoCliente(request);
+      if (excedeuLimite(`filaget:${ip}`, 60, 60 * 60 * 1000)) return jsonFila({ error: 'Muitas consultas. Espere um pouco.' }, 429);
+      contarLimite(`filaget:${ip}`, 60 * 60 * 1000);
+    }
     const codigo = (q.get('codigo') ?? '').toUpperCase();
     if (codigo) {
       if (!CODIGO.test(codigo)) return jsonFila({ error: 'Código inválido.' }, 400);
@@ -121,20 +129,19 @@ export async function rotaCakto(request: Request): Promise<Response> {
 }
 
 const jsonAcesso = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
-const DIA = 86_400_000;
 
-async function quemE(token: string): Promise<{ phone: string | null; email: string | null } | null> {
+async function quemE(token: string): Promise<{ phone: string | null; email: string | null; criadoEm: string | null } | null> {
   const porLink = await phoneFromWebLink(token).catch(() => null);
-  if (porLink) return { phone: porLink, email: null };
+  if (porLink) return { phone: porLink, email: null, criadoEm: null };
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
   const chave = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !chave || token.split('.').length !== 3) return null;
   const res = await fetch(`${url}/auth/v1/user`, { headers: { apikey: chave, Authorization: `Bearer ${token}` } });
   if (!res.ok) return null;
-  const u = (await res.json()) as { id?: string; email?: string | null; phone?: string | null };
+  const u = (await res.json()) as { id?: string; email?: string | null; phone?: string | null; created_at?: string };
   let phone = u.phone ? u.phone.replace(/\D/g, '') : null;
   if (!phone && u.id) phone = (await findUserById(u.id).catch(() => null))?.phone ?? null;
-  return { phone, email: u.email ?? null };
+  return { phone, email: u.email ?? null, criadoEm: u.created_at ?? null };
 }
 
 export async function rotaAcesso(request: Request): Promise<Response> {
@@ -146,14 +153,7 @@ export async function rotaAcesso(request: Request): Promise<Response> {
     const eu = await quemE(token);
     if (!eu || (!eu.phone && !eu.email)) return jsonAcesso({ estado: 'liberado' });
     const a = await acessoDe(eu.phone, eu.email);
-    const agora = Date.now();
-    if (a?.tipo === 'cortesia') return jsonAcesso({ estado: 'ativo' });
-    if (a && a.status === 'ativo' && (!a.valido_ate || new Date(a.valido_ate).getTime() > agora)) return jsonAcesso({ estado: 'ativo', ate: a.valido_ate, fundador: a.fundador });
-    // assinatura cancelada: vale até o fim do período já pago
-    if (a && a.valido_ate && new Date(a.valido_ate).getTime() > agora) return jsonAcesso({ estado: 'ativo', ate: a.valido_ate, fundador: a.fundador, cancelada: true });
-    const corte = process.env.ACESSO_CORTE ? new Date(process.env.ACESSO_CORTE).getTime() : NaN;
-    if (Number.isFinite(corte) && corte > agora) return jsonAcesso({ estado: 'carencia', ate: new Date(corte).toISOString(), dias: Math.max(0, Math.ceil((corte - agora) / DIA)) });
-    return jsonAcesso({ estado: Number.isFinite(corte) ? 'bloqueado' : 'liberado' });
+    return jsonAcesso(decidirAcesso({ acesso: a, criadoEm: eu.criadoEm, novosDesde: process.env.ACESSO_NOVOS_DESDE, corte: process.env.ACESSO_CORTE, agora: Date.now() }));
   } catch (e) {
     console.error('acesso:', e instanceof Error ? e.message : e);
     return jsonAcesso({ estado: 'liberado' });

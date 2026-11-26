@@ -8,6 +8,7 @@ import { CartoesPlanos } from './Planos';
 import { PRECO_ANUAL, PRECO_MENSAL } from '../config';
 import { brl0 } from './datas';
 import { waLink } from '../whatsapp';
+import { useConvite } from './convite';
 import { FERRAMENTAS, GRUPOS, NOME_AREA, type Area } from './registroFerramentas';
 import './landing.css';
 
@@ -101,17 +102,6 @@ function Calculadora() {
 interface SituacaoFila { codigo: string; posicao: number | null; total: number; indicacoes: number; status: string; conviteAte: string | null }
 const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };
 const ler = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
-
-/** O convite do link (?convite=CÓDIGO) ainda vale? Só então os planos abrem. */
-function useConvite(): { valido: boolean; ate: string | null } {
-  const [c, setC] = useState<{ valido: boolean; ate: string | null }>({ valido: false, ate: null });
-  useEffect(() => {
-    const codigo = (new URLSearchParams(window.location.search).get('convite') ?? ler('gs-convite') ?? '').toUpperCase();
-    if (!/^[A-Z0-9]{6}$/.test(codigo)) return;
-    fetch(`/api/fila?convite=${codigo}`).then((r) => (r.ok ? r.json() : null)).then((j: { valido: boolean; ate: string | null } | null) => { if (j?.valido) { guardar('gs-convite', codigo); setC(j); } }).catch(() => undefined);
-  }, []);
-  return c;
-}
 
 function FilaDeEspera() {
   const [nome, setNome] = useState('');
@@ -257,7 +247,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
           <Revela className="lx-duo-txt">
             <span className="lx-eyebrow">Midas, o assistente</span>
             <h2>Não sabe onde fica? <em>Pergunte e ele te leva.</em></h2>
-            <p>São mais de {Math.floor(FERRAMENTAS.length / 5) * 5} ferramentas, mas você nunca precisa procurar. Diga o que quer resolver e o Midas abre a tela certa, com os seus números já preenchidos.</p>
+            <p>São {FERRAMENTAS.length} ferramentas, mas você nunca precisa procurar. Diga o que quer resolver e o Midas abre a tela certa, com os seus números já preenchidos.</p>
             <ul className="lx-pontos">
               <li><MessageCircle size={16} aria-hidden="true" />Responde com os seus dados, em uma frase</li>
               <li><Compass size={16} aria-hidden="true" />Leva direto para a aba que resolve</li>

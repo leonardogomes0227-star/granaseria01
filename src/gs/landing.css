@@ -199,3 +199,4 @@ html.gs-app body .lx .lx-fila h3 { margin: 4px 0 10px !important; font-size: 28p
 .lx-ind span { font-size: 13.5px; color: #E8DFC9; max-width: 320px; line-height: 1.45; }
 .lx-ind button { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 11px; border: 0; background: linear-gradient(180deg, #F0D58F, #C99A3E); color: #1E1604; font: 700 13.5px 'Inter', sans-serif; cursor: pointer; }
 .lx-planos .lp-btn.vazio { display: flex; justify-content: center; text-align: center; min-height: 48px; align-items: center; border: 1px solid rgba(28, 25, 20, .22); border-radius: 13px; background: rgba(255, 255, 255, .5); color: #17150F; font-weight: 600; text-decoration: none; padding: 10px 14px; }
+

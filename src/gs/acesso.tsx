@@ -5,12 +5,13 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Download, MessageCircle, X } from 'lucide-react';
 import { painelToken } from '../painel';
 import { supabase } from '../supabase';
-import { CHECKOUT_FUNDADOR_ANUAL, CHECKOUT_FUNDADOR_MENSAL, PRECO_FUNDADOR_ANUAL, PRECO_FUNDADOR_MENSAL } from '../config';
+import { CHECKOUT_ANUAL, CHECKOUT_FUNDADOR_ANUAL, CHECKOUT_FUNDADOR_MENSAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_FUNDADOR_ANUAL, PRECO_FUNDADOR_MENSAL, PRECO_MENSAL } from '../config';
+import { useConvite } from './convite';
 import { Moeda } from '../components/ui/Moeda';
 import { waLink } from '../whatsapp';
 import { brl0 } from './datas';
 
-export interface EstadoAcesso { estado: 'liberado' | 'ativo' | 'carencia' | 'bloqueado'; ate?: string; dias?: number }
+export interface EstadoAcesso { estado: 'liberado' | 'ativo' | 'carencia' | 'bloqueado'; ate?: string; dias?: number; novo?: boolean }
 const LIBERADO: EstadoAcesso = { estado: 'liberado' };
 const CHAVE = 'gs-acesso';
 
@@ -81,14 +82,34 @@ export function AvisoFundador({ ate, dias }: { ate?: string; dias?: number }) {
   );
 }
 
-/** Depois do prazo e sem assinatura: o app não abre, mas a pessoa leva os dados e pode assinar a qualquer momento. */
-export function TelaAcesso() {
+function OfertasNormais() {
   return (
-    <section className="ac-tela" aria-label="Acesso encerrado">
+    <div className="ac-ofertas">
+      <a className="gs-btn" href={CHECKOUT_MENSAL} target="_blank" rel="noopener noreferrer">Mensal · {brl0(PRECO_MENSAL)}/mês <ArrowRight size={16} aria-hidden="true" /></a>
+      <a className="gs-btn sec" href={CHECKOUT_ANUAL} target="_blank" rel="noopener noreferrer">Anual · {brl0(PRECO_ANUAL)}/ano</a>
+    </div>
+  );
+}
+
+/** Sem assinatura e fora do prazo: o app não abre, mas a pessoa leva os dados. Quem já usava vê o preço de fundador; quem chegou agora precisa do convite. */
+export function TelaAcesso({ novo = false }: { novo?: boolean }) {
+  const convite = useConvite();
+  return (
+    <section className="ac-tela" aria-label={novo ? 'Acesso por convite' : 'Acesso encerrado'}>
       <Moeda tamanho={64} />
-      <h1>Seu acesso ao Grana Séria terminou</h1>
-      <p>O período de uso liberado acabou. Os seus dados continuam guardados por um tempo, e é só assinar para voltar de onde parou.</p>
-      <Ofertas />
+      {novo ? (
+        <>
+          <h1>{convite.valido ? 'Seu convite está liberado' : 'O Grana Séria é por convite'}</h1>
+          <p>{convite.valido ? 'Escolha o seu plano para começar.' : 'Entre na fila de espera. Quando chegar a sua vez, o convite vai para o seu WhatsApp, com prazo para aceitar.'}</p>
+          {convite.valido ? <OfertasNormais /> : <div className="ac-ofertas"><a className="gs-btn" href="/#fila">Entrar na fila de espera <ArrowRight size={16} aria-hidden="true" /></a></div>}
+        </>
+      ) : (
+        <>
+          <h1>Seu acesso ao Grana Séria terminou</h1>
+          <p>O período de uso liberado acabou. Os seus dados continuam guardados por um tempo, e é só assinar para voltar de onde parou.</p>
+          <Ofertas />
+        </>
+      )}
       <div className="ac-links">
         <Link to="/dados"><Download size={15} aria-hidden="true" /> Baixar os meus dados</Link>
         <a href={waLink('Oi! Meu acesso ao Grana Séria terminou e quero ajuda.')} target="_blank" rel="noopener noreferrer"><MessageCircle size={15} aria-hidden="true" /> Falar com a gente</a>
