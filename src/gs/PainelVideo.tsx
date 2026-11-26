@@ -5,7 +5,7 @@
 // A pílula das abas estica e desliza como no vídeo; o título embaralha; o conteúdo entra com desfoque, cartão por cartão.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as PE } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, Eye, EyeOff, Filter, Flame, Grid3x3, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, CalendarDays, CalendarRange, ChevronRight, Eye, EyeOff, Filter, Flame, Grid3x3, LayoutGrid, Search, MoreHorizontal, PiggyBank, Plus, Receipt, Share2, TrendingUp, Wallet, type LucideIcon } from 'lucide-react';
 import { brl0, mesDe, nomeMes } from './datas';
 import { useContagem } from './base';
 import { painelVidro } from './painelVidro';
@@ -15,10 +15,13 @@ import { useEstado } from './store';
 import { useHoje } from './useHoje';
 import { tocar } from './sons';
 import { abrirAdicionar } from './AdicionarMov';
+import { BarraPerguntar } from './Assistente';
+import { FERRAMENTAS, GRUPOS, NOME_AREA, type Area } from './registroFerramentas';
+import { ICONES } from './base';
 import './painelVideo.css';
 import './painelRv.css';
 
-type Vista = 'funil' | 'contas' | 'mapa';
+type Vista = 'funil' | 'contas' | 'mapa' | 'ferramentas';
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const DIAS_SEM = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 const DIAS_SEM_LONGO = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -125,6 +128,8 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
   const [comparar, setComparar] = useState(true);
   const [chip, setChip] = useState('todas');
   const [cel, setCel] = useState<[number, number] | null>(null);
+  const [areaF, setAreaF] = useState<Area | 'todas'>('todas');
+  const [busca, setBusca] = useState('');
 
   // o painel abre com um sopro que sobe e um brilho; só toca depois do primeiro gesto da pessoa
   useEffect(() => { const t = setTimeout(() => tocar('subir'), 120); const t2 = setTimeout(() => tocar('brilho'), 1000); return () => { clearTimeout(t); clearTimeout(t2); }; }, []);
@@ -218,12 +223,13 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
   const gastarHoje = disp.modo !== 'incompleto' ? Math.max(0, disp.porDia) : null;
 
   // ---------- título e subtítulo de cada página ----------
-  const tituloBruto = vista === 'funil' ? 'Funil do mês' : vista === 'contas' ? 'Contas' : 'Mapa do mês';
+  const tituloBruto = vista === 'funil' ? 'Funil do mês' : vista === 'contas' ? 'Contas' : vista === 'mapa' ? 'Mapa do mês' : 'Ferramentas';
   const titulo = useEmbaralhar(tituloBruto);
   const subtitulo = vista === 'funil'
     ? <>{saldo === null ? 'Conte quanto você ganha para ver quanto sobra' : <>Sobrou <b><N v={saldo} oculto={oculto} /></b> até agora</>}{gastarHoje !== null && <> · hoje dá para gastar <b>{m(brl0(gastarHoje))}</b></>}</>
     : vista === 'contas'
       ? <>{abertas.length} {abertas.length === 1 ? 'conta aberta' : 'contas abertas'} · <b>{m(brl0(totalAberto))}</b> para pagar em {mesNome}</>
+      : vista === 'ferramentas' ? <>{FERRAMENTAS.length} ferramentas em {Object.keys(GRUPOS).length} áreas. Toque na que resolve o que você precisa.</>
       : <>Cada quadradinho é um dia de {mesNome}. Quanto mais dourado, mais você gastou.</>;
 
   // ---------- Contas: quadro ----------
@@ -279,7 +285,15 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
         </div>
       </div>
 
-      <Abas<Vista> itens={[{ id: 'funil', rotulo: 'Funil', Icone: Filter }, { id: 'contas', rotulo: 'Contas', Icone: Receipt, n: abertas.length }, { id: 'mapa', rotulo: 'Mapa', Icone: Grid3x3 }]} valor={vista} onMudar={setVista} />
+      <div className="rv-midas">
+        <BarraPerguntar />
+        <nav className="rv-ir" aria-label="Ir direto para">
+          <span>Ir para</span>
+          {[['Contas', '/pagar'], ['Gastos', '/gastos'], ['Dívidas', '/plano/dividas'], ['Guardar', '/guardar'], ['Relatórios', '/relatorios'], ['Coach', '/coach']].map(([n, r]) => <Link key={r} to={r} onClick={() => tocar('tique')}>{n}</Link>)}
+        </nav>
+      </div>
+
+      <Abas<Vista> itens={[{ id: 'funil', rotulo: 'Funil', Icone: Filter }, { id: 'contas', rotulo: 'Contas', Icone: Receipt, n: abertas.length }, { id: 'mapa', rotulo: 'Mapa', Icone: Grid3x3 }, { id: 'ferramentas', rotulo: 'Ferramentas', Icone: LayoutGrid, n: FERRAMENTAS.length }]} valor={vista} onMudar={setVista} />
 
       <div className="rv-pagina" key={vista}>
         {/* =============== FUNIL =============== */}
@@ -429,6 +443,39 @@ export function PainelVideo({ nome, onCompartilhar, onSaldo, onPagar }: { nome?:
             })()}
           </>
         )}
+
+
+        {/* =============== FERRAMENTAS =============== */}
+        {vista === 'ferramentas' && (() => {
+          const q = busca.trim().toLocaleLowerCase('pt-BR');
+          const lista = FERRAMENTAS.filter((f) => (areaF === 'todas' || f.area === areaF) && (!q || `${f.titulo} ${f.resolve} ${f.palavrasBusca}`.toLocaleLowerCase('pt-BR').includes(q)));
+          const areas = Object.keys(GRUPOS) as Area[];
+          return (
+            <section className="pv-p rv-card" style={{ ['--i' as string]: 0 }} aria-label="Todas as ferramentas">
+              <div className="rv-fbarra">
+                <label className="rv-busca"><Search size={16} aria-hidden="true" /><input type="search" value={busca} onChange={(ev) => setBusca(ev.target.value)} placeholder="Buscar ferramenta…" aria-label="Buscar ferramenta" /></label>
+                <div className="rv-chips" role="group" aria-label="Filtrar por área">
+                  {(['todas', ...areas] as const).map((a) => <button key={a} type="button" className={areaF === a ? 'on' : ''} onClick={() => { setAreaF(a); tocar('tique2'); }}>{a === 'todas' ? `Todas (${FERRAMENTAS.length})` : `${NOME_AREA[a]} (${FERRAMENTAS.filter((f) => f.area === a).length})`}</button>)}
+                </div>
+              </div>
+              {lista.length === 0 ? <p className="pv-vazio">Nenhuma ferramenta com esse nome. Tente outra palavra.</p> : (
+                <div className="rv-ftiles">
+                  {lista.map((f, i) => {
+                    const I = ICONES[f.icone] ?? ChevronRight;
+                    const st = f.status(e, hoje);
+                    return (
+                      <Link key={f.id} to={f.rota} className={`rv-ftile${st.tom ? ` ${st.tom}` : ''}`} style={{ animationDelay: `${Math.min(i, 14) * 40}ms` }} onClick={() => tocar('tique')} onPointerEnter={() => tocar('celula')}>
+                        <i aria-hidden="true"><I size={18} strokeWidth={1.9} /></i>
+                        <span><b>{f.titulo}</b><em>{f.resolve}</em><small>{st.texto}</small></span>
+                        <ChevronRight size={16} aria-hidden="true" className="seta" />
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          );
+        })()}
 
         {/* =============== MAPA =============== */}
         {vista === 'mapa' && (

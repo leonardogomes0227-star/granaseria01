@@ -35,6 +35,15 @@ describe('assistente local', () => {
   });
   it('o que não entende, procura nas ferramentas ou sugere perguntas', () => {
     expect(responderLocal('quero investir', base(), HOJE).links?.length).toBeGreaterThan(0);
-    expect(responderLocal('xyzzy', base(), HOJE).links).toBeUndefined();
+    // sem entender, ainda leva a pessoa para a lista de todas as ferramentas
+    expect(responderLocal('xyzzy', base(), HOJE).links?.[0].rota).toBe('/ferramentas');
+  });
+
+  it('direciona para a aba que a pessoa procura', () => {
+    const contas = responderLocal('abrir minhas contas', base(), HOJE);
+    expect(contas.ir).toBe('/pagar');
+    expect(responderLocal('onde fica o orçamento?', base(), HOJE).links?.some((l) => l.rota === '/plano/orcamento')).toBe(true);
+    expect(responderLocal('quero ver os relatórios', base(), HOJE).links?.[0].rota).toBe('/relatorios');
+    expect(responderLocal('me leva para a reserva', base(), HOJE).links?.length).toBeGreaterThan(0);
   });
 });

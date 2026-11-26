@@ -12,15 +12,16 @@ import { gastosPorCategoria } from './evolucaoLogica.js';
 import { buscar } from './registroFerramentas.js';
 import type { Estado } from './tipos.js';
 import { agirPorFrase } from './midasAcoes';
+import { acharDestinos, pedidoDeIr } from './destinos.js';
 
 export const NOME_ASSISTENTE = 'Midas';
 
 export interface LinkAssistente { titulo: string; rota: string }
-export interface RespostaAssistente { texto: string; links?: LinkAssistente[]; desfazer?: () => void }
+export interface RespostaAssistente { texto: string; links?: LinkAssistente[]; desfazer?: () => void; /** quando o Midas tem certeza do lugar, a tela abre sozinha */ ir?: string }
 export interface MensagemAssistente { de: 'voce' | 'assistente'; texto: string; links?: LinkAssistente[]; desfazer?: () => void; desfeito?: boolean }
 
 export const EXEMPLOS_ANOTAR = ['mercado 35', 'uber 18,50', 'almoço 30 ontem', 'recebi 200 de extra'];
-export const SUGESTOES = ['O que eu pago primeiro?', 'Quanto posso gastar hoje?', 'Quando fico livre das dívidas?', 'Para onde foi meu dinheiro?', 'Quanto já guardei?'];
+export const SUGESTOES = ['O que eu pago primeiro?', 'Quanto posso gastar hoje?', 'Quando fico livre das dívidas?', 'Onde fica o orçamento?', 'Abrir minhas contas', 'Quanto já guardei?'];
 
 const tem = (t: string, ...palavras: string[]) => palavras.some((p) => t.includes(p));
 
@@ -28,6 +29,13 @@ const tem = (t: string, ...palavras: string[]) => palavras.some((p) => t.include
 export function responderLocal(pergunta: string, e: Estado, hoje: string): RespostaAssistente {
   const t = sem(pergunta);
   const mes = mesDe(hoje);
+
+  // "abrir contas", "onde fica o orçamento": o Midas leva a pessoa até lá
+  if (pedidoDeIr(t)) {
+    const d = acharDestinos(pergunta);
+    if (d.length === 1) return { texto: `Te levo para ${d[0].titulo}.`, links: d, ir: d[0].rota };
+    if (d.length > 1) return { texto: 'Achei estes lugares. Toque no que você procura:', links: d };
+  }
 
   if (tem(t, 'divida', 'devo', 'livre', 'quitar', 'juros')) {
     const abertas = e.dividas.filter((d) => saldoAtual(d) > 0);
@@ -69,9 +77,9 @@ export function responderLocal(pergunta: string, e: Estado, hoje: string): Respo
     return { texto: `Você anotou ${brl0(total)} neste mês. Onde mais foi: ${top}.`, links: [{ titulo: 'Relatórios', rota: '/relatorios' }, { titulo: 'Lançamentos', rota: '/lancamentos' }] };
   }
 
-  const achados = buscar(pergunta).slice(0, 3);
-  if (achados.length) return { texto: 'Achei isto no app para você:', links: achados.map((a) => ({ titulo: a.titulo, rota: a.rota })) };
-  return { texto: 'Ainda estou aprendendo essa. Posso te ajudar com contas, dívidas, gastos e o que você guardou. Tente uma das perguntas abaixo.' };
+  const achados = acharDestinos(pergunta, 3);
+  if (achados.length) return { texto: achados.length === 1 ? `Acho que é aqui: ${achados[0].titulo}.` : 'Achei isto no app para você:', links: achados };
+  return { texto: 'Não achei essa. Diga o que você quer resolver (por exemplo: pagar uma conta, ver dívidas, guardar dinheiro) e eu te levo até a tela certa.', links: [{ titulo: 'Ver todas as ferramentas', rota: '/ferramentas' }] };
 }
 
 /** O único ponto que a tela chama. Hoje responde localmente; é aqui que a API entra. */

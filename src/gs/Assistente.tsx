@@ -689,6 +689,7 @@ function AssistenteNoApp() {
   const e = useEstado();
   const hoje = useHoje();
   const { pathname } = useLocation();
+  const navegar = useNavigate();
   const [aberto, setAberto] = useState(false);
   const [msgs, setMsgs] = useState<MensagemAssistente[]>([]);
   const [texto, setTexto] = useState('');
@@ -713,6 +714,7 @@ function AssistenteNoApp() {
     try {
       const [r] = await Promise.all([perguntarAoAssistente(p, estado.current.e, estado.current.hoje, antes), new Promise((ok) => setTimeout(ok, 450))]);
       setMsgs((m) => [...m, { de: 'assistente', texto: r.texto, links: r.links, desfazer: r.desfazer }]);
+      if (r.ir) { const destino = r.ir; setTimeout(() => { navegar(destino); setAberto(false); }, 900); }
     } catch {
       setMsgs((m) => [...m, { de: 'assistente', texto: 'Não consegui responder agora. Tente de novo em instantes.' }]);
     } finally {

@@ -236,3 +236,27 @@ html.gs-app body .rv-ferr-painel .pu-kpi small:not(:first-of-type), html.gs-app 
 html.gs-app body .rv-ferr-painel :is(.gs-card, .cm-resposta, .ini-destaque) { margin-bottom: 10px; }
 html.gs-app body :is(.rv-ferr-painel, .rv-area) .pu-ico { width: 22px; height: 22px; border-radius: 8px; flex: none; }
 html.gs-app body :is(.rv-ferr-painel, .rv-area) .pu-ico svg { width: 13px; height: 13px; }
+
+/* ===== Midas no topo e a aba com todas as ferramentas ===== */
+.rv-midas { display: grid; gap: 10px; margin: 0 2px 16px; }
+@media (min-width: 900px) { .rv-midas { grid-template-columns: minmax(280px, 380px) 1fr; align-items: center; gap: 16px; } }
+.rv-midas .as-barra { width: 100%; margin: 0; }
+.rv-ir { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.rv-ir span { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8A6418; margin-right: 2px; }
+.rv-ir a { flex: none; display: inline-flex; align-items: center; height: 32px; padding: 0 13px; border-radius: 99px; border: 1px solid rgba(28, 25, 20, .1); background: rgba(255, 255, 255, .65); color: #3a3428; font: 600 12.5px 'Inter', sans-serif; text-decoration: none; transition: transform .2s, background .2s, border-color .2s; }
+.rv-ir a:hover { transform: translateY(-1px); background: #fff; border-color: rgba(185, 138, 45, .5); }
+.rv-fbarra { display: grid; gap: 12px; margin-bottom: 16px; }
+.rv-busca { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 13px; border: 1px solid rgba(28, 25, 20, .1); background: rgba(255, 255, 255, .8); color: #7A7366; }
+.rv-busca input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font: 500 14.5px 'Inter', sans-serif; color: #17150F; }
+.rv-busca:focus-within { border-color: rgba(185, 138, 45, .6); box-shadow: 0 0 0 3px rgba(185, 138, 45, .14); }
+.rv-fbarra .rv-chips { margin-top: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .rv-fbarra .rv-chips button { flex: none; }
+.rv-ftiles { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 700px) { .rv-ftiles { grid-template-columns: repeat(2, 1fr); } } @media (min-width: 1100px) { .rv-ftiles { grid-template-columns: repeat(3, 1fr); } }
+.rv-ftile { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 14px 14px; border-radius: 16px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(255, 255, 255, .95); box-shadow: 0 1px 2px rgba(28, 25, 20, .04), 0 14px 24px -20px rgba(120, 84, 18, .5); text-decoration: none; color: inherit; animation: rv-card .5s cubic-bezier(.16, 1, .3, 1) backwards; transition: transform .22s, box-shadow .22s, border-color .22s; }
+.rv-ftile:hover { transform: translateY(-3px); border-color: rgba(185, 138, 45, .45); box-shadow: 0 1px 2px rgba(28, 25, 20, .04), 0 22px 32px -18px rgba(120, 84, 18, .6); }
+.rv-ftile > i { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: rgba(185, 138, 45, .14); color: #8A6418; }
+.rv-ftile.perigo > i { background: rgba(194, 73, 58, .12); color: #C2493A; } .rv-ftile.aviso > i { background: rgba(201, 138, 42, .16); color: #B26B0B; } .rv-ftile.ok > i { background: rgba(31, 138, 91, .12); color: #1F8A5B; }
+.rv-ftile span { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.rv-ftile b { font: 600 14px 'Inter', sans-serif; } .rv-ftile em { font-style: normal; font-size: 12px; color: #7A7366; line-height: 1.35; }
+.rv-ftile small { margin-top: 4px; font-size: 11.5px; font-weight: 600; color: #8A6418; } .rv-ftile.perigo small { color: #C2493A; } .rv-ftile.aviso small { color: #B26B0B; } .rv-ftile.ok small { color: #1F8A5B; }
+.rv-ftile .seta { flex: none; align-self: center; color: #B98A2D; transition: transform .2s; } .rv-ftile:hover .seta { transform: translateX(3px); }
