@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Compass, Copy, Hourglass, Landmark, Lock, MessageCircle, ShieldCheck, Smartphone, Sparkles, Wallet, X } from 'lucide-react';
-import { CampoDinheiro } from './ui';
+import { ArrowRight, BookOpen, Check, ChevronDown, Compass, Copy, Landmark, Lock, MessageCircle, ShieldCheck, Smartphone, Sparkles, Wallet, X } from 'lucide-react';
+import { CampoDinheiro, CampoNumero } from './ui';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
 import { CartoesPlanos } from './Planos';
@@ -10,17 +10,40 @@ import { brl0 } from './datas';
 import { waLink } from '../whatsapp';
 import { useConvite } from './convite';
 import { useContagem } from './base';
-import { FERRAMENTAS, GRUPOS, NOME_AREA, type Area } from './registroFerramentas';
+import { FERRAMENTAS } from './registroFerramentas';
 import './landing.css';
 
 /* ---------- Página inicial: prende na primeira tela, mostra o valor e leva à fila ---------- */
 
 const PROBLEMAS_FAIXA = ['Conta atrasada', 'Cartão estourado', 'Dinheiro que some', 'Dívida sem data para acabar', 'Parcelas que não fecham', 'Assinatura esquecida', 'Compra por impulso', 'Mês que não fecha'];
 
-const CUSTO: { n: string; t: string; d: string; r: string }[] = [
-  { n: '01', t: 'Os juros trabalham contra você todo dia', d: 'Uma dívida cobra juros até enquanto você dorme. Sem saber a data de saída, cada mês parece igual ao anterior.', r: 'O app calcula o dia em que você fica livre e o que pagar a cada mês.' },
-  { n: '02', t: 'Parcelas viram um mês que nunca fecha', d: 'Cada parcela parece pequena. Juntas, elas decidem quanto sobra antes de o mês começar.', r: 'Você vê a fatura de hoje, as parcelas que vêm e quanto cabe no seu bolso.' },
-  { n: '03', t: 'Gasto pequeno, conta grande', d: 'Assinaturas esquecidas e compras por impulso somam um salário ao longo do ano, e ninguém percebe.', r: 'O app aponta o que você paga sem ver e traduz cada compra em horas de trabalho.' },
+const DORES: string[] = [
+  'O dinheiro acaba antes do fim do mês e eu não sei para onde foi',
+  'Tenho conta atrasada ou dívida que não sai do lugar',
+  'O cartão virou uma bola de neve',
+  'Já parcelei sem saber quanto de juro estava pagando',
+  'Nunca consegui guardar dinheiro de verdade',
+  'Dá um aperto no peito quando vou abrir o app do banco',
+];
+
+const MUDANCAS: { t: string; d: string; prova: string }[] = [
+  { t: 'Abrir a fatura sem susto', d: 'Você passa a saber, antes de a conta chegar, quanto sobra e o que vence primeiro. A surpresa ruim vira um número conhecido.', prova: 'Calendário de contas e aviso antes de vencer' },
+  { t: 'Parar de brigar com o dinheiro', d: 'Cada real tem um destino combinado por você. Menos culpa, menos discussão em casa, mais conversa com números na mão.', prova: 'Orçamento por categoria e o painel do mês' },
+  { t: 'Ter uma data para sair das dívidas', d: 'Em vez de “um dia eu saio”, você vê o mês exato em que fica livre e quanto pagar a cada mês para chegar lá.', prova: 'Quitar dívidas, com o plano mês a mês' },
+  { t: 'Finalmente guardar', d: 'A reserva deixa de ser sonho: quanto guardar, em quantos meses você fica protegido e o que fazer quando entra um dinheiro extra.', prova: 'Reserva de emergência, metas e dinheiro extra' },
+];
+
+const LINHA_DO_TEMPO: { q: string; t: string; d: string }[] = [
+  { q: 'Hoje, em 2 minutos', t: 'Você vê o primeiro número', d: 'Informa quanto ganha e já descobre quanto pode gastar por dia.' },
+  { q: 'Nesta semana', t: 'Você enxerga para onde vai o dinheiro', d: 'Anota os gastos no app ou pelo WhatsApp, e o painel mostra o que mais pesa.' },
+  { q: 'No primeiro mês', t: 'Você tem o mês inteiro sob controle', d: 'Entrou, saiu, o que dá para segurar e a data de saída das dívidas.' },
+  { q: 'Em 3 meses', t: 'Você vê a diferença', d: 'Os relatórios comparam mês a mês e mostram se você está melhorando.' },
+];
+
+const FUNDAMENTOS: { t: string; d: string; no: string }[] = [
+  { t: 'Pague-se primeiro', d: 'A regra mais antiga da Babilônia: antes de pagar qualquer conta, uma parte do que entra é sua.', no: 'No app: a reserva combinada sai do “pode gastar” antes de tudo.' },
+  { t: 'Necessidade não é desejo', d: 'Quem separa o que precisa do que quer decide melhor e se arrepende menos.', no: 'No app: cada gasto é classificado e o “dá pra segurar” mostra o que é vontade.' },
+  { t: 'Ativo põe dinheiro no bolso, passivo tira', d: 'A lição de Pai Rico, Pai Pobre: o que você tem rende ou custa?', no: 'No app: o Placar mostra o que rende e o que custa.' },
 ];
 
 const ANTES_DEPOIS: [string, string][] = [
@@ -45,6 +68,8 @@ const FAQ: [string, string][] = [
   ['O app pede a senha do meu banco?', 'Nunca. Você digita os valores à mão ou manda por mensagem. Nenhuma conta bancária é conectada.'],
   ['Onde ficam os meus dados?', 'No seu aparelho. Ao entrar com WhatsApp ou e-mail, uma cópia fica guardada na sua conta para você ver em outro aparelho. Só você acessa.'],
   ['Como funciona o pagamento?', `Acesso completo por ${brl0(PRECO_MENSAL)} por mês ou ${brl0(PRECO_ANUAL)} por ano. Cancelar é simples e você não perde o que registrou.`],
+  ['E se eu não gostar?', 'Você tem 7 dias de garantia: é só pedir o reembolso. E pode cancelar a assinatura quando quiser, sem perder o que registrou.'],
+  ['Vou ter muito trabalho para anotar tudo?', 'Não. Pelo WhatsApp você manda “mercado 35” e pronto, leva uns 5 segundos. O que você anota lá aparece no app, e o contrário também.'],
   ['Quanto tempo leva para começar?', 'Cerca de 2 minutos: você informa quanto ganha por mês e já vê quanto pode gastar por dia.'],
   ['Funciona no celular?', 'Foi pensado para o celular e pode ser instalado na tela inicial, como um aplicativo.'],
   ['É consultoria financeira?', 'Não. É educação financeira, com as lições de O Homem Mais Rico da Babilônia e de Pai Rico, Pai Pobre. Os cálculos são estimativas para ajudar você a decidir.'],
@@ -77,24 +102,15 @@ function Numero({ v, prefixo = 'R$ ' }: { v: number; prefixo?: string }) {
   return <>{prefixo}{Math.round(n).toLocaleString('pt-BR')}</>;
 }
 
-/** O painel do produto em miniatura (exemplo): os números contam e as barras crescem. */
-function JanelaExemplo() {
-  const cols: [string, number, number, string?][] = [['Receita', 5200, 100], ['Contas fixas', 1680, 32], ['Variáveis', 1404, 27], ['Sobrou', 2116, 41, 'verde']];
+/** A abertura mostra o app de verdade em dois celulares, com os números principais flutuando (exemplo). */
+function CelularesHero() {
   return (
-    <div className="lx-jan" role="img" aria-label="Exemplo do painel do Grana Séria: da renda ao que sobrou no mês">
-      <div className="lx-jan-topo"><i /><i /><i /><span>Exemplo ilustrativo</span></div>
-      <div className="lx-jan-corpo">
-        <div className="lx-jan-tit"><small>Olá, Marina</small><b>Funil do mês</b><em>Sobrou <u><Numero v={2116} /></u> · hoje dá para gastar <u><Numero v={82} /></u></em></div>
-        <div className="lx-jan-abas"><span className="on">Funil</span><span>Contas</span><span>Mapa</span><span>Ferramentas</span></div>
-        <div className="lx-jan-cols">
-          {cols.map(([n, v, h, tom], i) => (
-            <div key={n} className="lx-jan-col"><small>{i + 1}. {n}</small><b><Numero v={v} /></b><span className="bx"><i className={tom} style={{ height: `${h}%`, animationDelay: `${0.4 + i * 0.14}s` }} /></span></div>
-          ))}
-        </div>
-      </div>
-      <div className="lx-flut a"><Wallet size={16} aria-hidden="true" /><span><small>Pode gastar hoje</small><b>R$ 82</b></span></div>
+    <div className="lx-duplo" role="img" aria-label="O app Grana Séria em dois celulares: o painel do mês e o assistente Midas resolvendo um problema">
+      <div className="lx-fone lx-fone-b" aria-hidden="true"><img src="/telas/midas.webp" width={600} height={1298} alt="" decoding="async" /></div>
+      <div className="lx-fone lx-fone-a" aria-hidden="true"><img src="/telas/funil.webp" width={600} height={1298} alt="" decoding="async" fetchPriority="high" /></div>
+      <div className="lx-flut a"><Wallet size={16} aria-hidden="true" /><span><small>Pode gastar hoje</small><b><Numero v={82} /></b></span></div>
       <div className="lx-flut b"><Landmark size={16} aria-hidden="true" /><span><small>Livre das dívidas</small><b>jan/2027</b></span></div>
-      <div className="lx-fone lx-fone-hero" aria-hidden="true"><img src="/telas/contas.webp" width={600} height={1298} alt="" decoding="async" fetchPriority="low" /></div>
+      <small className="lx-ex-hero">Telas reais, com dados de exemplo</small>
     </div>
   );
 }
@@ -112,11 +128,15 @@ function BarraFixa({ aoClicar }: { aoClicar: () => void }) {
       setMostrar(vistos.size === 0);
     });
     io.observe(hero); io.observe(fila);
-    return () => io.disconnect();
+    // enquanto a pessoa digita num campo, a barra sai da frente
+    const dentro = (e: FocusEvent) => { if ((e.target as HTMLElement)?.matches?.('input, textarea')) { vistos.add('digitando'); setMostrar(false); } };
+    const fora = (e: FocusEvent) => { if ((e.target as HTMLElement)?.matches?.('input, textarea')) { vistos.delete('digitando'); setMostrar(vistos.size === 0); } };
+    document.addEventListener('focusin', dentro); document.addEventListener('focusout', fora);
+    return () => { io.disconnect(); document.removeEventListener('focusin', dentro); document.removeEventListener('focusout', fora); };
   }, []);
   return (
     <div className={`lx-barra${mostrar ? ' on' : ''}`} aria-hidden={!mostrar}>
-      <span><b>Entre na fila</b><small>Vagas abertas em ondas</small></span>
+      <span><b>Garanta a sua vez</b><small>Vagas abertas em ondas</small></span>
       <button type="button" tabIndex={mostrar ? 0 : -1} onClick={aoClicar}>Quero entrar <ArrowRight size={16} aria-hidden="true" /></button>
     </div>
   );
@@ -129,8 +149,7 @@ function Calculadora() {
   const h = Math.round(horas);
   const dias = Math.round(horas / 8);
   return (
-    <div className="lx-calc">
-      <div className="lx-calc-cab"><Hourglass size={18} aria-hidden="true" /><b>Teste agora, leva 10 segundos</b></div>
+    <div>
       <div className="lx-calc-campos">
         <CampoDinheiro rotulo="Quanto você ganha por mês?" valor={renda} onChange={setRenda} />
         <CampoDinheiro rotulo="Quanto custa o que você quer?" valor={preco} onChange={setPreco} />
@@ -146,6 +165,66 @@ function Calculadora() {
   );
 }
 
+
+/** "Isso é com você?": a pessoa marca o que sente e a página responde. */
+function Identificacao({ aoClicar }: { aoClicar: () => void }) {
+  const [marcadas, setMarcadas] = useState<Set<number>>(new Set());
+  const alternar = (i: number) => setMarcadas((m) => { const n = new Set(m); if (n.has(i)) n.delete(i); else n.add(i); return n; });
+  const n = marcadas.size;
+  return (
+    <div className="lx-ident">
+      <ul>
+        {DORES.map((d, i) => (
+          <li key={d}><label className={marcadas.has(i) ? 'on' : ''}><input type="checkbox" checked={marcadas.has(i)} onChange={() => alternar(i)} /><i aria-hidden="true"><Check size={14} strokeWidth={3} /></i><span>{d}</span></label></li>
+        ))}
+      </ul>
+      <div className={`lx-ident-res${n ? ' on' : ''}`} aria-live="polite">
+        {n === 0 && <p>Marque o que combina com você. Leva 10 segundos.</p>}
+        {n > 0 && n < 3 && <p><b>Já dá para ver por onde começar.</b> O Grana Séria mostra o seu primeiro passo em 2 minutos.</p>}
+        {n >= 3 && <p><b>Você não está sozinho(a): {n} {n === 1 ? 'coisa' : 'coisas'} marcada{n === 1 ? '' : 's'}.</b> Essas coisas andam juntas, e é exatamente isso que o Grana Séria resolve, um passo de cada vez.</p>}
+        {n > 0 && <button type="button" className="lx-btn ouro" onClick={aoClicar}>Quero resolver isso <ArrowRight size={18} aria-hidden="true" /></button>}
+      </div>
+    </div>
+  );
+}
+
+const brl = (v: number) => `R$ ${Math.round(v).toLocaleString('pt-BR')}`;
+
+/** O gancho: quanto o dinheiro está custando por ano (conta simples, com os números que a pessoa digita). */
+function CalculadoraCusto({ aoClicar }: { aoClicar: () => void }) {
+  const [aba, setAba] = useState<'custo' | 'horas'>('custo');
+  const [divida, setDivida] = useState(0);
+  const [juros, setJuros] = useState<number | ''>(12);
+  const [assin, setAssin] = useState(0);
+  const jurosMes = divida > 0 && typeof juros === 'number' ? (divida * juros) / 100 : 0;
+  const ano = jurosMes * 12 + assin * 12;
+  return (
+    <div className="lx-calc">
+      <div className="lx-abas2" role="tablist">
+        <button type="button" role="tab" aria-selected={aba === 'custo'} className={aba === 'custo' ? 'on' : ''} onClick={() => setAba('custo')}>Quanto custa não saber</button>
+        <button type="button" role="tab" aria-selected={aba === 'horas'} className={aba === 'horas' ? 'on' : ''} onClick={() => setAba('horas')}>Quanto vale em horas</button>
+      </div>
+      {aba === 'custo' ? (
+        <>
+          <div className="lx-calc-campos">
+            <CampoDinheiro rotulo="Quanto você deve no cartão ou em empréstimos?" valor={divida} onChange={setDivida} />
+            <CampoNumero rotulo="Juros ao mês" sufixo="%, taxa de exemplo: confira a sua" valor={juros} onChange={setJuros} min={0} max={30} placeholder="12" />
+            <CampoDinheiro rotulo="Assinaturas e tarifas que você paga por mês" valor={assin} onChange={setAssin} />
+          </div>
+          <div className="lx-calc-res" aria-live="polite">
+            {ano > 0 ? (
+              <><span>Só de juros e assinaturas, saem pelo menos</span><b>{brl(ano)} por ano</b><span>{jurosMes > 0 ? `${brl(jurosMes)} por mês em juros` : ''}{jurosMes > 0 && assin > 0 ? ' + ' : ''}{assin > 0 ? `${brl(assin)} por mês em assinaturas` : ''}. Dinheiro que não traz nada de volta.</span>
+                <span className="lx-roi">O Grana Séria custa {brl(PRECO_MENSAL * 12)} por ano. {PRECO_MENSAL * 12 >= ano ? 'Já a sua conta é pequena, mas o mês sem controle costuma custar bem mais que isso.' : `Se ele ajudar você a evitar só ${Math.max(1, Math.round(((PRECO_MENSAL * 12) / ano) * 100))}% disso, já se paga.`}</span></>
+            ) : (
+              <span>Digite os valores e veja quanto sai por ano sem você perceber.</span>
+            )}
+          </div>
+          {ano > 0 && <button type="button" className="lx-btn ouro lx-calc-cta" onClick={aoClicar}>Quero parar de perder isso <ArrowRight size={18} aria-hidden="true" /></button>}
+        </>
+      ) : <Calculadora />}
+    </div>
+  );
+}
 
 /* ----- fila de espera: posição de verdade, indicação para subir e convite com prazo ----- */
 interface SituacaoFila { codigo: string; posicao: number | null; total: number; indicacoes: number; status: string; conviteAte: string | null }
@@ -237,31 +316,29 @@ function Sanfona({ itens }: { itens: [string, string][] }) {
 export function Landing({ resume, onStart, onResume }: { resume: number | null; onStart: () => void; onResume: () => void }) {
   const ir = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   const convite = useConvite();
-  const areas = (Object.keys(GRUPOS) as Area[]).map((a) => ({ a, itens: FERRAMENTAS.filter((f) => f.area === a) }));
   const [naFila, setNaFila] = useState<number | null>(null);
   useEffect(() => { fetch('/api/fila?total=1').then((r) => (r.ok ? r.json() : null)).then((j: { total: number } | null) => { if (j && j.total >= 10) setNaFila(j.total); }).catch(() => undefined); }, []);
   return (
     <div className="lx">
-      {/* ===== abertura: escura, grande e direta ===== */}
+      {/* ===== abertura: o que muda, dito em uma frase ===== */}
       <section className="lx-hero" id="topo-lx">
         <div className="lx-hero-in">
           <div className="lx-hero-txt">
             <span className="lx-selo"><Sparkles size={14} aria-hidden="true" />Acesso exclusivo · vagas abertas em ondas</span>
             <h1>Seu dinheiro some todo mês. <em>Descubra para onde.</em></h1>
-            <p>O Grana Séria responde, todo dia, o que ninguém te conta: quanto você pode gastar hoje, o que pagar primeiro e em que dia você fica livre das dívidas.</p>
+            <p>Em 2 minutos você descobre quanto pode gastar hoje, o que pagar primeiro e o dia em que sai das dívidas. Sem planilha, sem senha de banco.</p>
+            <ul className="lx-ganhos-hero">
+              <li><Check size={18} strokeWidth={3} aria-hidden="true" /><span><b>Pare de se perguntar</b> “para onde foi?”</span></li>
+              <li><Check size={18} strokeWidth={3} aria-hidden="true" /><span><b>Tenha uma data</b> para sair das dívidas</span></li>
+              <li><Check size={18} strokeWidth={3} aria-hidden="true" /><span><b>Guarde dinheiro</b> sem depender de força de vontade</span></li>
+            </ul>
             <div className="lx-acoes">
               <button type="button" className="lx-btn ouro" onClick={() => ir('fila')}>Entrar na fila de espera <ArrowRight size={18} aria-hidden="true" /></button>
-              <button type="button" className="lx-btn claro" onClick={() => ir('teste')}>Fazer o teste de 10 segundos</button>
+              <button type="button" className="lx-btn claro" onClick={() => ir('teste')}>Ver quanto isso me custa</button>
             </div>
-            <ul className="lx-conf" aria-label="Garantias">
-              <li><Lock size={15} aria-hidden="true" />Sem senha de banco</li>
-              <li><ShieldCheck size={15} aria-hidden="true" />Só você vê os seus dados</li>
-              <li><MessageCircle size={15} aria-hidden="true" />Anote pelo WhatsApp</li>
-              <li><Smartphone size={15} aria-hidden="true" />Funciona no celular</li>
-            </ul>
-            {naFila !== null && <p className="lx-fila-n"><span className="lx-ponto" aria-hidden="true" /><b>{naFila}</b> pessoas já estão na fila</p>}
+            <p className="lx-escassez"><span className="lx-ponto" aria-hidden="true" />{naFila !== null ? <><b>{naFila}</b> pessoas já estão na fila. </> : null}As vagas abrem em ondas, por ordem de chegada.</p>
           </div>
-          <div className="lx-hero-vis"><JanelaExemplo /></div>
+          <div className="lx-hero-vis"><CelularesHero /></div>
         </div>
       </section>
 
@@ -271,6 +348,52 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
           {[0, 1].map((k) => <ul key={k} aria-hidden={k === 1}>{PROBLEMAS_FAIXA.map((t) => <li key={t}>{t}</li>)}</ul>)}
         </div>
       </div>
+
+      {/* ===== isso é com você? ===== */}
+      <section className="lx-sec" id="com-voce">
+        <div className="lx-duo">
+          <Revela className="lx-duo-txt">
+            <span className="lx-eyebrow">Isso é com você?</span>
+            <h2>Se você se reconheceu em <em>alguma dessas</em>, o app é para você</h2>
+            <p>Não é falta de capacidade nem de inteligência. É falta de um número claro na hora certa. O Grana Séria foi feito para quem está começando e não quer complicação.</p>
+          </Revela>
+          <Revela atraso={80}><Identificacao aoClicar={() => ir('fila')} /></Revela>
+        </div>
+      </section>
+
+      {/* ===== o custo de não saber ===== */}
+      <section className="lx-sec escura" id="teste">
+        <div className="lx-duo">
+          <Revela className="lx-duo-txt">
+            <span className="lx-eyebrow ouro">O custo de não saber</span>
+            <h2>Quanto o seu dinheiro está <em>custando por ano</em>?</h2>
+            <p>Juros e assinaturas esquecidas fazem o dinheiro sair em silêncio. Ninguém sente no mês, mas no ano é um salário que escorre. Coloque os seus números e veja.</p>
+            <p className="lx-nota-calc">A conta é simples: valor × juros × 12 meses. Nada é enviado nem guardado.</p>
+          </Revela>
+          <Revela atraso={80}><CalculadoraCusto aoClicar={() => ir('fila')} /></Revela>
+        </div>
+      </section>
+
+      {/* ===== o que muda na vida ===== */}
+      <section className="lx-sec" id="muda">
+        <Revela className="lx-centro"><span className="lx-eyebrow">O que muda na sua vida</span><h2>Não é sobre planilha. <em>É sobre dormir tranquilo.</em></h2>
+          <p className="lx-sub">O app é só o meio. O que você leva é isto:</p></Revela>
+        <div className="lx-mudancas">
+          {MUDANCAS.map((m, i) => (
+            <Revela key={m.t} atraso={i * 70} className="lx-mud">
+              <span className="lx-ordem">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{m.t}</h3>
+              <p>{m.d}</p>
+              <div className="lx-prova"><Check size={14} strokeWidth={3} aria-hidden="true" /><span>{m.prova}</span></div>
+            </Revela>
+          ))}
+        </div>
+        <ol className="lx-tempo" aria-label="O que acontece depois que você começa">
+          {LINHA_DO_TEMPO.map((l, i) => (
+            <Revela key={l.q} atraso={i * 70} className="lx-tempo-i"><small>{l.q}</small><b>{l.t}</b><span>{l.d}</span></Revela>
+          ))}
+        </ol>
+      </section>
 
       {/* ===== as telas de verdade ===== */}
       <section className="lx-sec lx-por-dentro" id="por-dentro">
@@ -286,35 +409,8 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </div>
       </section>
 
-      {/* ===== o gancho: o teste ===== */}
-      <section className="lx-sec" id="teste">
-        <div className="lx-duo">
-          <Revela className="lx-duo-txt">
-            <span className="lx-eyebrow">Veja na prática</span>
-            <h2>Aquela compra custa <em>quantas horas</em> do seu trabalho?</h2>
-            <p>Dinheiro é tempo de vida. O Grana Séria traduz qualquer valor em horas trabalhadas, para você decidir com a cabeça, e não com a vontade do momento.</p>
-          </Revela>
-          <Revela atraso={80}><Calculadora /></Revela>
-        </div>
-      </section>
-
-      {/* ===== o custo de não saber ===== */}
-      <section className="lx-sec claro">
-        <Revela><span className="lx-eyebrow">O custo de não saber</span><h2>O que acontece quando <em>ninguém conta o dinheiro</em></h2></Revela>
-        <div className="lx-tres">
-          {CUSTO.map((c, i) => (
-            <Revela key={c.t} atraso={i * 70} className="lx-cartao">
-              <span className="lx-ordem">{c.n}</span>
-              <h3>{c.t}</h3>
-              <p>{c.d}</p>
-              <div className="lx-resolve"><Sparkles size={14} aria-hidden="true" /><span>{c.r}</span></div>
-            </Revela>
-          ))}
-        </div>
-      </section>
-
       {/* ===== antes e depois ===== */}
-      <section className="lx-sec">
+      <section className="lx-sec claro">
         <Revela><span className="lx-eyebrow">A diferença</span><h2>Sem o app, <em>é no escuro</em></h2></Revela>
         <Revela atraso={60} className="lx-vs">
           <div className="lx-vs-cab"><span>Sem o Grana Séria</span><span>Com o Grana Séria</span></div>
@@ -324,9 +420,9 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </Revela>
       </section>
 
-      {/* ===== o que a pessoa passa a ter ===== */}
+      {/* ===== números que você passa a ter ===== */}
       <section className="lx-sec escura">
-        <Revela><span className="lx-eyebrow ouro">O que você passa a ter</span><h2>Quatro coisas que <em>mudam o seu mês</em></h2></Revela>
+        <Revela><span className="lx-eyebrow ouro">Na prática</span><h2>Quatro números que <em>mudam o seu mês</em></h2></Revela>
         <div className="lx-bento">
           <Revela className="lx-bl grande">
             <span className="lx-ganho-k">Clareza</span>
@@ -389,28 +485,20 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </div>
       </section>
 
-      {/* ===== ferramentas ===== */}
-      <section className="lx-sec claro" id="ferramentas">
-        <Revela><span className="lx-eyebrow">Tudo num lugar só</span><h2>{FERRAMENTAS.length} ferramentas, <em>uma só lógica</em></h2>
-          <p className="lx-sub">Cada área resolve uma parte da sua vida financeira e diz o que fazer agora.</p></Revela>
-        <div className="lx-areas">
-          {areas.map(({ a, itens }, i) => (
-            <Revela key={a} atraso={i * 50} className="lx-area">
-              <div className="lx-area-cab"><b>{NOME_AREA[a]}</b><span>{itens.length}</span></div>
-              <ul>{itens.slice(0, 5).map((f) => <li key={f.id}>{f.titulo}</li>)}{itens.length > 5 && <li className="mais">e mais {itens.length - 5}</li>}</ul>
+      {/* ===== por que funciona ===== */}
+      <section className="lx-sec claro">
+        <Revela><span className="lx-eyebrow">Por que funciona</span><h2>Ideias antigas, <em>aplicadas ao seu celular</em></h2>
+          <p className="lx-sub">O Grana Séria transforma as lições de <i>O Homem Mais Rico da Babilônia</i> e de <i>Pai Rico, Pai Pobre</i> em números do seu mês.</p></Revela>
+        <div className="lx-fund">
+          {FUNDAMENTOS.map((f, i) => (
+            <Revela key={f.t} atraso={i * 70} className="lx-fund-i">
+              <BookOpen size={20} aria-hidden="true" />
+              <h3>{f.t}</h3>
+              <p>{f.d}</p>
+              <div className="lx-prova"><Check size={14} strokeWidth={3} aria-hidden="true" /><span>{f.no}</span></div>
             </Revela>
           ))}
         </div>
-      </section>
-
-      {/* ===== como funciona ===== */}
-      <section className="lx-sec">
-        <Revela><span className="lx-eyebrow">Como funciona</span><h2>Em 2 minutos você vê <em>o primeiro número</em></h2></Revela>
-        <ol className="lx-passos">
-          {[['Informe quanto você ganha', 'É só um número. Leva um minuto.'], ['Anote o que entra e o que sai', 'No app ou pelo WhatsApp, do seu jeito.'], ['Siga o que o painel mostra', 'O que está livre, o que vence e o próximo passo.']].map(([t, x], i) => (
-            <Revela key={t} atraso={i * 80} className="lx-passo"><em>{i + 1}</em><b>{t}</b><span>{x}</span></Revela>
-          ))}
-        </ol>
       </section>
 
       {/* ===== segurança ===== */}
@@ -423,11 +511,15 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </Revela>
       </section>
 
-      {/* ===== acesso ===== */}
+      {/* ===== oferta e acesso ===== */}
       <section className="lx-sec escura" id="acesso">
-        <Revela><span className="lx-eyebrow ouro">Acesso exclusivo</span><h2>Entra quem <em>recebe o convite</em></h2>
-          <p className="lx-sub">{convite.valido ? `O seu convite está liberado${convite.ate ? ` até ${new Date(convite.ate).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}` : ''}. Escolha o seu plano.` : 'O Grana Séria abre vagas em ondas. Entre na fila e a gente chama você pelo WhatsApp.'}</p></Revela>
-        <Revela atraso={60}><FilaDeEspera /></Revela>
+        <Revela><span className="lx-eyebrow ouro">Acesso exclusivo</span><h2>Menos de <em>R$ 1 por dia</em> para ter o mês sob controle</h2>
+          <p className="lx-sub">{convite.valido ? `O seu convite está liberado${convite.ate ? ` até ${new Date(convite.ate).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}` : ''}. Escolha o seu plano.` : `São ${brl0(PRECO_MENSAL)} por mês, o mesmo que o preço de um lanche, e só a entrada é por convite: o Grana Séria abre vagas em ondas. Entre na fila e a gente chama você pelo WhatsApp.`}</p></Revela>
+        <Revela atraso={60} className="lx-garantia">
+          <span><ShieldCheck size={18} aria-hidden="true" /><b>7 dias de garantia.</b> Se não for para você, é só pedir o reembolso.</span>
+          <span><Check size={18} aria-hidden="true" /><b>Cancele quando quiser.</b> Você não perde o que registrou.</span>
+        </Revela>
+        <Revela atraso={80}><FilaDeEspera /></Revela>
         <Revela atraso={100} className="lx-planos"><CartoesPlanos semNota travado={!convite.valido} /></Revela>
       </section>
 
@@ -442,7 +534,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         <Revela>
           <Moeda tamanho={56} />
           <h2>O próximo mês pode ser <em>diferente</em></h2>
-          <p>Quem sabe o número decide melhor. Comece a ver o seu hoje.</p>
+          <p>Quem sabe o número decide melhor. Daqui a 30 dias você pode estar lendo o seu mês inteiro, ou se perguntando de novo para onde ele foi.</p>
           <div className="lx-acoes centro">
             <button type="button" className="lx-btn ouro" onClick={() => ir('fila')}>Entrar na fila de espera <ArrowRight size={18} aria-hidden="true" /></button>
             <Link to="/entrar" className="lx-btn claro">Já sou membro</Link>
