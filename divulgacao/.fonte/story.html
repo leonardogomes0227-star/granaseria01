@@ -1,0 +1,55 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:'Inter';font-weight:400 700;src:url(inter-variavel.woff2) format('woff2')}
+@font-face{font-family:'Outfit';font-weight:200 500;src:url(outfit-variavel.woff2) format('woff2')}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#14110C;font-family:'Inter',sans-serif;color:#F7F2E7;-webkit-font-smoothing:antialiased}
+.fundo{position:absolute;inset:0;background:
+ radial-gradient(900px 700px at 90% 8%,rgba(217,174,85,.42),transparent 70%),
+ radial-gradient(800px 700px at -10% 78%,rgba(217,174,85,.24),transparent 70%),
+ radial-gradient(rgba(247,242,231,.08) 2px,transparent 2.6px) 0 0/44px 44px,#14110C}
+.topo{position:absolute;top:300px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:22px}
+.topo img{width:96px;height:96px;border-radius:24px;box-shadow:0 0 0 2px rgba(217,174,85,.5),0 14px 40px rgba(0,0,0,.5)}
+.topo b{font:400 52px 'Outfit';letter-spacing:-.02em}.topo b i{font-style:normal;color:#E8C770}
+.selo{position:absolute;top:422px;left:50%;transform:translateX(-50%);padding:16px 34px;border-radius:99px;background:rgba(217,174,85,.14);border:2px solid rgba(217,174,85,.5);color:#F0D58F;font:600 29px 'Inter';letter-spacing:.02em;white-space:nowrap}
+h1{position:absolute;top:520px;left:60px;right:60px;text-align:center;font:300 96px/1.02 'Outfit';letter-spacing:-.035em}
+h1 em{display:block;font-style:normal;background:linear-gradient(180deg,#F8E4A8,#D9AE55);-webkit-background-clip:text;background-clip:text;color:transparent}
+.palco{position:absolute;top:910px;left:0;right:0;height:560px}
+.fone{position:absolute;padding:13px;border-radius:64px;background:linear-gradient(160deg,#2a2418,#0f0d09);box-shadow:0 0 0 2px rgba(217,174,85,.55),0 60px 100px -30px rgba(0,0,0,.9),0 0 120px -10px rgba(217,174,85,.45)}
+.fone img{display:block;width:100%;border-radius:52px}
+.a{left:420px;top:0;width:240px;z-index:2;padding:10px;border-radius:50px}.a img{border-radius:40px}
+.b{left:190px;top:70px;width:200px;padding:9px;border-radius:44px;transform:rotate(-8deg);opacity:.97}.b img,.c img{border-radius:35px}
+.c{left:690px;top:80px;width:200px;padding:9px;border-radius:44px;transform:rotate(8deg);opacity:.97}
+.chip{position:absolute;z-index:3;display:flex;align-items:center;gap:16px;padding:18px 26px;border-radius:26px;background:#fff;color:#17150F;box-shadow:0 30px 60px -20px rgba(0,0,0,.7)}
+.chip small{display:block;font:500 22px 'Inter';color:#6a6354}.chip strong{display:block;font:700 40px 'Inter';letter-spacing:-.02em}
+.c1{left:48px;top:350px}.c2{right:48px;top:30px}
+
+.lista{position:absolute;top:1488px;left:0;right:0;display:flex;justify-content:center;gap:34px;padding:0 30px;flex-wrap:nowrap}
+.lista span{display:flex;align-items:center;gap:12px;font:600 29px 'Inter';color:#E8DFC9;white-space:nowrap}
+.lista span::before{content:'';width:30px;height:30px;border-radius:50%;background:#D9AE55;flex:none;-webkit-mask:radial-gradient(circle at center,transparent 0,transparent 0) ;}
+.lista svg{width:30px;height:30px;flex:none}
+.cta{position:absolute;top:1562px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:16px;padding:0 52px;height:92px;border-radius:28px;background:linear-gradient(180deg,#F5DFA0,#D2A24A);color:#1E1604;font:700 36px 'Inter';white-space:nowrap;box-shadow:0 0 0 2px rgba(255,255,255,.3) inset,0 24px 60px -16px rgba(217,174,85,.75)}
+.site{position:absolute;top:1676px;left:0;right:0;text-align:center;font:600 32px 'Inter';letter-spacing:.04em;color:#E2D9C4}.site small{display:block;margin-top:8px;font:500 21px 'Inter';letter-spacing:.05em;color:#8F8672}
+</style></head><body>
+<div class="fundo"></div>
+<div class="topo"><img src="logo-icone.png"><b>Grana <i>Séria</i></b></div>
+<div class="selo" id="selo">Acesso por convite · vagas em ondas</div>
+<h1 id="h1"></h1>
+<div class="palco">
+ <div class="fone b"><img src="midas.webp"></div>
+ <div class="fone c"><img src="contas.webp"></div>
+ <div class="fone a"><img src="funil.webp"></div>
+ <div class="chip c1"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C99A3E" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg><div><small>Pode gastar hoje</small><strong>R$ 82</strong></div></div>
+ <div class="chip c2"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C99A3E" stroke-width="2"><path d="M3 21h18M5 21V10m4 11V10m6 11V10m4 11V10M2 10l10-6 10 6"/></svg><div><small>Livre das dívidas</small><strong>jan/2027</strong></div></div>
+</div>
+<div class="lista" id="lista"></div>
+<div class="cta" id="cta"></div>
+<div class="site">granaseria.com.br<small>Telas reais do app · números de exemplo</small></div>
+<script>
+const v=new URLSearchParams(location.search).get('v')||'a';
+const V={
+ a:{h:'Seu dinheiro<br>some todo mês.<em>Descubra<br>para onde.</em>',selo:'Acesso por convite · vagas em ondas',cta:'Entre na fila de espera →',lista:['Gastar hoje','Pagar primeiro','Sair das dívidas']},
+ b:{h:'Só entra quem<br>recebe o<em>convite.</em>',selo:'O app que mostra para onde o dinheiro vai',cta:'Garanta a sua vez →',lista:['Sem senha de banco','Pelo WhatsApp','Data de saída']}
+}[v];
+document.getElementById('h1').innerHTML=V.h;document.getElementById('selo').textContent=V.selo;document.getElementById('cta').textContent=V.cta;
+document.getElementById('lista').innerHTML=V.lista.map(t=>`<span><svg viewBox="0 0 24 24" fill="none" stroke="#E8C770" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="11" stroke-width="1.6" opacity=".6"/><path d="m7 12.5 3.2 3.2L17 9"/></svg>${t}</span>`).join('');
+</script></body></html>
