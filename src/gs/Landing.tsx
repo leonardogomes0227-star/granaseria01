@@ -59,7 +59,7 @@ const TELAS: { img: string; t: string; d: string }[] = [
   { img: 'funil', t: 'Para onde foi cada real', d: 'Da renda ao que sobrou, mês a mês, em um painel só.' },
   { img: 'contas', t: 'O que vence e o que pagar primeiro', d: 'Atrasadas, as que vencem logo e as pagas, com um toque para pagar.' },
   { img: 'mapa', t: 'Os dias que mais pesam', d: 'Veja em quais dias e categorias o dinheiro escapa.' },
-  { img: 'ferramentas', t: '40 ferramentas ao alcance', d: 'Busca, filtro por área e o estado de cada uma na hora.' },
+  { img: 'ferramentas', t: 'Todas as ferramentas ao alcance', d: 'Busca, filtro por área e o estado de cada uma na hora.' },
   { img: 'midas', t: 'Conte o problema, ele acha a ferramenta', d: 'O Midas entende o que está acontecendo e aponta o caminho.' },
 ];
 

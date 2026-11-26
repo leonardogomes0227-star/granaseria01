@@ -26,6 +26,7 @@ const Atrasos = lazy(() => importarComRetry(() => import('./gs/Atrasos')).then((
 const PossoComprar = lazy(() => importarComRetry(() => import('./gs/PossoComprar')).then((m) => ({ default: m.PossoComprar })));
 const Assinaturas = lazy(() => importarComRetry(() => import('./gs/Assinaturas')).then((m) => ({ default: m.Assinaturas })));
 const Reserva = lazy(() => importarComRetry(() => import('./gs/Reserva')).then((m) => ({ default: m.Reserva })));
+const Desafio = lazy(() => importarComRetry(() => import('./gs/Desafio')).then((m) => ({ default: m.Desafio })));
 const Renda = lazy(() => importarComRetry(() => import('./gs/Renda')).then((m) => ({ default: m.Renda })));
 const Emprestimos = lazy(() => importarComRetry(() => import('./gs/Emprestimos')).then((m) => ({ default: m.Emprestimos })));
 const Extras = lazy(() => importarComRetry(() => import('./gs/Extras')).then((m) => ({ default: m.Extras })));
@@ -295,6 +296,7 @@ function App() {
         <Route path="/plano/comprar" element={<Pagina titulo="Posso comprar isso?" o="a ferramenta"><PossoComprar /></Pagina>} />
         <Route path="/plano/assinaturas" element={<Pagina titulo="Gastos escondidos" o="as suas assinaturas"><Assinaturas /></Pagina>} />
         <Route path="/plano/reserva" element={<Pagina titulo="Reserva" o="a sua reserva"><Reserva /></Pagina>} />
+        <Route path="/plano/desafio" element={<Pagina titulo="Desafio de juntar" o="o seu desafio"><Desafio /></Pagina>} />
         <Route path="/plano/renda" element={<Pagina titulo="Liberdade de renda" o="a ferramenta"><Renda /></Pagina>} />
         <Route path="/plano/emprestimos" element={<Pagina titulo="Empréstimos" o="a ferramenta"><Emprestimos /></Pagina>} />
         <Route path="/plano/orcamento" element={<Pagina titulo="Orçamento" o="o seu orçamento"><Orcamento /></Pagina>} />

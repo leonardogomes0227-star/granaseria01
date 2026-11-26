@@ -426,6 +426,44 @@ export const desfazerGuardarNaMeta = (id: string, data: string, valor: number) =
       metas: e.metas.map((m) => { if (m.id !== id) return m; const j = m.guardados.findIndex((g) => g.data === data && g.valor === valor); return j < 0 ? m : { ...m, guardados: m.guardados.filter((_, k) => k !== j) }; }),
     };
   });
+/* ---------- desafio de juntar (grade de quadradinhos ligada a uma meta) ---------- */
+/** Cria a meta do desafio com a grade pronta. Devolve o id, ou null se não der (nome vazio, meta pequena demais, 20 metas). */
+export function criarDesafio(d: { nome: string; alvo: number; celulas: number[] }): string | null {
+  const nome = d.nome.trim().slice(0, 40);
+  if (!nome || d.celulas.length === 0 || getEstado().metas.length >= 20) return null;
+  const id = novoId('m');
+  const alvo = d.celulas.reduce((a, b) => a + b, 0);
+  atualizar((e) => ({ ...e, metas: [...e.metas, { id, nome, alvo, criadaEm: hojeSP(), guardados: [], desafio: { celulas: d.celulas.slice(0, 400) } }] }));
+  return id;
+}
+/** Marca um quadradinho: o valor entra na meta e sai do "pode gastar", como qualquer guardado. */
+export function marcarCelula(metaId: string, celula: number, data = hojeSP()): boolean {
+  const m = getEstado().metas.find((x) => x.id === metaId);
+  const valor = m?.desafio?.celulas[celula];
+  if (!m || !valor || m.guardados.some((g) => g.celula === celula)) return false;
+  atualizar((e) => ({
+    ...e,
+    metas: e.metas.map((x) => (x.id === metaId ? { ...x, guardados: [...x.guardados, { data, valor, celula }] } : x)),
+    aportes: [...e.aportes, { id: novoId('a'), data, valor, origem: 'meta' as const, agenteId: `meta:${metaId}` }],
+  }));
+  return true;
+}
+/** Desmarca: tira o guardado do quadradinho e o aporte correspondente. */
+export function desmarcarCelula(metaId: string, celula: number): boolean {
+  const m = getEstado().metas.find((x) => x.id === metaId);
+  const g = m?.guardados.find((x) => x.celula === celula);
+  if (!m || !g) return false;
+  atualizar((e) => {
+    const i = e.aportes.findIndex((a) => a.agenteId === `meta:${metaId}` && a.data === g.data && a.valor === g.valor);
+    return {
+      ...e,
+      aportes: i < 0 ? e.aportes : e.aportes.filter((_, k) => k !== i),
+      metas: e.metas.map((x) => (x.id === metaId ? { ...x, guardados: x.guardados.filter((y) => y.celula !== celula) } : x)),
+    };
+  });
+  return true;
+}
+
 /** Excluir a meta: o que já foi guardado nela passa para a reserva (o dinheiro não some). */
 export const removerMeta = (id: string) => atualizar((e) => ({ ...e, metas: e.metas.filter((m) => m.id !== id), aportes: e.aportes.map((a) => (a.agenteId === `meta:${id}` ? { ...a, agenteId: undefined, origem: 'reserva' as const } : a)) }));
 export const restaurarMeta = (m: Meta) => atualizar((e) => (e.metas.some((x) => x.id === m.id) ? e : { ...e, metas: [...e.metas, m] }));

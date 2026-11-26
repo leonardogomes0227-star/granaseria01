@@ -1,0 +1,49 @@
+/* Desafio de juntar: grade de quadradinhos em creme e ouro. Só transform e opacidade se mexem. */
+.dz-intro { margin: 0 0 18px; font-size: 14.5px; line-height: 1.6; color: #5F5848; }
+.dz-rot { display: block; margin: 18px 0 10px; font: 700 12px 'Inter', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #8A5A0A; }
+.dz-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dz-chips button, .dz-lista button { min-height: 42px; padding: 0 16px; border-radius: 99px; border: 1.5px solid rgba(28, 25, 20, .14); background: #fff; color: #17150F; font: 600 14px 'Inter', sans-serif; cursor: pointer; transition: background .2s, border-color .2s; }
+.dz-chips button.on, .dz-lista button.on { background: linear-gradient(180deg, #F3DC9C, #D9AE55); border-color: #C99A3E; color: #1E1604; }
+.dz-qtd { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+@media (min-width: 640px) { .dz-qtd { grid-template-columns: repeat(4, 1fr); } }
+.dz-qtd button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid rgba(28, 25, 20, .14); background: #fff; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
+.dz-qtd button b { font: 300 26px 'Outfit', sans-serif; letter-spacing: -.02em; color: #17150F; } .dz-qtd button small { font-size: 12px; color: #6F6858; }
+.dz-qtd button.on { border-color: #C99A3E; background: rgba(243, 220, 156, .3); }
+.dz-previa { margin-top: 18px; padding: 16px 18px; border-radius: 16px; background: rgba(201, 154, 62, .1); border: 1px solid rgba(201, 154, 62, .3); }
+.dz-previa p { margin: 0; font-size: 14px; line-height: 1.55; color: #3a2a08; }
+.dz-mini { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin-top: 12px; } .dz-mini i { aspect-ratio: 1; border-radius: 3px; background: #C99A3E; }
+.dz-aviso { margin: 14px 0 0; color: #A33A2C; font-size: 13.5px; }
+.dz-criar { margin-top: 20px; width: 100%; min-height: 52px; }
+.dz-lista { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 4px 0 16px; padding-bottom: 2px; }
+.dz-lista button { flex: none; display: inline-flex; align-items: center; gap: 8px; } .dz-lista em { font-style: normal; font-size: 12px; font-weight: 700; color: #8A5A0A; } .dz-lista button.on em { color: #3a2a08; }
+
+/* painel */
+.dz-cab { display: flex; align-items: center; gap: 18px; }
+.dz-anel { position: relative; flex: none; width: 86px; height: 86px; border-radius: 50%; background: conic-gradient(#C99A3E var(--p, 0deg), rgba(28, 25, 20, .09) 0); display: grid; place-items: center; }
+.dz-anel::before { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: #FBF7EE; }
+.dz-anel span { position: relative; font: 400 20px 'Outfit', sans-serif; color: #17150F; }
+.dz-nums { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dz-nums small { font-size: 12.5px; font-weight: 700; color: #8A5A0A; letter-spacing: .02em; }
+.dz-nums b { font: 300 clamp(26px, 6vw, 34px) 'Outfit', sans-serif; letter-spacing: -.02em; color: #17150F; line-height: 1.1; }
+.dz-nums b em { font-style: normal; font-size: .55em; color: #6F6858; }
+.dz-nums span { font-size: 13px; color: #6F6858; }
+.dz-barra { height: 10px; margin: 16px 0 0; border-radius: 99px; background: repeating-linear-gradient(135deg, rgba(28, 25, 20, .07) 0 5px, transparent 5px 10px); overflow: hidden; }
+.dz-barra i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #D9AE55, #B98A2D); transition: width .5s cubic-bezier(.16, 1, .3, 1); }
+.dz-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; } .dz-acoes .gs-btn { flex: 1 1 200px; }
+.dz-feito { margin: 16px 0 0; padding: 14px 16px; border-radius: 14px; background: rgba(31, 138, 91, .12); color: #1F6B4A; font-weight: 600; font-size: 14px; }
+.dz-como { margin: 14px 0 10px; font-size: 13px; color: #6F6858; }
+
+/* a grade */
+.dz-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; }
+.dz-cel { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; aspect-ratio: 1 / .82; padding: 2px; border-radius: 11px; border: 1.5px solid rgba(28, 25, 20, .13); background: #fff; color: #17150F; font: 600 13.5px 'Inter', sans-serif; font-variant-numeric: tabular-nums; cursor: pointer; transition: transform .15s, border-color .2s, background .2s; -webkit-tap-highlight-color: transparent; }
+.dz-cel:hover { border-color: rgba(185, 138, 45, .6); }
+.dz-cel:active { transform: scale(.94); }
+.dz-cel.on { background: linear-gradient(180deg, #F3DC9C, #D2A24A); border-color: #C99A3E; color: #1E1604; }
+.dz-cel.on span { font-size: 11px; opacity: .8; }
+.dz-cel.sorteada { border-color: #C99A3E; box-shadow: 0 0 0 3px rgba(201, 154, 62, .35); animation: dz-pulsa 1.2s ease-in-out infinite; }
+.dz-cel.recem { animation: dz-pop .45s cubic-bezier(.16, 1, .3, 1); }
+@keyframes dz-pulsa { 50% { transform: scale(1.07); } }
+@keyframes dz-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.12); } 100% { transform: none; } }
+@media (min-width: 900px) { .dz-grade { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); } }
+.dz-excluir { margin-top: 10px; color: #8A5A0A; }
+@media (prefers-reduced-motion: reduce) { .dz-cel, .dz-barra i { animation: none !important; transition: none !important; } }

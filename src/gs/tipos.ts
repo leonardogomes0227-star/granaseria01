@@ -64,7 +64,9 @@ export interface Meta {
   alvo: number;
   criadaEm: string;
   prazo?: string; // 'AAAA-MM-DD' (opcional)
-  guardados: { data: string; valor: number }[];
+  guardados: { data: string; valor: number; celula?: number }[];
+  /** Desafio de juntar: a grade de valores (cada quadradinho marcado é um guardado com `celula`). */
+  desafio?: { celulas: number[] };
 }
 /** Onde o dinheiro está (opcional): corrente, carteira, poupança… Só organiza; não muda o "pode gastar". */
 export interface ContaBancaria {
