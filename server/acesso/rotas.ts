@@ -97,10 +97,14 @@ export async function rotaCakto(request: Request): Promise<Response> {
   let corpo: Obj;
   try { corpo = obj(JSON.parse(raw)); } catch { return Response.json({ error: 'JSON inválido.' }, { status: 400 }); }
 
-  const enviado = txt(corpo.secret) || request.headers.get('x-cakto-secret') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
+  const doCorpo = txt(corpo.secret);
+  const doCabecalho = request.headers.get('x-cakto-secret') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
+  const enviado = doCorpo || doCabecalho;
   if (!mesmoSegredo(enviado, process.env.CAKTO_WEBHOOK_SECRET)) {
-    console.warn('cakto: segredo não bateu (recebido com', enviado.length, 'caracteres; esperado com', process.env.CAKTO_WEBHOOK_SECRET.length, ')'); // só os tamanhos, nunca o segredo
-    return Response.json({ error: 'Não autorizado.' }, { status: 401 });
+    // só o lugar e o tamanho do que chegou, nunca a chave: aparece na janela de teste da Cakto e ajuda a achar a diferença
+    const lugar = doCorpo ? 'corpo' : doCabecalho ? 'cabecalho' : 'nenhum';
+    console.warn('cakto: segredo não bateu', lugar, enviado.length);
+    return Response.json({ error: 'Não autorizado.', recebido: { lugar, caracteres: enviado.length }, campos_do_aviso: Object.keys(corpo).slice(0, 12) }, { status: 401 });
   }
 
   const av = interpretarAviso(corpo);
