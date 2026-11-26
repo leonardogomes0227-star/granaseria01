@@ -5,6 +5,7 @@
 //  - acesso: o app pergunta se a pessoa está liberada, assinando, no prazo ou sem acesso. Na dúvida, libera.
 
 import { acessoDe, convidarProximos, conviteValido, entrarNaFila, gravarAcesso, normalizarFone, situacaoDe, totalNaFila } from './db.js';
+import { interpretarAviso } from './cakto.js';
 import { accountsConfigured, findUserById } from '../account/db.js';
 import { phoneFromWebLink } from '../whatsapp/hubdb.js';
 import { mesmoSegredo } from '../segredo.js';
@@ -84,13 +85,6 @@ type Obj = Record<string, unknown>;
 const obj = (v: unknown): Obj => (v && typeof v === 'object' ? (v as Obj) : {});
 const txt = (v: unknown) => (typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '');
 
-/** O valor pode vir em reais (30) ou em centavos (3000): números inteiros altos demais para o plano são centavos. */
-function valorEmReais(v: unknown): number {
-  const n = Number(typeof v === 'string' ? v.replace(',', '.') : v);
-  if (!Number.isFinite(n) || n <= 0) return 0;
-  return n > 1000 ? n / 100 : n;
-}
-
 export async function rotaCakto(request: Request): Promise<Response> {
   if (!process.env.CAKTO_WEBHOOK_SECRET) return Response.json({ error: 'Webhook não configurado.' }, { status: 503 });
   if (!accountsConfigured()) return Response.json({ error: 'Contas não configuradas.' }, { status: 503 });
@@ -104,28 +98,17 @@ export async function rotaCakto(request: Request): Promise<Response> {
   try { corpo = obj(JSON.parse(raw)); } catch { return Response.json({ error: 'JSON inválido.' }, { status: 400 }); }
 
   const enviado = txt(corpo.secret) || request.headers.get('x-cakto-secret') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
-  if (!mesmoSegredo(enviado, process.env.CAKTO_WEBHOOK_SECRET)) return Response.json({ error: 'Não autorizado.' }, { status: 401 });
+  if (!mesmoSegredo(enviado, process.env.CAKTO_WEBHOOK_SECRET)) {
+    console.warn('cakto: segredo não bateu (recebido com', enviado.length, 'caracteres; esperado com', process.env.CAKTO_WEBHOOK_SECRET.length, ')'); // só os tamanhos, nunca o segredo
+    return Response.json({ error: 'Não autorizado.' }, { status: 401 });
+  }
 
-  const evento = (txt(corpo.event) || txt(corpo.type) || txt(corpo.status)).toLowerCase();
-  const data = obj(corpo.data ?? corpo);
-  const cliente = obj(data.customer ?? data.client ?? data.buyer);
-  const email = txt(cliente.email ?? data.email).toLowerCase() || null;
-  const fone = normalizarFone(txt(cliente.phone ?? cliente.cellphone ?? cliente.whatsapp ?? data.phone));
-  const valor = valorEmReais(data.amount ?? data.baseAmount ?? data.price ?? obj(data.offer).price ?? obj(data.product).price);
-  const ref = txt(data.id ?? data.refId ?? data.reference) || null;
-
-  const aprovado = /(approved|aprovad|paid|pago|renew|renov|created|criad|active|ativ)/.test(evento) && !/(cancel|refund|reembols|charge|expired|expir|refus|recus)/.test(evento);
-  const encerrado = /(cancel|refund|reembols|chargeback|expired|expir)/.test(evento);
-  console.log('cakto:', evento || '(sem evento)', valor ? `R$ ${valor}` : '(sem valor)', aprovado ? 'ativa' : encerrado ? 'encerra' : 'ignorado');
-  if (!aprovado && !encerrado) return ok({ ignorado: true });
-  if (!email && !fone) return ok({ ignorado: true, motivo: 'sem telefone nem e-mail' });
-
-  // plano e preço de fundador pelo valor pago: anual a partir de R$ 150; fundador = abaixo de R$ 25 (mensal) ou de R$ 250 (anual)
-  const anual = valor >= 150;
-  const fundador = valor > 0 && (anual ? valor < 250 : valor <= 25);
-  const validoAte = aprovado ? new Date(Date.now() + (anual ? 372 : 35) * 86_400_000).toISOString() : null;
+  const av = interpretarAviso(corpo);
+  console.log('cakto:', av.evento || '(sem evento)', av.plano, av.fundador ? 'fundador' : 'normal', av.aprovado ? 'ativa' : av.encerrado ? 'encerra' : 'ignorado');
+  if (!av.aprovado && !av.encerrado) return ok({ ignorado: true });
+  if (!av.email && !av.fone) return ok({ ignorado: true, motivo: 'sem telefone nem e-mail' });
   try {
-    await gravarAcesso({ whatsapp: fone, email, plano: anual ? 'anual' : 'mensal', fundador, status: aprovado ? 'ativo' : 'cancelado', validoAte, ref });
+    await gravarAcesso({ whatsapp: av.fone, email: av.email, plano: av.plano, fundador: av.fundador, status: av.aprovado ? 'ativo' : 'cancelado', validoAte: av.validoAte, ref: av.ref });
   } catch (e) {
     console.error('cakto: erro ao gravar', e instanceof Error ? e.message : e);
     return Response.json({ error: 'Não consegui gravar.' }, { status: 500 }); // a Cakto tenta de novo
