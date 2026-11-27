@@ -102,8 +102,8 @@ await writeFile(
   page(template, {
     path: '/',
     title: 'Diagnóstico financeiro',
-    description: 'O Grana Séria organiza o seu mês no celular: para onde vai o dinheiro, quanto você pode gastar hoje e o caminho para sair das dívidas.',
-    body: `<h1>Veja para onde vai cada real do seu mês.</h1><p>O Grana Séria organiza o mês no celular. Você descobre quanto pode gastar hoje, o que pagar primeiro e o dia em que fica livre das dívidas.</p><p>Sem senha de banco. Conteúdo educativo, não é consultoria financeira. CNPJ 69.557.683/0001-89.</p>`,
+    description: 'O Grana Séria mostra pra onde o dinheiro vai, quanto você pode gastar hoje e o caminho pra sair do aperto. Sem precisar entender de finanças.',
+    body: `<h1>O mês acabou e o dinheiro sumiu?</h1><p>O Grana Séria mostra pra onde ele vai, quanto você pode gastar hoje e o caminho pra sair do aperto. Sem precisar entender de finanças.</p><p>Sem senha de banco. Você testa no celular, anota o que entra e o que sai, e segue o próximo passo. Conteúdo educativo, não é consultoria financeira. CNPJ 69.557.683/0001-89.</p>`,
   })
 );
 
@@ -132,8 +132,8 @@ await writePage(
   page(template, {
     path: '/planos',
     title: 'Planos',
-    description: 'Preço de fundador e planos mensal e anual do Grana Séria, com 7 dias de garantia.',
-    body: `<h1>Planos</h1><p>Preço de fundador para quem entra agora, e o preço de lançamento mensal ou anual. 7 dias para pedir reembolso.</p><p>Conteúdo educativo, não é consultoria financeira.</p>`,
+    description: 'Teste tudo por 7 dias. Depois, o básico segue grátis e o completo é mensal ou anual.',
+    body: `<h1>Planos</h1><p>Teste tudo por 7 dias. Depois, o básico segue grátis e o completo é mensal ou anual.</p><ul><li>Grátis: diagnóstico, Início e Meu mês, com os dados no seu aparelho.</li><li>Mensal e anual: caminho pra sair das dívidas, Coach, WhatsApp, fatura do cartão, reserva, metas e investir.</li></ul><p>Conteúdo educativo, não é consultoria financeira.</p>`,
   })
 );
 

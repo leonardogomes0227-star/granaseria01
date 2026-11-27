@@ -99,9 +99,9 @@ export function TelaAcesso({ novo = false }: { novo?: boolean }) {
       <Moeda tamanho={64} />
       {novo ? (
         <>
-          <h1>{convite.valido ? 'Seu acesso está pronto' : 'Prepare seu acesso'}</h1>
-          <p>{convite.valido ? 'Escolha o seu plano para começar. A assinatura só vale depois do pagamento confirmado.' : 'Deixe seu nome e seu WhatsApp na página inicial. Em instantes o acesso fica pronto e os planos abrem.'}</p>
-          {convite.valido ? <OfertasNormais /> : <div className="ac-ofertas"><a className="gs-btn" href="/#fila">Preparar meu acesso <ArrowRight size={16} aria-hidden="true" /></a></div>}
+          <h1>{convite.valido ? 'Seu convite está liberado' : 'O Grana Séria é por convite'}</h1>
+          <p>{convite.valido ? 'Escolha o seu plano para começar.' : 'Entre na fila de espera. Quando chegar a sua vez, o convite vai para o seu WhatsApp, com prazo para aceitar.'}</p>
+          {convite.valido ? <OfertasNormais /> : <div className="ac-ofertas"><a className="gs-btn" href="/#fila">Entrar na fila de espera <ArrowRight size={16} aria-hidden="true" /></a></div>}
         </>
       ) : (
         <>

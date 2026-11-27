@@ -11,7 +11,6 @@ html.gs-app body .gs-plano .gs-plano-selo { display: inline-block; margin-bottom
 .gs-plano .lp-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 14px; border-radius: 13px; font: 700 14.5px 'Inter', sans-serif; text-decoration: none; text-align: center; width: 100%; box-sizing: border-box; }
 .gs-plano .lp-btn.ouro { background: linear-gradient(180deg, #F0D58F, #C99A3E); color: #1E1604 !important; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 12px 24px -12px rgba(140, 100, 24, .8); }
 .gs-plano .lp-btn.vazio { background: rgba(255, 255, 255, .6); border: 1px solid rgba(28, 25, 20, .22); color: #17150F; }
-.pl-pagina { max-width: 920px; margin: 0 auto; padding-bottom: 24px; }
-.pl-pagina .gs-h2 { margin-top: 36px; }
+.pl-pagina { max-width: 920px; margin: 0 auto; }
 html.gs-app body .gs-plano li.breve, html.gs-app body .gs-plano li.breve span { color: #6F6858 !important; }
 html.gs-app body .gs-plano li.breve em { color: #8A5A0A !important; -webkit-text-fill-color: #8A5A0A; background: none; font-style: normal; }

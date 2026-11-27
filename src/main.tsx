@@ -20,7 +20,6 @@ import './gs/painelVideo.css';
 import './gs/painelRv.css';
 import './gs/planosCartoes.css';
 import './gs/fluidez.css';
-import './gs/premium.css';
 import './gs/tema';
 import { initAnalytics } from './analytics';
 

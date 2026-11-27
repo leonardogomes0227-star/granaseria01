@@ -3,7 +3,6 @@
 import { randomInt } from 'node:crypto';
 import { rest } from '../whatsapp/db.js';
 import { emailSeguro, valorFiltro } from '../postgrestFiltro.js';
-import { DIAS_DO_CONVITE, deveLiberarFila, respostaDaFila, segundosParaLiberar, type RespostaFila } from './filaLibera.js';
 
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I
 /** Cada pessoa que você indica faz você subir tantas posições. */
@@ -60,45 +59,28 @@ function pontuar(fila: Leve[]): Map<string, number> {
   return new Map(fila.map((r) => [r.codigo, r.id - SALTO_POR_INDICACAO * (indicacoes.get(r.codigo) ?? 0)]));
 }
 
-/** Marca uma pessoa como convidada. Não mexe na tabela de assinaturas. */
-async function marcarConvidado(eu: FilaRow): Promise<FilaRow | null> {
-  const ate = new Date(Date.now() + DIAS_DO_CONVITE * 86_400_000).toISOString();
-  const res = await rest(`fila_espera?id=eq.${eu.id}&status=eq.espera`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ status: 'convidado', convidado_em: new Date().toISOString(), convite_ate: ate }),
-  });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  const rows = (await res.json()) as FilaRow[];
-  return rows[0] ?? null;
-}
-
-async function linhaDaFila(codigo: string): Promise<FilaRow | null> {
+export interface Situacao { posicao: number | null; total: number; indicacoes: number; status: StatusFila; conviteAte: string | null; nome: string }
+/** Onde a pessoa está na fila agora (a posição é de verdade: conta quem está na frente, com o salto das indicações). */
+export async function situacaoDe(codigo: string): Promise<Situacao | null> {
   const [eu] = await pegar<FilaRow>(`fila_espera?${new URLSearchParams({ codigo: `eq.${codigo}`, select: '*', limit: '1' })}`);
-  return eu ?? null;
-}
-
-/** Lê a pessoa e, se o tempo curto já passou, libera o convite. Não cria assinatura. */
-export async function situacaoDe(codigo: string, agora = Date.now()): Promise<RespostaFila | null> {
-  let eu = await linhaDaFila(codigo);
   if (!eu) return null;
-  const segundos = segundosParaLiberar(process.env.FILA_LIBERA_EM_SEGUNDOS);
-  if (deveLiberarFila(eu.status, eu.criado_em, agora, segundos)) {
-    const atualizado = await marcarConvidado(eu);
-    eu = atualizado ?? (await linhaDaFila(codigo)) ?? eu;
-  }
-  return respostaDaFila(eu, agora, segundos);
+  const fila = await naEspera();
+  const pts = pontuar(fila);
+  const indicacoes = fila.filter((r) => r.indicado_por === codigo).length;
+  const meu = pts.get(codigo);
+  const posicao = eu.status === 'espera' && meu !== undefined ? 1 + fila.filter((r) => { const p = pts.get(r.codigo)!; return p < meu || (p === meu && r.id < eu.id); }).length : null;
+  return { posicao, total: fila.length, indicacoes, status: eu.status, conviteAte: eu.convite_ate, nome: eu.nome };
 }
 
 export async function totalNaFila(): Promise<number> {
   return (await naEspera()).length;
 }
 
-/** O convite desse código ainda vale? Se o tempo curto já passou, libera antes de responder. */
+/** O convite desse código ainda vale? */
 export async function conviteValido(codigo: string): Promise<{ valido: boolean; ate: string | null }> {
-  const s = await situacaoDe(codigo);
-  const valido = Boolean(s && s.status === 'convidado' && s.conviteAte && new Date(s.conviteAte).getTime() > Date.now());
-  return { valido, ate: valido ? s!.conviteAte : null };
+  const [r] = await pegar<FilaRow>(`fila_espera?${new URLSearchParams({ codigo: `eq.${codigo}`, select: 'status,convite_ate', limit: '1' })}`);
+  const valido = Boolean(r && r.status === 'convidado' && r.convite_ate && new Date(r.convite_ate).getTime() > Date.now());
+  return { valido, ate: valido ? r!.convite_ate : null };
 }
 
 /** Chama os próximos da fila (quem está na frente, já com o salto das indicações) e dá um prazo para aceitar. */
