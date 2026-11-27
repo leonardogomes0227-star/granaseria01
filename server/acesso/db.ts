@@ -2,6 +2,7 @@
 
 import { randomInt } from 'node:crypto';
 import { rest } from '../whatsapp/db.js';
+import { emailSeguro, valorFiltro } from '../postgrestFiltro.js';
 import { DIAS_DO_CONVITE, deveLiberarFila, respostaDaFila, segundosParaLiberar, type RespostaFila } from './filaLibera.js';
 
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sem 0/O e 1/I
@@ -113,18 +114,29 @@ export async function convidarProximos(quantidade: number, dias: number): Promis
   return (await res.json()) as FilaRow[];
 }
 
-export async function acessoDe(whatsapp: string | null, email: string | null): Promise<AcessoRow | null> {
-  const filtros = [whatsapp ? `whatsapp.eq.${whatsapp}` : '', email ? `email.eq.${email.toLowerCase()}` : ''].filter(Boolean);
+/** Filtro de acesso. E-mail estranho é ignorado, para não virar consulta da linha de outra pessoa. */
+export function filtroDeAcesso(whatsapp: string | null, email: string | null): string | null {
+  const fone = whatsapp && /^\d{12,15}$/.test(whatsapp) ? whatsapp : null;
+  const mail = email ? emailSeguro(email) : null;
+  const filtros = [fone ? `whatsapp.eq.${fone}` : '', mail ? `email.eq.${valorFiltro(mail)}` : ''].filter(Boolean);
   if (filtros.length === 0) return null;
-  const linhas = await pegar<AcessoRow>(`acessos?${new URLSearchParams({ or: `(${filtros.join(',')})`, select: '*', limit: '5' })}`);
+  return `(${filtros.join(',')})`;
+}
+
+export async function acessoDe(whatsapp: string | null, email: string | null): Promise<AcessoRow | null> {
+  const filtro = filtroDeAcesso(whatsapp, email);
+  if (!filtro) return null;
+  const linhas = await pegar<AcessoRow>(`acessos?${new URLSearchParams({ or: filtro, select: '*', limit: '5' })}`);
   // vale o que dura mais
   return linhas.sort((a, b) => new Date(b.valido_ate ?? 0).getTime() - new Date(a.valido_ate ?? 0).getTime())[0] ?? null;
 }
 
 export async function gravarAcesso(r: { whatsapp: string | null; email: string | null; plano: 'mensal' | 'anual'; fundador: boolean; status: 'ativo' | 'cancelado'; validoAte: string | null; ref: string | null }): Promise<void> {
-  const chave = r.whatsapp ? 'whatsapp' : r.email ? 'email' : null;
+  const email = r.email ? emailSeguro(r.email) : null;
+  const whatsapp = r.whatsapp && /^\d{12,15}$/.test(r.whatsapp) ? r.whatsapp : null;
+  const chave = whatsapp ? 'whatsapp' : email ? 'email' : null;
   if (!chave) throw new Error('Pagamento sem telefone nem e-mail.');
-  const linha: Record<string, unknown> = { whatsapp: r.whatsapp, email: r.email?.toLowerCase() ?? null, tipo: 'assinante', plano: r.plano, fundador: r.fundador, status: r.status, cakto_ref: r.ref, atualizado_em: new Date().toISOString() };
+  const linha: Record<string, unknown> = { whatsapp, email, tipo: 'assinante', plano: r.plano, fundador: r.fundador, status: r.status, cakto_ref: r.ref, atualizado_em: new Date().toISOString() };
   if (r.validoAte) linha.valido_ate = r.validoAte;
   const res = await rest(`acessos?on_conflict=${chave}`, { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify([linha]) });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);

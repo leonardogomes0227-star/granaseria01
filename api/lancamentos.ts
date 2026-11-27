@@ -5,6 +5,7 @@
 import { phoneFromWebLink } from '../server/whatsapp/hubdb.js';
 import { deleteEntry, insertSiteEntry, listEntriesBetween, restoreEntry, updateEntry, type EntryKind } from '../server/whatsapp/db.js';
 import { addMonths, currentMonth, isMonth, todaySP } from '../src/coachChat/months.js';
+import { envioRepetido, recusarOrigem } from '../server/rede.js';
 
 const MAX_BYTES = 4_000;
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
@@ -68,6 +69,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   const phone = await auth(request);
   if (!phone) return json({ error: 'Entre pelo link do WhatsApp para anotar.' }, 401);
   const b = await readBody(request);
@@ -84,6 +87,9 @@ export async function POST(request: Request): Promise<Response> {
     }
     const amount = checkAmount(b.amount);
     if (amount === null) return json({ error: 'Valor inválido.' }, 400);
+    if (envioRepetido(`${phone}:${kind}:${amount}:${String(b.date ?? '')}:${text(b.description, 80)}`)) {
+      return json({ error: 'Esse lançamento já foi enviado. Espere um instante para anotar o mesmo de novo.' }, 409);
+    }
     const day = checkDay(b.date);
     if (day === 'futuro') return json({ error: 'Não dá pra anotar num dia que ainda não chegou.' }, 400);
     if (day === null) return json({ error: 'Data inválida.' }, 400);
@@ -105,6 +111,8 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 export async function PATCH(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   const phone = await auth(request);
   if (!phone) return json({ error: 'Entre pelo link do WhatsApp para editar.' }, 401);
   const b = await readBody(request);
@@ -135,6 +143,8 @@ export async function PATCH(request: Request): Promise<Response> {
 }
 
 export async function DELETE(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   const phone = await auth(request);
   if (!phone) return json({ error: 'Entre pelo link do WhatsApp.' }, 401);
   const b = await readBody(request);

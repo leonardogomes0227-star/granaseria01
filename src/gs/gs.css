@@ -92,6 +92,13 @@ html.gs-app :focus-visible { outline: 3px solid var(--gold-strong) !important; o
 .gs-tres b { display: block; font-family: var(--serif); font-weight: 500; font-size: clamp(15px, 4.6vw, 18px); margin-top: 2px; white-space: nowrap; }
 
 /* ---------- botões, campos, chips ---------- */
+.gs-pular { position: absolute; left: 12px; top: -48px; z-index: 80; background: #fff; color: #2C221E; padding: 10px 14px; border-radius: 12px; }
+.gs-pular:focus { top: 12px; }
+.gs-migalhas { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 12px; font-size: 14px; color: var(--ink-muted, #5C4F47); }
+.gs-migalhas a { color: inherit; font-weight: 700; }
+.gs-faq-item { border-bottom: 1px solid rgba(44, 34, 30, 0.12); padding: 12px 0; }
+.gs-faq-item summary { cursor: pointer; font-weight: 700; font-size: 17px; min-height: 44px; display: flex; align-items: center; }
+.gs-faq-item p { margin: 8px 0 4px; line-height: 1.5; }
 .gs-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 16px; border: 1px solid transparent; background: var(--gold); color: var(--ink); font: inherit; font-weight: 700; font-size: 15px; text-decoration: none; cursor: pointer; transition: transform 0.12s var(--curva), background 0.18s; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 16px -10px rgba(184, 134, 11, 0.7); }
 .gs-btn:hover { background: #CDAA63; }
 .gs-btn:active { transform: scale(0.97); }

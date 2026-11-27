@@ -22,13 +22,13 @@ export function PrivacyPage() {
   return (
     <PageShell title="Política de privacidade" kicker="Legal">
       <p>
-        A Grana Séria coleta as informações que você preenche no diagnóstico — renda, gastos, dívidas e reserva
-        de emergência — apenas para calcular o seu resultado e o seu plano de ação. Não vendemos nem
+        A Grana Séria coleta as informações que você preenche no diagnóstico (renda, gastos, dívidas e reserva
+        de emergência) apenas para calcular o seu resultado e o seu plano de ação. Não vendemos nem
         compartilhamos esses dados com terceiros para fins de publicidade.
       </p>
       <h3>Onde seus dados ficam</h3>
       <p>
-        Sem conta, tudo o que você preenche fica salvo apenas no seu próprio navegador — é isso que permite
+        Sem conta, tudo o que você preenche fica salvo apenas no seu próprio navegador. É isso que permite
         continuar o diagnóstico de onde parou e acompanhar o plano mês a mês. Para apagar, basta limpar os dados
         de navegação deste site.
       </p>
@@ -83,6 +83,18 @@ export function PrivacyPage() {
         que não funciona. Elas nunca incluem valores em reais nem dados que identifiquem você. Se o Pixel da Meta
         estiver ligado, ele recebe só o nome das páginas e ações, nunca seus números.
       </p>
+      <h3>Pagamento</h3>
+      <p>
+        O status da assinatura fica só no servidor, gravado quando o gateway de pagamento (Cakto) avisa que a compra
+        foi aprovada, renovada ou cancelada. O aviso é conferido por um segredo que só o servidor conhece. O navegador
+        não consegue se declarar assinante. Dados do cartão não passam por este site: eles ficam no checkout da Cakto.
+      </p>
+      <h3>Base legal e retenção</h3>
+      <p>
+        Tratamos os dados para executar o serviço que você pediu e para cumprir obrigação legal (Lei 13.709/2018, a LGPD).
+        A cópia da conta permanece enquanto a conta existir. Depois do pedido de exclusão, o prazo de atendimento é de até 15 dias.
+        Cópias de segurança do banco seguem o prazo do provedor e não são usadas para outra finalidade.
+      </p>
       <h3>Seus direitos</h3>
       <p>
         Você pode apagar seus dados a qualquer momento em Minha conta → Apagar meus dados, ou pedir a exclusão
@@ -113,9 +125,8 @@ export function TermsPage() {
       </p>
       <h3 id="reembolso">Política de reembolso</h3>
       <p>
-        Se você não ficar satisfeito com o diagnóstico, pode solicitar reembolso integral em até 7 dias corridos
-        após a compra, pelo mesmo canal usado no pagamento (Kiwify, Hotmart ou Eduzz, conforme a plataforma
-        usada).
+        Se você não ficar satisfeito, pode solicitar reembolso integral em até 7 dias corridos
+        após a compra, pelo mesmo canal usado no pagamento (Cakto, ou a plataforma indicada no checkout).
       </p>
       <h3>Uso do serviço</h3>
       <p>
@@ -129,14 +140,16 @@ export function TermsPage() {
 export function NotFoundPage() {
   return (
     <div className="page-wrap anim-in" style={{ textAlign: 'center', maxWidth: 560 }}>
-      <div className="kicker" style={{ justifyContent: 'center' }}><span className="wedge" />404</div>
-      <h1 style={{ marginBottom: 16 }}>Essa página não existe.</h1>
+      <p className="kicker" style={{ justifyContent: 'center' }}>Página não encontrada</p>
+      <h1 style={{ marginBottom: 16 }}>Esse endereço não existe.</h1>
       <p className="wizard-sub" style={{ marginBottom: 28 }}>
-        Pode ter sido movida, ou o link está errado. Volta pro início e tenta de novo.
+        O link pode ter mudado. Volte ao início, veja os planos ou leia as perguntas frequentes.
       </p>
-      <Link to="/" className="btn-primary">
-        Voltar pro início
-      </Link>
+      <div className="gs-acoes" style={{ justifyContent: 'center' }}>
+        <Link to="/" className="btn-primary">Voltar ao início</Link>
+        <Link to="/planos" className="gs-btn sec">Ver planos</Link>
+        <Link to="/faq" className="gs-btn sec">Perguntas frequentes</Link>
+      </div>
     </div>
   );
 }

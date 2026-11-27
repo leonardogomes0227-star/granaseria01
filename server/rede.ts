@@ -41,4 +41,46 @@ export function contarLimite(chave: string, janelaMs: number, agora = Date.now()
 /** Só nos testes: zera os contadores. */
 export function zerarLimites(): void {
   baldes.clear();
+  recentes.clear();
+}
+
+const recentes = new Map<string, number>();
+
+/**
+ * O mesmo pedido, do mesmo telefone, em poucos segundos: o segundo é ignorado.
+ * Cobre o duplo toque mesmo se o botão do navegador falhar.
+ */
+export function envioRepetido(chave: string, agora = Date.now()): boolean {
+  const ate = recentes.get(chave);
+  if (ate && ate > agora) return true;
+  recentes.set(chave, agora + 4_000);
+  if (recentes.size > 2000) recentes.clear();
+  return false;
+}
+
+const OFICIAIS = new Set(['granaseria.com.br', 'www.granaseria.com.br', 'localhost', '127.0.0.1']);
+
+/** Navegador de outro site não grava. Sem cabeçalho Origin (servidor, app nativo) segue. */
+export function origemConfiavel(request: Request): boolean {
+  const origem = request.headers.get('origin');
+  if (!origem) return true;
+  let host = '';
+  try {
+    host = new URL(origem).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  let meu = '';
+  try {
+    meu = new URL(request.url).hostname.toLowerCase();
+  } catch {
+    meu = '';
+  }
+  if (host === meu) return true;
+  return OFICIAIS.has(host);
+}
+
+export function recusarOrigem(request: Request): Response | null {
+  if (origemConfiavel(request)) return null;
+  return Response.json({ error: 'Não consegui aceitar este pedido.' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
 }

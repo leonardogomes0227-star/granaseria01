@@ -327,7 +327,7 @@ export function AdicionarMov() {
         {erro && !(erro === 'Digite o valor.' && !(valor > 0) && ver(1)) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
         {(tudo || passo === 3 || (passo === 2 && tipo === 'despesa')) && (
           <div className="gs-acoes">
-            <button type="submit" className="gs-btn cheio"><Check size={16} aria-hidden="true" /> {avisoCartao === `${valor}:${parcelasCartao}` ? 'Registrar mesmo assim' : 'Salvar'}</button>
+            <button type="submit" className="gs-btn cheio" disabled={envio.ocupado}><Check size={16} aria-hidden="true" /> {avisoCartao === `${valor}:${parcelasCartao}` ? 'Registrar mesmo assim' : 'Salvar'}</button>
             {editId && <button type="button" className="gs-btn sec" onClick={duplicar}><Copy size={16} aria-hidden="true" /> Duplicar</button>}
             {editId && !apagar && <button type="button" className="gs-btn link" onClick={() => setApagar(true)}>Excluir</button>}
             {editId && apagar && <button type="button" className="gs-btn perigo" onClick={excluir}>Confirmar exclusão</button>}

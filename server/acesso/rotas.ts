@@ -7,11 +7,14 @@
 import { acessoDe, convidarProximos, conviteValido, entrarNaFila, gravarAcesso, normalizarFone, situacaoDe, totalNaFila } from './db.js';
 import { interpretarAviso } from './cakto.js';
 import { decidirAcesso } from './decisao.js';
+import { caktoAutorizado, eventoRepetido, idDoEvento, tabelaDeEventoAusente } from './webhook.js';
 import { accountsConfigured, findUserById } from '../account/db.js';
 import { phoneFromWebLink } from '../whatsapp/hubdb.js';
 import { mesmoSegredo } from '../segredo.js';
 import { contarLimite, excedeuLimite, ipDoCliente } from '../rede.js';
 import { rest } from '../whatsapp/db.js';
+import { resumoErro } from '../logSeguro.js';
+import { valorFiltro } from '../postgrestFiltro.js';
 
 const jsonFila = (body: unknown, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 const CODIGO = /^[A-Z0-9]{6}$/;
@@ -108,21 +111,36 @@ export async function rotaCakto(request: Request): Promise<Response> {
   const doCorpo = txt(corpo.secret);
   const doCabecalho = request.headers.get('x-cakto-secret') || request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') || '';
   const enviado = doCorpo || doCabecalho;
-  if (!mesmoSegredo(enviado, process.env.CAKTO_WEBHOOK_SECRET)) {
+  const assinatura = request.headers.get('x-cakto-signature') || request.headers.get('x-webhook-signature');
+  if (!caktoAutorizado(raw, enviado, assinatura, process.env.CAKTO_WEBHOOK_SECRET)) {
     // só o lugar e o tamanho do que chegou, nunca a chave: aparece na janela de teste da Cakto e ajuda a achar a diferença
-    const lugar = doCorpo ? 'corpo' : doCabecalho ? 'cabecalho' : 'nenhum';
-    console.warn('cakto: segredo não bateu', lugar, enviado.length);
-    return Response.json({ error: 'Não autorizado.', recebido: { lugar, caracteres: enviado.length }, campos_do_aviso: Object.keys(corpo).slice(0, 12) }, { status: 401 });
+    const lugar = assinatura ? 'assinatura' : doCorpo ? 'corpo' : doCabecalho ? 'cabecalho' : 'nenhum';
+    console.warn('cakto: segredo não bateu', lugar, assinatura ? assinatura.length : enviado.length);
+    return Response.json({ error: 'Não autorizado.', recebido: { lugar, caracteres: (assinatura || enviado).length } }, { status: 401 });
   }
 
   const av = interpretarAviso(corpo);
   console.log('cakto:', av.evento || '(sem evento)', av.plano, av.fundador ? 'fundador' : 'normal', av.aprovado ? 'ativa' : av.encerrado ? 'encerra' : 'ignorado');
   if (!av.aprovado && !av.encerrado) return ok({ ignorado: true });
   if (!av.email && !av.fone) return ok({ ignorado: true, motivo: 'sem telefone nem e-mail' });
+  const eventoId = idDoEvento(raw, av.evento, av.ref);
+  let marquei = false;
+  try {
+    const marca = await rest('cakto_eventos', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify([{ id: eventoId, ref: av.ref, evento: av.evento || 'evt' }]) });
+    if (marca.ok) marquei = true;
+    else {
+      const texto = await marca.text();
+      if (eventoRepetido(marca.status, texto)) return ok({ repetido: true });
+      if (!tabelaDeEventoAusente(marca.status, texto)) console.warn('cakto: não marquei o evento', marca.status);
+    }
+  } catch (e) {
+    console.warn('cakto: idempotência indisponível', resumoErro(e));
+  }
   try {
     await gravarAcesso({ whatsapp: av.fone, email: av.email, plano: av.plano, fundador: av.fundador, status: av.aprovado ? 'ativo' : 'cancelado', validoAte: av.validoAte, ref: av.ref });
   } catch (e) {
-    console.error('cakto: erro ao gravar', e instanceof Error ? e.message : e);
+    if (marquei) await rest(`cakto_eventos?id=eq.${valorFiltro(eventoId)}`, { method: 'DELETE' }).catch(() => undefined);
+    console.error('cakto: erro ao gravar', resumoErro(e));
     return Response.json({ error: 'Não consegui gravar.' }, { status: 500 }); // a Cakto tenta de novo
   }
   return ok();
@@ -155,7 +173,7 @@ export async function rotaAcesso(request: Request): Promise<Response> {
     const a = await acessoDe(eu.phone, eu.email);
     return jsonAcesso(decidirAcesso({ acesso: a, criadoEm: eu.criadoEm, novosDesde: process.env.ACESSO_NOVOS_DESDE, corte: process.env.ACESSO_CORTE, agora: Date.now() }));
   } catch (e) {
-    console.error('acesso:', e instanceof Error ? e.message : e);
+    console.error('acesso:', resumoErro(e));
     return jsonAcesso({ estado: 'liberado' });
   }
 }

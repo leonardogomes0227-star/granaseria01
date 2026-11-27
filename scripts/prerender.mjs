@@ -62,7 +62,7 @@ const template = await readFile(join(dist, 'index.html'), 'utf8');
 const { GUIDES } = await load('src/guides.ts');
 const { TOOLS } = await load('src/tools.ts');
 
-const urls = ['/', '/guias', '/planos', '/politica-de-privacidade', '/termos-de-uso'];
+const urls = ['/', '/guias', '/planos', '/faq', '/obrigado', '/politica-de-privacidade', '/termos-de-uso'];
 
 await writePage(
   '/guias',
@@ -104,6 +104,26 @@ await writeFile(
     title: 'Diagnóstico financeiro',
     description: 'O Grana Séria organiza o seu mês no celular: para onde vai o dinheiro, quanto você pode gastar hoje e o caminho para sair das dívidas.',
     body: `<h1>Veja para onde vai cada real do seu mês.</h1><p>O Grana Séria organiza o mês no celular. Você descobre quanto pode gastar hoje, o que pagar primeiro e o dia em que fica livre das dívidas.</p><p>Sem senha de banco. Conteúdo educativo, não é consultoria financeira. CNPJ 69.557.683/0001-89.</p>`,
+  })
+);
+
+await writePage(
+  '/faq',
+  page(template, {
+    path: '/faq',
+    title: 'Perguntas frequentes',
+    description: 'Respostas curtas sobre dados, pagamento, login e como anotar um gasto no Grana Séria.',
+    body: `<h1>Perguntas frequentes</h1><p>O app não pede senha de banco. O plano pago só libera quando o servidor confirma o pagamento. Você pode apagar os seus dados em Meus dados.</p>`,
+  })
+);
+
+await writePage(
+  '/obrigado',
+  page(template, {
+    path: '/obrigado',
+    title: 'Pagamento recebido',
+    description: 'O plano entra sozinho depois que o pagamento é confirmado. Entre com o mesmo WhatsApp ou e-mail da compra.',
+    body: `<h1>Recebemos o seu pedido</h1><p>Se o pagamento foi aprovado, o plano entra em alguns minutos. Entre com o mesmo WhatsApp ou e-mail usado na compra.</p>`,
   })
 );
 

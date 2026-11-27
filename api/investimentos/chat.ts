@@ -4,6 +4,9 @@
 import { obterMercado } from '../../server/mercado/fontes.js';
 import { bumpUsage } from '../../server/whatsapp/hubdb.js';
 import { ipDoCliente } from '../../server/rede.js';
+import { exigirPlano } from '../../server/acesso/exigir.js';
+import { alertaUso } from '../../server/logSeguro.js';
+import { respostaVazouSegredo, RESPOSTA_SEGURA, textoParaModelo } from '../../server/promptGuard.js';
 
 const MODELO = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const LIMITE_DIA = 20;
@@ -70,6 +73,8 @@ async function limiteAtingido(ip: string, hoje: string): Promise<boolean> {
 
 export async function POST(request: Request): Promise<Response> {
   if (!mesmaOrigem(request)) return json({ error: 'Não consegui responder a partir desta página.' }, 403);
+  const plano = await exigirPlano(request);
+  if (plano) return plano;
   const chave = process.env.ANTHROPIC_API_KEY;
   if (!chave) return json({ guiado: true, error: 'A conversa livre ainda não está ligada. As respostas guiadas continuam funcionando.' }, 503);
 
@@ -84,7 +89,7 @@ export async function POST(request: Request): Promise<Response> {
   const mensagens = (Array.isArray(b.messages) ? b.messages : [])
     .filter((m): m is { role: 'user' | 'assistant'; content: string } => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim().length > 0)
     .slice(-10)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_MSG) }));
+    .map((m) => ({ role: m.role, content: m.role === 'user' ? textoParaModelo(m.content, MAX_MSG) : m.content.slice(0, MAX_MSG) }));
   if (mensagens.length === 0 || mensagens[mensagens.length - 1].role !== 'user') return json({ error: 'Não entendi a pergunta. Escreva de novo.' }, 400);
   // a conversa tem que começar com a pessoa
   while (mensagens.length && mensagens[0].role !== 'user') mensagens.shift();
@@ -92,7 +97,10 @@ export async function POST(request: Request): Promise<Response> {
   const ip = ipDoCliente(request);
   const hoje = new Date().toISOString().slice(0, 10);
   const bateuLimite = await limiteAtingido(ip, hoje);
-  if (bateuLimite) return json({ error: 'Você chegou ao limite de 20 mensagens por hoje. Volte amanhã.' }, 429);
+  if (bateuLimite) {
+    alertaUso('investimentos');
+    return json({ error: 'Você chegou ao limite de 20 mensagens por hoje. Volte amanhã.' }, 429);
+  }
 
   const mercado = await obterMercado().catch(() => null);
   const snap = mercado
@@ -109,9 +117,9 @@ export async function POST(request: Request): Promise<Response> {
     if (r.status === 429) return json({ error: 'O assistente está muito ocupado agora. Tente de novo em instantes.' }, 429);
     if (!r.ok) return json({ error: 'Não consegui responder agora. Tente de novo em instantes.' }, 502);
     const j = (await r.json()) as { content?: { type: string; text?: string }[] };
-    const texto = (j.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
-    if (!texto) return json({ error: 'Não consegui responder agora. Tente de novo em instantes.' }, 502);
-    return json({ texto });
+    const bruto = (j.content ?? []).filter((c) => c.type === 'text').map((c) => c.text ?? '').join('\n').trim();
+    if (!bruto) return json({ error: 'Não consegui responder agora. Tente de novo em instantes.' }, 502);
+    return json({ texto: respostaVazouSegredo(bruto) ? RESPOSTA_SEGURA : bruto });
   } catch {
     return json({ error: 'Não consegui responder agora. Tente de novo em instantes.' }, 502);
   }
