@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Check, ChevronDown, Compass, Copy, Landmark, Lock, MessageCircle, ShieldCheck, Smartphone, Sparkles, Wallet, X } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, ChevronDown, Compass, Landmark, Lock, MessageCircle, ShieldCheck, Smartphone, Sparkles, Wallet, X } from 'lucide-react';
 import { CampoDinheiro, CampoNumero } from './ui';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
 import { CartoesPlanos } from './Planos';
 import { PRECO_ANUAL, PRECO_MENSAL } from '../config';
 import { brl0 } from './datas';
-import { waLink } from '../whatsapp';
-import { useConvite } from './convite';
 import { useContagem } from './base';
 import { FERRAMENTAS } from './registroFerramentas';
 import './landing.css';
@@ -120,7 +118,7 @@ function BarraFixa({ aoClicar }: { aoClicar: () => void }) {
   const [mostrar, setMostrar] = useState(false);
   useEffect(() => {
     const hero = document.getElementById('topo-lx');
-    const fila = document.getElementById('fila');
+    const fila = document.getElementById('acesso');
     if (!hero || !fila || typeof IntersectionObserver === 'undefined') return;
     const vistos = new Set<string>();
     const io = new IntersectionObserver((lista) => {
@@ -136,8 +134,8 @@ function BarraFixa({ aoClicar }: { aoClicar: () => void }) {
   }, []);
   return (
     <div className={`lx-barra${mostrar ? ' on' : ''}`} aria-hidden={!mostrar}>
-      <span><b>Garanta a sua vez</b><small>Vagas abertas em ondas</small></span>
-      <button type="button" tabIndex={mostrar ? 0 : -1} onClick={aoClicar}>Quero entrar <ArrowRight size={16} aria-hidden="true" /></button>
+      <span><b>Comece hoje</b><small>Acesso liberado após o pagamento</small></span>
+      <button type="button" tabIndex={mostrar ? 0 : -1} onClick={aoClicar}>Quero assinar <ArrowRight size={16} aria-hidden="true" /></button>
     </div>
   );
 }
@@ -226,79 +224,6 @@ function CalculadoraCusto({ aoClicar }: { aoClicar: () => void }) {
   );
 }
 
-/* ----- fila de espera: posição de verdade, indicação para subir e convite com prazo ----- */
-interface SituacaoFila { codigo: string; posicao: number | null; total: number; indicacoes: number; status: string; conviteAte: string | null }
-const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };
-const ler = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
-
-function FilaDeEspera() {
-  const [nome, setNome] = useState('');
-  const [fone, setFone] = useState('');
-  const [erro, setErro] = useState('');
-  const [envio, setEnvio] = useState(false);
-  const [s, setS] = useState<SituacaoFila | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [fora, setFora] = useState(false); // a fila ainda não está ligada no servidor: usa o WhatsApp
-  const [copiado, setCopiado] = useState(false);
-  useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get('ref');
-    if (ref && /^[A-Za-z0-9]{6}$/.test(ref)) guardar('gs-ref', ref.toUpperCase());
-    const meu = ler('gs-fila');
-    if (meu) fetch(`/api/fila?codigo=${meu}`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) setS({ codigo: meu, ...j }); }).catch(() => undefined);
-    fetch('/api/fila?total=1').then((r) => (r.ok ? r.json() : null)).then((j: { total: number } | null) => { if (j) setTotal(j.total); else setFora(true); }).catch(() => setFora(true));
-  }, []);
-  const enviar = async (ev: React.FormEvent) => {
-    ev.preventDefault();
-    setErro(''); setEnvio(true);
-    try {
-      const r = await fetch('/api/fila', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, whatsapp: fone, ref: ler('gs-ref') ?? undefined }) });
-      const j = await r.json();
-      if (!r.ok) { setErro(j.error ?? 'Não consegui agora. Tente de novo.'); return; }
-      guardar('gs-fila', j.codigo);
-      setS(j);
-    } catch { setErro('Sem conexão. Tente de novo.'); } finally { setEnvio(false); }
-  };
-  const link = s ? `${window.location.origin}/?ref=${s.codigo}` : '';
-  const copiar = async () => { try { await navigator.clipboard.writeText(link); setCopiado(true); setTimeout(() => setCopiado(false), 2200); } catch { /* sem permissão */ } };
-  return (
-    <div className="lx-fila" id="fila">
-      {s ? (
-        <div className="lx-fila-ok" aria-live="polite">
-          <span className="lx-eyebrow ouro">Você está na fila</span>
-          {s.status === 'convidado' ? (
-            <><h3>Sua vez chegou.</h3><p>O seu convite foi liberado{s.conviteAte ? ` e vale até ${new Date(s.conviteAte).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}` : ''}. Veja a mensagem que enviamos no seu WhatsApp.</p></>
-          ) : (
-            <><div className="lx-pos"><small>Sua posição</small><b>{s.posicao ?? '—'}</b><span>{s.total > 0 ? `de ${s.total} ${s.total === 1 ? 'pessoa' : 'pessoas'}` : ''}</span></div>
-              <p>Quando sua vez chegar, você recebe o convite no WhatsApp, com prazo para aceitar. {s.indicacoes > 0 ? `Você já subiu indicando ${s.indicacoes} ${s.indicacoes === 1 ? 'pessoa' : 'pessoas'}.` : 'Indique amigos para subir na fila.'}</p>
-              <div className="lx-ind"><span>Cada amigo que entrar pelo seu link faz você subir 5 posições.</span>
-                <button type="button" onClick={copiar}>{copiado ? <><Check size={15} aria-hidden="true" /> Link copiado</> : <><Copy size={15} aria-hidden="true" /> Copiar meu link</>}</button></div></>
-          )}
-        </div>
-      ) : fora ? (
-        <div className="lx-fila-ok">
-          <span className="lx-eyebrow ouro">Fila de espera</span>
-          <h3>Entre na fila pelo WhatsApp</h3>
-          <p>As vagas abrem em ondas. Mande uma mensagem e a gente coloca o seu nome na fila. Quando chegar a sua vez, o convite vem por lá, com prazo para aceitar.</p>
-          <a className="lx-btn ouro" href={waLink('Oi! Quero entrar na fila de espera do Grana Séria.')} target="_blank" rel="noopener noreferrer" style={{ marginTop: 18, width: '100%' }}>Entrar na fila pelo WhatsApp <ArrowRight size={18} aria-hidden="true" /></a>
-        </div>
-      ) : (
-        <form onSubmit={enviar} noValidate>
-          <span className="lx-eyebrow ouro">Fila de espera</span>
-          <h3>Entre na fila para receber o seu convite</h3>
-          <p>As vagas abrem em ondas. Deixe o seu nome e o seu WhatsApp: quando chegar a sua vez, o convite vai direto para lá, com um prazo para aceitar.</p>
-          <div className="lx-fila-campos">
-            <label>Seu nome<input value={nome} onChange={(ev) => setNome(ev.target.value)} autoComplete="given-name" maxLength={60} required /></label>
-            <label>Seu WhatsApp<input value={fone} onChange={(ev) => setFone(ev.target.value)} inputMode="tel" autoComplete="tel" placeholder="(67) 99999-9999" maxLength={20} required /></label>
-          </div>
-          {erro && <p className="lx-fila-erro" role="alert">{erro}</p>}
-          <button type="submit" className="lx-btn ouro" disabled={envio}>{envio ? 'Entrando…' : 'Entrar na fila'} <ArrowRight size={18} aria-hidden="true" /></button>
-          <small>{total !== null && total >= 10 ? `${total} pessoas já estão na fila. ` : ''}Usamos o seu número só para o convite. Nada de spam.</small>
-        </form>
-      )}
-    </div>
-  );
-}
-
 function Sanfona({ itens }: { itens: [string, string][] }) {
   const [aberto, setAberto] = useState<number | null>(null);
   return (
@@ -315,16 +240,13 @@ function Sanfona({ itens }: { itens: [string, string][] }) {
 
 export function Landing({ resume, onStart, onResume }: { resume: number | null; onStart: () => void; onResume: () => void }) {
   const ir = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-  const convite = useConvite();
-  const [naFila, setNaFila] = useState<number | null>(null);
-  useEffect(() => { fetch('/api/fila?total=1').then((r) => (r.ok ? r.json() : null)).then((j: { total: number } | null) => { if (j && j.total >= 10) setNaFila(j.total); }).catch(() => undefined); }, []);
   return (
     <div className="lx">
       {/* ===== abertura: o que muda, dito em uma frase ===== */}
       <section className="lx-hero" id="topo-lx">
         <div className="lx-hero-in">
           <div className="lx-hero-txt">
-            <span className="lx-selo"><Sparkles size={14} aria-hidden="true" />Acesso exclusivo · vagas abertas em ondas</span>
+            <span className="lx-selo"><Sparkles size={14} aria-hidden="true" />Assine hoje e comece em minutos</span>
             <h1>Seu dinheiro some todo mês. <em>Descubra para onde.</em></h1>
             <p>Em 2 minutos você descobre quanto pode gastar hoje, o que pagar primeiro e o dia em que sai das dívidas. Sem planilha, sem senha de banco.</p>
             <ul className="lx-ganhos-hero">
@@ -333,10 +255,10 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
               <li><Check size={18} strokeWidth={3} aria-hidden="true" /><span><b>Guarde dinheiro</b> sem depender de força de vontade</span></li>
             </ul>
             <div className="lx-acoes">
-              <button type="button" className="lx-btn ouro" onClick={() => ir('fila')}>Entrar na fila de espera <ArrowRight size={18} aria-hidden="true" /></button>
+              <button type="button" className="lx-btn ouro" onClick={() => ir('acesso')}>Quero assinar agora <ArrowRight size={18} aria-hidden="true" /></button>
               <button type="button" className="lx-btn claro" onClick={() => ir('teste')}>Ver quanto isso me custa</button>
             </div>
-            <p className="lx-escassez"><span className="lx-ponto" aria-hidden="true" />{naFila !== null ? <><b>{naFila}</b> pessoas já estão na fila. </> : null}As vagas abrem em ondas, por ordem de chegada.</p>
+            <p className="lx-escassez"><span className="lx-ponto" aria-hidden="true" />Acesso liberado logo após o pagamento.</p>
           </div>
           <div className="lx-hero-vis"><CelularesHero /></div>
         </div>
@@ -357,7 +279,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
             <h2>Se você se reconheceu em <em>alguma dessas</em>, o app é para você</h2>
             <p>Não é falta de capacidade nem de inteligência. É falta de um número claro na hora certa. O Grana Séria foi feito para quem está começando e não quer complicação.</p>
           </Revela>
-          <Revela atraso={80}><Identificacao aoClicar={() => ir('fila')} /></Revela>
+          <Revela atraso={80}><Identificacao aoClicar={() => ir('acesso')} /></Revela>
         </div>
       </section>
 
@@ -370,7 +292,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
             <p>Juros e assinaturas esquecidas fazem o dinheiro sair em silêncio. Ninguém sente no mês, mas no ano é um salário que escorre. Coloque os seus números e veja.</p>
             <p className="lx-nota-calc">A conta é simples: valor × juros × 12 meses. Nada é enviado nem guardado.</p>
           </Revela>
-          <Revela atraso={80}><CalculadoraCusto aoClicar={() => ir('fila')} /></Revela>
+          <Revela atraso={80}><CalculadoraCusto aoClicar={() => ir('acesso')} /></Revela>
         </div>
       </section>
 
@@ -513,14 +435,13 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
 
       {/* ===== oferta e acesso ===== */}
       <section className="lx-sec escura" id="acesso">
-        <Revela><span className="lx-eyebrow ouro">Acesso exclusivo</span><h2>Menos de <em>R$ 1 por dia</em> para ter o mês sob controle</h2>
-          <p className="lx-sub">{convite.valido ? `O seu convite está liberado${convite.ate ? ` até ${new Date(convite.ate).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}` : ''}. Escolha o seu plano.` : `São ${brl0(PRECO_MENSAL)} por mês, o mesmo que o preço de um lanche, e só a entrada é por convite: o Grana Séria abre vagas em ondas. Entre na fila e a gente chama você pelo WhatsApp.`}</p></Revela>
+        <Revela><span className="lx-eyebrow ouro">Planos</span><h2>Menos de <em>R$ 1 por dia</em> para ter o mês sob controle</h2>
+          <p className="lx-sub">São {brl0(PRECO_MENSAL)} por mês, o mesmo que o preço de um lanche. Escolha o plano, pague e o acesso é liberado.</p></Revela>
         <Revela atraso={60} className="lx-garantia">
           <span><ShieldCheck size={18} aria-hidden="true" /><b>7 dias de garantia.</b> Se não for para você, é só pedir o reembolso.</span>
           <span><Check size={18} aria-hidden="true" /><b>Cancele quando quiser.</b> Você não perde o que registrou.</span>
         </Revela>
-        <Revela atraso={80}><FilaDeEspera /></Revela>
-        <Revela atraso={100} className="lx-planos"><CartoesPlanos semNota travado={!convite.valido} /></Revela>
+        <Revela atraso={100} className="lx-planos"><CartoesPlanos semNota /></Revela>
       </section>
 
       {/* ===== dúvidas ===== */}
@@ -536,7 +457,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
           <h2>O próximo mês pode ser <em>diferente</em></h2>
           <p>Quem sabe o número decide melhor. Daqui a 30 dias você pode estar lendo o seu mês inteiro, ou se perguntando de novo para onde ele foi.</p>
           <div className="lx-acoes centro">
-            <button type="button" className="lx-btn ouro" onClick={() => ir('fila')}>Entrar na fila de espera <ArrowRight size={18} aria-hidden="true" /></button>
+            <button type="button" className="lx-btn ouro" onClick={() => ir('acesso')}>Quero assinar agora <ArrowRight size={18} aria-hidden="true" /></button>
             <Link to="/entrar" className="lx-btn claro">Já sou membro</Link>
           </div>
           {resume !== null && <button type="button" className="lx-link" onClick={onResume}>Continuar meu diagnóstico ({resume} de 7)</button>}
@@ -545,7 +466,7 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </Revela>
       </section>
 
-      <BarraFixa aoClicar={() => ir('fila')} />
+      <BarraFixa aoClicar={() => ir('acesso')} />
     </div>
   );
 }

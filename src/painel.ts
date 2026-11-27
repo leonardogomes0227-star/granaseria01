@@ -264,7 +264,7 @@ export async function startPainelSync(): Promise<PainelData | null> {
   stopPainelSync();
   if (!painelToken()) return null;
   const data = await pullPainel();
-  timer = window.setInterval(() => void push().catch(() => undefined), 4000);
+  timer = window.setInterval(() => { if (document.visibilityState === 'visible') void push().catch(() => undefined); }, 4000);
   document.addEventListener('visibilitychange', onVisible);
   return data;
 }

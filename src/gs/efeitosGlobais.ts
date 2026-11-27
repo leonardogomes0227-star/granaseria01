@@ -40,8 +40,14 @@ export function iniciarEfeitos(): () => void {
     window.cancelAnimationFrame(agendado);
     agendado = window.requestAnimationFrame(() => todos().forEach((g) => posicionar(g, som)));
   };
+  // só reage quando a mudança é dentro de um grupo de abas (ou cria um); o resto da tela não refaz nada
+  const relevante = (n: Node | null): boolean => {
+    const el = n instanceof HTMLElement ? n : n?.parentElement ?? null;
+    if (!el || el.classList.contains('gl-pilula')) return false;
+    return Boolean(el.closest(GRUPOS)) || Boolean(el.querySelector?.(GRUPOS));
+  };
   const obs = new MutationObserver((muts) => {
-    const mudou = muts.some((m) => m.type === 'attributes' || Array.from(m.addedNodes).some((n) => n instanceof HTMLElement && !(n as HTMLElement).classList.contains('gl-pilula')));
+    const mudou = muts.some((m) => (m.type === 'attributes' ? relevante(m.target) : Array.from(m.addedNodes).some(relevante)));
     if (mudou) atualizar(true);
   });
   obs.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class', 'aria-pressed', 'aria-selected', 'aria-current'] });

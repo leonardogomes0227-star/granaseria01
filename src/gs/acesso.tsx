@@ -6,7 +6,6 @@ import { ArrowRight, Download, MessageCircle, X } from 'lucide-react';
 import { painelToken } from '../painel';
 import { supabase } from '../supabase';
 import { CHECKOUT_ANUAL, CHECKOUT_FUNDADOR_ANUAL, CHECKOUT_FUNDADOR_MENSAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_FUNDADOR_ANUAL, PRECO_FUNDADOR_MENSAL, PRECO_MENSAL } from '../config';
-import { useConvite } from './convite';
 import { Moeda } from '../components/ui/Moeda';
 import { waLink } from '../whatsapp';
 import { brl0 } from './datas';
@@ -93,15 +92,14 @@ function OfertasNormais() {
 
 /** Sem assinatura e fora do prazo: o app não abre, mas a pessoa leva os dados. Quem já usava vê o preço de fundador; quem chegou agora precisa do convite. */
 export function TelaAcesso({ novo = false }: { novo?: boolean }) {
-  const convite = useConvite();
   return (
-    <section className="ac-tela" aria-label={novo ? 'Acesso por convite' : 'Acesso encerrado'}>
+    <section className="ac-tela" aria-label={novo ? 'Escolha seu plano' : 'Acesso encerrado'}>
       <Moeda tamanho={64} />
       {novo ? (
         <>
-          <h1>{convite.valido ? 'Seu convite está liberado' : 'O Grana Séria é por convite'}</h1>
-          <p>{convite.valido ? 'Escolha o seu plano para começar.' : 'Entre na fila de espera. Quando chegar a sua vez, o convite vai para o seu WhatsApp, com prazo para aceitar.'}</p>
-          {convite.valido ? <OfertasNormais /> : <div className="ac-ofertas"><a className="gs-btn" href="/#fila">Entrar na fila de espera <ArrowRight size={16} aria-hidden="true" /></a></div>}
+          <h1>Escolha o seu plano para entrar</h1>
+          <p>O acesso é liberado assim que o pagamento for confirmado. Use o mesmo WhatsApp no checkout.</p>
+          <OfertasNormais />
         </>
       ) : (
         <>

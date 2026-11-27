@@ -167,7 +167,7 @@ export async function startSync(session: Session | null) {
   if (!supabase || !session) return;
   userId = session.user.id;
   await pull();
-  timer = window.setInterval(() => void push(), 4000);
+  timer = window.setInterval(() => { if (document.visibilityState === 'visible') void push(); }, 4000);
   document.addEventListener('visibilitychange', onVisible);
 }
 

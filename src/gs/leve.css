@@ -1,0 +1,43 @@
+/* ---------- Modo leve: corta o que pesa no painel sem mudar o layout ----------
+   Carregado por último (main.tsx). Só mexe em efeito decorativo: animação infinita, blur e vidro.
+   Para voltar ao visual antigo, apague o import './gs/leve.css' em src/main.tsx. */
+
+/* 1) Brilhos, flutuações e giros decorativos que ficam rodando para sempre */
+html.gs-app :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero, .pv-kpi.ouro)::after { animation: none !important; display: none !important; }
+html.gs-app .vd-blob,
+html.gs-app .lp-raios,
+html.gs-app .quote-seal,
+html.gs-app .cta-frame .cta-coin,
+html.gs-app .medallion-wrap,
+html.gs-app .medallion .ring-rotate,
+html.gs-app .sheen,
+html.gs-app .home-coin .medallion,
+html.gs-app .cm-moeda.gira .cm-moeda-giro,
+html.gs-app .fc-1, html.gs-app .fc-2, html.gs-app .fc-3 { animation: none !important; }
+html.gs-app .vd-blob { filter: none !important; display: none !important; }
+
+/* 2) Mascote e bolinhas "ao vivo" ficam paradas (o mascote só se mexe quando está falando/andando) */
+html.gs-app .as-mascote .as-orbe,
+html.gs-app .as-mascote .as-orbe i,
+html.gs-app .as-figura:not(.andando) .as-orb-btn,
+html.gs-app .as-orbe i,
+html.gs-app .midas-svg .corpo,
+html.gs-app .midas-svg .braco-e,
+html.gs-app .midas-svg .braco-d,
+html.gs-app .midas-svg .olho,
+html.gs-app .rv-vivo i,
+html.gs-app .cm-vivo i,
+html.gs-app .vd-ao-vivo i,
+html.gs-app .cm-sino b { animation: none !important; }
+
+/* 3) Vidro (backdrop-filter) só onde ele é necessário: barras fixas, menus e janelas.
+      Em cartões e blocos comuns ele custa caro a cada rolagem e ninguém percebe a falta. */
+html.gs-app :not(header):not(nav):not(dialog):not([role="dialog"]):not([aria-modal="true"]):not(.gs-modal):not(.modal):not([class*="barra"]):not([class*="lateral"]) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 4) Quem pede menos movimento no aparelho fica sem nenhuma animação contínua */
+@media (prefers-reduced-motion: reduce) {
+  html.gs-app *, html.gs-app *::before, html.gs-app *::after { animation-iteration-count: 1 !important; }
+}
