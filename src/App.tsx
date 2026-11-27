@@ -6,6 +6,8 @@ import { Routes, Route, useLocation, useNavigate, useParams, useSearchParams, Na
 const PrivacyPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.TermsPage })));
 const NotFoundPage = lazy(() => importarComRetry(() => import('./components/Pages')).then((m) => ({ default: m.NotFoundPage })));
+const FaqPage = lazy(() => importarComRetry(() => import('./gs/Faq')).then((m) => ({ default: m.Faq })));
+const ObrigadoPage = lazy(() => importarComRetry(() => import('./gs/Obrigado')).then((m) => ({ default: m.Obrigado })));
 import { HomePage } from './components/HomePage';
 import { AppShell } from './components/AppShell';
 import { Toaster } from './components/ui/Toast';
@@ -317,6 +319,8 @@ function App() {
           path="/ferramentas/:slug"
           element={<ToolRoute data={data} onClose={backToTools} onSwitch={openTool} onStart={startWizard} />}
         />
+        <Route path="/faq" element={<Titled title="Perguntas frequentes"><AppShell><Suspense fallback={null}><FaqPage /></Suspense></AppShell></Titled>} />
+        <Route path="/obrigado" element={<Titled title="Pagamento recebido"><AppShell><Suspense fallback={null}><ObrigadoPage /></Suspense></AppShell></Titled>} />
         <Route path="/politica-de-privacidade" element={<Titled title="Política de privacidade"><AppShell><Suspense fallback={null}><PrivacyPage /></Suspense></AppShell></Titled>} />
         <Route path="/termos-de-uso" element={<Titled title="Termos de uso"><AppShell><Suspense fallback={null}><TermsPage /></Suspense></AppShell></Titled>} />
         <Route path="/guias" element={<Titled title="Guias"><AppShell><Suspense fallback={null}><GuidesIndex /></Suspense></AppShell></Titled>} />

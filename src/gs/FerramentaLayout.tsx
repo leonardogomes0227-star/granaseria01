@@ -38,7 +38,16 @@ export function FerramentaLayout({ children }: { children: ReactNode }) {
           );
         })}
       </aside>
-      <section className="pv-p rv-ferr-painel rv-card" style={{ ['--i' as string]: 1 }}>{children}</section>
+      <section className="pv-p rv-ferr-painel rv-card" style={{ ['--i' as string]: 1 }}>
+        <nav className="gs-migalhas" aria-label="Você está em">
+          <Link to="/">Início</Link>
+          <span aria-hidden="true"> / </span>
+          <Link to="/ferramentas">{NOME_AREA[atual.area]}</Link>
+          <span aria-hidden="true"> / </span>
+          <span aria-current="page">{atual.titulo}</span>
+        </nav>
+        {children}
+      </section>
     </div>
   );
 }

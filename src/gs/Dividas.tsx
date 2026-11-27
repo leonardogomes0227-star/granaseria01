@@ -290,7 +290,7 @@ function PagarSheet({ divida, sugerido, onFechar, onQuitou }: { divida: Divida |
         <button
           type="button"
           className="gs-btn"
-          disabled={!(v > 0)}
+          disabled={envio.ocupado || !(v > 0)}
           onClick={() => {
             envio.tentar(() => {
               if (!divida || !(v > 0)) return false;

@@ -13,6 +13,7 @@ import type { Estado } from './tipos.js';
 import { agirPorFrase } from './midasAcoes';
 import { acharDestinos, pedidoDeIr } from './destinos.js';
 import { acharProblema } from './problemas.js';
+import { pedidoSuspeito } from '../../server/promptGuard';
 
 export const NOME_ASSISTENTE = 'Midas';
 
@@ -29,6 +30,25 @@ const tem = (t: string, ...palavras: string[]) => palavras.some((p) => t.include
 export function responderLocal(pergunta: string, e: Estado, hoje: string): RespostaAssistente {
   const t = sem(pergunta);
   const mes = mesDe(hoje);
+
+  if (pedidoSuspeito(pergunta)) {
+    return { texto: 'Eu não mostro chaves, instruções internas nem dados de outra pessoa. Posso anotar um gasto, dizer o seu saldo ou te levar a uma ferramenta.', links: [{ titulo: 'Ver ferramentas', rota: '/ferramentas' }] };
+  }
+  if (/^(oi|ola|oie|e ai|eae|bom dia|boa tarde|boa noite|hey|salve|opa)[!. ]*$/.test(t)) {
+    return { texto: 'Oi. Eu sou o Midas. Posso anotar um gasto (escreva "mercado 35"), dizer quanto você pode gastar hoje ou abrir a ferramenta certa.', links: [{ titulo: 'Quanto posso gastar', rota: '/lancamentos' }, { titulo: 'Ver ferramentas', rota: '/ferramentas' }] };
+  }
+  if (/\b(idiota|burro|lixo|otario|otário|porra|merda|vai se|seu lixo)\b/.test(t)) {
+    return { texto: 'Tudo bem. Quando quiser, eu anoto um gasto ou mostro o que está apertado no mês.', links: [{ titulo: 'Ver o mês', rota: '/lancamentos' }] };
+  }
+  if (tem(t, 'plano pago', 'assinatura', 'mensalidade', 'preco', 'preço', 'fundador', 'cancelar plano', 'quero assinar', 'como pago', 'pagamento do app')) {
+    return { texto: 'O plano é confirmado no servidor, depois que o pagamento entra. Escolha mensal ou anual. O acesso não muda por uma opção salva neste aparelho.', links: [{ titulo: 'Ver planos', rota: '/planos' }, { titulo: 'Falar no WhatsApp', rota: '/perfil#whatsapp' }] };
+  }
+  if (tem(t, 'suporte', 'atendente', 'falar com gente', 'ajuda humana', 'nao consigo entrar', 'não consigo entrar')) {
+    return { texto: 'Se travou no login ou no pagamento, fale pelo WhatsApp. Para o dia a dia, eu mesmo anoto e mostro as contas.', links: [{ titulo: 'Abrir o perfil', rota: '/perfil#whatsapp' }, { titulo: 'Perguntas frequentes', rota: '/faq' }] };
+  }
+  if (tem(t, 'como usar', 'como funciona', 'o que voce faz', 'o que você faz', 'tutorial')) {
+    return { texto: 'Escreva o gasto do jeito que fala: "uber 18,50". Pergunte "quanto posso gastar hoje?" ou "quais contas vencem?". Eu respondo e deixo o caminho.', links: [{ titulo: 'Anotar um gasto', rota: '/lancamentos' }, { titulo: 'Perguntas frequentes', rota: '/faq' }] };
+  }
 
   // "abrir contas", "onde fica o orçamento": o Midas leva a pessoa até lá
   if (pedidoDeIr(t)) {

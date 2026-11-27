@@ -21,7 +21,7 @@ export function BaixaSheet({ gasto, mes, onFechar }: { gasto: GastoFixo | null; 
         <button
           type="button"
           className="gs-btn"
-          disabled={!(valor > 0)}
+          disabled={envio.ocupado || !(valor > 0)}
           onClick={() => {
             envio.tentar(() => {
               if (!gasto || !darBaixa(gasto.id, mes, valor)) return false;

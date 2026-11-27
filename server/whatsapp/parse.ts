@@ -29,7 +29,7 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
     name: 'Alimentação',
     emoji: '🍽️',
     keywords: [
-      'mercado', 'supermercado', 'ifood', 'almoço', 'almoco', 'janta', 'jantar', 'lanche', 'padaria', 'restaurante',
+      'mercado', 'mercad', 'supermercado', 'ifood', 'ifod', 'almoço', 'almoco', 'janta', 'jantar', 'lanche', 'padaria', 'restaurante',
       'comida', 'pizza', 'café', 'cafe', 'hamburguer', 'açougue', 'acougue', 'feira', 'hortifruti', 'marmita', 'delivery', 'sorvete', 'doce',
       'almocei', 'jantei', 'lanchei', 'comi', 'pão', 'pao', 'açaí', 'acai', 'bebida', 'refrigerante', 'salgado', 'lanchonete', 'churrasco', 'atacadão', 'atacadao', 'quitanda', 'rappi',
     ],
@@ -38,7 +38,7 @@ export const CATEGORIES: { name: string; emoji: string; keywords: string[] }[] =
     name: 'Transporte',
     emoji: '🚗',
     keywords: [
-      'uber', 'gasolina', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
+      'uber', 'uberr', 'gasolina', 'gasosa', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
       'estacionamento', 'pedágio', 'pedagio', 'taxi', 'táxi', 'passagem', 'oficina', 'mecânico', 'mecanico', 'ipva', 'posto',
       'abasteci', 'carro', 'moto', 'pneu', 'revisão', 'revisao', 'lava jato', 'lavagem', '99', 'bilhete único', 'cartão de transporte',
     ],
@@ -232,8 +232,24 @@ function parseIncome(rawText: string): Command | null {
 
 // "cinquenta reais no mercado": o valor escrito por extenso (só os redondos, e só quando vem com reais/conto/pila)
 const POR_EXTENSO: Record<string, number> = { dez: 10, quinze: 15, vinte: 20, trinta: 30, quarenta: 40, cinquenta: 50, sessenta: 60, setenta: 70, oitenta: 80, noventa: 90, cem: 100, duzentos: 200, trezentos: 300, quatrocentos: 400, quinhentos: 500 };
+const UNIDADE: Record<string, number> = { um: 1, uma: 1, dois: 2, duas: 2, tres: 3, quatro: 4, cinco: 5, seis: 6, sete: 7, oito: 8, nove: 9 };
+
 export function expandWords(text: string): string {
-  return text.replace(/\b([a-zà-ú]+)(\s+(?:reais|real|conto|contos|pila)\b)/gi, (tudo, palavra: string, resto: string) => {
+  const mil = text
+    .replace(/\b(um|uma)\s+mil\b/gi, '1000')
+    .replace(/\b(dois|duas)\s+mil\b/gi, '2000')
+    .replace(/\b(tr[eê]s)\s+mil\b/gi, '3000')
+    .replace(/\b(quatro)\s+mil\b/gi, '4000')
+    .replace(/\b(cinco)\s+mil\b/gi, '5000');
+  const composto = mil.replace(
+    /\b(vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)\s+e\s+(um|uma|dois|duas|tr[eê]s|quatro|cinco|seis|sete|oito|nove)(\s+(?:reais|real|conto|contos|pila)\b)/gi,
+    (tudo, dezena: string, unidade: string, resto: string) => {
+      const a = POR_EXTENSO[normalize(dezena)];
+      const b = UNIDADE[normalize(unidade).replace('ê', 'e')];
+      return a && b ? `${a + b}${resto}` : tudo;
+    },
+  );
+  return composto.replace(/\b([a-zà-ú]+)(\s+(?:reais|real|conto|contos|pila)\b)/gi, (tudo, palavra: string, resto: string) => {
     const n = POR_EXTENSO[normalize(palavra)];
     return n ? `${n}${resto}` : tudo;
   });
@@ -251,7 +267,7 @@ export function parseMessage(input: string): Command {
   const text = expandWords(input.trim());
   const t = normalize(text).replace(/[!?.]+$/, '');
 
-  if (/^(oi|ola|menu|ajuda|help|comandos|inicio|comecar|como funciona|como usar|\?)$/.test(t)) return { kind: 'help' };
+  if (/^(oi|ola|oie|e ai|eae|opa|salve|hey|bom dia|boa tarde|boa noite|menu|ajuda|help|comandos|inicio|comecar|como funciona|como usar|\?)$/.test(t)) return { kind: 'help' };
   if (/^(obrigad[oa]|muito obrigad[oa]|brigad[oa]|valeu|vlw|show|top|massa|beleza|blz|ok|okay|certo|perfeito|otimo|tmj|👍|🙏|❤️|😊|🙂|👏)+$/u.test(t)) return { kind: 'thanks' };
   if (/^(k{2,}|(ha){2,}h?|(rs){1,}|(he){2,}|tchau|ate mais|ate logo|ate amanha|falou|fui|boa|show de bola|legal|entendi|combinado|ta bom|tudo bem|de nada|😂|🤣|😅)+$/u.test(t)) return { kind: 'thanks' };
   if (/^(corrigir|corrige|corrija|quero corrigir|como corrijo|como corrigir|editar|alterar|mudar( o)? valor)$/.test(t)) return { kind: 'correct', amount: null };

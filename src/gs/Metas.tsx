@@ -98,7 +98,7 @@ export function NovaMeta({ aberta, onFechar }: { aberta: boolean; onFechar: () =
         <CampoDinheiro rotulo="Quanto você quer juntar?" valor={alvo} onChange={setAlvo} erro={erro && nome.trim() && !(alvo > 0) ? erro : undefined} />
         <Campo rotulo="Até quando? (opcional)" valor={prazo} onChange={setPrazo} tipo="date" />
         {erro && nome.trim() && alvo > 0 && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
-        <button type="submit" className="gs-btn cheio">Criar meta</button>
+        <button type="submit" className="gs-btn cheio" disabled={envio.ocupado}>Criar meta</button>
       </form>
     </Folha>
   );
@@ -127,7 +127,7 @@ function GuardarMeta({ meta, onFechar }: { meta: Meta | null; onFechar: () => vo
       <form onSubmit={salvar}>
         <CampoDinheiro rotulo="Quanto você guardou agora?" valor={valor} onChange={setValor} grande autoFocus erro={erro || undefined} />
         <p className="gs-nota">Esse valor sai do seu "pode gastar", porque já tem destino.</p>
-        <button type="submit" className="gs-btn cheio">Guardar</button>
+        <button type="submit" className="gs-btn cheio" disabled={envio.ocupado}>Guardar</button>
       </form>
     </Folha>
   );
