@@ -164,17 +164,22 @@ function PuxarParaAtualizar() {
       if (!ativo) return;
       if (window.scrollY > 2) {
         ativo = false;
-        raiz.classList.remove('gs-puxando');
+        dy = 0;
+        raiz.classList.remove('gs-puxando', 'gs-mola');
         raiz.style.setProperty('--gs-puxar', '0px');
         return;
       }
       const d = (ev.touches[0]?.clientY ?? y0) - y0;
-      if (d <= 0) {
-        dy = 0;
-        raiz.style.setProperty('--gs-puxar', '0px');
+      // um toque curto para baixo no topo não pode prender a rolagem: só vira puxão depois de um gesto claro
+      if (d < 28) {
+        if (dy !== 0) {
+          dy = 0;
+          raiz.classList.remove('gs-puxando', 'gs-mola');
+          raiz.style.setProperty('--gs-puxar', '0px');
+        }
         return;
       }
-      dy = Math.min(84, d * 0.42);
+      dy = Math.min(84, (d - 28) * 0.7);
       raiz.classList.add('gs-mola', 'gs-puxando');
       raiz.style.setProperty('--gs-puxar', `${dy}px`);
     };
@@ -185,7 +190,7 @@ function PuxarParaAtualizar() {
       dy = 0;
       raiz.classList.remove('gs-puxando');
       raiz.style.setProperty('--gs-puxar', '0px');
-      if (soltou > 54) {
+      if (soltou > 40) {
         raiz.classList.remove('gs-refresco');
         void raiz.offsetWidth;
         raiz.classList.add('gs-refresco');
@@ -194,7 +199,7 @@ function PuxarParaAtualizar() {
       timer = window.setTimeout(() => {
         raiz.classList.remove('gs-mola', 'gs-refresco');
         raiz.style.removeProperty('--gs-puxar');
-      }, soltou > 54 ? 700 : 420);
+      }, soltou > 40 ? 700 : 420);
     };
     window.addEventListener('touchstart', comecar, { passive: true });
     window.addEventListener('touchmove', mover, { passive: true });

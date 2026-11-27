@@ -40,3 +40,37 @@ html.gs-app .pv-kpi.ouro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 
 
 @media (prefers-reduced-motion: reduce) { .pv-kpi.ouro::after { display: none; } }
 .as-msg p { white-space: pre-line; }
+
+/* Enquanto o dedo arrasta, o que fica animando para sempre pausa. Só transform e opacidade, e mesmo assim só quando a tela está parada. */
+html.gs-rolando :is(.as-orbe, .as-orbe::after, .as-orbe i, .lx-orbe i, .pv-kpi.ouro::after, .cm-vivo i, .rv-vivo i, .cm-sino b, .midas-svg .corpo, .midas-svg .olho, .midas-svg .braco-e, .midas-svg .braco-d) {
+  animation-play-state: paused !important;
+}
+
+/* Celular: o desfoque de fundo no que fica fixo (topo, barra, folha) redesenha a página inteira a cada quadro. Fundo opaco no lugar. */
+@media (max-width: 900px) {
+  html { scroll-behavior: auto !important; }
+  html.gs-app::after { content: none !important; }
+  html.gs-app :is(.gs-topo, .cm-topo, .cm-abas, .gs-abas, .as-painel, .as-fundo, .gs-folha, .cm-folha, .gs-fundo) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html.gs-app .gs-topo { background: #F6F1E6 !important; }
+  html.gs-app .cm-topo { background: #F4F1EA !important; }
+  html.gs-app .cm-abas, html.gs-app .gs-abas { background: #FFFDF8 !important; }
+  html.gs-app .as-painel, html.gs-app .gs-folha { background: #FBF8F2 !important; }
+  html.gs-app[data-tema="escuro"] .cm-topo,
+  html.gs-app[data-tema="escuro"] .cm-abas { background: #141210 !important; }
+  html.gs-app[data-tema="escuro"] .as-painel,
+  html.gs-app[data-tema="escuro"] .gs-folha { background: #171512 !important; }
+  .pv-halo { display: none !important; }
+  .pv { background-image: radial-gradient(420px 240px at 100% 0%, rgba(217, 174, 85, .14), transparent 70%); }
+  html.gs-app .gs-principal :is(h1, .gs-titulo) { animation-name: esm-entra !important; }
+  .cm-vivo i, .rv-vivo i, .cm-sino b, .pv-kpi.ouro::after { animation: none !important; }
+  .as-mascote { will-change: auto; }
+  .as-mascote .as-orbe, .as-orbe { animation: none !important; }
+  .as-mascote .as-orbe::after { display: none !important; }
+  .pn-secao, .lx-sec, .lx-seg, .lx-fim {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 560px;
+  }
+}

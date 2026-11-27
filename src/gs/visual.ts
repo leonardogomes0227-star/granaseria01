@@ -14,6 +14,21 @@ export function useVisualDoApp(forcar?: boolean) {
   const { pathname } = useLocation();
   const on = forcar ?? rotaDoApp(pathname);
   useEffect(() => {
+    const raiz = document.documentElement;
+    let timer = 0;
+    const aoRolar = () => {
+      raiz.classList.add('gs-rolando');
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => raiz.classList.remove('gs-rolando'), 140);
+    };
+    window.addEventListener('scroll', aoRolar, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', aoRolar);
+      window.clearTimeout(timer);
+      raiz.classList.remove('gs-rolando');
+    };
+  }, []);
+  useEffect(() => {
     const el = document.documentElement;
     el.classList.toggle('gs-app', on);
     const icone = document.querySelector<HTMLLinkElement>('link[rel="icon"]');

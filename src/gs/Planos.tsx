@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
-import { CHECKOUT_ANUAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_MENSAL, checkoutPronto } from '../config';
+import { CHECKOUT_ANUAL, CHECKOUT_FUNDADOR_ANUAL, CHECKOUT_FUNDADOR_MENSAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_FUNDADOR_ANUAL, PRECO_FUNDADOR_MENSAL, PRECO_MENSAL, checkoutPronto } from '../config';
 import { waLink } from '../whatsapp';
 import { brl0 } from './datas';
 import { Titulo } from './ui';
@@ -43,8 +43,33 @@ function Botao({ c, travado }: { c: Cartao; travado?: boolean }) {
   return <a href={waLink(`Oi! Quero entrar na lista de acesso do plano ${c.nome.toLowerCase()} da Grana Séria.`)} target="_blank" rel="noopener noreferrer" className="lp-btn ouro" style={{ width: '100%' }}>Entrar na lista de acesso</a>;
 }
 
+const FUNDADOR: { id: string; nome: string; preco: string; detalhe: string; url: string; destaque?: string }[] = [
+  { id: 'mensal', nome: 'Fundador mensal', preco: brl0(PRECO_FUNDADOR_MENSAL), detalhe: 'por mês', url: CHECKOUT_FUNDADOR_MENSAL, destaque: 'Preço de quem entra agora' },
+  { id: 'anual', nome: 'Fundador anual', preco: brl0(PRECO_FUNDADOR_ANUAL), detalhe: 'por ano, dois meses de cortesia', url: CHECKOUT_FUNDADOR_ANUAL },
+];
+
+/** Preço de fundador, com os links de pagamento que já existem. Usado na capa e em /planos. */
+export function CartoesFundador({ limite }: { limite?: number }) {
+  const lista = limite ? NO_PAGO.slice(0, limite) : NO_PAGO;
+  return (
+    <div className="gs-planos">
+      {FUNDADOR.map((c) => (
+        <article key={c.id} className={`gs-plano${c.id === 'mensal' ? ' dest' : ''}`} aria-label={c.nome}>
+          {c.destaque && <span className="gs-plano-selo">{c.destaque}</span>}
+          <h3>{c.nome}</h3>
+          <p className="gs-plano-preco"><b>{c.preco}</b> <small>{c.detalhe}</small></p>
+          <ul>
+            {lista.map((t) => <li key={t}><Check size={16} aria-hidden="true" /><span>{t}</span></li>)}
+          </ul>
+          <a href={c.url} target="_blank" rel="noopener noreferrer" className="lp-btn ouro">Assinar {c.id === 'mensal' ? 'mensal' : 'anual'}</a>
+        </article>
+      ))}
+    </div>
+  );
+}
+
 /** Os três cartões. Usado na página /planos e na capa. */
-export function CartoesPlanos({ semNota = false, travado = false }: { semNota?: boolean; travado?: boolean }) {
+export function CartoesPlanos({ semNota = false, travado = false, limite }: { semNota?: boolean; travado?: boolean; limite?: number }) {
   const aberto = CARTOES.some((c) => checkoutPronto(c.id === 'mensal' ? CHECKOUT_MENSAL : CHECKOUT_ANUAL));
   return (
     <>
@@ -55,7 +80,7 @@ export function CartoesPlanos({ semNota = false, travado = false }: { semNota?: 
             <h3>{c.nome}</h3>
             <p className="gs-plano-preco"><b>{c.preco}</b> <small>{c.detalhe}</small></p>
             <ul>
-              {c.itens.map((t) => <li key={t}><Check size={16} aria-hidden="true" /><span>{t}</span></li>)}
+              {(limite ? c.itens.slice(0, limite) : c.itens).map((t) => <li key={t}><Check size={16} aria-hidden="true" /><span>{t}</span></li>)}
               {c.breve?.map((t) => <li key={t} className="breve"><Check size={16} aria-hidden="true" /><span>{t} <em>(em breve)</em></span></li>)}
             </ul>
             <Botao c={c} travado={travado} />
@@ -73,6 +98,10 @@ export function Planos() {
     <div className="pl-pagina">
       <Titulo titulo="Planos" sub={convite.valido ? `Seu convite está liberado. Acesso completo ao Grana Séria: ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.` : 'O Grana Séria abre vagas por convite, em ondas.'} />
       {!convite.valido && <p className="gs-nota">Entre na fila de espera e, quando chegar a sua vez, o convite vai para o seu WhatsApp. <a href="/#fila">Entrar na fila</a></p>}
+      <h2 className="gs-h2">Preço de fundador</h2>
+      <p className="gs-sub">Para quem entra agora. O valor fica este enquanto a assinatura estiver ativa.</p>
+      <CartoesFundador />
+      <h2 className="gs-h2">Preço de lançamento</h2>
       <CartoesPlanos semNota travado={!convite.valido} />
       <p className="gs-nota">Conteúdo educativo, não é consultoria financeira. Veja os <Link to="/termos-de-uso">termos de uso</Link> e a <Link to="/politica-de-privacidade">política de privacidade</Link>.</p>
     </div>

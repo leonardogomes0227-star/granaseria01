@@ -32,8 +32,8 @@ function AberturaRapida() {
   return (
     <section role="status" aria-label="Carregando" style={{ marginInline: 'calc(50% - 50vw)', padding: 'clamp(56px, 10vw, 120px) 20px', minHeight: '78vh', background: 'radial-gradient(900px 520px at 88% -8%, rgba(217,174,85,.30), transparent 70%), #14110C', color: '#F7F2E7' }}>
       <div style={{ maxWidth: 1180, margin: '0 auto' }}>
-        <h1 style={{ margin: 0, maxWidth: 760, font: '300 clamp(40px, 7vw, 84px)/1 Outfit, Inter, sans-serif', letterSpacing: '-.025em', color: '#F7F2E7' }}>
-          Seu dinheiro some todo mês. <span style={{ color: '#E8C770' }}>Descubra para onde.</span>
+        <h1 style={{ margin: 0, maxWidth: 760, font: '300 clamp(40px, 7vw, 84px)/1.02 Outfit, Inter, sans-serif', letterSpacing: '-.03em', color: '#F6F1E6' }}>
+          Veja para onde vai cada real do seu mês. <span style={{ color: '#E4C57A' }}>E o que fazer agora.</span>
         </h1>
       </div>
     </section>
