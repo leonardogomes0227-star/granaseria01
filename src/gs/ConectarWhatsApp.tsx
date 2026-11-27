@@ -16,7 +16,7 @@ const mascarar = (p: string) => {
   return d.length >= 12 ? `(${d.slice(2, 4)}) •••••-${d.slice(-4)}` : p;
 };
 
-export function ConectarWhatsApp() {
+export function ConectarWhatsApp({ destaque = false }: { destaque?: boolean }) {
   const session = useSession();
   const [linha, setLinha] = useState<Linha | null>(null);
   const [ocupado, setOcupado] = useState(false);
@@ -58,6 +58,8 @@ export function ConectarWhatsApp() {
     setOcupado(false);
   };
 
+  // no topo do painel (destaque) só aparece enquanto falta conectar
+  if (destaque && (conectadoPorZap || !session || !supabase || linha === null || linha.phone)) return null;
   if (conectadoPorZap) {
     return <p className="cm-mudo" style={{ margin: '0 0 14px' }}><Check size={15} aria-hidden="true" style={{ verticalAlign: '-3px' }} /> <b>WhatsApp conectado</b> a este painel. O que você anotar lá aparece aqui.</p>;
   }
@@ -68,7 +70,7 @@ export function ConectarWhatsApp() {
   }
   const link = codigoValido && linha.link_code && WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`VINCULAR ${linha.link_code}`)}` : null;
   return (
-    <div style={{ margin: '0 0 16px' }}>
+    <div style={destaque ? { margin: '0 0 18px', padding: '16px 18px', borderRadius: 20, border: '1px solid #C5A059', background: '#FFF8E6' } : { margin: '0 0 16px' }}>
       <p className="cm-mudo" style={{ margin: '0 0 8px' }}><b>Conecte o seu WhatsApp</b> a este painel para anotar gastos por mensagem e receber os lembretes.</p>
       {codigoValido && linha.link_code ? (
         <>

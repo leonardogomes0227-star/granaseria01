@@ -20,6 +20,7 @@ import { waLink } from '../whatsapp';
 import { FERRAMENTAS } from './registroFerramentas';
 import { ICONES } from './base';
 import { PainelVideo } from './PainelVideo';
+import { ConectarWhatsApp } from './ConectarWhatsApp';
 import { compartilharMes } from './cartaoDoMes';
 import { patrimonioGuardado, reservaMeta } from './selectores';
 import { painelVidro } from './painelVidro';
@@ -173,6 +174,7 @@ export function Caderno() {
         <BarraPerguntar />
         <button type="button" className="pn-redondo" onClick={() => definirOculto(!oculto)} aria-pressed={oculto} aria-label={oculto ? 'Mostrar valores' : 'Ocultar valores'}>{oculto ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}</button>
       </header>
+      <ConectarWhatsApp destaque />
       <PainelVideo nome={nome} onSaldo={() => setCalc(true)} onCompartilhar={() => void compartilhar()} onPagar={(id) => setBaixa(id)} />
       </div>
 
