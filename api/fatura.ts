@@ -12,6 +12,10 @@ import { analyzeFatura, MAX_BASE64, MEDIA_TYPES, type MediaType } from '../serve
 import { bumpUsage, phoneFromWebLink } from '../server/whatsapp/hubdb.js';
 import { analyzeReceipt } from '../server/receipt.js';
 import { todaySP } from '../src/coachChat/months.js';
+import { conteudoConfere } from '../server/arquivo.js';
+import { exigirPlano } from '../server/acesso/exigir.js';
+import { contarLimite, excedeuLimite, ipDoCliente, recusarOrigem } from '../server/rede.js';
+import { alertaUso } from '../server/logSeguro.js';
 
 const MONTHLY_LIMIT = Number(process.env.FATURA_MONTHLY_LIMIT || 5);
 const COMPROVANTE_DAILY_LIMIT = Number(process.env.COMPROVANTE_DAILY_LIMIT || 20);
@@ -38,12 +42,23 @@ async function quem(request: Request): Promise<string | null> {
 
 /** "Anotar por foto": UM pagamento (cupom, nota, pix). A pessoa confere no app antes de salvar; o arquivo não é guardado. */
 async function comprovante(request: Request, body: { mediaType?: string; data?: string }): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   if (!process.env.ANTHROPIC_API_KEY) return json({ error: 'A leitura por foto ainda não foi ativada no site. Mande a foto pelo WhatsApp ou anote o valor.' }, 503);
+  const plano = await exigirPlano(request);
+  if (plano) return plano;
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`foto:${ip}`, 30, 60 * 60 * 1000)) {
+    alertaUso('foto');
+    return json({ error: 'Muitas fotos agora. Espere um pouco.' }, 429);
+  }
+  contarLimite(`foto:${ip}`, 60 * 60 * 1000);
   const chave = await quem(request);
   if (!chave) return json({ error: 'Entre na sua conta para ler a foto.' }, 401);
   const mediaType = body.mediaType as MediaType;
   if (!MEDIA_TYPES.includes(mediaType) || typeof body.data !== 'string' || !body.data) return json({ error: 'Mande uma foto (JPG, PNG) ou um PDF.' }, 400);
   if (body.data.length > MAX_BASE64) return json({ error: 'Foto grande demais (máximo 3 MB).' }, 413);
+  if (!conteudoConfere(mediaType, body.data)) return json({ error: 'Esse arquivo não parece uma foto ou um PDF.' }, 400);
   if (!(await bumpUsage(chave, `comprovante:${todaySP()}`, COMPROVANTE_DAILY_LIMIT).catch(() => false))) return json({ error: 'Por hoje chega de fotos. Amanhã tem mais; por enquanto, anote o valor.' }, 429);
   const r = await analyzeReceipt(mediaType, body.data);
   if (!r.ok) return json({ error: r.error }, 422);
@@ -53,6 +68,8 @@ async function comprovante(request: Request, body: { mediaType?: string; data?: 
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   let body: { mediaType?: string; data?: string; tipo?: string };
   try {
     body = await request.json();
@@ -61,6 +78,14 @@ export async function POST(request: Request): Promise<Response> {
   }
   if (body.tipo === 'comprovante') return comprovante(request, body);
   if (!process.env.ANTHROPIC_API_KEY || !accountsConfigured()) return json({ error: 'O leitor de fatura ainda não foi ativado.' }, 503);
+  const plano = await exigirPlano(request);
+  if (plano) return plano;
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`fatura:${ip}`, 15, 60 * 60 * 1000)) {
+    alertaUso('fatura');
+    return json({ error: 'Muitas leituras agora. Espere um pouco.' }, 429);
+  }
+  contarLimite(`fatura:${ip}`, 60 * 60 * 1000);
 
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   const userId = token ? await userIdFromToken(token) : null;
@@ -70,6 +95,7 @@ export async function POST(request: Request): Promise<Response> {
     return json({ error: 'Mande um PDF ou uma foto (JPG, PNG).' }, 400);
   }
   if (body.data.length > MAX_BASE64) return json({ error: 'Arquivo grande demais (máximo 3 MB).' }, 413);
+  if (!conteudoConfere(mediaType, body.data)) return json({ error: 'Esse arquivo não parece um PDF ou uma foto.' }, 400);
 
   // limite por mês, contado no servidor
   const month = new Date().toISOString().slice(0, 7);

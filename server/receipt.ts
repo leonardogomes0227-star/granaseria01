@@ -3,6 +3,7 @@
 // O arquivo não é guardado: vai pra API do Claude, a resposta volta e pronto.
 
 import Anthropic from '@anthropic-ai/sdk';
+import { conteudoConfere } from './arquivo.js';
 import { CATEGORIES, OTHER_CATEGORY } from './whatsapp/parse.js';
 import type { MediaType } from './fatura.js';
 
@@ -50,6 +51,7 @@ Não invente: o que não aparece fica vazio (ou 0). Se for fatura de cartão ou 
 
 /** Lê o documento e devolve o pagamento, ou um erro já em português. */
 export async function analyzeReceipt(mediaType: MediaType, base64: string): Promise<ReceiptOutcome> {
+  if (!conteudoConfere(mediaType, base64)) return { ok: false, error: 'Esse arquivo não parece uma foto ou um PDF.' };
   const file: Anthropic.Beta.BetaContentBlockParam =
     mediaType === 'application/pdf'
       ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }

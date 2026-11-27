@@ -12,6 +12,7 @@ import { PLAN_KEYS, RESET_ID, RESET_KEY, resetIfOld } from '../src/reset.js';
 import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { foiMantido, listarCopias, protegerEstado } from '../server/protegerEstado.js';
 import { pesoDoEstado } from '../src/gs/pesoEstado.js';
+import { recusarOrigem } from '../server/rede.js';
 
 const MAX_BYTES = 500_000; // o estado do app novo cresce com lançamentos e conversa de investimentos
 const PRIVADO = { 'Cache-Control': 'no-store' };
@@ -107,6 +108,8 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function PUT(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   const phone = await auth(request);
   if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   const raw = await request.text();
@@ -140,6 +143,8 @@ export async function PUT(request: Request): Promise<Response> {
  * { event: "tool:site-debts" } quando abre uma ferramenta, e { feedback: { tool, kind: "up"|"down", note? } }.
  */
 export async function POST(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   if (new URL(request.url).searchParams.get('acao') === 'vincular') return criarVinculo(request);
   const phone = await auth(request);
   if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
@@ -163,6 +168,8 @@ export async function POST(request: Request): Promise<Response> {
 
 /** "Limpar tudo" (?manter=1) e "Apagar conta e desconectar" do site (Meus dados): remove a cópia guardada pelo número (LGPD) e esvazia o estado da conta vinculada, se houver. */
 export async function DELETE(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   const phone = await auth(request);
   if (!phone) return json({ error: 'Link inválido ou expirado. Peça um novo no WhatsApp.' }, 401);
   try {

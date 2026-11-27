@@ -41,6 +41,7 @@ async function ok(res: Response, what: string) {
 }
 
 export async function findUserByPhone(phone: string): Promise<UserRow | null> {
+  if (!/^\d{10,15}$/.test(phone)) return null;
   const res = await rest(`user_state?${new URLSearchParams({ phone: `eq.${phone}`, select: COLS, limit: '1' })}`);
   await ok(res, 'select');
   const [row] = (await res.json()) as UserRow[];
@@ -48,6 +49,7 @@ export async function findUserByPhone(phone: string): Promise<UserRow | null> {
 }
 
 export async function findUserById(userId: string): Promise<UserRow | null> {
+  if (!UUID.test(userId)) return null;
   const res = await rest(`user_state?${new URLSearchParams({ user_id: `eq.${userId}`, select: COLS, limit: '1' })}`);
   await ok(res, 'select');
   const [row] = (await res.json()) as UserRow[];
@@ -89,6 +91,7 @@ export async function linkPhoneByCode(code: string, phone: string): Promise<bool
 }
 
 export async function updateUser(userId: string, patch: Partial<Omit<UserRow, 'user_id'>>): Promise<void> {
+  if (!UUID.test(userId)) throw new Error('usuário inválido');
   await ok(await rest(`user_state?user_id=eq.${userId}`, { method: 'PATCH', body: JSON.stringify(patch) }), 'update');
 }
 

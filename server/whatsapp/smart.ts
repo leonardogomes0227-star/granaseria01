@@ -8,6 +8,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { CATEGORIES, OTHER_CATEGORY, type Command } from './parse.js';
+import { RESPOSTA_SEGURA, respostaVazouSegredo, textoParaModelo } from '../promptGuard.js';
 
 const METHOD_NAMES = ['Pix', 'Débito', 'Crédito', 'Dinheiro', 'Boleto', 'Vale', 'Cartão'];
 
@@ -169,11 +170,12 @@ export function sanitize(raw: unknown): SmartResult | null {
     if (Object.keys(fix).length === 0) fix = null;
   }
 
+  const reply = typeof r.reply === 'string' ? r.reply.trim().slice(0, 1200) : '';
   return {
-    reply: typeof r.reply === 'string' ? r.reply.trim().slice(0, 1200) : '',
-    expenses,
-    undoLast: r.undo_last === true,
-    fix,
+    reply: respostaVazouSegredo(reply) ? RESPOSTA_SEGURA : reply,
+    expenses: respostaVazouSegredo(reply) ? [] : expenses,
+    undoLast: respostaVazouSegredo(reply) ? false : r.undo_last === true,
+    fix: respostaVazouSegredo(reply) ? null : fix,
   };
 }
 
@@ -194,7 +196,7 @@ export async function askClaude(text: string, ctx: SmartContext): Promise<SmartR
     messages: [
       {
         role: 'user',
-        content: `<contexto>\n${contextText(ctx)}\n</contexto>\n\n<mensagem>\n${text.slice(0, MAX_TEXT)}\n</mensagem>`,
+        content: `<contexto>\n${contextText(ctx)}\n</contexto>\n\n<mensagem>\n${textoParaModelo(text, MAX_TEXT)}\n</mensagem>`,
       },
     ],
   });
