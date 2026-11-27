@@ -29,6 +29,7 @@ import { limparMesesFuturos } from '../src/lib/mesesFuturos.js';
 import { transcribe, transcribeConfigured } from '../server/transcribe.js';
 import { planBudgets } from '../src/plan.js';
 import { accountsConfigured, findUserByPhone, linkPhoneByCode, markProcessed, saveState, updateUser, type StateSnapshot, type UserRow } from '../server/account/db.js';
+import { avisoDeBloqueio } from '../server/acesso/exigir.js';
 
 
 const AI_DAILY_LIMIT = Number(process.env.WHATSAPP_AI_DAILY_LIMIT || 40);
@@ -192,6 +193,12 @@ async function reply(msg: { id: string; from: string; text: string; profileName?
   if (!user && !isAllowed(msg.from, process.env.ALLOWED_NUMBERS)) {
     console.warn(`WhatsApp: mensagem ignorada, número final ${phone.slice(-4)} não vinculado e fora de ALLOWED_NUMBERS`);
     return null;
+  }
+
+  const bloqueio = await avisoDeBloqueio(phone, null);
+  if (bloqueio) {
+    if (!(await markProcessed(msg.id))) return null;
+    return text(bloqueio);
   }
 
   await trackEvent(phone, 'msg'); // alimenta o painel (pessoas ativas, dias de uso); falha em silêncio

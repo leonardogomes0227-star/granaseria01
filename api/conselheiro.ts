@@ -15,6 +15,10 @@ import { contextoDoCoach } from '../server/coachContexto.js';
 import { todaySP } from '../src/coachChat/months.js';
 import { migrar } from '../src/gs/migracao.js';
 import { TOOLS, executarTool, type Coleta } from '../server/coachTools.js';
+import { exigirPlano } from '../server/acesso/exigir.js';
+import { contarLimite, excedeuLimite, ipDoCliente, recusarOrigem } from '../server/rede.js';
+import { alertaUso } from '../server/logSeguro.js';
+import { respostaVazouSegredo, RESPOSTA_SEGURA, textoParaModelo } from '../server/promptGuard.js';
 
 const MAX_RODADAS = 5; // idas e voltas com ferramentas por pergunta
 
@@ -58,7 +62,17 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
+  const origem = recusarOrigem(request);
+  if (origem) return origem;
   if (!process.env.ANTHROPIC_API_KEY) return json({ error: 'A conversa com o coach ainda não foi ativada neste app. As recomendações calculadas continuam funcionando.' }, 503);
+  const plano = await exigirPlano(request);
+  if (plano) return plano;
+  const ip = ipDoCliente(request);
+  if (excedeuLimite(`coach:${ip}`, 40, 60 * 60 * 1000)) {
+    alertaUso('coach');
+    return json({ error: 'Muitas mensagens agora. Espere um pouco e tente de novo.' }, 429);
+  }
+  contarLimite(`coach:${ip}`, 60 * 60 * 1000);
   const quem = await pessoa(request);
   if (!quem) return json({ error: 'Entre na sua conta (ou pelo link do WhatsApp) para conversar com o coach.' }, 401);
 
@@ -70,7 +84,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return json({ error: 'Mensagem inválida.' }, 400);
   }
-  const question = (body.question ?? '').trim().slice(0, 500);
+  const question = textoParaModelo((body.question ?? '').trim(), 500);
   if (!question) return json({ error: 'Escreva sua pergunta.' }, 400);
 
   if (!(await bumpUsage(quem.chave, `conselheiro:${todaySP()}`, DAILY_LIMIT).catch(() => false))) {
@@ -135,11 +149,12 @@ export async function POST(request: Request): Promise<Response> {
       });
     }
     if (!response || response.stop_reason === 'refusal') return json({ reply: 'Sobre isso eu não consigo te ajudar. Me pergunta algo sobre o seu dinheiro e o seu plano.' });
-    const reply = response.content
+    const bruto = response.content
       .filter((b): b is Anthropic.TextBlock => b.type === 'text')
       .map((b) => b.text)
       .join('\n')
       .trim();
+    const reply = respostaVazouSegredo(bruto) ? RESPOSTA_SEGURA : bruto;
     return json({ reply: reply || (coleta.acoes.length ? 'Deixei uma sugestão aqui embaixo. Você decide.' : 'Não consegui responder agora. Tenta de novo daqui a pouco.'), acoes: coleta.acoes, impactos: coleta.impactos });
   } catch (err) {
     if (err instanceof Anthropic.RateLimitError) return json({ error: 'Muita gente conversando agora. Tenta de novo em um minuto.' }, 503);

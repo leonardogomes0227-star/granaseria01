@@ -11,6 +11,7 @@ import { saveProfile } from '../server/whatsapp/hubdb.js';
 import { accountsConfigured, listUsers, saveState } from '../server/account/db.js';
 import { auditarDados, restaurarMaiorCopia, type ContaGuardada } from '../server/admin/dados.js';
 import { mesmoSegredo } from '../server/segredo.js';
+import { resumoErro } from '../server/logSeguro.js';
 import { contarLimite, excedeuLimite, ipDoCliente } from '../server/rede.js';
 import { rotaAcesso, rotaCakto, rotaFilaGet, rotaFilaPost } from '../server/acesso/rotas.js';
 
@@ -136,7 +137,7 @@ export async function POST(request: Request): Promise<Response> {
       if (so && !so.has(c.id)) continue;
       const novo = restaurarMaiorCopia(c.state);
       if (!novo) continue;
-      try { await c.gravar(novo); restauradas++; } catch (err) { if (erros.length < 3) erros.push(String(err).slice(0, 200)); }
+      try { await c.gravar(novo); restauradas++; } catch (err) { if (erros.length < 3) erros.push(resumoErro(err)); }
     }
     return Response.json({ restauradas, erros });
   }
@@ -166,7 +167,7 @@ export async function POST(request: Request): Promise<Response> {
       await setFlag(phone, 'aviso:modelo-v1', true);
       await setFlag(phone, NOTICE_FLAG, true);
     } catch (err) {
-      if (errors.length < 3) errors.push(String(err).slice(0, 200));
+      if (errors.length < 3) errors.push(resumoErro(err));
     }
   }
   return Response.json({ sent: direct + viaTemplate, direct, viaTemplate, skipped, errors });

@@ -39,7 +39,7 @@ function Formulario({ conta, onFechar }: { conta: ContaInicial; onFechar: () => 
         <CampoNumero rotulo="Vence todo dia…" valor={dia} onChange={setDia} min={1} max={31} placeholder="Ex.: 10" erro={tentou && !diaOk ? 'Digite um dia de 1 a 31.' : undefined} />
         <div className="gs-acoes">
           <button type="button" className="gs-btn sec" onClick={onFechar}>Cancelar</button>
-          <button type="submit" className="gs-btn cheio">Salvar conta</button>
+          <button type="submit" className="gs-btn cheio" disabled={envio.ocupado}>Salvar conta</button>
         </div>
       </form>
     </Folha>

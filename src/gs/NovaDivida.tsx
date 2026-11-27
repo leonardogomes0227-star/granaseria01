@@ -106,7 +106,7 @@ export function NovaDividaSheet({ aberta, onFechar, onCompleto, tipoInicial }: {
           {erro && (total > 0 || mensal > 0) && <p role="alert" style={{ color: 'var(--danger)' }}>{erro}</p>}
           <div className="gs-acoes">
             <button type="button" className="gs-btn sec" onClick={() => { setPasso(1); setErro(''); }}>Voltar</button>
-            <button type="submit" className="gs-btn cheio">Salvar dívida</button>
+            <button type="submit" className="gs-btn cheio" disabled={envio.ocupado}>Salvar dívida</button>
           </div>
         </form>
       )}

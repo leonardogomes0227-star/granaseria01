@@ -461,7 +461,7 @@ export function Perfil() {
           <li><b>recebi 3000 de salário</b>: registra a entrada</li>
           <li><b>quanto posso gastar hoje?</b>: responde com o seu número</li>
           <li><b>resumo</b>: como está o seu mês</li>
-          <li>escreva o valor; a leitura de foto e de áudio ainda não está ligada</li>
+          <li>áudio e foto do cupom, quando a leitura estiver ligada no servidor</li>
         </ul>
         <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Abrir o WhatsApp</a>
       </section>
@@ -481,8 +481,11 @@ export function Perfil() {
       <Lista>
         <ListItem titulo="Guias" sub="Explicações curtas, sem jargão" rota="/guias" />
         <ListItem titulo="Todas as ferramentas" sub="Tudo o que o app faz, num lugar só" rota="/ferramentas" />
+        <ListItem titulo="Planos" sub="Mensal, anual e preço de fundador" rota="/planos" />
+        <ListItem titulo="Perguntas frequentes" sub="Respostas curtas, em linguagem simples" rota="/faq" />
         <ListItem titulo="Minha conta" sub="Entrar com e-mail" rota="/conta" />
-        <ListItem titulo="Limpar meus dados" sub="Recomeçar do zero, mantendo a conta" rota="/dados#limpar" />
+        <ListItem titulo="Meus dados" sub="Baixar, recuperar ou limpar" rota="/dados" />
+        <ListItem titulo="Privacidade e termos" sub="O que guardamos e os seus direitos" rota="/politica-de-privacidade" />
       </Lista>
     </>
   );

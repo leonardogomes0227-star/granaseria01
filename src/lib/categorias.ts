@@ -40,7 +40,7 @@ export const CATEGORIAS_SAIDA: Categoria[] = [
     nome: 'Alimentação',
     rotulo: 'Comida',
     palavras: [
-      'mercado', 'supermercado', 'ifood', 'almoço', 'almoco', 'janta', 'jantar', 'lanche', 'padaria', 'restaurante',
+      'mercado', 'mercad', 'supermercado', 'ifood', 'ifod', 'almoço', 'almoco', 'janta', 'jantar', 'lanche', 'padaria', 'restaurante',
       'almocei', 'jantei', 'lanchei', 'comi', 'pão', 'pao', 'açaí', 'acai', 'bebida', 'refrigerante', 'salgado', 'lanchonete', 'churrasco', 'atacadão', 'atacadao', 'quitanda', 'rappi',
       'comida', 'pizza', 'café', 'cafe', 'hamburguer', 'açougue', 'acougue', 'feira', 'hortifruti', 'marmita', 'delivery', 'sorvete', 'doce',
     ],
@@ -49,7 +49,7 @@ export const CATEGORIAS_SAIDA: Categoria[] = [
     nome: 'Transporte',
     rotulo: 'Transporte',
     palavras: [
-      'uber', 'abasteci', 'gasolina', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
+      'uber', 'uberr', 'abasteci', 'gasolina', 'gasosa', 'combustível', 'combustivel', 'etanol', 'álcool', 'alcool', 'ônibus', 'onibus', 'metrô', 'metro', 'trem',
       'estacionamento', 'pedágio', 'pedagio', 'taxi', 'táxi', 'passagem', 'oficina', 'mecânico', 'mecanico', 'ipva', 'posto',
       'carro', 'moto', 'pneu', 'revisão', 'revisao', 'lava jato', 'lavagem', '99', 'bilhete único', 'cartão de transporte',
     ],

@@ -91,6 +91,7 @@ function Casca({ children }: { children: ReactNode }) {
   }, [pathname, pronto]);
   return (
     <div className={`gs-casca gs-app2 cm-casca${pronto ? '' : ' cm-sem-menu'}`}>
+      <a className="gs-pular" href="#conteudo">Pular para o conteúdo</a>
       <aside className="cm-lateral" aria-label="Menu principal" ref={lateral}>
         {pilula && <i className="cm-pill" aria-hidden="true" style={{ top: pilula.t, bottom: pilula.b, transition: pilula.desce ? `top .55s cubic-bezier(.65, 0, .35, 1), bottom .36s cubic-bezier(.215, .61, .355, 1)` : `top .36s cubic-bezier(.215, .61, .355, 1), bottom .55s cubic-bezier(.65, 0, .35, 1)` }} />}
         <Link to="/" className="cm-marca" aria-label="Grana Séria, início"><Moeda tamanho={34} girar={false} /><span className="nome-marca">Grana <em>Séria</em></span></Link>
@@ -111,7 +112,7 @@ function Casca({ children }: { children: ReactNode }) {
           <button type="button" className="cm-novo" onClick={() => abrirMenuAdicionar()}><Plus size={14} aria-hidden="true" />Novo</button>
           <Link to="/perfil" className="cm-avatar" aria-label="Perfil">{inicialDo(nome)}</Link>
         </header>
-        <main className="gs-principal">{children}</main>
+        <main id="conteudo" className="gs-principal">{children}</main>
       </div>
       <i className="esm-carrega" key={pathname} aria-hidden="true" />
       <nav className="cm-abas" aria-label="Seções">
@@ -217,6 +218,7 @@ function PuxarParaAtualizar() {
 function CascaPublica({ children }: { children: ReactNode }) {
   return (
     <div className="gs-casca">
+      <a className="gs-pular" href="#conteudo">Pular para o conteúdo</a>
       <header className="gs-topo">
         <div className="gs-topo-in">
           <Link to="/" className="gs-marca" aria-label="Grana Séria, início">
@@ -230,10 +232,10 @@ function CascaPublica({ children }: { children: ReactNode }) {
           <Link className="gs-btn pequeno" to="/entrar">Entrar</Link>
         </div>
       </header>
-      <main className="gs-principal">{children}</main>
+      <main id="conteudo" className="gs-principal">{children}</main>
       <footer className="gs-rodape">
         <p>
-          <Link to="/guias">Guias</Link> · <Link to="/planos">Planos</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>
+          <Link to="/guias">Guias</Link> · <Link to="/planos">Planos</Link> · <Link to="/faq">Perguntas</Link> · <Link to="/politica-de-privacidade">Privacidade</Link> · <Link to="/termos-de-uso">Termos</Link> · <Link to="/sobre">Sobre e avisos</Link>
         </p>
         <p>Grana Séria · conteúdo educacional, não é consultoria financeira · CNPJ 69.557.683/0001-89</p>
       </footer>

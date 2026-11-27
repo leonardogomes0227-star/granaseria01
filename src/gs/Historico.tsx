@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDownRight, ArrowUpRight, ListOrdered, Scale, Search } from 'lucide-react';
 import { FaixaKpis, GraficoBarras } from './PainelUI';
@@ -86,8 +86,19 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
       {lista.length === 0 ? (
         <Vazio titulo={todos.length === 0 ? 'Nada registrado neste mês' : 'Nada encontrado com esse filtro'} texto={todos.length === 0 ? 'Registre uma receita ou uma despesa em poucos segundos.' : 'Tente outra busca ou limpe os filtros.'} acao={todos.length === 0 ? 'Adicionar movimentação' : undefined} onAcao={() => abrirAdicionar()} avatar="gastos" />
       ) : (
+        <ListaDoMes lista={lista} hoje={hoje} abrir={abrir} />
+      )}
+    </>
+  );
+}
+
+function ListaDoMes({ lista, hoje, abrir }: { lista: Movimento[]; hoje: string; abrir: (m: Movimento) => void }) {
+  const [ate, setAte] = useState(40);
+  useEffect(() => { setAte(40); }, [lista]);
+  const visiveis = lista.slice(0, ate);
+  return (
         <div className="gs-card">
-          {lista.map((m) => {
+          {visiveis.map((m) => {
             const Icone = m.tipo === 'despesa' ? iconeDe(m.categoria) : null;
             const corpo = (
               <>
@@ -102,8 +113,11 @@ export function Historico({ mes, hoje }: { mes: string; hoje: string }) {
               <Link className="gs-linha gs-linha-btn" key={m.chave} to={m.tipo === 'conta' ? '/lancamentos?aba=contas' : m.tipo === 'divida' ? '/plano/dividas' : '/plano/reserva'}>{corpo}</Link>
             );
           })}
+          {lista.length > ate && (
+            <button type="button" className="gs-btn sec cheio" onClick={() => setAte((n) => n + 40)}>
+              Mostrar mais {Math.min(40, lista.length - ate)} de {lista.length - ate}
+            </button>
+          )}
         </div>
-      )}
-    </>
   );
 }
