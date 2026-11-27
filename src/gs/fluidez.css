@@ -40,3 +40,30 @@ html.gs-app .pv-kpi.ouro { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 
 
 @media (prefers-reduced-motion: reduce) { .pv-kpi.ouro::after { display: none; } }
 .as-msg p { white-space: pre-line; }
+
+/* Camada permanente só onde a animação está acontecendo. Parado, o desenho é o mesmo. */
+html.gs-app :is(.lx-faixa-in, .lx-flut, .reveal, .medallion-wrap, .home-coin .medallion, .as-mascote) { will-change: auto; }
+
+/* Celular: o desfoque numa faixa fixa (topo, barra, folha) redesenha a página inteira a cada quadro.
+   O fundo sólido usa a mesma cor de repouso, então a tela parada continua igual. */
+@media (max-width: 900px) {
+  html { scroll-behavior: auto !important; }
+  html.gs-app :is(.gs-topo, .gs-topo2, .app-bar, .cm-topo, .cm-abas, .gs-abas, .painel-tabs, .as-painel, .as-fundo, .gs-folha, .cm-folha, .gs-fundo) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+  html.gs-app :is(.gs-topo, .gs-topo2, .app-bar) { background-color: #F6F1E6 !important; }
+  html.gs-app .cm-topo { background-color: #F4F1EA !important; }
+  html.gs-app :is(.cm-abas, .gs-abas, .painel-tabs) { background-color: #FFFDF8 !important; }
+  html.gs-app :is(.as-painel, .gs-folha) { background-color: #FBF8F2 !important; }
+  html.gs-app[data-tema="escuro"] :is(.cm-topo, .cm-abas) { background-color: #141210 !important; }
+  html.gs-app[data-tema="escuro"] :is(.as-painel, .gs-folha) { background-color: #171512 !important; }
+  .lx-sec, .lx-seg, .lx-fim, .gs-faq-item {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 720px;
+  }
+  .ms-linha, .ms-agora {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 160px;
+  }
+}
