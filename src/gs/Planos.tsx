@@ -37,7 +37,7 @@ const CARTOES: Cartao[] = [
 ];
 
 function Botao({ c, travado }: { c: Cartao; travado?: boolean }) {
-  if (travado) return <a href="#fila" className="lp-btn vazio" style={{ width: '100%' }}>Entrar na fila para receber o convite</a>;
+  if (travado) return <a href="#fila" className="lp-btn vazio" style={{ width: '100%' }}>Preparar meu acesso</a>;
   const url = c.id === 'mensal' ? CHECKOUT_MENSAL : CHECKOUT_ANUAL;
   if (checkoutPronto(url)) return <a href={url} target="_blank" rel="noopener noreferrer" className="lp-btn ouro" style={{ width: '100%' }}>Assinar {c.nome.toLowerCase()}</a>;
   return <a href={waLink(`Oi! Quero entrar na lista de acesso do plano ${c.nome.toLowerCase()} da Grana Séria.`)} target="_blank" rel="noopener noreferrer" className="lp-btn ouro" style={{ width: '100%' }}>Entrar na lista de acesso</a>;
@@ -97,7 +97,7 @@ export function Planos() {
   return (
     <div className="pl-pagina">
       <Titulo titulo="Planos" sub={convite.valido ? `Seu convite está liberado. Acesso completo ao Grana Séria: ${brl0(PRECO_MENSAL)} por mês, ou o anual com desconto.` : 'O Grana Séria abre vagas por convite, em ondas.'} />
-      {!convite.valido && <p className="gs-nota">Entre na fila de espera e, quando chegar a sua vez, o convite vai para o seu WhatsApp. <a href="/#fila">Entrar na fila</a></p>}
+      {!convite.valido && <p className="gs-nota">Prepare seu acesso na página inicial. Em instantes os planos abrem. <a href="/#fila">Preparar meu acesso</a></p>}
       <h2 className="gs-h2">Preço de fundador</h2>
       <p className="gs-sub">Para quem entra agora. O valor fica este enquanto a assinatura estiver ativa.</p>
       <CartoesFundador />

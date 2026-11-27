@@ -71,6 +71,6 @@ html.gs-rolando :is(.as-orbe, .as-orbe::after, .as-orbe i, .lx-orbe i, .pv-kpi.o
   .as-mascote .as-orbe::after { display: none !important; }
   .pn-secao, .lx-sec, .lx-seg, .lx-fim {
     content-visibility: auto;
-    contain-intrinsic-size: auto 560px;
+    contain-intrinsic-size: auto 720px;
   }
 }

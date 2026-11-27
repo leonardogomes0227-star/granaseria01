@@ -8,7 +8,7 @@ import { CartoesFundador, CartoesPlanos } from './Planos';
 import { PRECO_ANUAL, PRECO_FUNDADOR_ANUAL, PRECO_FUNDADOR_MENSAL, PRECO_MENSAL } from '../config';
 import { brl0 } from './datas';
 import { waLink } from '../whatsapp';
-import { useConvite } from './convite';
+import { marcarConvite, useConvite } from './convite';
 import { FERRAMENTAS } from './registroFerramentas';
 import './landing.css';
 
@@ -176,26 +176,45 @@ function CalculadoraCusto({ aoClicar }: { aoClicar: () => void }) {
   );
 }
 
-interface SituacaoFila { codigo: string; posicao: number | null; total: number; indicacoes: number; status: string; conviteAte: string | null }
+interface SituacaoFila { codigo: string; status: string; conviteAte: string | null; liberaEm: string | null; esperaSegundos: number; liberado: boolean; nome?: string }
 const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem storage */ } };
 const ler = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 
-function FilaDeEspera() {
+function segundosRestantes(liberaEm: string | null): number | null {
+  if (!liberaEm) return null;
+  const ms = Date.parse(liberaEm) - Date.now();
+  if (!Number.isFinite(ms)) return null;
+  return Math.max(0, Math.ceil(ms / 1000));
+}
+
+function FilaDeEspera({ aoPronto }: { aoPronto: () => void }) {
   const [nome, setNome] = useState('');
   const [fone, setFone] = useState('');
   const [erro, setErro] = useState('');
   const [envio, setEnvio] = useState(false);
   const [s, setS] = useState<SituacaoFila | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
   const [fora, setFora] = useState(false);
-  const [copiado, setCopiado] = useState(false);
+  const [tick, setTick] = useState(0);
+  const aplicar = (codigo: string, j: SituacaoFila) => {
+    const prox = { ...j, codigo };
+    setS(prox);
+    if (prox.liberado || prox.status === 'convidado' || prox.status === 'ativo') marcarConvite(codigo);
+  };
   useEffect(() => {
     const ref = new URLSearchParams(window.location.search).get('ref');
     if (ref && /^[A-Za-z0-9]{6}$/.test(ref)) guardar('gs-ref', ref.toUpperCase());
     const meu = ler('gs-fila');
-    if (meu) fetch(`/api/fila?codigo=${meu}`).then((r) => (r.ok ? r.json() : null)).then((j) => { if (j) setS({ codigo: meu, ...j }); }).catch(() => undefined);
-    fetch('/api/fila?total=1').then((r) => (r.ok ? r.json() : null)).then((j: { total: number } | null) => { if (j) setTotal(j.total); else setFora(true); }).catch(() => setFora(true));
+    if (!meu) return;
+    fetch(`/api/fila?codigo=${meu}`).then((r) => (r.ok ? r.json() : null)).then((j: SituacaoFila | null) => { if (j) aplicar(meu, j); }).catch(() => setFora(true));
   }, []);
+  useEffect(() => {
+    if (!s || s.liberado) return;
+    const id = window.setInterval(() => {
+      setTick((n) => n + 1);
+      fetch(`/api/fila?codigo=${s.codigo}`).then((r) => (r.ok ? r.json() : null)).then((j: SituacaoFila | null) => { if (j) aplicar(s.codigo, j); }).catch(() => undefined);
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [s?.codigo, s?.liberado]);
   const enviar = async (ev: FormEvent) => {
     ev.preventDefault();
     setErro('');
@@ -203,48 +222,106 @@ function FilaDeEspera() {
     try {
       const r = await fetch('/api/fila', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome, whatsapp: fone, ref: ler('gs-ref') ?? undefined }) });
       const j = await r.json();
-      if (!r.ok) { setErro(j.error ?? 'Não consegui agora. Tente de novo.'); return; }
+      if (!r.ok) { if (r.status === 503) setFora(true); setErro(j.error ?? 'Não consegui agora. Tente de novo.'); return; }
       guardar('gs-fila', j.codigo);
-      setS(j);
+      aplicar(j.codigo, j);
     } catch { setErro('Sem conexão. Tente de novo.'); } finally { setEnvio(false); }
   };
-  const link = s ? `${window.location.origin}/?ref=${s.codigo}` : '';
-  const copiar = async () => { try { await navigator.clipboard.writeText(link); setCopiado(true); setTimeout(() => setCopiado(false), 2200); } catch { /* sem permissão */ } };
+  const restante = s ? segundosRestantes(s.liberaEm) : null;
+  void tick;
+  const progresso = s && !s.liberado && s.esperaSegundos > 0 && restante !== null ? Math.min(1, Math.max(0, 1 - restante / s.esperaSegundos)) : s?.liberado ? 1 : 0;
   return (
     <div className="lx-fila" id="fila">
-      {s ? (
+      {s?.status === 'recusado' ? (
+        <div className="lx-fila-ok">
+          <span className="lx-eyebrow">Acesso</span>
+          <h3>Não consegui liberar este acesso</h3>
+          <p>Fale com a gente no WhatsApp e a gente olha o seu caso.</p>
+          <a className="lx-btn ouro" href={waLink('Oi! Não consegui liberar meu acesso no Grana Séria.')} target="_blank" rel="noopener noreferrer">Falar no WhatsApp <ArrowRight size={18} aria-hidden="true" /></a>
+        </div>
+      ) : s ? (
         <div className="lx-fila-ok" aria-live="polite">
-          <span className="lx-eyebrow">Você está na fila</span>
-          {s.status === 'convidado' ? (
-            <><h3>Sua vez chegou.</h3><p>O seu convite foi liberado{s.conviteAte ? ` e vale até ${new Date(s.conviteAte).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}` : ''}. Veja a mensagem que enviamos no seu WhatsApp.</p></>
-          ) : (
-            <><div className="lx-pos"><small>Sua posição</small><b>{s.posicao ?? 'na fila'}</b><span>{s.total > 0 ? `de ${s.total} ${s.total === 1 ? 'pessoa' : 'pessoas'}` : ''}</span></div>
-              <p>Quando sua vez chegar, você recebe o convite no WhatsApp, com prazo para aceitar. {s.indicacoes > 0 ? `Você já subiu indicando ${s.indicacoes} ${s.indicacoes === 1 ? 'pessoa' : 'pessoas'}.` : 'Indique amigos para subir na fila.'}</p>
-              <div className="lx-ind"><span>Cada amigo que entrar pelo seu link faz você subir 5 posições.</span>
-                <button type="button" onClick={copiar}>{copiado ? 'Link copiado' : 'Copiar meu link'}</button></div></>
-          )}
+          <span className="lx-eyebrow">{s.liberado ? 'Pronto' : 'Preparando seu acesso'}</span>
+          <h3>{s.liberado ? 'Seu acesso está pronto.' : 'Preparando seu acesso'}</h3>
+          <p>{s.liberado ? 'Os planos já estão abertos aqui em cima. A assinatura só vale depois do pagamento confirmado.' : restante !== null && restante > 0 ? `Falta cerca de ${restante} ${restante === 1 ? 'segundo' : 'segundos'}. Pode deixar esta tela aberta.` : 'Quase lá. Pode deixar esta tela aberta.'}</p>
+          <div className="lx-espera" aria-hidden="true"><i style={{ transform: `scaleX(${progresso})` }} /></div>
+          {s.liberado && <button type="button" className="lx-btn ouro" onClick={aoPronto}>Ver os planos <ArrowRight size={18} aria-hidden="true" /></button>}
         </div>
       ) : fora ? (
         <div className="lx-fila-ok">
-          <span className="lx-eyebrow">Fila de espera</span>
-          <h3>Entre na fila pelo WhatsApp</h3>
-          <p>As vagas abrem em ondas. Mande uma mensagem e a gente coloca o seu nome na fila. Quando chegar a sua vez, o convite vem por lá.</p>
-          <a className="lx-btn ouro" href={waLink('Oi! Quero entrar na fila de espera do Grana Séria.')} target="_blank" rel="noopener noreferrer">Entrar na fila pelo WhatsApp <ArrowRight size={18} aria-hidden="true" /></a>
+          <span className="lx-eyebrow">Acesso</span>
+          <h3>Não consegui preparar por aqui agora</h3>
+          <p>Mande uma mensagem no WhatsApp que a gente segue com você.</p>
+          <a className="lx-btn ouro" href={waLink('Oi! Quero preparar meu acesso ao Grana Séria.')} target="_blank" rel="noopener noreferrer">Falar no WhatsApp <ArrowRight size={18} aria-hidden="true" /></a>
         </div>
       ) : (
         <form onSubmit={enviar} noValidate>
-          <span className="lx-eyebrow">Fila de espera</span>
-          <h3>Entre na fila para receber o seu convite</h3>
-          <p>As vagas abrem em ondas. Deixe o seu nome e o seu WhatsApp. Quando chegar a sua vez, o convite vai direto para lá.</p>
+          <span className="lx-eyebrow">Seu acesso</span>
+          <h3>Prepare seu acesso</h3>
+          <p>Deixe seu nome e seu WhatsApp. Em instantes esta tela avisa que está pronto. O plano pago só vale com o pagamento confirmado.</p>
           <div className="lx-fila-campos">
             <label>Seu nome<input value={nome} onChange={(ev) => setNome(ev.target.value)} autoComplete="given-name" maxLength={60} required /></label>
             <label>Seu WhatsApp<input value={fone} onChange={(ev) => setFone(ev.target.value)} inputMode="tel" autoComplete="tel" placeholder="(67) 99999-9999" maxLength={20} required /></label>
           </div>
           {erro && <p className="lx-fila-erro" role="alert">{erro}</p>}
-          <button type="submit" className="lx-btn ouro" disabled={envio}>{envio ? 'Entrando…' : 'Entrar na fila'} <ArrowRight size={18} aria-hidden="true" /></button>
-          <small>{total !== null && total >= 10 ? `${total} pessoas já estão na fila. ` : ''}Usamos o seu número só para o convite. Nada de spam.</small>
+          <button type="submit" className="lx-btn ouro" disabled={envio}>{envio ? 'Preparando…' : 'Preparar meu acesso'} <ArrowRight size={18} aria-hidden="true" /></button>
+          <small>Usamos o número só para o convite. Nada de spam.</small>
         </form>
       )}
+    </div>
+  );
+}
+
+/** Demonstração nesta página: a resposta sai daqui, sem chamar nenhum serviço. */
+function respostaDoMidas(texto: string): string {
+  const limpo = texto.trim().toLocaleLowerCase('pt-BR');
+  const achado = limpo.match(/(\d+(?:[.,]\d+)?)/);
+  const valor = achado ? achado[1].replace('.', ',') : '';
+  if (!limpo) return 'Escreva como você mandaria no WhatsApp. Por exemplo: mercado 50.';
+  if (valor && /mercado|feira|horti|padaria|almoço|almoco/.test(limpo)) return `Anotei R$ ${valor} em Mercado. No app, isso já entra no mês e eu te mostro quanto ainda cabe hoje.`;
+  if (valor) return `Anotei R$ ${valor}. Eu coloco na categoria que combina com o que você escreveu e somo no mês.`;
+  if (/divida|dívida|cartao|cartão|atras/.test(limpo)) return 'Entendi. O caminho é ver o que pagar primeiro e a data em que você fica livre. Eu abro essa tela.';
+  return 'Manda do jeito que fala. Por exemplo: mercado 50.';
+}
+
+function DemoMidas() {
+  const [texto, setTexto] = useState('mercado 50');
+  const [fala, setFala] = useState<string | null>(null);
+  const enviar = (ev: FormEvent) => {
+    ev.preventDefault();
+    setFala(respostaDoMidas(texto));
+  };
+  return (
+    <div className="lx-demo">
+      <form onSubmit={enviar}>
+        <label>Escreva um gasto<input value={texto} onChange={(ev) => setTexto(ev.target.value)} maxLength={80} placeholder="mercado 50" /></label>
+        <button type="button" className="lx-btn ouro" onClick={() => setFala(respostaDoMidas(texto))}>Ver a resposta</button>
+      </form>
+      <div className="lx-bolhas" aria-live="polite">
+        <p className="voce">{texto.trim() || 'mercado 50'}</p>
+        {fala && <p className="midas"><b>Midas</b>{fala}</p>}
+      </div>
+      <small>Demonstração nesta página. Nada é enviado e nenhuma conta é criada.</small>
+    </div>
+  );
+}
+
+function MockPainel() {
+  const barras = [46, 72, 38, 88, 54, 66, 42];
+  return (
+    <div className="lx-mock" aria-hidden="true">
+      <div className="lx-mock-tela">
+        <header><small>Novembro</small><b>Pode gastar hoje</b></header>
+        <div className="lx-mock-card ouro lx-sobe" style={{ ['--i' as string]: 0 }}><small>Exemplo</small><b>R$ 82</b><em>já descontadas as contas</em></div>
+        <div className="lx-mock-par">
+          <div className="lx-mock-card lx-sobe" style={{ ['--i' as string]: 1 }}><small>Contas</small><b>3</b></div>
+          <div className="lx-mock-card lx-sobe" style={{ ['--i' as string]: 2 }}><small>Dívidas</small><b>1</b></div>
+        </div>
+        <div className="lx-mock-graf lx-sobe" style={{ ['--i' as string]: 3 }}>
+          <small>Para onde foi</small>
+          <div className="lx-barras">{barras.map((h, i) => <i key={i} style={{ ['--h' as string]: `${h}%`, animationDelay: `${0.35 + i * 0.06}s` }} />)}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -296,10 +373,71 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
             </ul>
           </div>
           <div className="lx-hero-vis">
-            <Fone img="funil" alt="Tela real do Grana Séria: o painel do mês, com dados de exemplo" prioridade />
-            <small>Tela real do app, com dados de exemplo</small>
+            <MockPainel />
+            <small>Demonstração da tela, com números de exemplo</small>
           </div>
         </div>
+      </section>
+
+      <section className="lx-sec" id="dor">
+        <Revela className="lx-centro">
+          <span className="lx-eyebrow ouro">A dor</span>
+          <h2>O mês acaba e o dinheiro some</h2>
+          <p className="lx-sub">Você trabalhou, pagou conta, passou no mercado. No fim, abre o banco e não sabe explicar para onde foi. A surpresa vira aperto.</p>
+        </Revela>
+        <div className="lx-historia">
+          {[
+            ['Some sem rastro', 'O extrato é uma lista. Não diz o que pesou, nem o que dava para segurar.'],
+            ['A conta chega tarde', 'Você lembra no dia, quando já não cabe no que sobrou.'],
+            ['A dívida não tem data', 'Pagar o mínimo parece controle. O fim nunca aparece.'],
+          ].map(([t, d]) => (
+            <Revela key={t} className="lx-historia-i">
+              <h3>{t}</h3>
+              <p>{d}</p>
+            </Revela>
+          ))}
+        </div>
+      </section>
+
+      <section className="lx-sec" id="resolve">
+        <Revela className="lx-centro">
+          <span className="lx-eyebrow ouro">Como o Grana Séria resolve</span>
+          <h2>Um número claro, na hora certa</h2>
+          <p className="lx-sub">O app junta o que entra, o que sai e o que está atrasado. Aí aponta o próximo passo, em português simples.</p>
+        </Revela>
+        <div className="lx-benef">
+          {[
+            ['Quanto posso gastar hoje', 'Um número por dia, já descontando contas, parcelas e a reserva que você combinou.'],
+            ['O que pagar primeiro', 'Atrasos e vencimentos em ordem, com aviso antes de a conta chegar.'],
+            ['Uma data para sair das dívidas', 'O mês em que você fica livre, e quanto pagar para chegar lá.'],
+            ['Dinheiro que fica guardado', 'A reserva deixa de depender de sobrar no fim do mês.'],
+          ].map(([t, d]) => (
+            <Revela key={t} className="lx-benef-i">
+              <h3>{t}</h3>
+              <p>{d}</p>
+            </Revela>
+          ))}
+        </div>
+        <Revela className="lx-centro"><button type="button" className="lx-btn ouro" onClick={() => ir('acesso')}>Quero esse mês claro <ArrowRight size={18} aria-hidden="true" /></button></Revela>
+      </section>
+
+      <section className="lx-sec" id="resultado">
+        <Revela className="lx-centro">
+          <span className="lx-eyebrow ouro">O resultado</span>
+          <h2>Antes, no escuro. Depois, com o número na mão</h2>
+        </Revela>
+        <Revela className="lx-vs">
+          <div className="lx-vs-cab"><span>Antes</span><span>Com o Grana Séria</span></div>
+          {[
+            ['O mês acaba e você pergunta para onde foi', 'Você vê cada real, por categoria, num painel só'],
+            ['A conta vence e a lembrança chega tarde', 'Aviso antes, com o que pagar primeiro'],
+            ['A dívida segue sem uma data', 'O mês em que você fica livre, e quanto pagar'],
+            ['A reserva depende de sobrar', 'Uma parte sai combinada, antes do resto'],
+          ].map(([a, b]) => (
+            <div key={a} className="lx-vs-lin"><p>{a}</p><p>{b}</p></div>
+          ))}
+        </Revela>
+        <Revela className="lx-centro"><button type="button" className="lx-btn ouro" onClick={() => ir('acesso')}>Começar agora <ArrowRight size={18} aria-hidden="true" /></button></Revela>
       </section>
 
       <section className="lx-sec" id="app">
@@ -327,26 +465,6 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
             <p>Não é falta de capacidade. É falta de um número claro na hora certa.</p>
           </Revela>
           <Revela><Identificacao aoClicar={() => ir('acesso')} /></Revela>
-        </div>
-      </section>
-
-      <section className="lx-sec">
-        <Revela className="lx-centro">
-          <span className="lx-eyebrow ouro">O que muda</span>
-          <h2>Quatro coisas que o mês passa a ter</h2>
-        </Revela>
-        <div className="lx-benef">
-          {[
-            ['Quanto posso gastar hoje', 'Um número por dia, já descontando contas, parcelas e a reserva que você combinou.'],
-            ['O que pagar primeiro', 'Atrasos e vencimentos em ordem, com aviso antes de a conta chegar.'],
-            ['Uma data para sair das dívidas', 'O mês em que você fica livre, e quanto pagar para chegar lá.'],
-            ['Dinheiro que fica guardado', 'A reserva deixa de depender de sobrar no fim do mês.'],
-          ].map(([t, d]) => (
-            <Revela key={t} className="lx-benef-i">
-              <h3>{t}</h3>
-              <p>{d}</p>
-            </Revela>
-          ))}
         </div>
       </section>
 
@@ -387,10 +505,11 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
             </span>
           </Revela>
           <Revela className="lx-duo-txt">
-            <span className="lx-eyebrow ouro">WhatsApp</span>
-            <h2>Mande uma frase. O Midas anota e aponta o caminho.</h2>
-            <p>São {FERRAMENTAS.length} ferramentas, e você não precisa caçar o menu. Descreva o que está acontecendo. Ele abre a tela certa. Pelo WhatsApp, “mercado 35” já entra no mês.</p>
-            <a className="lx-btn ouro" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noopener noreferrer">Falar no WhatsApp <MessageCircle size={18} aria-hidden="true" /></a>
+            <span className="lx-eyebrow ouro">Experimente</span>
+            <h2>Mande “mercado 50”. O Midas responde na hora.</h2>
+            <p>São {FERRAMENTAS.length} ferramentas, e você não precisa caçar o menu. Aqui a resposta é uma demonstração, do mesmo jeito que no WhatsApp. Nada sai do seu celular.</p>
+            <DemoMidas />
+            <a className="lx-btn claro" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noopener noreferrer">Falar no WhatsApp de verdade <MessageCircle size={18} aria-hidden="true" /></a>
           </Revela>
         </div>
       </section>
@@ -407,14 +526,14 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         <Revela className="lx-centro">
           <span className="lx-eyebrow ouro">Planos</span>
           <h2>Preço de fundador, {brl0(PRECO_FUNDADOR_MENSAL)} por mês</h2>
-          <p className="lx-sub">{convite.valido ? 'O seu convite está liberado. Escolha o plano.' : 'Quem entra agora paga menos. O valor de fundador fica este enquanto a assinatura estiver ativa. Também dá para entrar na fila e esperar o convite.'}</p>
+          <p className="lx-sub">{convite.valido ? 'Seu acesso está pronto. Escolha o plano. A assinatura só vale depois do pagamento confirmado.' : 'Quem entra agora paga o preço de fundador, fixo enquanto a assinatura estiver ativa. Prepare o acesso aqui embaixo. Em instantes os planos abrem.'}</p>
         </Revela>
         <Revela className="lx-planos"><CartoesFundador limite={4} /></Revela>
         <Revela className="lx-lancamento">
           <p>O preço de lançamento é {brl0(PRECO_MENSAL)} por mês ou {brl0(PRECO_ANUAL)} por ano.</p>
           <CartoesPlanos semNota travado={!convite.valido} limite={4} />
         </Revela>
-        <Revela><FilaDeEspera /></Revela>
+        <Revela><FilaDeEspera aoPronto={() => ir('acesso')} /></Revela>
         <p className="lx-garantia"><ShieldCheck size={16} aria-hidden="true" /> 7 dias para pedir o reembolso. Cancele quando quiser, sem perder o que registrou.</p>
       </section>
 
