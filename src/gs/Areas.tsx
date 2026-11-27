@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Blocks, Flag, HeartPulse, NotebookPen, CalendarCheck, CalendarClock, CalendarDays, ChevronRight, FileText, Flame, Landmark, LifeBuoy, PiggyBank, Plus, Receipt, Search, Target, TriangleAlert, Wallet, Gauge, TrendingDown } from 'lucide-react';
 import { FaixaKpis, FunilVidro, GraficoBarras, Heatmap, Rosca } from './PainelUI';
+import { ConectarWhatsApp } from './ConectarWhatsApp';
 import { painelVidro } from './painelVidro';
 import { mesCurto } from './datas';
 import { atrasosAbertos } from './atrasosBase';
@@ -463,6 +464,7 @@ export function Perfil() {
           <li><b>resumo</b>: como está o seu mês</li>
           <li>áudio e foto do cupom, quando a leitura estiver ligada no servidor</li>
         </ul>
+        <ConectarWhatsApp />
         <a className="gs-btn" href={waLink('Oi! Quero anotar meus gastos por aqui.')} target="_blank" rel="noreferrer">Abrir o WhatsApp</a>
       </section>
 

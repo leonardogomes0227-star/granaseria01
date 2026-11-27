@@ -6,6 +6,7 @@ import { accountsEnabled } from '../supabase';
 import { fetchPainel, getName, painelToken, rememberAfterLogin, setName } from '../painel';
 import { waLink } from '../whatsapp';
 import { track } from '../analytics';
+import { CHECKOUT_ANUAL, CHECKOUT_MENSAL, PRECO_ANUAL, PRECO_MENSAL } from '../config';
 
 /* ---------- Login obrigatório pra usar as ferramentas ---------- */
 // O login é o WhatsApp (link pessoal, sem senha); quem tem conta por e-mail também passa. Depois do login, o nome
@@ -72,15 +73,19 @@ export function LoginGate({ what, header, children }: { what: string; header?: R
 function LoginWall({ what, onGo }: { what: string; onGo: () => void }) {
   return (
     <div className="page-wrap anim-in login-wall">
-      <div className="kicker"><span className="wedge" />Entrar</div>
+      <div className="kicker"><span className="wedge" />Área do assinante</div>
       <h1>Entre pra usar {what}</h1>
       <p className="wizard-sub">
-        Seu login é o seu WhatsApp: <b>sem senha e sem e-mail</b>. Assim seu plano, seus gastos e suas ferramentas ficam salvos e você continua de onde
-        parou, aqui e no WhatsApp.
+        O acesso é só para assinantes. <b>Ainda não assinou?</b> Escolha o plano, pague e o acesso é liberado na hora, no mesmo WhatsApp do pagamento.
       </p>
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '4px 0 22px' }}>
+        <a className="btn-primary btn-shine" href={CHECKOUT_MENSAL} target="_blank" rel="noopener noreferrer">Assinar mensal · R$ {PRECO_MENSAL}/mês</a>
+        <a className="btn-primary btn-shine" href={CHECKOUT_ANUAL} target="_blank" rel="noopener noreferrer">Assinar anual · R$ {PRECO_ANUAL}/ano</a>
+      </div>
+      <p className="wizard-sub"><b>Já é assinante?</b> Seu login é o seu WhatsApp: sem senha.</p>
       <ol className="login-steps">
         <li><b>Toque em Entrar com WhatsApp.</b> A conversa com a Grana Séria abre com a mensagem pronta.</li>
-        <li><b>Envie a mensagem.</b> O assistente responde na hora com o seu link de acesso.</li>
+        <li><b>Envie a mensagem.</b> O assistente responde com o seu link de acesso.</li>
         <li><b>Toque no link.</b> Você volta pra cá já logado, direto em {what}.</li>
       </ol>
       <a
