@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check, ChevronDown, Lock, MessageCircle, ShieldCheck, Smartphone } from 'lucide-react';
+import { ArrowRight, CalendarClock, Check, ChevronDown, Flag, Lock, MessageCircle, PiggyBank, Receipt, Search, ShieldCheck, Smartphone, Wallet } from 'lucide-react';
 import { CampoDinheiro, CampoNumero } from './ui';
 import { horasDeTrabalho } from './ferramentas';
 import { Moeda } from '../components/ui/Moeda';
@@ -10,6 +10,7 @@ import { brl0 } from './datas';
 import { waLink } from '../whatsapp';
 import { marcarConvite, useConvite } from './convite';
 import { FERRAMENTAS } from './registroFerramentas';
+import { useContagem } from './base';
 import './landing.css';
 
 /* Página de vendas. Escura, com ouro só como destaque. O que mexe é opacidade e deslocamento. */
@@ -57,7 +58,7 @@ function observar(el: Element, fn: () => void) {
 }
 
 /** Entra com um deslocamento curto. A classe muda no elemento, sem novo render do React. */
-function Revela({ children, className = '' }: { children: ReactNode; className?: string }) {
+function Revela({ children, className = '', atraso = 0 }: { children: ReactNode; className?: string; atraso?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -65,7 +66,7 @@ function Revela({ children, className = '' }: { children: ReactNode; className?:
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { el.classList.add('vis'); return; }
     return observar(el, () => el.classList.add('vis'));
   }, []);
-  return <div ref={ref} className={`lx-rev ${className}`}>{children}</div>;
+  return <div ref={ref} className={`lx-rev ${className}`} style={atraso ? { transitionDelay: `${atraso}ms` } : undefined}>{children}</div>;
 }
 
 function BarraFixa({ aoClicar }: { aoClicar: () => void }) {
@@ -308,11 +309,12 @@ function DemoMidas() {
 
 function MockPainel() {
   const barras = [46, 72, 38, 88, 54, 66, 42];
+  const hoje = Math.round(useContagem(82, 520));
   return (
     <div className="lx-mock" aria-hidden="true">
       <div className="lx-mock-tela">
         <header><small>Novembro</small><b>Pode gastar hoje</b></header>
-        <div className="lx-mock-card ouro lx-sobe" style={{ ['--i' as string]: 0 }}><small>Exemplo</small><b>R$ 82</b><em>já descontadas as contas</em></div>
+        <div className="lx-mock-card ouro lx-sobe" style={{ ['--i' as string]: 0 }}><small>Exemplo</small><b>R$ {hoje}</b><em>já descontadas as contas</em></div>
         <div className="lx-mock-par">
           <div className="lx-mock-card lx-sobe" style={{ ['--i' as string]: 1 }}><small>Contas</small><b>3</b></div>
           <div className="lx-mock-card lx-sobe" style={{ ['--i' as string]: 2 }}><small>Dívidas</small><b>1</b></div>
@@ -387,15 +389,19 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
         </Revela>
         <div className="lx-historia">
           {[
-            ['Some sem rastro', 'O extrato é uma lista. Não diz o que pesou, nem o que dava para segurar.'],
-            ['A conta chega tarde', 'Você lembra no dia, quando já não cabe no que sobrou.'],
-            ['A dívida não tem data', 'Pagar o mínimo parece controle. O fim nunca aparece.'],
-          ].map(([t, d]) => (
-            <Revela key={t} className="lx-historia-i">
-              <h3>{t}</h3>
-              <p>{d}</p>
-            </Revela>
-          ))}
+            [Search, 'Some sem rastro', 'O extrato é uma lista. Não diz o que pesou, nem o que dava para segurar.'],
+            [CalendarClock, 'A conta chega tarde', 'Você lembra no dia, quando já não cabe no que sobrou.'],
+            [Receipt, 'A dívida não tem data', 'Pagar o mínimo parece controle. O fim nunca aparece.'],
+          ].map(([Icone, t, d], i) => {
+            const I = Icone as typeof Search;
+            return (
+              <Revela key={t as string} atraso={i * 80} className="lx-historia-i">
+                <i aria-hidden="true"><I size={18} /></i>
+                <h3>{t as string}</h3>
+                <p>{d as string}</p>
+              </Revela>
+            );
+          })}
         </div>
       </section>
 
@@ -404,19 +410,24 @@ export function Landing({ resume, onStart, onResume }: { resume: number | null; 
           <span className="lx-eyebrow ouro">Como o Grana Séria resolve</span>
           <h2>Um número claro, na hora certa</h2>
           <p className="lx-sub">O app junta o que entra, o que sai e o que está atrasado. Aí aponta o próximo passo, em português simples.</p>
+          <div className="lx-funil" aria-hidden="true"><i /><i /><i /></div>
         </Revela>
         <div className="lx-benef">
           {[
-            ['Quanto posso gastar hoje', 'Um número por dia, já descontando contas, parcelas e a reserva que você combinou.'],
-            ['O que pagar primeiro', 'Atrasos e vencimentos em ordem, com aviso antes de a conta chegar.'],
-            ['Uma data para sair das dívidas', 'O mês em que você fica livre, e quanto pagar para chegar lá.'],
-            ['Dinheiro que fica guardado', 'A reserva deixa de depender de sobrar no fim do mês.'],
-          ].map(([t, d]) => (
-            <Revela key={t} className="lx-benef-i">
-              <h3>{t}</h3>
-              <p>{d}</p>
-            </Revela>
-          ))}
+            [Wallet, 'Quanto posso gastar hoje', 'Um número por dia, já descontando contas, parcelas e a reserva que você combinou.'],
+            [CalendarClock, 'O que pagar primeiro', 'Atrasos e vencimentos em ordem, com aviso antes de a conta chegar.'],
+            [Flag, 'Uma data para sair das dívidas', 'O mês em que você fica livre, e quanto pagar para chegar lá.'],
+            [PiggyBank, 'Dinheiro que fica guardado', 'A reserva deixa de depender de sobrar no fim do mês.'],
+          ].map(([Icone, t, d], i) => {
+            const I = Icone as typeof Wallet;
+            return (
+              <Revela key={t as string} atraso={i * 70} className="lx-benef-i">
+                <i aria-hidden="true"><I size={18} /></i>
+                <h3>{t as string}</h3>
+                <p>{d as string}</p>
+              </Revela>
+            );
+          })}
         </div>
         <Revela className="lx-centro"><button type="button" className="lx-btn ouro" onClick={() => ir('acesso')}>Quero esse mês claro <ArrowRight size={18} aria-hidden="true" /></button></Revela>
       </section>

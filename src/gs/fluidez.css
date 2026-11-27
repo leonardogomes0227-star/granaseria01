@@ -69,7 +69,7 @@ html.gs-rolando :is(.as-orbe, .as-orbe::after, .as-orbe i, .lx-orbe i, .pv-kpi.o
   .as-mascote { will-change: auto; }
   .as-mascote .as-orbe, .as-orbe { animation: none !important; }
   .as-mascote .as-orbe::after { display: none !important; }
-  .pn-secao, .lx-sec, .lx-seg, .lx-fim {
+  .pn-secao {
     content-visibility: auto;
     contain-intrinsic-size: auto 720px;
   }
