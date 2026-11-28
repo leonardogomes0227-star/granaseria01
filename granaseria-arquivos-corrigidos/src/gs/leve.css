@@ -1,0 +1,29 @@
+/* ---------- Modo leve: corta o que pesa sem mudar o layout ----------
+   Carregado por último (main.tsx). Só mexe em efeito decorativo: animação infinita, desfoque e vidro.
+   Para voltar ao visual antigo, apague o import './gs/leve.css' em src/main.tsx. */
+
+/* 1) Entradas de tela e de cartão SEM desfoque. O blur de 8 a 14px em cada bloco, a cada troca de tela,
+      era o que mais travava ao abrir o painel. Continua entrando suave (opacidade + leve subida). */
+@keyframes gl-foco { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes vd-slide-dir { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes vd-slide-esq { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+
+/* 2) Brilhos, flutuações e giros decorativos que ficam rodando para sempre */
+:is(html, html.gs-app) :is(.vd-hero, .ini-destaque, .cm-topo-area, .gs-card.destaque, .dv-hero, .pv-kpi.ouro)::after { animation: none !important; display: none !important; }
+:is(html, html.gs-app) :is(.vd-blob, .lp-raios, .quote-seal, .cta-frame .cta-coin, .medallion-wrap, .medallion .ring-rotate, .sheen, .home-coin .medallion, .cm-moeda.gira .cm-moeda-giro, .fc-1, .fc-2, .fc-3) { animation: none !important; }
+:is(html, html.gs-app) .vd-blob { filter: none !important; display: none !important; }
+
+/* 3) Mascote e bolinhas "ao vivo" ficam paradas (o mascote só se mexe quando está andando/falando) */
+:is(html, html.gs-app) :is(.as-mascote .as-orbe, .as-mascote .as-orbe i, .as-figura:not(.andando) .as-orb-btn, .as-orbe i, .midas-svg .corpo, .midas-svg .braco-e, .midas-svg .braco-d, .midas-svg .olho, .rv-vivo i, .cm-vivo i, .vd-ao-vivo i, .cm-sino b) { animation: none !important; }
+
+/* 4) Vidro (backdrop-filter) só onde é necessário: barras fixas, menus e janelas.
+      Em cartões e blocos comuns ele custa caro a cada rolagem e ninguém percebe a falta. */
+html :not(header):not(nav):not(dialog):not([role="dialog"]):not([aria-modal="true"]):not(.gs-modal):not(.modal):not([class*="barra"]):not([class*="lateral"]) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 5) Quem pede menos movimento no aparelho fica sem nenhuma animação contínua */
+@media (prefers-reduced-motion: reduce) {
+  html *, html *::before, html *::after { animation-iteration-count: 1 !important; }
+}
